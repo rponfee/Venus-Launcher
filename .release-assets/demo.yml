@@ -1,0 +1,9 @@
+version: 1.0.11
+files:
+  - url: https://github.com/rponfee/Venus-Launcher/releases/download/demo-v1.0.11/VenusLauncher-Demo-Setup-1.0.11.exe
+    sha512: YdngRnA1whj67aV1/IIjCY5ZboT6LjR/gdatzqldcc7sbHXVSurHUJMoikg2kew8p5IwXA2Hk7uq+PG7u66arQ==
+    size: 144028587
+path: https://github.com/rponfee/Venus-Launcher/releases/download/demo-v1.0.11/VenusLauncher-Demo-Setup-1.0.11.exe
+sha512: YdngRnA1whj67aV1/IIjCY5ZboT6LjR/gdatzqldcc7sbHXVSurHUJMoikg2kew8p5IwXA2Hk7uq+PG7u66arQ==
+releaseDate: '2026-10-30T23:32:04.715Z'
+edition: demo
