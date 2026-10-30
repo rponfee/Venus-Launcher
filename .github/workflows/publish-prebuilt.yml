@@ -1,0 +1,176 @@
+name: Publish verified Venus 1.0.8 assets
+
+on:
+  push:
+    branches:
+      - release-assets-v1.0.8
+    paths:
+      - .github/workflows/publish-prebuilt.yml
+      - .release-assets/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: venus-prebuilt-release-v1.0.8
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Reconstruct the verified installer
+    if: ${{ github.repository == 'rponfee/Venus-Launcher' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify parts and complete release files
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const crypto = require('node:crypto');
+          const zlib = require('node:zlib');
+          const assert = require('node:assert/strict');
+          assert.equal(process.env.GITHUB_REPOSITORY, 'rponfee/Venus-Launcher');
+          assert.equal(process.env.GITHUB_REF, 'refs/heads/release-assets-v1.0.8');
+          const installer = 'VenusLauncher-Setup-1.0.8.exe';
+          const parts = [
+            { name: `${installer}.001`, size: 83886080, sha256: 'be013d31aef64ab2748b654ca7906db4e7ed10564e42967a81546d86b0cf9752' },
+            { name: `${installer}.002`, size: 61650201, sha256: '9bf5c69be62ecafcde8be19d9c6454d69e1e4ac2c7a87723131386940c21fb75' },
+          ];
+          const files = [
+            { name: installer, size: 145536281, sha256: 'c54c3f1cb19c7a179d320b7474cefc65923500680909883589aa680e25e4508b' },
+            { name: `${installer}.blockmap`, size: 152013, sha256: 'd7fd28e495869eed8b46e3d4aad6c3ccb5b5a1d3990ad491df03ced7aca5cb2f' },
+            { name: 'latest.yml', size: 355, sha256: '27f8c0c169ac64b90fb6621e8214ad96bca31cc1d137c91e3bd7e07239ef6db5' },
+          ];
+          function readChecked(directory, file) {
+            const location = path.join(directory, file.name);
+            assert.ok(fs.lstatSync(location).isFile(), `Not a regular file: ${file.name}`);
+            const bytes = fs.readFileSync(location);
+            assert.equal(bytes.length, file.size, `Wrong size: ${file.name}`);
+            assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), file.sha256, `Wrong checksum: ${file.name}`);
+            return bytes;
+          }
+          const binary = Buffer.concat(parts.map((part) => readChecked('.release-assets', part)));
+          assert.equal(binary.length, files[0].size);
+          assert.equal(binary.subarray(0, 2).toString(), 'MZ');
+          assert.equal(crypto.createHash('sha256').update(binary).digest('hex'), files[0].sha256);
+          assert.equal(crypto.createHash('sha512').update(binary).digest('base64'), 'RRmVOnJ7zSNDvao7f3xVyAtc09TD8BvNAOZIyOuY8inH4hUBDqj4T5KffsxRorjr8IyS18zu6wDfkOapLEnf1g==');
+          const blockmap = readChecked('.release-assets', files[1]);
+          const map = JSON.parse(zlib.gunzipSync(blockmap, { maxOutputLength: 16 * 1024 * 1024 }));
+          assert.equal(map.version, '2');
+          assert.equal(map.files.length, 1);
+          assert.equal(map.files[0].offset, 0);
+          assert.equal(map.files[0].sizes.length, map.files[0].checksums.length);
+          assert.equal(map.files[0].sizes.reduce((sum, size) => sum + size, 0), binary.length);
+          const metadata = readChecked('.release-assets', files[2]);
+          fs.mkdirSync('verified', { recursive: true });
+          fs.writeFileSync(path.join('verified', installer), binary);
+          fs.writeFileSync(path.join('verified', files[1].name), blockmap);
+          fs.writeFileSync(path.join('verified', files[2].name), metadata);
+          console.log('Verified exactly three complete release files for Venus Launcher 1.0.8.');
+          NODE
+      - name: Retain complete verified files
+        uses: actions/upload-artifact@v4
+        with:
+          name: venus-prebuilt-1.0.8
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            verified/VenusLauncher-Setup-1.0.8.exe
+            verified/VenusLauncher-Setup-1.0.8.exe.blockmap
+            verified/latest.yml
+
+  publish:
+    name: Complete existing release draft
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: venus-prebuilt-1.0.8
+          path: verified
+      - name: Verify, upload to the existing draft and publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const crypto = require('node:crypto');
+          const assert = require('node:assert/strict');
+          const { execFileSync } = require('node:child_process');
+          const repository = 'rponfee/Venus-Launcher';
+          const releaseId = 429501990;
+          const tag = 'v1.0.8';
+          const targetCommit = '3e818bbbf41c451abb5a0e36c34d2b2869f2eb36';
+          const endpoint = `repos/${repository}/releases/${releaseId}`;
+          assert.equal(process.env.GITHUB_REPOSITORY, repository);
+          assert.equal(process.env.GITHUB_REF, 'refs/heads/release-assets-v1.0.8');
+          const files = [
+            { name: 'VenusLauncher-Setup-1.0.8.exe', size: 145536281, sha256: 'c54c3f1cb19c7a179d320b7474cefc65923500680909883589aa680e25e4508b' },
+            { name: 'VenusLauncher-Setup-1.0.8.exe.blockmap', size: 152013, sha256: 'd7fd28e495869eed8b46e3d4aad6c3ccb5b5a1d3990ad491df03ced7aca5cb2f' },
+            { name: 'latest.yml', size: 355, sha256: '27f8c0c169ac64b90fb6621e8214ad96bca31cc1d137c91e3bd7e07239ef6db5' },
+          ];
+          const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: 8 * 1024 * 1024 });
+          const readRelease = () => JSON.parse(gh('api', endpoint));
+          function verifyFile(directory, expected) {
+            const location = path.join(directory, expected.name);
+            assert.ok(fs.lstatSync(location).isFile(), `Not a regular file: ${expected.name}`);
+            const bytes = fs.readFileSync(location);
+            assert.equal(bytes.length, expected.size, `Wrong size: ${expected.name}`);
+            assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), expected.sha256, `Wrong checksum: ${expected.name}`);
+          }
+          function verifyIdentity(release, draft) {
+            assert.equal(release.id, releaseId);
+            assert.equal(release.tag_name, tag);
+            assert.equal(release.target_commitish, targetCommit);
+            assert.equal(release.prerelease, false);
+            assert.equal(release.draft, draft, draft ? 'Refusing to change an already-published release.' : 'Release is still a draft.');
+            assert.ok(Array.isArray(release.assets));
+            assert.ok(release.assets.every((asset) => files.some((file) => file.name === asset.name)), 'Unexpected or partial asset in the release.');
+          }
+          function verifyUploaded(release) {
+            assert.equal(release.assets.length, files.length, 'Exactly three complete assets are required.');
+            for (const expected of files) {
+              const matches = release.assets.filter((asset) => asset.name === expected.name);
+              assert.equal(matches.length, 1);
+              const asset = matches[0];
+              assert.equal(asset.state, 'uploaded');
+              assert.equal(asset.size, expected.size);
+              if (asset.digest) {
+                assert.equal(asset.digest, `sha256:${expected.sha256}`, `Wrong remote checksum: ${expected.name}`);
+              } else {
+                // Older API responses may omit digest. Verify the downloaded bytes instead.
+                gh('release', 'download', tag, '--repo', repository, '--pattern', expected.name, '--dir', 'uploaded-readback', '--clobber');
+                verifyFile('uploaded-readback', expected);
+              }
+            }
+          }
+          for (const expected of files) verifyFile('verified', expected);
+          verifyIdentity(readRelease(), true);
+          gh('release', 'upload', tag, '--repo', repository, '--clobber', ...files.map((file) => path.join('verified', file.name)));
+          const completeDraft = readRelease();
+          verifyIdentity(completeDraft, true);
+          verifyUploaded(completeDraft);
+          // No release is created here. Only the verified, fixed draft can be published.
+          gh('release', 'edit', tag, '--repo', repository, '--draft=false', '--prerelease=false', '--latest');
+          const published = readRelease();
+          verifyIdentity(published, false);
+          verifyUploaded(published);
+          console.log(`Published verified release: ${published.html_url}`);
+          NODE
