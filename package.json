@@ -58,7 +58,7 @@
         "portable"
       ],
       "icon": "build/icon.ico",
-      "artifactName": "VenusLauncher-Setup-${version}.${ext}"
+      "artifactName": "VenusLauncher-Setup.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -71,7 +71,7 @@
       "uninstallerIcon": "build/icon.ico"
     },
     "portable": {
-      "artifactName": "VenusLauncher-Portable-${version}.${ext}"
+      "artifactName": "VenusLauncher-Portable.${ext}"
     },
     "linux": {
       "target": [

@@ -72,8 +72,8 @@ npm run dist:dir     # solo la carpeta sin empaquetar (dist/win-unpacked)
 
 `npm run dist` genera en `dist/`:
 
-- `VenusLauncher-Setup-<versión>.exe`: instalador (NSIS) que deja elegir la carpeta y crea accesos directos.
-- `VenusLauncher-Portable-<versión>.exe`: versión portable, sin instalar. Guarda sus datos en `VenusData`, al lado del `.exe`.
+- `VenusLauncher-Setup.exe`: instalador (NSIS) que deja elegir la carpeta y crea accesos directos.
+- `VenusLauncher-Portable.exe`: versión portable, sin instalar. Guarda sus datos en `VenusData`, al lado del `.exe`.
 
 ## Scripts de desarrollo
 
@@ -115,7 +115,7 @@ Español (rioplatense, el idioma base), inglés, portugués (Brasil), francés, 
 
 ## Actualizaciones
 
-El launcher instalado se actualiza solo desde las [releases de GitHub](https://github.com/rponfee/Venus-Launcher/releases) (electron-updater, repositorio en `venusUpdates.githubRepository` de `package.json`). Para publicar una versión: subí la versión en `package.json`, compilá con `npm run dist` y creá la release `v<versión>` con el `VenusLauncher-Setup-<versión>.exe`, su `.blockmap` y `latest.yml`. También se puede con `npm run release` o con el workflow `.github/workflows/release.yml` al subir un tag `v*`. La versión portable no se actualiza sola.
+El launcher instalado se actualiza solo desde las [releases de GitHub](https://github.com/rponfee/Venus-Launcher/releases) (electron-updater, repositorio en `venusUpdates.githubRepository` de `package.json`). Para publicar una versión: subí la versión en `package.json`, compilá con `npm run dist` y creá la release `v<versión>` con `VenusLauncher-Setup.exe`, `VenusLauncher-Portable.exe`, `VenusLauncher-Setup.exe.blockmap` y `latest.yml`. Los nombres son fijos a propósito: el link `releases/latest/download/VenusLauncher-Setup.exe` baja siempre la última versión. También se puede con `npm run release` o con el workflow `.github/workflows/release.yml` al subir un tag `v*`. La versión portable no se actualiza sola.
 
 ## Cómo está armado
 

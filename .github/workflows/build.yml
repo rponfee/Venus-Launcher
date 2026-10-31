@@ -54,8 +54,8 @@ jobs:
         with:
           name: VenusLauncher-unsigned
           path: |
-            dist/VenusLauncher-Setup-*.exe
-            dist/VenusLauncher-Portable-*.exe
+            dist/VenusLauncher-Setup*.exe
+            dist/VenusLauncher-Portable*.exe
           if-no-files-found: error
 
       - name: Firmar con SignPath
@@ -77,7 +77,7 @@ jobs:
         if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
         shell: pwsh
         run: |
-          $setup = Get-ChildItem dist-signed -Filter 'VenusLauncher-Setup-*.exe' | Select-Object -First 1
+          $setup = Get-ChildItem dist-signed -Filter 'VenusLauncher-Setup*.exe' | Select-Object -First 1
           node scripts/latest-yml.js $setup.FullName dist-signed/latest.yml
 
       - name: Subir el artefacto firmado
