@@ -1,29 +1,26 @@
 # Página web de Venus Launcher
 
-Esta carpeta es la página lista para subir a cualquier hosting estático: `index.html` y `assets/` (logo y capturas).
+Esta carpeta es la página lista para subir a cualquier hosting estático: `index.html` y `assets/` (logo y capturas del launcher).
 
-## Las descargas
-Los botones bajan los instaladores del bucket público `descargas` de Supabase (migración `supabase/migrations/0015_descargas.sql`):
-- https://dzchklzaxyygbvfpagvx.supabase.co/storage/v1/object/public/descargas/VenusLauncher-Setup-1.0.0.exe
-- https://dzchklzaxyygbvfpagvx.supabase.co/storage/v1/object/public/descargas/VenusLauncher-Portable-1.0.0.exe
+## Qué muestra
 
-**Para que funcionen, subí los dos `.exe` una sola vez:**
-1. En el panel de Supabase, andá a **Storage** y elegí el bucket **descargas**.
-2. Tocá **Upload files** y elegí `VenusLauncher-Setup-1.0.0.exe` y `VenusLauncher-Portable-1.0.0.exe`, que están en `E:\Venus Launcher\dist-final\`.
-3. Si te dice que el archivo es muy grande:
-   - andá a **Storage → Settings**;
-   - subí el **Upload file size limit** a 300 MB;
-   - volvé a intentar.
+- **Hasta el domingo 8 de noviembre de 2026 a las 00:00 (hora de Argentina):** solo la cuenta regresiva, con el logo y el link al Discord.
+- **Desde esa hora:** el sitio completo (funciones, Venus IA, planes, descarga, privacidad y preguntas). Aparece solo, sin subir nada: la página compara la hora del servidor con la fecha. Si alguien la tiene abierta en ese momento, cambia cuando la cuenta llega a cero.
+- **Para ver el sitio completo antes de la fecha:** abrí la página con `#previa` al final, por ejemplo `https://tu-sitio/#previa` o, en tu PC, `index.html#previa`.
+- El contenido viaja dentro de `index.html`: quien abra el código fuente lo puede leer antes de la fecha. La cuenta regresiva es para los visitantes, no un secreto.
 
-Cada descarga pesa unos 113 MB. El plan Pro de Supabase incluye 250 GB de tráfico por mes, alrededor de 2.000 descargas; después se cobra aparte.
+## Lo que se actualiza solo (con la página en un hosting)
 
-## Versiones nuevas
-1. Subí los `.exe` nuevos al bucket.
-2. En `index.html` cambiá:
-   - los 3 links de descarga (llevan el número de versión);
-   - la versión que aparece arriba y en la sección "Descargá Venus Launcher";
-   - el tamaño, en esa misma sección.
+- **Versión y descargas:** lee la última release de `rponfee/Venus-Launcher` en GitHub. Si la release trae `VenusLauncher-Setup-<versión>.exe` y `VenusLauncher-Portable-<versión>.exe`, los botones bajan esos archivos directo y muestran la versión, el tamaño y la fecha; si no, llevan a la página de releases.
+- **Precios en pesos:** los pide al servidor de Venus (`payments_catalog`): salen de la cotización y los impuestos que cargaste en Administración → Pagos, como precio final con el IVA incluido y el precio sin impuestos. Con Mercado Pago apagado muestra "al cambio del día". Los precios en dólares también se toman de ahí.
+- En la vista previa de claude.ai esas consultas están bloqueadas: ahí se ve el texto fijo.
 
-## Publicar la página gratis
-- **Netlify Drop**: entrá a https://app.netlify.com/drop y arrastrá esta carpeta.
-- **Cloudflare Pages** o **GitHub Pages**: subí la carpeta como sitio estático.
+## Cambiar la fecha
+
+En `index.html`, buscá `LANZAMIENTO`: `Date.UTC(2026, 10, 8, 3, 0, 0)` es el 8 de noviembre de 2026 a las 00:00 de Argentina (el mes empieza en 0, así que 10 es noviembre; las 3 UTC son las 0 en Argentina). Cambiá también los textos "Llega el 8 de noviembre" y "Domingo 8 de noviembre de 2026".
+
+## Publicar gratis
+
+- **Netlify Drop:** entrá a https://app.netlify.com/drop y arrastrá esta carpeta.
+- **Cloudflare Pages:** subí la carpeta como sitio estático.
+- Después, poné la dirección en la descripción del repositorio de GitHub y en el Discord.
