@@ -10,6 +10,7 @@
 <meta property="og:description" content="Minecraft con mods, sin complicarte. Gratis y de código abierto.">
 <meta property="og:image" content="assets/venus-256.png">
 <link rel="icon" href="assets/venus-64.png">
+<link rel="apple-touch-icon" href="assets/venus-256.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Pixelify+Sans:wght@500;600;700&display=swap">
@@ -142,6 +143,8 @@ h3 { font-size: 18px; font-weight: 700; color: var(--text); }
 @media (max-width: 820px) { .dl { grid-template-columns: 1fr; } }
 .dlbox { padding: 26px; border: 1px solid var(--border-2); border-radius: 18px; background: linear-gradient(180deg, rgba(35, 25, 18, 0.9), rgba(27, 19, 14, 0.8)); display: flex; flex-direction: column; gap: 16px; }
 .dlbox .cta { gap: 10px; }
+.dlhead { display: flex; gap: 14px; align-items: center; }
+.dlhead img { width: 48px; height: 48px; flex: none; border-radius: 50%; box-shadow: 0 0 18px rgba(242, 154, 46, 0.35); }
 .pasos { counter-reset: paso; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
 .pasos li { display: flex; gap: 14px; color: var(--text-2); }
 .pasos li::before { counter-increment: paso; content: counter(paso); flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font: 700 14px var(--display); color: var(--accent-ink); background: var(--accent-hi); }
@@ -209,11 +212,11 @@ footer a:hover { color: var(--accent-hi); }
         <h1>Minecraft con mods, sin complicarte.</h1>
         <p class="lead">Cualquier versión y loader, el catálogo de Modrinth y CurseForge, servidores locales, juego con amigos sin abrir puertos y un asistente de IA que arregla lo que se rompe. Gratis y de código abierto.</p>
         <div class="cta">
-          <a class="btn primary lg" id="dl-setup" href="https://github.com/rponfee/Venus-Launcher/releases/latest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Descargar para Windows</a>
+          <a class="btn primary lg" id="dl-setup" href="VenusLauncher-Setup-1.0.13.exe" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Descargar para Windows</a>
           <a class="btn lg" href="https://github.com/rponfee/Venus-Launcher" target="_blank" rel="noopener">Ver el código en GitHub</a>
         </div>
         <div class="chips">
-          <span class="chip" id="dl-version" hidden></span>
+          <span class="chip" id="dl-version">Versión 1.0.13</span>
           <span class="chip">Windows 10 y 11 · 64 bits</span>
           <span class="chip">No necesita Java</span>
           <span class="chip">14 idiomas</span>
@@ -315,10 +318,10 @@ footer a:hover { color: var(--accent-hi); }
       <h2>Listo en dos minutos</h2>
       <div class="dl">
         <div class="dlbox">
-          <p class="sub"><b id="dl-name">Venus Launcher para Windows</b><br><span class="muted small" id="dl-meta">Instalador y versión portable, desde las releases de GitHub.</span></p>
+          <div class="dlhead"><img src="assets/venus-64.png" alt="Logo de Venus Launcher" width="48" height="48"><p class="sub"><b id="dl-name">Venus Launcher 1.0.13 para Windows</b><br><span class="muted small" id="dl-meta">Instalador y versión portable, descarga directa desde esta página.</span></p></div>
           <div class="cta">
-            <a class="btn primary" id="dl-setup-2" href="https://github.com/rponfee/Venus-Launcher/releases/latest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Instalador</a>
-            <a class="btn" id="dl-portable" href="https://github.com/rponfee/Venus-Launcher/releases/latest">Versión portable</a>
+            <a class="btn primary" id="dl-setup-2" href="VenusLauncher-Setup-1.0.13.exe" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Instalador</a>
+            <a class="btn" id="dl-portable" href="VenusLauncher-Portable-1.0.13.exe" download>Versión portable</a>
           </div>
           <p class="muted small">El instalador crea accesos directos, se actualiza solo si lo activás y se desinstala desde Windows. La portable no se instala: guarda todo en una carpeta <code>VenusData</code> al lado del <code>.exe</code>.</p>
           <p class="muted small">Requisitos: Windows 10 u 11 de 64 bits e internet para descargar el juego y el contenido. Java no hace falta.</p>
@@ -386,6 +389,9 @@ footer a:hover { color: var(--accent-hi); }
   // 8 de noviembre de 2026 a las 00:00 de Argentina (UTC-3).
   const LANZAMIENTO = Date.UTC(2026, 10, 8, 3, 0, 0);
   const REPO = 'rponfee/Venus-Launcher';
+  const RELEASES = `https://github.com/${REPO}/releases/latest`;
+  // Instalador incluido en esta misma carpeta (ver LEEME.md). Si GitHub tiene una release más nueva, se usa esa.
+  const LOCAL = { version: '1.0.13', setup: 'VenusLauncher-Setup-1.0.13.exe', portable: 'VenusLauncher-Portable-1.0.13.exe' };
   const SUPABASE = 'https://dzchklzaxyygbvfpagvx.supabase.co';
   const CLAVE_PUBLICA = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6Y2hrbHpheHl5Z2J2ZnBhZ3Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNDA2NDYsImV4cCI6MjEwODcxNjY0Nn0.OwCJ2uTTO0IXECEKhwPk3Qha-NRN7PXd_2v6VPzJyzg';
   const $ = (id) => document.getElementById(id);
@@ -446,30 +452,64 @@ footer a:hover { color: var(--accent-hi); }
     cargarPrecios();
   }
 
-  // ---------- Datos en vivo (si el hosting los deja consultar) ----------
+  // ---------- Descargas: el instalador de esta carpeta o, si hay una más nueva, la release de GitHub ----------
   const mb = (bytes) => `${Math.round(bytes / 1048576)} MB`;
-  async function cargarVersion() {
+  const tam = (archivo) => (archivo && archivo.size ? ` (${mb(archivo.size)})` : '');
+  const esHtml = (r) => /text\/html/i.test(r.headers.get('content-type') || '');
+  const esMayor = (a, b) => {
+    const x = a.split('.').map(Number), y = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d > 0; }
+    return false;
+  };
+  async function archivoLocal(nombre) {
+    try {
+      const r = await fetch(nombre, { method: 'HEAD', cache: 'no-store' });
+      // Algunos hostings responden con index.html en vez de un 404: eso no es el instalador.
+      if (!r.ok || esHtml(r)) return null;
+      return { url: nombre, size: Number(r.headers.get('content-length')) || 0 };
+    } catch { return null; }
+  }
+  async function descargaLocal() {
+    const setup = await archivoLocal(LOCAL.setup);
+    if (!setup) return null;
+    return { version: LOCAL.version, setup, portable: await archivoLocal(LOCAL.portable), local: true, fecha: null };
+  }
+  async function descargaGitHub() {
     try {
       const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } });
-      if (!r.ok) return;
+      if (!r.ok) return null;
       const rel = await r.json();
       const assets = Array.isArray(rel.assets) ? rel.assets : [];
-      const setup = assets.find((a) => /^VenusLauncher-Setup-.*\.exe$/.test(a.name));
-      const portable = assets.find((a) => /^VenusLauncher-Portable-.*\.exe$/.test(a.name));
+      const busca = (re) => { const a = assets.find((x) => re.test(x.name)); return a ? { url: a.browser_download_url, size: a.size } : null; };
+      const setup = busca(/^VenusLauncher-Setup-.*\.exe$/);
       const version = String(rel.tag_name || '').replace(/^v/, '');
-      if (setup) { for (const id of ['dl-setup', 'dl-setup-2']) $(id).href = setup.browser_download_url; }
-      if (portable) $('dl-portable').href = portable.browser_download_url;
-      if (version) {
-        $('dl-version').textContent = `Versión ${version}`;
-        $('dl-version').hidden = false;
-        $('dl-name').textContent = `Venus Launcher ${version} para Windows`;
-      }
-      const partes = [];
-      if (setup) partes.push(`Instalador: ${mb(setup.size)}`);
-      if (portable) partes.push(`portable: ${mb(portable.size)}`);
-      if (rel.published_at) partes.push(`publicada el ${new Date(rel.published_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}`);
-      if (partes.length) $('dl-meta').textContent = partes.join(' · ') + '.';
-    } catch { /* se queda el link a la página de releases */ }
+      if (!setup || !/^\d+\.\d+\.\d+$/.test(version)) return null;
+      return { version, setup, portable: busca(/^VenusLauncher-Portable-.*\.exe$/), local: false, fecha: rel.published_at || null };
+    } catch { return null; }
+  }
+  function aplicarDescarga(d) {
+    for (const [id, archivo] of [['dl-setup', d.setup], ['dl-setup-2', d.setup], ['dl-portable', d.portable]]) {
+      const a = $(id);
+      a.href = archivo ? archivo.url : RELEASES;
+      if (archivo && d.local) a.setAttribute('download', ''); else a.removeAttribute('download');
+    }
+    $('dl-version').textContent = `Versión ${d.version}`;
+    $('dl-version').hidden = false;
+    $('dl-name').textContent = `Venus Launcher ${d.version} para Windows`;
+    const partes = [`Instalador${tam(d.setup)}`];
+    if (d.portable) partes.push(`versión portable${tam(d.portable)}`);
+    partes.push(d.local ? 'descarga directa desde esta página' : `desde GitHub${d.fecha ? `, publicada el ${new Date(d.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}`);
+    $('dl-meta').textContent = partes.join(' · ') + '.';
+  }
+  async function cargarVersion() {
+    const [local, github] = await Promise.all([descargaLocal(), descargaGitHub()]);
+    const elegida = github && (!local || esMayor(github.version, local.version)) ? github : local;
+    if (elegida) return aplicarDescarga(elegida);
+    // Ni archivo en esta carpeta ni respuesta de GitHub: a la página de releases.
+    for (const id of ['dl-setup', 'dl-setup-2', 'dl-portable']) { $(id).href = RELEASES; $(id).removeAttribute('download'); }
+    $('dl-version').hidden = true;
+    $('dl-name').textContent = 'Venus Launcher para Windows';
+    $('dl-meta').textContent = 'Instalador y versión portable, desde las releases de GitHub.';
   }
 
   const ars = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);

@@ -27,3 +27,8 @@ docs/prompt-codex-pagos.md
 
 # Archivos de Windows
 desktop.ini
+
+# Instaladores incluidos en la página web (se copian de dist-*; no van al repo)
+web/*.exe
+web/*.blockmap
+web/latest.yml
