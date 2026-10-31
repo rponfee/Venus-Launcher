@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errEmptyQuery: "Escreva o que você quer buscar.",
+  errTooLong: "O pedido é longo demais (máximo de 400 caracteres).",
+  errModrinth: "Não foi possível conectar ao Modrinth: {error}",
+  errCanceled: "Busca cancelada",
+  errInvalid: "O pedido não é válido.",
+  errBadAuthor: "O autor não é válido: os nomes de usuário do Modrinth não têm espaços nem símbolos.",
+  errNothingToInstall: "Não há nada para instalar.",
+  errTooMany: "Você pode instalar até {max} itens por vez.",
+  errNoInstance: "A instância não existe mais.",
+  errNoServer: "O servidor não existe mais.",
+  errVanillaServer: "Servidores vanilla não aceitam mods nem plugins.",
+  errNoWorld: "Os pacotes de dados precisam de um mundo: escolha um.",
+  taskInstallKit: "Instalando o kit em {name}",
+  taskInstallKitServer: "Instalando plugins em {name}",
+  taskItem: "{title} ({index}/{total})",
+  taskPrepare: "Instalando {name}",
+  kitResult: "{ok} de {total} instalados",
+};

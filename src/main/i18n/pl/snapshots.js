@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "Zapisywanie migawki {name}",
+  taskRestore: "Przywracanie {name}",
+  stepScan: "Sprawdzanie plików…",
+  stepSaving: "Zapisywanie {done} z {total}",
+  stepSafety: "Zapisywanie bieżącego stanu na wszelki wypadek…",
+  stepCompare: "Porównywanie z migawką…",
+  stepRestoring: "Przywracanie {done} z {total}",
+  errNoInstance: "Instancja nie istnieje lub została usunięta.",
+  errNotFound: "Ta migawka już nie istnieje.",
+  errRunning: "Zamknij grę, zanim przywrócisz migawkę.",
+  errRunningWorlds: "Zamknij grę, aby uwzględnić światy w migawce: gra właśnie je zapisuje.",
+  errBadWorld: "Nie znaleziono tego świata w instancji.",
+  errTooMany: "Jest zbyt wiele plików do zapisania (ponad {count}).",
+  errNoSpace: "Brak miejsca na dysku, aby zapisać migawkę.",
+  errDamaged: "Plik {file} w migawce jest uszkodzony. Twój poprzedni stan został zapisany w migawce „Przed przywróceniem”.",
+  errMissingObjects: "W magazynie brakuje plików tej migawki: nie można jej przywrócić. Nic nie zostało zmienione.",
+  errLocked: "Nie można użyć {file}: inny program ma go otwartego. Zamknij go i spróbuj ponownie.",
+};

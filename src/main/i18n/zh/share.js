@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errModrinth: "无法查询 Modrinth 来识别模组：{error}",
+  errBadManifest: "共享的整合包已损坏或无效。",
+  errNewerFormat: "这个整合包是用更新版本的 Venus Launcher 分享的。请更新启动器后再使用。",
+  errTooLarge: "整合包太大，无法分享（配置文件太多）。请关闭“包含配置”，或从 config/ 中移除大文件。",
+  errGameRunning: "请先关闭游戏，再同步这个实例。",
+  errBusyLaunch: "这个实例的共享整合包正在更新。请等待完成后再开始游戏。",
+  taskApply: "正在同步 {name}",
+  taskCreate: "正在创建 {name}",
+  stepCompare: "正在与共享整合包比较...",
+  stepDownload_other: "正在下载 {count} 个文件...",
+  progressLabel: "模组",
+  stepApply: "正在应用更改...",
+  stepDone: "完成",
+  warnUnavailable: "{name} 已无法下载：请手动添加。",
+  warnRemove: "无法移除 {name}：{error}",
+  warnToggle: "无法启用或禁用 {name}：{error}",
+  warnConfig: "无法写入 {name}：{error}",
+  warnPrepare: "模组已准备好，但暂时无法安装游戏（{error}）。开始游戏时会重试。",
+  errBadPath: "共享的整合包包含不被允许的文件路径。",
+};

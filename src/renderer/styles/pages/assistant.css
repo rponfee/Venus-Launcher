@@ -1,0 +1,69 @@
+/* ============================================================
+   Pagina del asistente de IA (#/assistant). Prefijo: .as-
+   El chat y el panel de transparencia estan en styles/features/assistant.css
+   ============================================================ */
+.page.page-assistant { display: flex; flex-direction: column; overflow: hidden; padding-bottom: var(--sp-6); }
+.page-assistant .page-head { margin-bottom: var(--sp-5); flex-shrink: 0; }
+
+.as-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: clamp(232px, 27%, 288px) minmax(0, 1fr); gap: var(--sp-4); }
+
+/* ---------- Columna lateral ---------- */
+/* Si el plan desplegado no entra (ventana baja), la columna se desplaza en lugar de cortar contenido */
+.as-side { display: flex; flex-direction: column; gap: var(--sp-4); min-height: 0; min-width: 0; overflow-y: auto; overscroll-behavior: contain; }
+.as-side .card-title { margin: 0; }
+.as-plan { padding: var(--sp-4); flex-shrink: 0; }
+/* Tarjeta de Claude y ChatGPT (features/mcp.js): resaltada, va primera (Venus IA no esta disponible) */
+.as-mcp-host { flex-shrink: 0; }
+.as-mcp-host > .mcp-assist { padding: var(--sp-4); }
+.as-mcp-host:has(.mcp-assist.highlight) { order: -1; }
+.as-plan-body { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-3); }
+.as-plan-body > .btn { align-self: flex-start; }
+.as-plan-name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.as-plan-state .pill svg { color: var(--muted); }
+.as-plan-text { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--muted); text-wrap: pretty; }
+.as-plan-actions { gap: var(--sp-2); }
+
+/* ---------- Conversaciones ---------- */
+.as-convs { flex: 1; min-height: 160px; display: flex; flex-direction: column; padding: var(--sp-4) var(--sp-2) var(--sp-2); }
+.as-convs > .card-title { padding: 0 var(--sp-2); margin-bottom: var(--sp-2); }
+.as-conv-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 2px; }
+.as-conv-list .skeleton-row { min-height: 48px; padding: var(--sp-2); }
+.as-conv-list .skeleton-icon { width: 28px; height: 28px; border-radius: var(--radius-s); }
+.as-conv-empty .empty { padding: var(--sp-6) var(--sp-2) var(--sp-4); }
+.as-conv-empty .empty-text { font-size: var(--fs-sm); }
+.as-conv-error { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-2); }
+.as-conv-error-text { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--fs-sm); line-height: 1.45; color: var(--bad-text); }
+.as-conv-error-text svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+.as-conv {
+  display: flex; align-items: center; gap: var(--sp-1); padding-right: var(--sp-1); min-width: 0;
+  border-radius: var(--radius); border: 1px solid transparent;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.as-conv:hover { background: var(--hover-bg); border-color: var(--border); }
+.as-conv.active { background: var(--accent-wash); border-color: var(--accent-line); }
+.as-conv-open {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: var(--sp-2);
+  border: 0; border-radius: var(--radius); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.as-conv-open:focus-visible { outline-offset: -2px; }
+.as-conv-ic { width: 28px; height: 28px; border-radius: var(--radius-s); display: grid; place-items: center; flex-shrink: 0; background: var(--surface-3); color: var(--muted); }
+.as-conv-ic svg { width: 14px; height: 14px; }
+.as-conv-ic .spinner { width: 14px; height: 14px; }
+.as-conv.active .as-conv-ic { color: var(--accent-hi); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.as-conv-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.as-conv-title { font-size: var(--fs-sm); font-weight: 600; line-height: 1.35; color: var(--text); }
+.as-conv-sub { font-size: var(--fs-xs); line-height: 1.4; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.as-conv.running .as-conv-sub { color: var(--accent-hi); }
+.as-conv-del { width: 28px; height: 28px; opacity: 0; transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+.as-conv:hover .as-conv-del, .as-conv.active .as-conv-del, .as-conv:focus-within .as-conv-del { opacity: 1; }
+
+/* ---------- Chat ---------- */
+.as-main { padding: 0; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; container: asmain / inline-size; }
+.as-main-head { display: flex; align-items: center; gap: var(--sp-3); min-height: 52px; padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-5); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.as-main-head > svg { width: 18px; height: 18px; color: var(--accent-hi); flex-shrink: 0; }
+.as-main-title { flex: 1; font-size: 15px; font-weight: 600; color: var(--cream); }
+.as-main-what { flex-shrink: 0; }
+@container asmain (max-width: 520px) {
+  .as-main-what { width: var(--control-h-sm); padding: 0; }
+  .as-main-what-label { display: none; }
+}

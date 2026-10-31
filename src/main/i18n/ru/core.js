@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "Путь не разрешён",
+  errUrlNotAllowed: "URL не разрешён",
+  errBadPath: "Недопустимый путь",
+  errBadKey: "Недопустимый ключ",
+  selectFiles: "Выбрать файлы",
+  selectFolder: "Выбрать папку",
+  gpuUnknown: "Неизвестно",
+  errCloseGameToDelete: "Закройте игру, прежде чем удалять экземпляр",
+  taskAddOptifine: "Добавление OptiFine в {name}",
+  taskInstallInto: "Установка в {name}",
+  taskModpack: "Установка модпака",
+  errNoModpack: "Модпак не указан",
+  errAlreadyRunning: "Этот экземпляр уже запущен",
+  errLaunchBlocked: "Запуск отменён",
+  logStarting: "Запуск {name} ({version}) на Java {java}",
+  logMemoryMicrosoft: "Память: {min} MB – {max} MB · Аккаунт: {account} (Microsoft)",
+  logMemoryOffline: "Память: {min} MB – {max} MB · Аккаунт: {account} (офлайн)",
+  loginWindowTitle: "Вход через Microsoft",
+};

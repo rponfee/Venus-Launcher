@@ -1,0 +1,36 @@
+/* Tu Claude y tu ChatGPT en el Asistente (features/engines.js): tarjeta de la pagina del Asistente y panel de Ajustes > IA */
+.eng-card { display: flex; flex-direction: column; gap: var(--sp-3); }
+.eng-card .card-title { margin: 0; }
+.eng-muted { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+.eng-apps { display: flex; flex-direction: column; gap: var(--sp-2); }
+.eng-app { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.eng-ic { width: 26px; height: 26px; border-radius: var(--radius-s); display: grid; place-items: center; background: var(--surface-3); color: var(--accent-hi); flex-shrink: 0; }
+.eng-ic svg { width: 14px; height: 14px; }
+.eng-name { flex: 1 1 90px; min-width: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.eng-sub { flex-basis: 100%; margin-left: 34px; font-size: var(--fs-xs); color: var(--muted); }
+.eng-side { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.eng-hint { flex-basis: 100%; display: flex; align-items: flex-start; gap: 6px; margin-left: 34px; font-size: var(--fs-xs); color: var(--muted); }
+.eng-hint svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+.eng-hint code { font-size: var(--fs-xs); }
+.eng-choice { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-sm); }
+.eng-choice-label { font-weight: 600; color: var(--text-2); }
+.eng-choice-hint { flex-basis: 100%; margin: 0; font-size: var(--fs-xs); color: var(--muted); }
+.eng-select { max-width: 260px; }
+.eng-actions { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.eng-last { font-size: var(--fs-xs); color: var(--faint); }
+.eng-gate { margin: 0; font-size: var(--fs-sm); }
+.eng-gate b { display: block; margin-bottom: 2px; }
+.eng-gate .eng-actions { margin-top: var(--sp-2); }
+.eng-privacy { display: flex; align-items: flex-start; gap: 6px; margin: 0; font-size: var(--fs-xs); color: var(--muted); }
+.eng-privacy svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+.cfg-embed-host .eng-card { gap: var(--sp-3); }
+
+/* Selector del motor en el chat (features/assistant.js) y nota "Respondio Claude Code con tu cuenta" */
+.as-engine-select { max-width: 240px; }
+.as-note.as-engine { color: var(--accent-hi); }
+
+/* Selector del motor por defecto (mismo aspecto que los selectores del chat, pero sin depender de su hoja) */
+.eng-select { appearance: auto; font: inherit; font-size: var(--fs-sm); color: var(--text); background: var(--field-bg); border: 1px solid var(--border-2); border-radius: var(--radius-s); padding: 4px 8px; max-width: 260px; min-width: 0; }
+.eng-select:hover { border-color: var(--border-3); }
+.eng-select:focus-visible { outline: var(--focus-ring); outline-offset: 1px; }
+.eng-select option { background: var(--surface); color: var(--text); }

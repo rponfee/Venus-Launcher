@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "허용되지 않는 경로예요",
+  errUrlNotAllowed: "허용되지 않는 URL이에요",
+  errBadPath: "올바르지 않은 경로예요",
+  errBadKey: "올바르지 않은 키예요",
+  selectFiles: "파일 선택",
+  selectFolder: "폴더 선택",
+  gpuUnknown: "알 수 없음",
+  errCloseGameToDelete: "인스턴스를 삭제하기 전에 게임을 종료해 주세요",
+  taskAddOptifine: "{name}에 OptiFine 추가 중",
+  taskInstallInto: "{name}에 설치 중",
+  taskModpack: "모드팩 설치 중",
+  errNoModpack: "모드팩이 지정되지 않았어요",
+  errAlreadyRunning: "이 인스턴스는 이미 실행 중이에요",
+  errLaunchBlocked: "실행이 취소되었어요",
+  logStarting: "{name} ({version}) 시작 중 (Java {java})",
+  logMemoryMicrosoft: "메모리: {min} MB - {max} MB · 계정: {account} (Microsoft)",
+  logMemoryOffline: "메모리: {min} MB - {max} MB · 계정: {account} (오프라인)",
+  loginWindowTitle: "Microsoft로 로그인",
+};

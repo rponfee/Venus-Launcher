@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "_comment": "Lista blanca de argumentos de JVM que puede aplicar el asistente (set_jvm_args). Nunca se acepta texto libre. group 'gc' = recolector de basura: como maximo uno a la vez; se aplica con el preset de la instancia (java.preset) que ya entiende core/launch.js. 'args' se suman a los argumentos de la instancia. minJava = version minima de Java.",
+  "flags": [
+    {
+      "id": "gc_g1",
+      "group": "gc",
+      "preset": "g1",
+      "minJava": 8,
+      "label": { "es": "G1 ajustado (recomendado por Mojang)", "en": "Tuned G1 (Mojang's recommendation)" },
+      "description": "G1 garbage collector with Mojang's tuning (short pauses). Safe default for most instances."
+    },
+    {
+      "id": "gc_aikar",
+      "group": "gc",
+      "preset": "aikar",
+      "minJava": 8,
+      "label": { "es": "Flags de Aikar (G1 para modpacks grandes)", "en": "Aikar's flags (G1 for big modpacks)" },
+      "description": "Aikar's well-known G1 tuning set. Good for big modpacks with 6 GB or more of RAM."
+    },
+    {
+      "id": "gc_zgc_generational",
+      "group": "gc",
+      "preset": "zgc",
+      "minJava": 21,
+      "label": { "es": "ZGC generacional (pausas mínimas)", "en": "Generational ZGC (minimal pauses)" },
+      "description": "Generational ZGC (Java 21+). Very low pauses; best with 8+ CPU threads and 6 GB or more of RAM. Worse than G1 on weak PCs."
+    },
+    {
+      "id": "disable_explicit_gc",
+      "args": ["-XX:+DisableExplicitGC"],
+      "minJava": 8,
+      "label": { "es": "Ignorar System.gc() de los mods", "en": "Ignore System.gc() calls from mods" },
+      "description": "Ignores explicit System.gc() calls that some mods make, avoiding stutters."
+    },
+    {
+      "id": "always_pretouch",
+      "args": ["-XX:+AlwaysPreTouch"],
+      "minJava": 8,
+      "label": { "es": "Reservar toda la RAM al iniciar", "en": "Pre-touch all memory at startup" },
+      "description": "Commits all the heap at startup: slower launch, fewer hiccups later. Only when the PC has plenty of free RAM."
+    },
+    {
+      "id": "string_dedup",
+      "args": ["-XX:+UseStringDeduplication"],
+      "minJava": 8,
+      "label": { "es": "Deduplicar textos en memoria", "en": "String deduplication" },
+      "description": "Deduplicates identical strings to save memory in big modpacks."
+    },
+    {
+      "id": "parallel_ref_proc",
+      "args": ["-XX:+ParallelRefProcEnabled"],
+      "minJava": 8,
+      "label": { "es": "Procesar referencias en paralelo", "en": "Parallel reference processing" },
+      "description": "Processes references with several threads during garbage collection."
+    },
+    {
+      "id": "compact_object_headers",
+      "args": ["-XX:+UseCompactObjectHeaders"],
+      "minJava": 25,
+      "label": { "es": "Cabeceras de objetos compactas (Java 25+)", "en": "Compact object headers (Java 25+)" },
+      "description": "Smaller object headers (Java 25+): less memory use and better cache usage."
+    }
+  ]
+}

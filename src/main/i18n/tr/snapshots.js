@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "{name} için anlık görüntü kaydediliyor",
+  taskRestore: "{name} geri yükleniyor",
+  stepScan: "Dosyalar kontrol ediliyor…",
+  stepSaving: "Kaydediliyor: {done}/{total}",
+  stepSafety: "Her ihtimale karşı mevcut durum kaydediliyor…",
+  stepCompare: "Anlık görüntüyle karşılaştırılıyor…",
+  stepRestoring: "Geri yükleniyor: {done}/{total}",
+  errNoInstance: "Örnek yok ya da silinmiş.",
+  errNotFound: "Bu anlık görüntü artık yok.",
+  errRunning: "Bir anlık görüntüyü geri yüklemeden önce oyunu kapat.",
+  errRunningWorlds: "Dünyaları anlık görüntüye dahil etmek için oyunu kapat: oyun onlara yazıyor.",
+  errBadWorld: "Bu dünya örnekte bulunamadı.",
+  errTooMany: "Kaydedilecek çok fazla dosya var ({count} dosyadan fazla).",
+  errNoSpace: "Anlık görüntüyü kaydetmek için diskte yeterli alan yok.",
+  errDamaged: "Anlık görüntüdeki {file} dosyası hasarlı. Önceki durumun “Geri yüklemeden önce” anlık görüntüsüne kaydedildi.",
+  errMissingObjects: "Bu anlık görüntünün bazı dosyaları depoda eksik: geri yüklenemez. Hiçbir şey değiştirilmedi.",
+  errLocked: "{file} kullanılamadı: başka bir program bu dosyayı açık tutuyor. Programı kapat ve tekrar dene.",
+};

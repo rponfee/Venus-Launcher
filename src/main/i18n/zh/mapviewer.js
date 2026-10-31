@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "找不到该实例。",
+  errWorld: "找不到该世界。可能已被删除或移动。",
+  errDimension: "该世界中没有这个维度。",
+  errRegion: "区域坐标无效。",
+  errRender: "无法绘制区域 {x}, {z}：{error}",
+  errWorker: "地图绘制程序意外关闭了（代码 {code}）。",
+  errWorkerClosed: "地图绘制程序已关闭。",
+  errImage: "地图图片无效。",
+  errSave: "无法保存图片：{error}",
+  errReveal: "这张图片不是在本次会话中导出的。",
+  taskTitle: "正在绘制 {world} 的地图（{dimension}）",
+  taskProgress: "区域 {done}/{total}",
+  canceled: "已被用户取消",
+  dim_overworld: "主世界",
+  dim_nether: "下界",
+  dim_end: "末地",
+  saveTitle: "将地图保存为图片",
+  filterPng: "PNG 图片",
+  fileName: "地图",
+};

@@ -1,0 +1,97 @@
+/* ============================================================
+   Dialogo de instalacion (features/install.js) - prefijo ix-
+   Marcas: verde de Modrinth (--modrinth, #7df0ac) y naranja de CurseForge (#f16436); el resto con tokens.
+   ============================================================ */
+.ix-modal {
+  --ix-brand: var(--modrinth);
+  --ix-brand-text: #7df0ac;
+  --ix-brand-line: color-mix(in srgb, var(--ix-brand) 50%, transparent);
+  --ix-brand-wash: color-mix(in srgb, var(--ix-brand) 8%, transparent);
+}
+.ix-modal.ix-cf { --ix-brand: #f16436; --ix-brand-text: color-mix(in srgb, #f16436 55%, var(--text)); }
+.ix-modal .modal-body { padding-top: var(--sp-1); }
+.ix { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
+
+/* Cabecera del proyecto */
+.ix-head { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; padding: var(--sp-3); border-radius: var(--radius); border: 1px solid var(--border); background: var(--well-bg); }
+.ix-picon { display: block; width: 48px; height: 48px; border-radius: var(--radius); object-fit: cover; background: var(--surface-3); flex-shrink: 0; }
+.ix-picon.mx-icon-ph { display: grid; place-items: center; color: var(--muted); }
+.ix-picon.mx-icon-ph svg { width: 22px; height: 22px; }
+.ix-hmain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ix-htitle { font-weight: 700; font-size: 15px; line-height: 1.3; }
+.ix-hsub { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2); min-width: 0; }
+.ix-hdl { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+.ix-hdl svg { width: 14px; height: 14px; }
+.ix-hdesc { min-width: 0; font-size: var(--fs-xs); color: var(--muted); }
+
+/* Secciones */
+.ix-section { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.ix-label { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
+/* Destinos (grupo de radios) */
+.ix-targets { display: flex; flex-direction: column; gap: 6px; max-height: 248px; overflow-y: auto; padding: 4px; margin: -4px; }
+.ix-targets.more { -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent); mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent); }
+.ix-target {
+  display: flex; align-items: center; gap: var(--sp-3); min-width: 0; min-height: 56px; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--card-bg-flat); cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.ix-target:hover { border-color: var(--border-3); background: var(--hover-bg); }
+.ix-target.active { border-color: var(--ix-brand-line); background: var(--ix-brand-wash); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ix-brand) 22%, transparent); }
+.ix-target.blocked .ix-tmain, .ix-target.blocked .ix-ticon { opacity: 0.6; }
+.ix-radio { position: relative; width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; border: 2px solid var(--border-3); transition: border-color var(--dur-fast) var(--ease-out); }
+.ix-radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--ix-brand); transform: scale(0); transition: transform var(--dur) var(--ease-out); }
+.ix-target.active .ix-radio { border-color: var(--ix-brand); }
+.ix-target.active .ix-radio::after { transform: scale(1); }
+.inst-icon.ix-ticon, .ix-ticon { width: 36px; height: 36px; border-radius: 10px; font-size: 15px; flex-shrink: 0; }
+.ix-ticon.srv, .ix-ticon.new { display: grid; place-items: center; background: var(--surface-3); color: var(--accent-hi); }
+.ix-ticon.new { border: 1px dashed var(--border-3); background: transparent; }
+.ix-ticon svg { width: 18px; height: 18px; }
+.ix-tmain { flex: 1; min-width: 0; }
+.ix-tname { font-weight: 600; }
+.ix-tsub { font-size: var(--fs-xs); color: var(--muted); }
+.ix-target .pill { flex-shrink: 0; }
+.ix-target .pill svg { width: 14px; height: 14px; }
+.ix-empty { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-4); border-radius: var(--radius); border: 1px dashed var(--border-2); background: var(--well-bg); }
+.ix-empty-text { font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2); max-width: 60ch; }
+.ix-hint { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--fs-xs); line-height: 1.5; color: var(--muted); }
+.ix-hint svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--info); }
+
+/* Version o archivo */
+.ix-vrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); }
+.ix-vrow .select { flex: 1 1 320px; width: auto; min-width: 0; max-width: none; }
+.ix-check { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; }
+.ix-check-text { cursor: pointer; }
+.ix-vinfo { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); min-width: 0; }
+.ix-vmeta { display: inline-flex; align-items: center; gap: var(--sp-1); min-width: 0; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.ix-vmeta svg { width: 14px; height: 14px; flex-shrink: 0; }
+.ix-deps { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-s); border: 1px solid var(--border); background: var(--well-bg); font-size: var(--fs-sm); }
+.ix-deps svg { width: 16px; height: 16px; color: var(--accent-hi); flex-shrink: 0; }
+.ix-showall { align-self: flex-start; }
+.ix-loading-line { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
+.ix-loading-line .spinner { width: 16px; height: 16px; }
+
+/* Instancia nueva */
+.ix-grid3 { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-3); }
+.ix-grid3 .select { width: 100%; max-width: none; }
+.ix-static { height: var(--control-h); display: flex; align-items: center; padding: 0 var(--sp-3); border-radius: 10px; border: 1px dashed var(--border-2); color: var(--text-2); }
+
+/* Pie */
+.ix-foot { display: flex; align-items: center; gap: var(--sp-2); width: 100%; min-width: 0; }
+.ix-foot .btn.modrinth, .ix-foot .btn.primary { min-width: 0; max-width: 380px; }
+.ix-cfbadge { background: color-mix(in srgb, #f16436 12%, transparent); color: color-mix(in srgb, #f16436 55%, var(--text)); border-color: color-mix(in srgb, #f16436 40%, transparent); }
+.ix-error { align-items: center; }
+.ix-error .btn { flex-shrink: 0; }
+.ix-error-text { overflow-wrap: anywhere; }
+.ix-manual { max-height: 340px; overflow-y: auto; }
+
+/* Esqueleto mientras carga */
+.ix-skel .ix-head, .ix-skel .ix-target { pointer-events: none; }
+.ix-sk-lines { display: flex; flex-direction: column; gap: var(--sp-2); }
+.ix-sk-lines .skeleton-line { height: 10px; }
+.ix-sk-label { width: 120px; height: 10px; }
+.ix-sk-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
+.ix-sk-pill { width: 84px; height: 24px; border-radius: var(--radius-full); flex-shrink: 0; }
+.ix-sk-select { display: block; width: 100%; height: var(--control-h); border-radius: 10px; }
+
+@media (max-width: 720px) { .ix-grid3 { grid-template-columns: minmax(0, 1fr); } }

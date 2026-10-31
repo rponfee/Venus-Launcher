@@ -1,0 +1,89 @@
+# Compila Venus Launcher desde el código fuente en un runner de GitHub, sube los ejecutables como artefacto y,
+# cuando SignPath está configurado, los manda a firmar. Corre al subir un tag v* (por ejemplo v1.0.13) o a mano
+# desde la pestaña Actions.
+#
+# Para activar la firma (después de que SignPath Foundation apruebe el proyecto), cargá en Settings > Secrets and
+# variables > Actions del repositorio:
+#   - secreto  SIGNPATH_API_TOKEN            token de un usuario de SignPath con permiso de "submitter"
+#   - variable SIGNPATH_ORGANIZATION_ID      id de la organización en SignPath
+#   - variable SIGNPATH_PROJECT_SLUG         slug del proyecto (por ejemplo venus-launcher)
+#   - variable SIGNPATH_SIGNING_POLICY_SLUG  slug de la política de firma (por ejemplo release-signing)
+# Sin esas variables el workflow compila y sube el artefacto sin firmar.
+# Docs: https://docs.signpath.io/trusted-build-systems/github
+name: Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  build:
+    # SignPath solo firma lo que se compiló en runners alojados por GitHub.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Chequeos
+        run: |
+          node scripts/check.js
+          node scripts/contracts-check.js
+          node --test supabase/functions/payments/tests/payments.test.ts src/main/modules/billing/test/client.test.js src/main/modules/support/test/client.test.js
+
+      - name: Compilar instalador y versión portable
+        run: npx electron-builder --win --x64 --publish never
+
+      # Los dos .exe van sueltos en la raíz del zip del artefacto (la configuración de artefacto de SignPath
+      # tiene que tener <zip-file> como raíz).
+      - name: Subir el artefacto sin firmar
+        id: upload-unsigned
+        uses: actions/upload-artifact@v7
+        with:
+          name: VenusLauncher-unsigned
+          path: |
+            dist/VenusLauncher-Setup-*.exe
+            dist/VenusLauncher-Portable-*.exe
+          if-no-files-found: error
+
+      - name: Firmar con SignPath
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          # Cada firma necesita la aprobación manual de un Approver.
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: dist-signed
+
+      # Firmar cambia el instalador: latest.yml (actualización automática) se rearma con el archivo firmado.
+      - name: latest.yml del instalador firmado
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist-signed -Filter 'VenusLauncher-Setup-*.exe' | Select-Object -First 1
+          node scripts/latest-yml.js $setup.FullName dist-signed/latest.yml
+
+      - name: Subir el artefacto firmado
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: VenusLauncher-signed
+          path: dist-signed/
+          if-no-files-found: error

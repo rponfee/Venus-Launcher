@@ -1,0 +1,129 @@
+/* Claude y ChatGPT (MCP): panel de Ajustes, confirmaciones y aviso "Deshacer" (features/mcp.js). Prefijo .mcp- */
+
+.mcp-panel { display: flex; flex-direction: column; gap: var(--sp-4); }
+
+/* Cabecera */
+.mcp-head { display: flex; align-items: flex-start; gap: var(--sp-4); }
+.mcp-logo { width: 44px; height: 44px; border-radius: var(--radius); display: grid; place-items: center; flex-shrink: 0; background: var(--accent-wash); border: 1px solid var(--accent-line); color: var(--accent-hi); }
+.mcp-logo svg { width: 22px; height: 22px; }
+.mcp-head-text { flex: 1; min-width: 0; }
+.mcp-head-text .card-title { margin: 0; }
+.mcp-sub { margin: var(--sp-1) 0 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; max-width: 68ch; }
+.mcp-switch { display: flex; align-items: center; padding-top: 2px; flex-shrink: 0; }
+
+.mcp-h3 { display: flex; align-items: center; gap: var(--sp-2); margin: var(--sp-1) 0 0; font-size: 15px; font-weight: 600; color: var(--text); }
+.mcp-h3 svg { width: 18px; height: 18px; color: var(--accent-hi); }
+.mcp-muted { margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
+.mcp-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.mcp-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.mcp-notice .mcp-actions { margin-top: var(--sp-3); }
+.mcp-notice b { display: block; margin-bottom: 2px; }
+
+/* Plan */
+.mcp-plan-ok { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+
+/* Servidor local y URLs */
+.mcp-server { display: flex; flex-direction: column; gap: var(--sp-3); }
+.mcp-server-row { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.mcp-url-row { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.mcp-url {
+  flex: 1 1 260px; min-width: 0; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-s);
+  background: var(--field-bg); border: 1px solid var(--border); color: var(--text); font-size: var(--fs-sm); line-height: 1.45;
+}
+
+/* Clientes */
+.mcp-clients { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--sp-3); }
+.mcp-client { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-4); }
+.mcp-client.mcp-remote { grid-column: 1 / -1; }
+.mcp-client-head { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.mcp-client-icon { width: 34px; height: 34px; border-radius: var(--radius-s); display: grid; place-items: center; background: var(--surface-3); color: var(--accent-hi); flex-shrink: 0; }
+.mcp-client-icon svg { width: 18px; height: 18px; }
+.mcp-client-name { font-weight: 600; color: var(--text); flex: 1 1 110px; min-width: 0; }
+.mcp-client-text { margin: 0; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; }
+
+.mcp-manual > summary { display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--muted); font-size: var(--fs-sm); font-weight: 600; list-style: none; border-radius: var(--radius-xs); }
+.mcp-manual > summary::-webkit-details-marker { display: none; }
+.mcp-manual > summary svg { width: 14px; height: 14px; transition: transform var(--dur-fast) var(--ease-out); }
+.mcp-manual[open] > summary svg { transform: rotate(90deg); }
+.mcp-manual > summary:hover { color: var(--text); }
+.mcp-manual[open] { display: flex; flex-direction: column; gap: var(--sp-2); }
+.mcp-snippet {
+  margin: 0; padding: var(--sp-3); border-radius: var(--radius-s); background: var(--field-bg); border: 1px solid var(--border);
+  font-size: var(--fs-xs); line-height: 1.5; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow: auto;
+}
+
+/* Pasos de ChatGPT / claude.ai */
+.mcp-steps { display: flex; flex-direction: column; gap: var(--sp-2); }
+.mcp-step-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: var(--sp-1); color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; max-width: 72ch; }
+.mcp-progress { max-width: 360px; }
+
+/* Conexiones */
+.mcp-connections { display: flex; flex-direction: column; gap: var(--sp-2); }
+.mcp-connections:empty { display: none; }
+.mcp-conn-chips .chip { cursor: default; font-variant-numeric: tabular-nums; }
+.mcp-conn-chips .chip:active { transform: none; }
+
+/* Seguridad y avanzado */
+.mcp-security { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; }
+.mcp-security .mcp-muted { flex: 1 1 240px; }
+.mcp-advanced > summary { display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--text-2); font-weight: 600; font-size: var(--fs-sm); list-style: none; border-radius: var(--radius-xs); }
+.mcp-advanced > summary::-webkit-details-marker { display: none; }
+.mcp-advanced > summary svg { width: 16px; height: 16px; transition: transform var(--dur-fast) var(--ease-out); }
+.mcp-advanced[open] > summary svg { transform: rotate(90deg); }
+.mcp-advanced > summary:hover { color: var(--text); }
+.mcp-advanced-body { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-3); }
+.mcp-port-row { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.mcp-port-input { width: 130px; }
+
+/* Actividad */
+.mcp-activity { display: flex; flex-direction: column; gap: var(--sp-3); border-top: 1px solid var(--border); padding-top: var(--sp-4); }
+.mcp-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); }
+.mcp-section-head > div { min-width: 0; }
+.mcp-act-list { max-height: 520px; overflow: auto; }
+.mcp-act { align-items: flex-start; }
+.mcp-act .li-title { display: flex; align-items: center; gap: var(--sp-2); }
+.mcp-act .li-title .badge { flex-shrink: 0; }
+.mcp-act-icon.danger svg { color: var(--bad-text); }
+.mcp-act-detail { margin-top: 2px; font-size: var(--fs-sm); line-height: 1.45; color: var(--text-2); overflow-wrap: anywhere; }
+.mcp-act-detail.bad { color: var(--bad-text); }
+.mcp-act-side { display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-2); flex-shrink: 0; }
+.mcp-act-undone .li-title { opacity: 0.7; }
+.mcp-more { align-self: center; }
+
+/* Confirmacion */
+.mcp-approval { display: flex; flex-direction: column; gap: var(--sp-3); }
+.mcp-approval-from { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); font-weight: 600; color: var(--accent-hi); }
+.mcp-approval-from svg { width: 16px; height: 16px; }
+.mcp-approval-text { margin: 0; color: var(--text-2); line-height: 1.55; }
+.mcp-approval-items { margin: 0; padding: var(--sp-2) var(--sp-3) var(--sp-2) 28px; border-radius: var(--radius-s); background: var(--well-bg); border: 1px solid var(--border); font-family: var(--mono); font-size: var(--fs-sm); color: var(--text); max-height: 160px; overflow: auto; }
+.mcp-approval-bar { height: 4px; }
+.mcp-approval-bar > i { width: 100%; transition: width 0.5s linear; }
+.mcp-approval-countdown { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Aviso "Deshacer" (va en #toasts, con el estilo de los toasts) */
+.mcp-toast { align-items: flex-start; }
+.mcp-toast-body { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.mcp-toast-undo { margin-top: var(--sp-2); }
+.mcp-toast .mcp-toast-undo svg { width: 16px; height: 16px; margin-top: 0; color: currentColor; }
+
+/* Tarjeta del Asistente: usar el asistente desde Claude o ChatGPT (assistantCard) */
+.mcp-assist { display: flex; flex-direction: column; gap: var(--sp-3); }
+.mcp-assist.highlight { border-color: var(--accent-line); background-image: linear-gradient(180deg, var(--accent-wash), transparent 70%); }
+.mcp-assist .card-title { margin: 0; }
+.mcp-assist-down { margin: 0; font-size: var(--fs-sm); }
+.mcp-assist-offer { margin: 0; font-size: var(--fs-sm); }
+.mcp-assist-offer b { display: block; margin-bottom: 2px; }
+.mcp-assist-offer .mcp-actions { margin-top: var(--sp-2); }
+.mcp-assist-apps { display: flex; flex-direction: column; gap: var(--sp-2); }
+.mcp-assist-app { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.mcp-assist-ic { width: 26px; height: 26px; border-radius: var(--radius-s); display: grid; place-items: center; background: var(--surface-3); color: var(--accent-hi); flex-shrink: 0; }
+.mcp-assist-ic svg { width: 14px; height: 14px; }
+.mcp-assist-name { flex: 1 1 90px; min-width: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.mcp-assist-side { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.mcp-assist-last { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--fs-xs); }
+.mcp-assist-last svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+.mcp-assist-more { align-self: flex-start; }
+
+body.reduce-motion .mcp-approval-bar > i,
+body.reduce-motion .mcp-manual > summary svg,
+body.reduce-motion .mcp-advanced > summary svg { transition: none; }

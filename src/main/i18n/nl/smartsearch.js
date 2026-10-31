@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errEmptyQuery: "Typ wat je wilt zoeken.",
+  errTooLong: "Het verzoek is te lang (maximaal 400 tekens).",
+  errModrinth: "Kan geen verbinding maken met Modrinth: {error}",
+  errCanceled: "Zoekopdracht geannuleerd",
+  errInvalid: "Het verzoek is ongeldig.",
+  errBadAuthor: "De auteur is ongeldig: Modrinth-gebruikersnamen bevatten geen spaties of symbolen.",
+  errNothingToInstall: "Er is niets om te installeren.",
+  errTooMany: "Je kunt maximaal {max} items tegelijk installeren.",
+  errNoInstance: "De instantie bestaat niet meer.",
+  errNoServer: "De server bestaat niet meer.",
+  errVanillaServer: "Vanilla-servers ondersteunen geen mods of plugins.",
+  errNoWorld: "Datapakketten hebben een wereld nodig: kies er een.",
+  taskInstallKit: "De kit installeren in {name}",
+  taskInstallKitServer: "Plugins installeren op {name}",
+  taskItem: "{title} ({index}/{total})",
+  taskPrepare: "{name} installeren",
+  kitResult: "{ok} van {total} geïnstalleerd",
+};

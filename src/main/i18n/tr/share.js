@@ -1,0 +1,23 @@
+'use strict';
+module.exports = {
+  errModrinth: "Modlar tanımlanırken Modrinth'e erişilemedi: {error}",
+  errBadManifest: "Paylaşılan mod paketi hasarlı ya da geçersiz.",
+  errNewerFormat: "Bu mod paketi Venus Launcher'ın daha yeni bir sürümüyle paylaşılmış. Kullanmak için başlatıcıyı güncelle.",
+  errTooLarge: "Mod paketi paylaşılamayacak kadar büyük (çok fazla yapılandırma dosyası). “Yapılandırmaları dahil et” seçeneğini kapat ya da config/ içindeki büyük dosyaları kaldır.",
+  errGameRunning: "Bu örneği eşitlemeden önce oyunu kapat.",
+  errBusyLaunch: "Bu örneğin paylaşılan mod paketi güncelleniyor. İşlemin bitmesini bekle, sonra tekrar oyna.",
+  taskApply: "{name} eşitleniyor",
+  taskCreate: "{name} oluşturuluyor",
+  stepCompare: "Paylaşılan mod paketiyle karşılaştırılıyor...",
+  stepDownload_one: "{count} dosya indiriliyor...",
+  stepDownload_other: "{count} dosya indiriliyor...",
+  progressLabel: "Modlar",
+  stepApply: "Değişiklikler uygulanıyor...",
+  stepDone: "Tamamlandı",
+  warnUnavailable: "{name} artık indirilemiyor: elle eklemen gerekiyor.",
+  warnRemove: "{name} kaldırılamadı: {error}",
+  warnToggle: "{name} etkinleştirilemedi ya da devre dışı bırakılamadı: {error}",
+  warnConfig: "{name} yazılamadı: {error}",
+  warnPrepare: "Modlar hazır, ancak oyun henüz yüklenemedi ({error}). Oynadığında yeniden denenecek.",
+  errBadPath: "Paylaşılan mod paketinde izin verilmeyen bir dosya yolu var.",
+};

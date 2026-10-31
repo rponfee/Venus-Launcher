@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errEmptyQuery: "검색할 내용을 입력해 주세요.",
+  errTooLong: "요청이 너무 길어요 (최대 400자).",
+  errModrinth: "Modrinth에 연결하지 못했어요: {error}",
+  errCanceled: "검색이 취소되었어요",
+  errInvalid: "올바르지 않은 요청이에요.",
+  errBadAuthor: "올바르지 않은 제작자예요. Modrinth 사용자 이름에는 공백이나 기호를 쓸 수 없어요.",
+  errNothingToInstall: "설치할 항목이 없어요.",
+  errTooMany: "한 번에 최대 {max}개까지 설치할 수 있어요.",
+  errNoInstance: "해당 인스턴스가 더 이상 없어요.",
+  errNoServer: "해당 서버가 더 이상 없어요.",
+  errVanillaServer: "바닐라 서버는 모드나 플러그인을 지원하지 않아요.",
+  errNoWorld: "데이터 팩을 설치하려면 월드가 필요해요. 월드를 선택해 주세요.",
+  taskInstallKit: "{name}에 키트 설치 중",
+  taskInstallKitServer: "{name}에 플러그인 설치 중",
+  taskItem: "{title} ({index}/{total})",
+  taskPrepare: "{name} 설치 중",
+  kitResult: "{total}개 중 {ok}개 설치 완료",
+};

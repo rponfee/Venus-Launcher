@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errEmptyQuery: "Введите, что хотите найти.",
+  errTooLong: "Запрос слишком длинный (максимум — 400 символов).",
+  errModrinth: "Не удалось подключиться к Modrinth: {error}",
+  errCanceled: "Поиск отменён",
+  errInvalid: "Недопустимый запрос.",
+  errBadAuthor: "Автор указан неверно: имена пользователей Modrinth не содержат пробелов и символов.",
+  errNothingToInstall: "Нечего устанавливать.",
+  errTooMany: "Максимум элементов за один раз: {max}.",
+  errNoInstance: "Экземпляра больше нет.",
+  errNoServer: "Сервера больше нет.",
+  errVanillaServer: "Ванильные серверы не поддерживают моды и плагины.",
+  errNoWorld: "Для наборов данных нужен мир: выберите его.",
+  taskInstallKit: "Установка набора в {name}",
+  taskInstallKitServer: "Установка плагинов в {name}",
+  taskItem: "{title} ({index}/{total})",
+  taskPrepare: "Установка {name}",
+  kitResult: "Установлено: {ok} из {total}",
+};

@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "Salvando um instantâneo de {name}",
+  taskRestore: "Restaurando {name}",
+  stepScan: "Verificando arquivos…",
+  stepSaving: "Salvando {done} de {total}",
+  stepSafety: "Salvando o estado atual por garantia…",
+  stepCompare: "Comparando com o instantâneo…",
+  stepRestoring: "Restaurando {done} de {total}",
+  errNoInstance: "A instância não existe ou foi excluída.",
+  errNotFound: "Esse instantâneo não existe mais.",
+  errRunning: "Feche o jogo antes de restaurar um instantâneo.",
+  errRunningWorlds: "Feche o jogo para incluir mundos no instantâneo: o jogo está gravando neles.",
+  errBadWorld: "Esse mundo não foi encontrado na instância.",
+  errTooMany: "Há arquivos demais para salvar (mais de {count}).",
+  errNoSpace: "Não há espaço no disco para salvar o instantâneo.",
+  errDamaged: "O arquivo {file} do instantâneo está corrompido. O seu estado anterior ficou salvo no instantâneo “Antes de restaurar”.",
+  errMissingObjects: "Faltam arquivos deste instantâneo no armazenamento: não é possível restaurá-lo. Nada foi alterado.",
+  errLocked: "Não foi possível usar {file}: outro programa está com ele aberto. Feche-o e tente de novo.",
+};

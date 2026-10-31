@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "Non abbiamo trovato quell'istanza.",
+  errWorld: "Non abbiamo trovato quel mondo. Potrebbe essere stato eliminato o spostato.",
+  errDimension: "Quella dimensione non esiste in questo mondo.",
+  errRegion: "Le coordinate della regione non sono valide.",
+  errRender: "Impossibile disegnare la regione {x}, {z}: {error}",
+  errWorker: "Il processo che disegna la mappa si è chiuso all'improvviso (codice {code}).",
+  errWorkerClosed: "Il processo che disegna la mappa è già chiuso.",
+  errImage: "L'immagine della mappa non è valida.",
+  errSave: "Impossibile salvare l'immagine: {error}",
+  errReveal: "Quell'immagine non è stata esportata in questa sessione.",
+  taskTitle: "Disegno della mappa di {world} ({dimension})",
+  taskProgress: "Regione {done} di {total}",
+  canceled: "Annullato dall'utente",
+  dim_overworld: "Overworld",
+  dim_nether: "Nether",
+  dim_end: "L'End",
+  saveTitle: "Salva la mappa come immagine",
+  filterPng: "Immagine PNG",
+  fileName: "mappa",
+};

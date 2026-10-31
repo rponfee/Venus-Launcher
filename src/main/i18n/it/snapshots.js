@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "Salvataggio di un'istantanea di {name}",
+  taskRestore: "Ripristino di {name}",
+  stepScan: "Controllo dei file…",
+  stepSaving: "Salvataggio {done} di {total}",
+  stepSafety: "Salvataggio dello stato attuale per sicurezza…",
+  stepCompare: "Confronto con l'istantanea…",
+  stepRestoring: "Ripristino {done} di {total}",
+  errNoInstance: "L'istanza non esiste o è stata eliminata.",
+  errNotFound: "Quell'istantanea non esiste più.",
+  errRunning: "Chiudi il gioco prima di ripristinare un'istantanea.",
+  errRunningWorlds: "Chiudi il gioco per includere i mondi nell'istantanea: il gioco li sta scrivendo.",
+  errBadWorld: "Quel mondo non è stato trovato nell'istanza.",
+  errTooMany: "Ci sono troppi file da salvare (più di {count}).",
+  errNoSpace: "Non c'è spazio sul disco per salvare l'istantanea.",
+  errDamaged: "Il file {file} dell'istantanea è danneggiato. Il tuo stato precedente è stato salvato nell'istantanea «Prima del ripristino».",
+  errMissingObjects: "Mancano dei file di questa istantanea nell'archivio condiviso: impossibile ripristinarla. Non è stato toccato nulla.",
+  errLocked: "Impossibile usare {file}: un altro programma lo ha aperto. Chiudilo e riprova.",
+};

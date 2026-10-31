@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errEmptyQuery: "検索したい内容を入力してください。",
+  errTooLong: "リクエストが長すぎます（最大400文字）。",
+  errModrinth: "Modrinthに接続できませんでした：{error}",
+  errCanceled: "検索をキャンセルしました",
+  errInvalid: "リクエストが無効です。",
+  errBadAuthor: "作者が無効です。Modrinthのユーザー名にスペースや記号は使えません。",
+  errNothingToInstall: "インストールするものがありません。",
+  errTooMany: "一度にインストールできるのは最大{max}個です。",
+  errNoInstance: "インスタンスはもう存在しません。",
+  errNoServer: "サーバーはもう存在しません。",
+  errVanillaServer: "バニラサーバーはModやプラグインに対応していません。",
+  errNoWorld: "データパックにはワールドが必要です。ワールドを選択してください。",
+  taskInstallKit: "{name}にキットをインストール中",
+  taskInstallKitServer: "{name}にプラグインをインストール中",
+  taskItem: "{title}（{index}/{total}）",
+  taskPrepare: "{name}をインストール中",
+  kitResult: "{total}個中{ok}個をインストールしました",
+};

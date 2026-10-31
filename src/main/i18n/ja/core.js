@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "許可されていないパスです",
+  errUrlNotAllowed: "許可されていないURLです",
+  errBadPath: "無効なパスです",
+  errBadKey: "無効なキーです",
+  selectFiles: "ファイルを選択",
+  selectFolder: "フォルダーを選択",
+  gpuUnknown: "不明",
+  errCloseGameToDelete: "インスタンスを削除する前に、ゲームを閉じてください",
+  taskAddOptifine: "{name}にOptiFineを追加中",
+  taskInstallInto: "{name}にインストール中",
+  taskModpack: "Modパックをインストール中",
+  errNoModpack: "Modパックが指定されていません",
+  errAlreadyRunning: "このインスタンスはすでに実行中です",
+  errLaunchBlocked: "起動をキャンセルしました",
+  logStarting: "{name}（{version}）をJava {java}で起動中",
+  logMemoryMicrosoft: "メモリ：{min} MB - {max} MB · アカウント：{account}（Microsoft）",
+  logMemoryOffline: "メモリ：{min} MB - {max} MB · アカウント：{account}（オフライン）",
+  loginWindowTitle: "Microsoftでログイン",
+};

@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "そのインスタンスが見つかりませんでした。",
+  errWorld: "そのワールドが見つかりませんでした。削除または移動された可能性があります。",
+  errDimension: "このワールドには、そのディメンションは存在しません。",
+  errRegion: "リージョンの座標が無効です。",
+  errRender: "リージョン{x}, {z}を描画できませんでした：{error}",
+  errWorker: "マップの描画処理が突然終了しました（コード{code}）。",
+  errWorkerClosed: "マップの描画処理はすでに終了しています。",
+  errImage: "マップの画像が無効です。",
+  errSave: "画像を保存できませんでした：{error}",
+  errReveal: "その画像は、このセッションではエクスポートされていません。",
+  taskTitle: "{world}（{dimension}）のマップを描画中",
+  taskProgress: "リージョン {done}/{total}",
+  canceled: "ユーザーによってキャンセルされました",
+  dim_overworld: "オーバーワールド",
+  dim_nether: "ネザー",
+  dim_end: "ジ・エンド",
+  saveTitle: "マップを画像として保存",
+  filterPng: "PNG画像",
+  fileName: "マップ",
+};

@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "Nie znaleziono tej instancji.",
+  errWorld: "Nie znaleziono tego świata. Mógł zostać usunięty lub przeniesiony.",
+  errDimension: "Ten wymiar nie istnieje w tym świecie.",
+  errRegion: "Współrzędne regionu są nieprawidłowe.",
+  errRender: "Nie udało się narysować regionu {x}, {z}: {error}",
+  errWorker: "Moduł rysujący mapę nagle się zamknął (kod {code}).",
+  errWorkerClosed: "Moduł rysujący mapę jest już zamknięty.",
+  errImage: "Obraz mapy jest nieprawidłowy.",
+  errSave: "Nie udało się zapisać obrazu: {error}",
+  errReveal: "Ten obraz nie został wyeksportowany w tej sesji.",
+  taskTitle: "Rysowanie mapy świata {world} ({dimension})",
+  taskProgress: "Region {done} z {total}",
+  canceled: "Anulowane przez użytkownika",
+  dim_overworld: "Overworld",
+  dim_nether: "Nether",
+  dim_end: "End",
+  saveTitle: "Zapisz mapę jako obraz",
+  filterPng: "Obraz PNG",
+  fileName: "mapa",
+};

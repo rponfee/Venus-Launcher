@@ -1,0 +1,29 @@
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# Compilaciones e instaladores
+dist/
+dist-*/
+dist-final/
+venus/
+*.zip
+
+# Respaldos, videos y material de promoción (solo en la PC)
+backup/
+demo/
+promo-*/
+
+# Capturas de pruebas de la personalización
+build/personalization-qa/
+build/personalization-qa-packaged/
+build/shortcut-qa-*/
+build/installed-icon-check.png
+
+# Notas internas de trabajo
+docs/ESTADO-TRABAJO.md
+docs/prompt-codex-pagos.md
+
+# Archivos de Windows
+desktop.ini

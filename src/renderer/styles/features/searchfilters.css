@@ -1,0 +1,33 @@
+/* ============================================================
+   "Mas filtros": frase exacta, palabras a excluir, autor, descargas minimas, actualizado en los ultimos N dias,
+   solo codigo abierto y entorno. Lo comparten el catalogo de Modrinth / CurseForge y el Buscador inteligente
+   (features/searchfilters.js, prefijo sf-). Solo tokens de main.css.
+   ============================================================ */
+
+.sf-form { min-width: 0; }
+.sf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: var(--sp-4) var(--sp-6); align-items: start; }
+.sf-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sf-label { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.sf-field .input, .sf-field .select { width: 100%; }
+
+/* Numero con valores rapidos al lado (chips) */
+.sf-numrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.sf-numbox { position: relative; flex: 0 0 auto; width: 128px; }
+.sf-numbox:has(.sf-suffix) { width: 148px; }
+.sf-num { font-variant-numeric: tabular-nums; }
+.sf-numbox:has(.sf-suffix) .sf-num { padding-right: 44px; }
+.sf-suffix { position: absolute; right: var(--sp-3); top: 50%; transform: translateY(-50%); font-size: var(--fs-sm); color: var(--muted); pointer-events: none; }
+.sf-presets { gap: var(--sp-1); }
+.sf-presets .chip { padding: 0 var(--sp-2); font-variant-numeric: tabular-nums; }
+
+/* Entorno */
+.sf-seg { align-self: flex-start; }
+.sf-locked { display: inline-flex; align-items: center; align-self: flex-start; gap: var(--sp-2); min-height: var(--control-h-sm); padding: 0 var(--sp-3); border-radius: var(--radius-s); border: 1px dashed var(--border-2); font-size: var(--fs-sm); color: var(--muted); }
+.sf-locked svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* Interruptor "solo codigo abierto": alineado con los controles de los campos de al lado (que llevan rotulo arriba) */
+.sf-switchfield { padding-top: 24px; }
+.sf-switch { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.sf-switch .switch { margin-top: 1px; }
+.sf-switch-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sf-switch-text { font-size: var(--fs-sm); font-weight: 600; color: var(--text); cursor: pointer; }

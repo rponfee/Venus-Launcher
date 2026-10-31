@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errNoCloud: 'The launcher is not connected to its server (Settings > Account and cloud).',
+  errSignIn: 'Sign in with your Venus account (Settings > Account and cloud) to use the admin panel.',
+  errSession: 'Your Venus session expired. Sign in again in Settings > Account and cloud.',
+  errForbidden: 'Your account does not have access to the admin panel.',
+  errUnconfirmed: 'Confirm the email of your Venus account to use the admin panel.',
+  errNotFound: 'It does not exist (or it was already deleted).',
+  errUnavailable: 'The launcher server does not have the admin panel (the "admin" function is not deployed).',
+  errBackendNotReady: 'The launcher server is missing the admin panel migration (0012_admin.sql).',
+  errStripeNotConfigured: 'Stripe is not configured on the server (the STRIPE_SECRET_KEY secret is missing).',
+  errStripe: 'Stripe rejected the request or did not respond. Try again in a while.',
+  errPromoTaken: 'An active promotion code with that text already exists.',
+  errConflict: 'It could not be done: the state changed. Reload and try again.',
+  errRequest: 'The server rejected the request.',
+  errRequestStatus: 'The server rejected the request ({status}).',
+  errServer: 'The admin panel server did not respond correctly. Try again in a while.',
+  errNetwork: 'Could not connect to the launcher server. Check your internet connection.',
+  errAction: 'Invalid admin panel action.',
+};

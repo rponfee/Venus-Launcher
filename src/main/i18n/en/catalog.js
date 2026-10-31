@@ -1,0 +1,35 @@
+'use strict';
+module.exports = {
+  errNoVersion: 'The Minecraft version is missing.',
+  errNoInstance: 'Choose an instance.',
+  errRunning: 'Close {name} before installing packs.',
+  errNoPacks: 'Choose at least one pack.',
+  errModrinth: 'Could not reach Modrinth: {error}',
+
+  taskInstall: 'Installing packs in {name}',
+  taskPartial_one: 'Done, but {count} project could not be installed.',
+  taskPartial_other: 'Done, but {count} projects could not be installed.',
+
+  pack_performance: 'Performance',
+  pack_performance_desc: 'More FPS and less RAM with the most popular optimization mods.',
+  pack_shaders: 'Shaders',
+  pack_shaders_desc: 'Iris (or Oculus on Forge) with Complementary, BSL and the lightweight MakeUp.',
+  pack_minimap: 'Minimap',
+  pack_minimap_desc: 'A minimap with waypoints so you never get lost.',
+  pack_qol: 'Quality of life',
+  pack_qol_desc: 'Recipes, block info, visible hunger and inventory shortcuts.',
+  'pack_pvp-hud': 'PvP client',
+  'pack_pvp-hud_desc': 'Zoom, on-screen keys, CPS, FPS, coordinates and a cleaner F3.',
+  pack_controller: 'Controller',
+  pack_controller_desc: 'Play with an Xbox, PlayStation or Switch controller.',
+  pack_voice: 'Voice chat',
+  pack_voice_desc: 'Simple Voice Chat: talk to nearby players inside the game.',
+  pack_multiplayer: 'Play with friends',
+  pack_multiplayer_desc: 'e4mc: open your world to the internet without touching your router.',
+
+  noteNeedsLoader: 'Needs an instance with Fabric, Quilt, Forge or NeoForge.',
+  noteShadersVanilla: 'To use shaders, create a Fabric instance (or use the Iris preset).',
+  noteUnavailable: 'Not available yet for this Minecraft version and loader.',
+  noteVoiceServer: 'The server must have Simple Voice Chat too.',
+  noteE4mc: 'Open your world to LAN and e4mc gives you an address to share.',
+};

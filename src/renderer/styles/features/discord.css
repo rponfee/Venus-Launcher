@@ -1,0 +1,101 @@
+/* ============================================================
+   Discord Rich Presence (panel de ajustes) · prefijo .dc-
+   Se adapta al ancho de donde lo pongan (container query).
+   ============================================================ */
+
+.dc-panel {
+  container-type: inline-size; display: flex; flex-direction: column; gap: var(--sp-4);
+  /* Colores de marca de Discord (no cambian con el tema) */
+  --dc-blurple: #5865f2;
+  --dc-blurple-hi: #7983f5;
+  --dc-blurple-lo: #4752c4;
+}
+.dc-head { display: flex; align-items: center; gap: 14px; }
+.dc-logo {
+  width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; flex-shrink: 0; color: #fff;
+  background: linear-gradient(160deg, var(--dc-blurple-hi), var(--dc-blurple) 60%, var(--dc-blurple-lo));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--dc-blurple) 35%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.dc-logo svg { width: 22px; height: 22px; }
+.dc-head-text { flex: 1; min-width: 0; }
+.dc-head-text .card-title { margin: 0; }
+.dc-sub { color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; margin-top: 2px; max-width: 72ch; }
+
+.dc-status { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); border-radius: var(--radius); background: var(--well-bg); border: 1px solid var(--border); }
+.dc-avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); border: 2px solid var(--border-2); overflow: hidden; transition: border-color var(--dur) var(--ease-out), color var(--dur) var(--ease-out); }
+.dc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.dc-avatar svg { width: 18px; height: 18px; }
+.dc-avatar.good { border-color: color-mix(in srgb, var(--good) 70%, transparent); color: var(--good); }
+.dc-avatar.warn { border-color: var(--warn-line); color: var(--warn); }
+.dc-avatar.bad { border-color: var(--bad-line); color: var(--bad-text); }
+.dc-status-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.dc-status-text { font-size: var(--fs-sm); line-height: 1.45; color: var(--text-2); overflow-wrap: anywhere; }
+.dc-pill .spinner, .dc-spin { width: 12px; height: 12px; border-width: 2px; }
+.dc-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex-shrink: 0; }
+.dc-dot.good { background: var(--good); box-shadow: 0 0 6px var(--good); }
+.dc-dot.warn { background: var(--warn); animation: dc-blink 1.2s ease-in-out infinite; }
+.dc-dot.bad { background: var(--bad); }
+@keyframes dc-blink { 50% { opacity: 0.35; } }
+.dc-status .btn { flex-shrink: 0; }
+.dc-note { margin-top: -2px; }
+.dc-activity-note:empty { display: none; }
+
+.dc-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+@container (min-width: 700px) { .dc-body { grid-template-columns: minmax(0, 1fr) minmax(250px, 300px); } .dc-side { position: sticky; top: 0; } }
+.dc-col { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
+.dc-panel.dc-disabled .dc-side { opacity: 0.75; }
+
+/* Secciones */
+.dc-section { display: flex; flex-direction: column; }
+.dc-section-title { display: flex; align-items: center; gap: var(--sp-2); font-weight: 700; font-size: var(--fs-md); color: var(--cream); }
+.dc-section-title svg { width: 16px; height: 16px; color: var(--accent-hi); flex-shrink: 0; }
+.dc-section-title .dc-live { margin-left: auto; }
+.dc-section-sub { font-size: var(--fs-sm); color: var(--muted); line-height: 1.45; margin: var(--sp-1) 0 10px; }
+.dc-toggle { padding: 10px 0; }
+.dc-toggle .tr-sub { font-size: var(--fs-xs); }
+
+/* Botones */
+.dc-buttons { display: flex; flex-direction: column; gap: 10px; }
+.dc-btn-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-2); align-items: center; }
+.dc-btn-fields { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: var(--sp-2); }
+@container (max-width: 420px) { .dc-btn-fields { grid-template-columns: minmax(0, 1fr); } }
+.dc-btn-hint { grid-column: 1 / -1; }
+.dc-btn-hint[hidden] { display: none; }
+.dc-add { width: fit-content; }
+
+/* Vista previa (tarjeta estilo perfil de Discord) */
+.dc-preview { display: flex; flex-direction: column; gap: 10px; }
+.dc-live { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--good-text); }
+.dc-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 6px var(--good); animation: dc-blink 1.4s ease-in-out infinite; }
+.dc-pv-card {
+  padding: var(--sp-3); border-radius: var(--radius); box-shadow: var(--shadow-s);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dc-blurple) 10%, var(--surface)), color-mix(in srgb, var(--dc-blurple) 5%, var(--bg-1)));
+  border: 1px solid color-mix(in srgb, var(--dc-blurple) 30%, transparent);
+}
+.dc-pv-head { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dc-pv-body { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.dc-pv-images { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+.dc-pv-large { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: var(--surface-3); }
+.dc-pv-small { position: absolute; right: -5px; bottom: -5px; width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: var(--surface-3); border: 3px solid color-mix(in srgb, var(--dc-blurple) 8%, var(--surface)); }
+.dc-pv-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dc-pv-name { font-weight: 700; font-size: var(--fs-md); color: var(--text); }
+.dc-pv-line { font-size: var(--fs-sm); color: var(--text-2); }
+.dc-pv-elapsed { font-variant-numeric: tabular-nums; color: var(--muted); }
+.dc-pv-buttons { display: flex; flex-direction: column; gap: 6px; margin-top: var(--sp-3); }
+.dc-pv-btn { height: 30px; line-height: 30px; padding: 0 10px; border-radius: 7px; text-align: center; font-size: var(--fs-sm); font-weight: 600; color: var(--text); background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.06); }
+.dc-pv-empty { display: flex; align-items: center; gap: var(--sp-2); padding: 14px; border-radius: var(--radius); border: 1px dashed var(--border-2); color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; }
+.dc-pv-empty svg { width: 16px; height: 16px; flex-shrink: 0; }
+.dc-pv-foot { font-size: var(--fs-xs); color: var(--muted); line-height: 1.45; }
+
+/* Public Application ID setup and manual reconnection. */
+.dc-application { gap: 10px; border-block: 1px solid var(--border); padding-block: 18px; }
+.dc-app-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.dc-app-field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 260px; max-width: 420px; }
+.dc-app-form .field-error { flex-basis: 100%; }
+.dc-app-form [hidden], .dc-application [hidden] { display: none !important; }
+.dc-application p { margin: 0; line-height: 1.5; }
+.dc-setup { font-size: var(--fs-sm); color: var(--text-2); }
+.dc-setup summary { cursor: pointer; color: var(--cream); font-weight: 600; }
+.dc-setup li { margin-block: 8px; line-height: 1.5; }
+.dc-connection-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+@container (max-width: 480px) { .dc-status { flex-wrap: wrap; } .dc-connection-actions { flex-basis: 100%; justify-content: flex-end; } }

@@ -1,0 +1,16 @@
+[
+  { "id": "hypixel", "name": "Hypixel", "address": "mc.hypixel.net", "tags": ["minigames", "skyblock", "bedwars"], "language": "en", "region": "NA", "version": "1.8 – 26.3", "partner": false, "sort": 10 },
+  { "id": "universocraft", "name": "Universocraft", "address": "mc.universocraft.com", "tags": ["minigames", "bedwars", "survival"], "language": "es", "region": "LATAM", "version": "1.8 – 26.3", "partner": false, "sort": 20 },
+  { "id": "cubecraft", "name": "CubeCraft Games", "address": "play.cubecraft.net", "tags": ["minigames", "eggwars", "skyblock"], "language": "en", "region": "EU", "version": "1.20 – 1.21", "partner": false, "sort": 30 },
+  { "id": "minelatino", "name": "MineLatino", "address": "play.minelatino.com", "tags": ["survival", "minigames", "pvp"], "language": "es", "region": "LATAM", "version": "1.8 – 1.21", "partner": false, "sort": 40 },
+  { "id": "wynncraft", "name": "Wynncraft", "address": "play.wynncraft.com", "tags": ["mmorpg", "adventure"], "language": "en", "region": "NA", "version": "1.9 – 26.3", "partner": false, "sort": 50 },
+  { "id": "supercraft", "name": "SuperCraft", "address": "mp.supercraft.es", "tags": ["survival", "minigames"], "language": "es", "region": "EU", "version": "1.8 – 26.3", "partner": false, "sort": 60 },
+  { "id": "minehut", "name": "Minehut", "address": "minehut.com", "tags": ["community", "smp"], "language": "en", "region": "NA", "version": "1.8 – 26.3", "partner": false, "sort": 70 },
+  { "id": "complex", "name": "Complex Gaming", "address": "hub.mc-complex.com", "tags": ["pixelmon", "survival", "skyblock"], "language": "en", "region": "NA", "version": "1.8 – 26.3", "partner": false, "sort": 80 },
+  { "id": "librecraft", "name": "Librecraft", "address": "librecraft.com", "tags": ["survival", "minigames"], "language": "es", "region": "EU", "version": "1.8 – 26.2", "partner": false, "sort": 90 },
+  { "id": "pika", "name": "PikaNetwork", "address": "play.pika-network.net", "tags": ["minigames", "bedwars", "survival"], "language": "en", "region": "EU", "version": "1.8 – 26.3", "partner": false, "sort": 100 },
+  { "id": "2b2t", "name": "2b2t", "address": "2b2t.org", "tags": ["anarchy", "survival"], "language": "en", "region": "NA", "version": "1.21", "partner": false, "sort": 110 },
+  { "id": "manacube", "name": "ManaCube", "address": "play.manacube.com", "tags": ["skyblock", "parkour", "prison"], "language": "en", "region": "NA", "version": "1.8 – 26.3", "partner": false, "sort": 120 },
+  { "id": "blocksmc", "name": "BlocksMC", "address": "blocksmc.com", "tags": ["bedwars", "minigames", "pvp"], "language": "en", "region": "EU", "version": "1.8 – 26.3", "partner": false, "sort": 130 },
+  { "id": "hylex", "name": "Hylex", "address": "hylex.net", "tags": ["minigames", "bedwars"], "language": "pt", "region": "SA", "version": "1.8 – 1.21", "partner": false, "sort": 140 }
+]

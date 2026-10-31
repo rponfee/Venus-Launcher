@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errNoCloud: 'El launcher no está conectado a su servidor (Ajustes > Cuenta y nube).',
+  errSignIn: 'Iniciá sesión con tu cuenta de Venus (Ajustes > Cuenta y nube) para usar el panel de administración.',
+  errSession: 'Tu sesión de Venus venció. Volvé a iniciar sesión en Ajustes > Cuenta y nube.',
+  errForbidden: 'Tu cuenta no tiene acceso al panel de administración.',
+  errUnconfirmed: 'Confirmá el email de tu cuenta de Venus para usar el panel de administración.',
+  errNotFound: 'No existe (o ya se borró).',
+  errUnavailable: 'El servidor del launcher no tiene el panel de administración (falta desplegar la función "admin").',
+  errBackendNotReady: 'Al servidor del launcher le falta la migración del panel (0012_admin.sql).',
+  errStripeNotConfigured: 'Stripe no está configurado en el servidor (falta el secreto STRIPE_SECRET_KEY).',
+  errStripe: 'Stripe rechazó el pedido o no respondió. Probá de nuevo en un rato.',
+  errPromoTaken: 'Ya existe un código de promoción activo con ese texto.',
+  errConflict: 'No se pudo hacer: el estado cambió. Volvé a cargar y probá de nuevo.',
+  errRequest: 'El servidor rechazó el pedido.',
+  errRequestStatus: 'El servidor rechazó el pedido ({status}).',
+  errServer: 'El servidor del panel no respondió bien. Probá de nuevo en un rato.',
+  errNetwork: 'No se pudo conectar con el servidor del launcher. Revisá tu conexión a internet.',
+  errAction: 'Acción del panel inválida.',
+};

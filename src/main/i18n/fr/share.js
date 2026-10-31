@@ -1,0 +1,23 @@
+'use strict';
+module.exports = {
+  errModrinth: "Impossible d'interroger Modrinth pour identifier les mods : {error}",
+  errBadManifest: "Le modpack partagé est corrompu ou n'est pas valide.",
+  errNewerFormat: "Ce modpack a été partagé avec une version plus récente de Venus Launcher. Mettez le launcher à jour pour l'utiliser.",
+  errTooLarge: "Le modpack est trop volumineux pour être partagé (trop de configurations). Désactivez « Inclure les configs » ou retirez les gros fichiers de config/.",
+  errGameRunning: "Fermez le jeu avant de synchroniser cette instance.",
+  errBusyLaunch: "Le modpack partagé de cette instance est en cours de mise à jour. Attendez la fin, puis relancez le jeu.",
+  taskApply: "Synchronisation de {name}",
+  taskCreate: "Création de {name}",
+  stepCompare: "Comparaison avec le modpack partagé...",
+  stepDownload_one: "Téléchargement de {count} fichier...",
+  stepDownload_other: "Téléchargement de {count} fichiers...",
+  progressLabel: "Mods",
+  stepApply: "Application des modifications...",
+  stepDone: "Terminé",
+  warnUnavailable: "{name} n'est plus téléchargeable : ajoutez-le manuellement.",
+  warnRemove: "Impossible de retirer {name} : {error}",
+  warnToggle: "Impossible d'activer ou de désactiver {name} : {error}",
+  warnConfig: "Impossible d'écrire {name} : {error}",
+  warnPrepare: "Les mods sont prêts, mais le jeu n'a pas pu être installé pour l'instant ({error}). Une nouvelle tentative aura lieu au lancement.",
+  errBadPath: "Le modpack partagé contient un chemin de fichier non autorisé.",
+};

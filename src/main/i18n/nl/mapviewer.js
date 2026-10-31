@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "We hebben die instantie niet gevonden.",
+  errWorld: "We hebben die wereld niet gevonden. Mogelijk is hij verwijderd of verplaatst.",
+  errDimension: "Die dimensie bestaat niet in deze wereld.",
+  errRegion: "De coördinaten van de regio zijn ongeldig.",
+  errRender: "De regio {x}, {z} kon niet worden getekend: {error}",
+  errWorker: "De kaartrenderer is onverwacht gestopt (code {code}).",
+  errWorkerClosed: "De kaartrenderer is al gesloten.",
+  errImage: "De afbeelding van de kaart is ongeldig.",
+  errSave: "De afbeelding kon niet worden opgeslagen: {error}",
+  errReveal: "Die afbeelding is in deze sessie niet geëxporteerd.",
+  taskTitle: "De kaart van {world} ({dimension}) tekenen",
+  taskProgress: "Regio {done} van {total}",
+  canceled: "Geannuleerd door de gebruiker",
+  dim_overworld: "Bovenwereld",
+  dim_nether: "Nether",
+  dim_end: "The End",
+  saveTitle: "De kaart opslaan als afbeelding",
+  filterPng: "PNG-afbeelding",
+  fileName: "kaart",
+};

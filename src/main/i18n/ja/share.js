@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errModrinth: "Modを特定するためにModrinthに問い合わせできませんでした：{error}",
+  errBadManifest: "共有されたModパックが破損しているか、無効です。",
+  errNewerFormat: "このModパックは、より新しいバージョンのVenus Launcherで共有されました。使うにはランチャーを更新してください。",
+  errTooLarge: "Modパックが大きすぎて共有できません（設定ファイルが多すぎます）。「Modの設定を含める」をオフにするか、config/内の大きなファイルを取り除いてください。",
+  errGameRunning: "このインスタンスを同期する前に、ゲームを閉じてください。",
+  errBusyLaunch: "このインスタンスの共有Modパックを更新中です。完了するまで待ってから、プレイしてください。",
+  taskApply: "{name}を同期中",
+  taskCreate: "{name}を作成中",
+  stepCompare: "共有されたModパックと比較中...",
+  stepDownload_other: "{count}個のファイルをダウンロード中...",
+  progressLabel: "Mod",
+  stepApply: "変更を適用中...",
+  stepDone: "完了",
+  warnUnavailable: "{name}はもうダウンロードできません。手動で追加してください。",
+  warnRemove: "{name}を削除できませんでした：{error}",
+  warnToggle: "{name}を有効化または無効化できませんでした：{error}",
+  warnConfig: "{name}を書き込めませんでした：{error}",
+  warnPrepare: "Modの準備はできましたが、ゲームをまだインストールできませんでした（{error}）。プレイ時に再試行されます。",
+  errBadPath: "共有されたModパックに、許可されていないファイルパスが含まれています。",
+};

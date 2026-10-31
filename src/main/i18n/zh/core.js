@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "不允许的路径",
+  errUrlNotAllowed: "不允许的 URL",
+  errBadPath: "路径无效",
+  errBadKey: "键名无效",
+  selectFiles: "选择文件",
+  selectFolder: "选择文件夹",
+  gpuUnknown: "未知",
+  errCloseGameToDelete: "请先关闭游戏，再删除该实例",
+  taskAddOptifine: "正在向 {name} 添加 OptiFine",
+  taskInstallInto: "正在安装到 {name}",
+  taskModpack: "正在安装整合包",
+  errNoModpack: "未指定整合包",
+  errAlreadyRunning: "这个实例已在运行",
+  errLaunchBlocked: "已取消启动",
+  logStarting: "正在启动 {name}（{version}），使用 Java {java}",
+  logMemoryMicrosoft: "内存：{min} MB - {max} MB · 账号：{account}（Microsoft）",
+  logMemoryOffline: "内存：{min} MB - {max} MB · 账号：{account}（离线）",
+  loginWindowTitle: "使用 Microsoft 登录",
+};

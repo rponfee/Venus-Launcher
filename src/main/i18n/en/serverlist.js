@@ -1,0 +1,41 @@
+'use strict';
+// Main-process strings for the multiplayer module (serverlist).
+module.exports = {
+  errInvalidAddress: 'That server address is not valid. Use the format server.com or server.com:25565.',
+  errNoInstance: 'The instance does not exist (you may have deleted it).',
+  errBuildOffline: 'The server {address} is not responding, so it cannot be analyzed. Try again in a while.',
+  errUnknownVersion: 'Could not tell which Minecraft version the server uses.',
+  errServersDat: 'Could not change the server list of {name}. Close the game if it is open and try again.',
+
+  err_notfound: 'That server does not exist. Check that the address is spelled correctly.',
+  err_refused: 'The server refused the connection: it may be offline or use another port.',
+  err_timeout: 'The server did not respond in time.',
+  err_unreachable: 'The server cannot be reached from your network.',
+  err_closed: 'The server closed the connection without answering.',
+  err_protocol: 'It answered with something that does not look like a Minecraft server.',
+  err_unknown: 'Could not query the server.',
+
+  taskBuild: 'Building an instance for {server}',
+  taskPrepare: 'Installing {name}',
+  buildPinging: 'Querying the server...',
+  buildVersion: 'Looking for the compatible version...',
+  buildCreating: 'Creating the instance {name}...',
+  buildResolving: 'Looking up mods on Modrinth ({done}/{total})...',
+  buildDownloading: 'Downloading mods ({done}/{total})...',
+  buildDone: 'Instance ready',
+
+  featured_hypixel: 'The biggest minigame network in the world: SkyBlock, Bed Wars, SkyWars and much more.',
+  featured_universocraft: 'The largest Spanish-speaking network: minigames, Bed Wars, SkyWars and survival with thousands of players.',
+  featured_cubecraft: 'Classic minigames like EggWars, SkyWars and Lucky Islands, with events all year round.',
+  featured_minelatino: 'Latin American community with OP survival and more than ten different game modes.',
+  featured_wynncraft: 'A full MMORPG inside Minecraft: quests, classes, dungeons and a huge world.',
+  featured_supercraft: 'Spanish network with fresh survival worlds on every version, plus minigames.',
+  featured_minehut: 'Thousands of community-made servers: join the lobby and pick the one you like.',
+  featured_complex: 'The most popular Pixelmon network, plus survival, SkyBlock and more.',
+  featured_librecraft: 'A veteran Spanish network with survival, minigames and a very active community.',
+  featured_pika: 'Bed Wars, SkyWars, survival and PvP modes for every version.',
+  featured_2b2t: 'The oldest anarchy server: no rules and no map resets since 2010.',
+  featured_manacube: 'SkyBlock, parkour, prisons and survival with lots of original content.',
+  featured_blocksmc: 'Bed Wars and quick minigames for short matches with friends.',
+  featured_hylex: 'Brazilian minigame network with Bed Wars, SkyWars and tournaments.',
+};

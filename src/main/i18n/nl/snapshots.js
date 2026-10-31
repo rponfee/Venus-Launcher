@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "Een momentopname van {name} opslaan",
+  taskRestore: "{name} herstellen",
+  stepScan: "Bestanden controleren…",
+  stepSaving: "Opslaan: {done} van {total}",
+  stepSafety: "De huidige staat voor de zekerheid opslaan…",
+  stepCompare: "Vergelijken met de momentopname…",
+  stepRestoring: "Herstellen: {done} van {total}",
+  errNoInstance: "De instantie bestaat niet of is verwijderd.",
+  errNotFound: "Die momentopname bestaat niet meer.",
+  errRunning: "Sluit het spel voordat je een momentopname herstelt.",
+  errRunningWorlds: "Sluit het spel om werelden in de momentopname op te nemen: het spel is ze aan het schrijven.",
+  errBadWorld: "Die wereld is niet gevonden in de instantie.",
+  errTooMany: "Er zijn te veel bestanden om op te slaan (meer dan {count}).",
+  errNoSpace: "Er is niet genoeg schijfruimte om de momentopname op te slaan.",
+  errDamaged: "Het bestand {file} in de momentopname is beschadigd. Je vorige staat is opgeslagen in de momentopname “Voor het herstellen”.",
+  errMissingObjects: "Er ontbreken bestanden van deze momentopname in de opslag: herstellen is niet mogelijk. Er is niets gewijzigd.",
+  errLocked: "{file} kon niet worden gebruikt: een ander programma heeft het geopend. Sluit dat programma en probeer het opnieuw.",
+};

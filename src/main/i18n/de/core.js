@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "Pfad nicht erlaubt",
+  errUrlNotAllowed: "URL nicht erlaubt",
+  errBadPath: "Ungültiger Pfad",
+  errBadKey: "Ungültiger Schlüssel",
+  selectFiles: "Dateien auswählen",
+  selectFolder: "Ordner auswählen",
+  gpuUnknown: "Unbekannt",
+  errCloseGameToDelete: "Schließe das Spiel, bevor du die Instanz löschst",
+  taskAddOptifine: "OptiFine wird zu {name} hinzugefügt",
+  taskInstallInto: "Installation in {name}",
+  taskModpack: "Modpack wird installiert",
+  errNoModpack: "Es wurde kein Modpack angegeben",
+  errAlreadyRunning: "Diese Instanz läuft bereits",
+  errLaunchBlocked: "Start abgebrochen",
+  logStarting: "{name} ({version}) wird mit Java {java} gestartet",
+  logMemoryMicrosoft: "Arbeitsspeicher: {min} MB - {max} MB · Konto: {account} (Microsoft)",
+  logMemoryOffline: "Arbeitsspeicher: {min} MB - {max} MB · Konto: {account} (Offline)",
+  loginWindowTitle: "Mit Microsoft anmelden",
+};

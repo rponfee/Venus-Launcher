@@ -1,0 +1,83 @@
+/* Servidores MCP del asistente: panel de Ajustes > IA y sus dialogos (features/mcpservers.js). Prefijo .ams- */
+
+.ams-panel { display: flex; flex-direction: column; gap: var(--sp-4); }
+
+/* Cabecera */
+.ams-head { display: flex; align-items: flex-start; gap: var(--sp-4); }
+.ams-logo { width: 44px; height: 44px; border-radius: var(--radius); display: grid; place-items: center; flex-shrink: 0; background: var(--accent-wash); border: 1px solid var(--accent-line); color: var(--accent-hi); }
+.ams-logo svg { width: 22px; height: 22px; }
+.ams-head-text { flex: 1; min-width: 0; }
+.ams-head-text .card-title { margin: 0; }
+.ams-sub { margin: var(--sp-1) 0 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; max-width: 72ch; }
+
+.ams-muted { display: flex; align-items: flex-start; gap: var(--sp-2); margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
+.ams-muted > svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
+.ams-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; margin-top: var(--sp-3); }
+.ams-notice b { display: block; margin-bottom: 2px; }
+.ams-checking { display: flex; align-items: center; gap: var(--sp-3); }
+.ams-gate:empty { display: none; }
+
+/* Lista de servidores */
+.ams-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+.ams-server { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-radius: var(--radius); border: 1px solid var(--border); background: var(--well-bg); min-width: 0; }
+.ams-server.off { opacity: 0.78; }
+.ams-server-head { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.ams-server-icon { width: 34px; height: 34px; border-radius: var(--radius-s); display: grid; place-items: center; background: var(--surface-3); color: var(--accent-hi); flex-shrink: 0; }
+.ams-server-icon svg { width: 18px; height: 18px; }
+.ams-server-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ams-server-side { display: flex; align-items: center; gap: var(--sp-2); flex-shrink: 0; }
+.ams-server-name { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.ams-server-title { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.ams-where { display: block; min-width: 0; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ams-server-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.ams-server-actions .icon-btn { margin-left: auto; }
+.ams-server-result:empty { display: none; }
+.ams-server-result:focus { outline: none; }
+.ams-result { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--fs-sm); line-height: 1.45; overflow-wrap: anywhere; }
+.ams-result svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
+.ams-result.good { color: var(--good-text); }
+.ams-result.bad { color: var(--bad-text); }
+.ams-result-meta { color: var(--muted); }
+
+.ams-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.ams-foot { display: flex; flex-direction: column; gap: var(--sp-2); border-top: 1px solid var(--border); padding-top: var(--sp-3); }
+
+/* Formulario */
+.ams-form { display: flex; flex-direction: column; gap: var(--sp-3); }
+.ams-args { min-height: 76px; resize: vertical; }
+.ams-check { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); line-height: 1.45; cursor: pointer; }
+.ams-check input { margin-top: 3px; flex-shrink: 0; accent-color: var(--accent); }
+.ams-accept { padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-s); border: 1px solid var(--bad-line); background: color-mix(in srgb, var(--bad) 6%, transparent); color: var(--text); }
+.ams-form-error:empty { display: none; }
+.ams-env { display: flex; flex-direction: column; gap: var(--sp-2); }
+.ams-env-rows { display: flex; flex-direction: column; gap: var(--sp-2); }
+.ams-env-rows:empty { display: none; }
+.ams-env-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; gap: var(--sp-2); align-items: center; }
+
+/* Herramientas */
+.ams-tools { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.ams-tool-list { display: flex; flex-direction: column; gap: var(--sp-2); max-height: min(56vh, 520px); overflow-y: auto; padding-right: 2px; }
+.ams-tool { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-s); border: 1px solid var(--border); background: var(--well-bg); }
+.ams-tool.problem { opacity: 0.75; }
+.ams-tool-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ams-tool-name { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.ams-tool-title { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.ams-tool-desc { margin: 0; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.45; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ams-tool-id { font-size: var(--fs-xs); color: var(--faint); overflow-wrap: anywhere; }
+.ams-tool-allow { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; flex-shrink: 0; cursor: pointer; }
+.ams-tool-auto { font-size: var(--fs-xs); color: var(--muted); max-width: 160px; text-align: right; line-height: 1.4; flex-shrink: 0; }
+
+/* Importar de Claude Desktop */
+.ams-import { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.ams-import-list { display: flex; flex-direction: column; gap: var(--sp-2); max-height: min(50vh, 460px); overflow-y: auto; }
+.ams-import-row { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-s); border: 1px solid var(--border); background: var(--well-bg); cursor: pointer; }
+.ams-import-row:hover { border-color: var(--border-3); }
+.ams-import-row input { margin-top: 10px; flex-shrink: 0; accent-color: var(--accent); }
+.ams-import-row.problem { cursor: default; opacity: 0.8; }
+.ams-import-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ams-import-problem { display: flex; align-items: flex-start; gap: 6px; font-size: var(--fs-xs); color: var(--bad-text); line-height: 1.4; }
+.ams-import-problem svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
+
+@media (max-width: 1100px) {
+  .ams-env-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+}

@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errEmptyQuery: "Ne aramak istediğini yaz.",
+  errTooLong: "İstek çok uzun (en fazla 400 karakter).",
+  errModrinth: "Modrinth'e bağlanılamadı: {error}",
+  errCanceled: "Arama iptal edildi",
+  errInvalid: "İstek geçerli değil.",
+  errBadAuthor: "Yazar geçerli değil: Modrinth kullanıcı adlarında boşluk veya sembol bulunmaz.",
+  errNothingToInstall: "Yüklenecek bir şey yok.",
+  errTooMany: "Bir seferde en fazla {max} öğe yükleyebilirsin.",
+  errNoInstance: "Bu örnek artık yok.",
+  errNoServer: "Bu sunucu artık yok.",
+  errVanillaServer: "Vanilla sunucular mod ya da eklenti desteklemez.",
+  errNoWorld: "Veri paketleri için bir dünya gerekli: birini seç.",
+  taskInstallKit: "{name} örneğine kit yükleniyor",
+  taskInstallKitServer: "{name} sunucusuna eklentiler yükleniyor",
+  taskItem: "{title} ({index}/{total})",
+  taskPrepare: "{name} yükleniyor",
+  kitResult: "{total} öğeden {ok} tanesi yüklendi",
+};

@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errModrinth: "모드를 식별하기 위해 Modrinth에 접속하지 못했어요: {error}",
+  errBadManifest: "공유된 모드팩이 손상되었거나 올바르지 않아요.",
+  errNewerFormat: "이 모드팩은 더 최신 버전의 Venus Launcher에서 공유되었어요. 런처를 업데이트한 뒤 사용해 주세요.",
+  errTooLarge: "모드팩이 너무 커서 공유할 수 없어요 (설정 파일이 너무 많아요). '모드 설정 포함'을 끄거나 config/ 안의 큰 파일을 빼 주세요.",
+  errGameRunning: "이 인스턴스를 동기화하기 전에 게임을 종료해 주세요.",
+  errBusyLaunch: "이 인스턴스의 공유 모드팩을 업데이트하는 중이에요. 완료될 때까지 기다린 뒤 다시 플레이해 주세요.",
+  taskApply: "{name} 동기화 중",
+  taskCreate: "{name} 만드는 중",
+  stepCompare: "공유된 모드팩과 비교하는 중...",
+  stepDownload_other: "파일 {count}개 다운로드 중...",
+  progressLabel: "모드",
+  stepApply: "변경 사항 적용 중...",
+  stepDone: "완료",
+  warnUnavailable: "더 이상 다운로드할 수 없어요: {name}. 직접 추가해 주세요.",
+  warnRemove: "{name} 제거에 실패했어요: {error}",
+  warnToggle: "{name} 활성화/비활성화에 실패했어요: {error}",
+  warnConfig: "{name} 저장에 실패했어요: {error}",
+  warnPrepare: "모드는 준비되었지만 아직 게임을 설치하지 못했어요 ({error}). 플레이할 때 다시 시도해요.",
+  errBadPath: "공유된 모드팩에 허용되지 않는 파일 경로가 있어요.",
+};

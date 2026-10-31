@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "Nous n'avons pas trouvé cette instance.",
+  errWorld: "Nous n'avons pas trouvé ce monde. Il a peut-être été supprimé ou déplacé.",
+  errDimension: "Cette dimension n'existe pas dans ce monde.",
+  errRegion: "Les coordonnées de la région ne sont pas valides.",
+  errRender: "Impossible de dessiner la région {x}, {z} : {error}",
+  errWorker: "Le processus de rendu de la carte s'est brusquement arrêté (code {code}).",
+  errWorkerClosed: "Le processus de rendu de la carte est déjà fermé.",
+  errImage: "L'image de la carte n'est pas valide.",
+  errSave: "Impossible d'enregistrer l'image : {error}",
+  errReveal: "Cette image n'a pas été exportée pendant cette session.",
+  taskTitle: "Dessin de la carte de {world} ({dimension})",
+  taskProgress: "Région {done} sur {total}",
+  canceled: "Annulé par l'utilisateur",
+  dim_overworld: "Surface",
+  dim_nether: "Nether",
+  dim_end: "L'End",
+  saveTitle: "Enregistrer la carte en image",
+  filterPng: "Image PNG",
+  fileName: "carte",
+};

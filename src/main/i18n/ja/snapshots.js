@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "{name}のスナップショットを保存中",
+  taskRestore: "{name}を復元中",
+  stepScan: "ファイルを確認中…",
+  stepSaving: "保存中 {done}/{total}",
+  stepSafety: "念のため、現在の状態を保存中…",
+  stepCompare: "スナップショットと比較中…",
+  stepRestoring: "復元中 {done}/{total}",
+  errNoInstance: "インスタンスが存在しないか、削除されました。",
+  errNotFound: "そのスナップショットはもう存在しません。",
+  errRunning: "スナップショットを復元する前に、ゲームを閉じてください。",
+  errRunningWorlds: "ワールドをスナップショットに含めるには、ゲームを閉じてください。ゲームがワールドに書き込み中です。",
+  errBadWorld: "そのワールドがインスタンス内に見つかりませんでした。",
+  errTooMany: "保存するファイルが多すぎます（{count}個を超えています）。",
+  errNoSpace: "スナップショットを保存するためのディスクの空き容量がありません。",
+  errDamaged: "スナップショット内のファイル{file}が破損しています。以前の状態は、スナップショット「復元前」に保存されています。",
+  errMissingObjects: "このスナップショットの一部のファイルがストアにないため、復元できません。何も変更されていません。",
+  errLocked: "{file}を使用できませんでした。別のプログラムが開いています。閉じてから、もう一度お試しください。",
+};

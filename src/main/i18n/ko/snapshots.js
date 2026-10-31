@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "{name}의 스냅샷 저장 중",
+  taskRestore: "{name} 복원 중",
+  stepScan: "파일 확인 중…",
+  stepSaving: "{done}/{total} 저장 중",
+  stepSafety: "만약을 위해 현재 상태를 저장하는 중…",
+  stepCompare: "스냅샷과 비교하는 중…",
+  stepRestoring: "{done}/{total} 복원 중",
+  errNoInstance: "인스턴스가 없거나 삭제되었어요.",
+  errNotFound: "해당 스냅샷이 더 이상 없어요.",
+  errRunning: "스냅샷을 복원하기 전에 게임을 종료해 주세요.",
+  errRunningWorlds: "스냅샷에 월드를 포함하려면 게임을 종료해 주세요. 게임이 월드에 데이터를 쓰고 있어요.",
+  errBadWorld: "인스턴스에서 해당 월드를 찾을 수 없어요.",
+  errTooMany: "저장할 파일이 너무 많아요 ({count}개 초과).",
+  errNoSpace: "스냅샷을 저장할 디스크 공간이 부족해요.",
+  errDamaged: "스냅샷의 {file} 파일이 손상되었어요. 이전 상태는 '복원 전' 스냅샷에 저장되어 있어요.",
+  errMissingObjects: "이 스냅샷의 일부 파일이 저장소에 없어서 복원할 수 없어요. 아무것도 변경하지 않았어요.",
+  errLocked: "{file} 파일을 사용할 수 없어요. 다른 프로그램에서 열려 있어요. 그 프로그램을 닫고 다시 시도해 주세요.",
+};

@@ -1,0 +1,23 @@
+'use strict';
+module.exports = {
+  errModrinth: "Modrinth konnte nicht abgefragt werden, um die Mods zu identifizieren: {error}",
+  errBadManifest: "Das geteilte Modpack ist beschädigt oder ungültig.",
+  errNewerFormat: "Dieses Modpack wurde mit einer neueren Version von Venus Launcher geteilt. Aktualisiere den Launcher, um es zu verwenden.",
+  errTooLarge: "Das Modpack ist zu groß zum Teilen (zu viele Konfigurationsdateien). Deaktiviere „Mod-Configs einbeziehen“ oder entferne große Dateien aus config/.",
+  errGameRunning: "Schließe das Spiel, bevor du diese Instanz synchronisierst.",
+  errBusyLaunch: "Das geteilte Modpack dieser Instanz wird gerade aktualisiert. Warte, bis es fertig ist, und starte das Spiel dann erneut.",
+  taskApply: "{name} wird synchronisiert",
+  taskCreate: "{name} wird erstellt",
+  stepCompare: "Vergleich mit dem geteilten Modpack...",
+  stepDownload_one: "{count} Datei wird heruntergeladen...",
+  stepDownload_other: "{count} Dateien werden heruntergeladen...",
+  progressLabel: "Mods",
+  stepApply: "Änderungen werden angewendet...",
+  stepDone: "Fertig",
+  warnUnavailable: "{name} kann nicht mehr heruntergeladen werden: Füge es manuell hinzu.",
+  warnRemove: "{name} konnte nicht entfernt werden: {error}",
+  warnToggle: "{name} konnte nicht aktiviert oder deaktiviert werden: {error}",
+  warnConfig: "{name} konnte nicht geschrieben werden: {error}",
+  warnPrepare: "Die Mods sind bereit, aber das Spiel konnte noch nicht installiert werden ({error}). Beim Spielen wird es erneut versucht.",
+  errBadPath: "Das geteilte Modpack enthält einen nicht erlaubten Dateipfad.",
+};

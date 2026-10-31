@@ -1,0 +1,27 @@
+'use strict';
+// Main-process strings for Modrinth (errors shown to the user).
+module.exports = {
+  errNetwork: 'Could not connect to Modrinth. Check your internet connection.',
+  errTimeout: 'Modrinth took too long to respond. Try again in a moment.',
+  errRateLimit: 'Modrinth received too many requests from your connection. Wait {seconds} s and try again.',
+  errServer: 'Modrinth is having trouble right now (error {status}). Try again in a moment.',
+  errNotFound: 'Modrinth could not find what you were looking for.',
+  errProjectNotFound: 'That project does not exist on Modrinth or is no longer published.',
+  errVersionNotFound: 'That version does not exist on Modrinth.',
+  errApi: 'Modrinth returned an error ({status}): {detail}',
+  errBadResponse: 'Modrinth returned a response that could not be read.',
+  errGone: 'This Modrinth feature is no longer available. Update Venus Launcher.',
+  errBadProject: 'No Modrinth project was specified.',
+  errNoCompatible: '"{title}" has no version compatible with Minecraft {gameVersion}.',
+  errNoCompatibleLoaders: '"{title}" has no version compatible with Minecraft {gameVersion} ({loaders}).',
+  errNoFiles: 'The selected version has no files to download.',
+  errNeedWorld: 'Choose a world to install the data pack.',
+  errBadWorld: 'The world name is not valid.',
+  warnDepNoVersion: 'The dependency "{title}" has no compatible version and was not installed.',
+  warnIncompatible: '"{title}" is incompatible with "{other}", which is already installed.',
+  errBadPack: 'The file is not a valid Modrinth modpack (.mrpack).',
+  warnPackBlocked_one: '{count} modpack file was not downloaded because it comes from a site the .mrpack format does not allow or has no hash to verify it: {files}',
+  warnPackBlocked_other: '{count} modpack files were not downloaded because they come from sites the .mrpack format does not allow or have no hash to verify them: {files}',
+  warnPackUnsafe_one: 'For safety, {count} modpack file with a disallowed path was skipped: {files}',
+  warnPackUnsafe_other: 'For safety, {count} modpack files with disallowed paths were skipped: {files}',
+};

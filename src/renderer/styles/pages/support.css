@@ -1,0 +1,43 @@
+.page-support, .page-support-staff { display: flex; flex-direction: column; gap: var(--sp-5); }
+.page-support .page-head, .page-support-staff .page-head { margin-bottom: 0; }
+.support-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); margin: 0; padding: var(--sp-4) var(--sp-5) var(--sp-4) 42px; border: 1px solid var(--border); border-radius: var(--radius-l); background: var(--well-bg); color: var(--text-2); font-size: var(--fs-sm); }
+.support-steps li { padding-left: 4px; }
+.support-steps li::marker { color: var(--accent-hi); font-weight: 700; }
+.support-form { padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); }
+.support-form h2, .support-form p, .support-heading h2, .support-heading h3 { margin: 0; }
+.support-form h2, .support-heading h2 { font-family: var(--pixel); font-size: var(--fs-xl); }
+.support-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+.support-fields:disabled { opacity: .65; }
+.support-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+.support-form label, .support-reply label { display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); }
+.support-form .input, .support-form .select, .support-reply .input { width: 100%; }
+.support-form textarea, .support-reply textarea { min-height: 82px; resize: vertical; }
+.support-form button[type=submit], .support-fields button[type=submit] { align-self: flex-start; }
+.support-form-error { margin: 0; color: var(--bad); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.support-form-error:empty { display: none; }
+.support-form .support-check { flex-direction: row; align-items: flex-start; }
+.support-check input { margin-top: 4px; }
+.support-desk { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.support-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.support-ticket-layout { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: var(--sp-4); align-items: start; }
+.support-ticket-list { display: flex; flex-direction: column; gap: var(--sp-2); max-height: 660px; overflow: auto; }
+.support-ticket { width: 100%; display: flex; flex-direction: column; gap: var(--sp-2); text-align: left; padding: var(--sp-4); border: 1px solid var(--border); border-radius: var(--radius-l); background: var(--card-bg); color: var(--text); cursor: pointer; font: inherit; }
+.support-ticket:hover { border-color: var(--border-2); }
+.support-ticket.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card-bg)); }
+.support-ticket-top { display: flex; align-items: center; gap: var(--sp-2); justify-content: space-between; flex-wrap: wrap; }
+.support-ticket-id { font-size: var(--fs-xs); color: var(--muted); }
+.support-detail { padding: var(--sp-5); min-width: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+.support-state-note { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.5; }
+.support-empty { padding: var(--sp-5); text-align: center; }
+.support-messages { max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.support-message { background: var(--well-bg); border: 1px solid var(--border); border-radius: var(--radius-m); padding: var(--sp-3); }
+.support-message.from-admin { border-color: var(--accent-line); }
+.support-message-meta { display: flex; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-xs); color: var(--muted); }
+.support-message-meta strong { color: var(--accent-hi); }
+.support-message p { margin: var(--sp-2) 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; font-size: var(--fs-sm); }
+.support-reply { display: flex; flex-direction: column; gap: var(--sp-2); }
+.support-reply button { align-self: flex-end; }
+.support-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.support-actions:empty { display: none; }
+@media (max-width: 1050px) { .support-ticket-layout { grid-template-columns: 1fr; } .support-ticket-list { max-height: 260px; } }
+@media (max-width: 800px) { .support-steps, .support-form-row { grid-template-columns: 1fr; } }

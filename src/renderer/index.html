@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: file:; font-src 'self'; connect-src 'self' https: wss:; media-src 'self' blob: mediastream: file: https:; object-src 'none'; base-uri 'none'; frame-src 'none'"
+    />
+    <title>Venus Launcher</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <div class="space-bg"><canvas id="stars"></canvas></div>
+    <div class="app">
+      <header class="titlebar">
+        <div class="tb-title"><img src="assets/logo-64.png" alt="" />VENUS LAUNCHER</div>
+        <div class="tb-status" id="tb-status"></div>
+        <button type="button" class="tb-net" id="tb-net" hidden></button>
+        <div class="tb-spacer"></div>
+        <div class="tb-btns">
+          <button class="tb-btn" data-win="minimize" title="Minimizar" aria-label="Minimizar">
+            <svg viewBox="0 0 12 12"><path d="M1 6h10" stroke="currentColor" stroke-width="1.2" /></svg>
+          </button>
+          <button class="tb-btn" data-win="maximize" title="Maximizar" aria-label="Maximizar">
+            <svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+          </button>
+          <button class="tb-btn close" data-win="close" title="Cerrar" aria-label="Cerrar">
+            <svg viewBox="0 0 12 12"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" stroke-width="1.2" /></svg>
+          </button>
+        </div>
+      </header>
+      <aside class="sidebar">
+        <div class="brand" data-route="home">
+          <img src="assets/logo-256.png" alt="Venus Launcher" />
+          <div>
+            <div class="brand-name">VENUS</div>
+            <div class="brand-sub">LAUNCHER</div>
+          </div>
+        </div>
+        <nav class="nav" id="nav"></nav>
+        <div class="sidebar-community" id="community-link"></div>
+        <div class="sidebar-foot">
+          <div class="account-chip" id="account-chip" title="Cuentas"></div>
+          <button class="icon-btn" id="settings-btn" title="Ajustes" aria-label="Ajustes"></button>
+        </div>
+      </aside>
+      <main class="main" id="main"></main>
+    </div>
+    <div class="toasts" id="toasts"></div>
+    <div class="tasks-dock" id="tasks"></div>
+    <script src="vendor/supabase.js"></script>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

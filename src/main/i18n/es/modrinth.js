@@ -1,0 +1,27 @@
+'use strict';
+// Textos del proceso principal para Modrinth (errores que ve el usuario).
+module.exports = {
+  errNetwork: 'No se pudo conectar con Modrinth. Revisá tu conexión a internet.',
+  errTimeout: 'Modrinth tardó demasiado en responder. Probá de nuevo en un rato.',
+  errRateLimit: 'Modrinth recibió demasiados pedidos desde tu conexión. Esperá {seconds} s y probá de nuevo.',
+  errServer: 'Modrinth tiene problemas en este momento (error {status}). Probá de nuevo en un rato.',
+  errNotFound: 'Modrinth no encontró lo que buscabas.',
+  errProjectNotFound: 'Ese proyecto no existe en Modrinth o ya no está publicado.',
+  errVersionNotFound: 'Esa versión no existe en Modrinth.',
+  errApi: 'Modrinth respondió con un error ({status}): {detail}',
+  errBadResponse: 'Modrinth devolvió una respuesta que no se pudo leer.',
+  errGone: 'Esta función de Modrinth ya no está disponible. Actualizá Venus Launcher.',
+  errBadProject: 'No se indicó qué proyecto de Modrinth abrir.',
+  errNoCompatible: '"{title}" no tiene una versión compatible con Minecraft {gameVersion}.',
+  errNoCompatibleLoaders: '"{title}" no tiene una versión compatible con Minecraft {gameVersion} ({loaders}).',
+  errNoFiles: 'La versión elegida no tiene archivos para descargar.',
+  errNeedWorld: 'Elegí un mundo para instalar el data pack.',
+  errBadWorld: 'El nombre del mundo no es válido.',
+  warnDepNoVersion: 'La dependencia "{title}" no tiene una versión compatible y no se instaló.',
+  warnIncompatible: '"{title}" es incompatible con "{other}", que ya está instalado.',
+  errBadPack: 'El archivo no es un modpack de Modrinth válido (.mrpack).',
+  warnPackBlocked_one: 'No se descargó {count} archivo del modpack porque viene de un sitio que el formato .mrpack no permite o no trae un hash para verificarlo: {files}',
+  warnPackBlocked_other: 'No se descargaron {count} archivos del modpack porque vienen de sitios que el formato .mrpack no permite o no traen un hash para verificarlos: {files}',
+  warnPackUnsafe_one: 'Por seguridad se salteó {count} archivo del modpack con una ruta no permitida: {files}',
+  warnPackUnsafe_other: 'Por seguridad se saltearon {count} archivos del modpack con rutas no permitidas: {files}',
+};

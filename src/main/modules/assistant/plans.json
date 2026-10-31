@@ -1,0 +1,108 @@
+{
+  "placeholder": false,
+  "plans": [
+    {
+      "id": "basic",
+      "name": "Basic",
+      "priceUsd": 4,
+      "budgetUsd": 2,
+      "maxTokensPerRequest": 12000,
+      "models": [
+        {
+          "id": "haiku",
+          "label": "Claude Haiku 5.5",
+          "efforts": [
+            "low",
+            "medium"
+          ],
+          "daily": null,
+          "weekly": null
+        }
+      ]
+    },
+    {
+      "id": "go",
+      "name": "Go",
+      "priceUsd": 8,
+      "budgetUsd": 4.5,
+      "maxTokensPerRequest": 16000,
+      "models": [
+        {
+          "id": "haiku",
+          "label": "Claude Haiku 5.5",
+          "efforts": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "daily": null,
+          "weekly": null
+        }
+      ]
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "priceUsd": 15,
+      "budgetUsd": 8.5,
+      "maxTokensPerRequest": 24000,
+      "models": [
+        {
+          "id": "haiku",
+          "label": "Claude Haiku 5.5",
+          "efforts": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "daily": null,
+          "weekly": null
+        },
+        {
+          "id": "sonnet",
+          "label": "Claude Sonnet 5.5",
+          "efforts": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "daily": null,
+          "weekly": null
+        }
+      ]
+    },
+    {
+      "id": "max",
+      "name": "Max",
+      "priceUsd": 35,
+      "budgetUsd": 20,
+      "maxTokensPerRequest": 36000,
+      "models": [
+        {
+          "id": "haiku",
+          "label": "Claude Haiku 5.5",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "daily": null,
+          "weekly": null
+        },
+        {
+          "id": "sonnet",
+          "label": "Claude Sonnet 5.5",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "daily": null,
+          "weekly": null
+        }
+      ]
+    }
+  ]
+}

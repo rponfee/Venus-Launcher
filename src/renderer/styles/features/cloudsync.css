@@ -1,0 +1,118 @@
+/* ============================================================
+   Nube de mundos y configuraciones
+   Prefijo de clases: .csy-
+   ============================================================ */
+
+.csy-modal .modal-body { padding-top: var(--sp-2); }
+.csy-dialog { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.csy-foot { display: contents; }
+.csy-foot-left { margin-right: auto; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.csy-foot-left svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--good); }
+.spinner.csy-spin { width: 14px; height: 14px; border-width: 2px; }
+.csy-note { padding: 10px var(--sp-3); align-items: center; }
+.csy-note .btn { flex-shrink: 0; }
+.csy-note .spinner { margin-top: 0; }
+.csy-error { align-items: center; }
+.csy-error .btn { flex-shrink: 0; }
+.csy-gate .empty, .csy-empty .empty { padding: var(--sp-7) var(--sp-4) var(--sp-5); }
+.csy-empty { border: 1px dashed var(--border-2); border-radius: var(--radius); }
+
+/* ---------- Esqueleto de carga ---------- */
+.csy-skel-side { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-4); border-radius: var(--radius); border: 1px solid var(--border); background: var(--card-bg-flat); }
+.csy-skel .skeleton-row { border-radius: var(--radius); border: 1px solid var(--border); background: var(--well-bg); }
+.csy-skel .skeleton-list { gap: 6px; }
+
+/* ---------- Cabecera ---------- */
+.csy-head { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-3) var(--sp-4); border-radius: var(--radius); background: var(--well-bg); border: 1px solid var(--border); min-width: 0; }
+.inst-icon.csy-head-icon { width: 48px; height: 48px; border-radius: var(--radius); font-size: 22px; flex-shrink: 0; }
+.csy-head-text { flex: 1; min-width: 0; }
+.csy-head-name { font-weight: 700; font-size: var(--fs-lg); line-height: 1.3; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.csy-head-meta { margin-top: 6px; gap: 6px; }
+.csy-usage {
+  display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) 14px; border-radius: var(--radius); flex-shrink: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--info) 14%, transparent), color-mix(in srgb, var(--info) 4%, transparent)); border: 1px solid var(--info-line);
+}
+.csy-usage > svg { width: 22px; height: 22px; color: var(--info-text); flex-shrink: 0; }
+.csy-usage-num { font-family: var(--pixel); font-weight: 600; font-size: var(--fs-xl); color: var(--cream); line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.csy-usage-label { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+
+/* ---------- Distribución ---------- */
+.csy-split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+.csy-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+@media (max-width: 900px) { .csy-split { grid-template-columns: minmax(0, 1fr); } }
+.csy-label { display: flex; align-items: center; gap: var(--sp-2); min-height: 22px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.csy-label svg { width: 14px; height: 14px; color: var(--accent-hi); flex-shrink: 0; }
+.csy-label-count { font-size: var(--fs-xs); line-height: 18px; padding: 0 7px; border-radius: var(--radius-full); background: var(--surface-3); color: var(--text-2); letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.badge.csy-pending { margin-left: auto; text-transform: none; letter-spacing: 0; }
+
+/* ---------- Filas (mundos y configs) ---------- */
+.csy-list { display: flex; flex-direction: column; gap: 6px; }
+.csy-row {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3); padding: 10px var(--sp-3) 10px var(--sp-3); border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--well-bg); position: relative; min-width: 0;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+/* Franja del estado a la izquierda (el estado también se dice con la píldora y su ícono) */
+.csy-row::before { content: ''; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: transparent; }
+.csy-row.is-conflict { border-color: var(--bad-line); }
+.csy-row.is-conflict::before { background: var(--bad); }
+.csy-row.is-remoteNewer::before { background: var(--info); }
+.csy-row.is-localNewer::before { background: var(--warn); }
+.csy-row.is-synced::before { background: color-mix(in srgb, var(--good) 55%, transparent); }
+.csy-row:hover { border-color: var(--border-2); background: color-mix(in srgb, var(--accent) 3%, var(--well-bg)); }
+.csy-row.is-conflict:hover { border-color: var(--bad); }
+.csy-wicon { width: 40px; height: 40px; border-radius: 9px; background: var(--surface-3); display: grid; place-items: center; overflow: hidden; }
+.csy-wicon img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.csy-wicon svg { width: 20px; height: 20px; color: var(--muted); }
+.csy-row-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.csy-row-title { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.csy-row-name { font-weight: 600; font-size: var(--fs-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.csy-row-sub { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+/* Copia en la nube: los datos se cortan entre sí, nunca en el medio ("114 MB" queda junto) */
+.csy-row-remote { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--sp-2); font-size: var(--fs-xs); color: var(--muted); min-width: 0; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.csy-row-remote > span { white-space: nowrap; }
+/* El separador va pegado al dato siguiente: si la línea se corta, nunca queda un "·" colgando al final */
+.csy-row-remote > span + span::before { content: '·'; margin-right: var(--sp-2); color: var(--faint); }
+.csy-row-remote > svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--info-text); margin-right: -2px; }
+.csy-row-actions { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.csy-row-actions .btn { flex-shrink: 0; }
+/* Acciones de cada fila: secundarias (la vista no tiene un único botón principal), con el ícono de acento */
+.csy-row-actions .btn.csy-act svg { color: var(--accent-hi); }
+.csy-row-actions .btn.csy-resolve { border-color: var(--bad-line); color: var(--bad-text); }
+.csy-row-actions .btn.csy-resolve:hover { background: var(--bad-wash); border-color: var(--bad); color: color-mix(in srgb, var(--bad-text) 55%, var(--text)); }
+.csy-busy { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; }
+
+.pill.csy-pill { min-height: 22px; padding: 1px var(--sp-2); flex-shrink: 0; gap: var(--sp-1); }
+.pill.csy-pill svg { width: 12px; height: 12px; }
+
+.csy-row.is-other .csy-wicon svg { color: var(--accent-hi); }
+
+/* ---------- Columna lateral ---------- */
+.csy-col.side .csy-row { grid-template-columns: 40px minmax(0, 1fr); }
+.csy-col.side .csy-row-title { flex-wrap: wrap; row-gap: var(--sp-1); }
+.csy-col.side .csy-row-name, .csy-col.side .csy-row-sub { white-space: normal; overflow-wrap: anywhere; }
+.csy-col.side .csy-row-actions { grid-column: 1 / -1; justify-content: flex-start; padding-left: 52px; }
+.csy-col.side .csy-row-actions:empty { display: none; }
+.csy-settings { padding: 0 var(--sp-4); }
+.csy-toggle { padding: var(--sp-3) 0; }
+.csy-toggle .tr-title { font-size: var(--fs-sm); }
+.csy-toggle .tr-sub { font-size: var(--fs-xs); line-height: 1.45; }
+.csy-device { display: flex; align-items: center; gap: 6px; padding: 0 2px; }
+.csy-device svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+.csy-others { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-2); }
+.csy-others-text { line-height: 1.5; }
+
+/* ---------- Conflicto ---------- */
+.modal.csy-conflict { width: min(640px, 100%); }
+.csy-conflict-text { margin: 0; line-height: 1.55; }
+.csy-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+.csy-side { padding: var(--sp-3) var(--sp-4); border-radius: var(--radius); border: 1px solid var(--border-2); background: var(--well-bg); min-width: 0; }
+.csy-side-head { display: flex; align-items: center; gap: var(--sp-2); font-weight: 700; color: var(--cream); margin-bottom: var(--sp-2); }
+.csy-side-head svg { width: 18px; height: 18px; flex-shrink: 0; }
+.csy-side.here .csy-side-head svg { color: var(--accent-hi); }
+.csy-side.cloud .csy-side-head svg { color: var(--info-text); }
+.csy-side-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.csy-safety { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); line-height: 1.5; }
+.csy-safety svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 3px; }
+@media (max-width: 700px) { .csy-sides { grid-template-columns: minmax(0, 1fr); } }

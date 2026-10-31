@@ -1,0 +1,35 @@
+'use strict';
+module.exports = {
+  errNoVersion: 'Falta la versión de Minecraft.',
+  errNoInstance: 'Elegí una instancia.',
+  errRunning: 'Cerrá {name} antes de instalar packs.',
+  errNoPacks: 'Elegí al menos un pack.',
+  errModrinth: 'No se pudo consultar Modrinth: {error}',
+
+  taskInstall: 'Instalando packs en {name}',
+  taskPartial_one: 'Listo, pero {count} proyecto no se pudo instalar.',
+  taskPartial_other: 'Listo, pero {count} proyectos no se pudieron instalar.',
+
+  pack_performance: 'Rendimiento',
+  pack_performance_desc: 'Más FPS y menos RAM con los mods de optimización más usados.',
+  pack_shaders: 'Shaders',
+  pack_shaders_desc: 'Iris (u Oculus en Forge) con Complementary, BSL y MakeUp, el más liviano.',
+  pack_minimap: 'Minimapa',
+  pack_minimap_desc: 'Un minimapa con puntos de referencia para no perderte nunca.',
+  pack_qol: 'Calidad de vida',
+  pack_qol_desc: 'Recetas, información de bloques, hambre a la vista y atajos de inventario.',
+  'pack_pvp-hud': 'Cliente PvP',
+  'pack_pvp-hud_desc': 'Zoom, teclas en pantalla, CPS, FPS, coordenadas y un F3 más claro.',
+  pack_controller: 'Joystick',
+  pack_controller_desc: 'Jugá con un joystick de Xbox, PlayStation o Switch.',
+  pack_voice: 'Chat de voz',
+  pack_voice_desc: 'Simple Voice Chat: hablá con los que tenés cerca dentro del juego.',
+  pack_multiplayer: 'Jugar con amigos',
+  pack_multiplayer_desc: 'e4mc: abrí tu mundo a internet sin tocar el router.',
+
+  noteNeedsLoader: 'Necesita una instancia con Fabric, Quilt, Forge o NeoForge.',
+  noteShadersVanilla: 'Para usar shaders, creá una instancia Fabric (o con el preset Iris).',
+  noteUnavailable: 'Todavía no está disponible para esta versión de Minecraft y este loader.',
+  noteVoiceServer: 'El servidor también tiene que tener Simple Voice Chat.',
+  noteE4mc: 'Abrí tu mundo en LAN y e4mc te da una dirección para compartir.',
+};

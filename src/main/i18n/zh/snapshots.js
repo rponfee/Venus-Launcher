@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "正在保存 {name} 的快照",
+  taskRestore: "正在恢复 {name}",
+  stepScan: "正在检查文件…",
+  stepSaving: "正在保存 {done}/{total}",
+  stepSafety: "正在保存当前状态，以防万一…",
+  stepCompare: "正在与快照比较…",
+  stepRestoring: "正在恢复 {done}/{total}",
+  errNoInstance: "该实例不存在或已被删除。",
+  errNotFound: "该快照已不存在。",
+  errRunning: "请先关闭游戏，再恢复快照。",
+  errRunningWorlds: "要在快照中包含世界，请先关闭游戏：游戏正在写入这些世界。",
+  errBadWorld: "在该实例中找不到这个世界。",
+  errTooMany: "要保存的文件太多了（超过 {count} 个）。",
+  errNoSpace: "磁盘空间不足，无法保存快照。",
+  errDamaged: "快照中的文件 {file} 已损坏。你之前的状态已保存在“恢复之前”快照中。",
+  errMissingObjects: "存储库中缺少这个快照的部分文件：无法恢复。没有改动任何内容。",
+  errLocked: "无法使用 {file}：另一个程序正打开着它。请关闭它后重试。",
+};

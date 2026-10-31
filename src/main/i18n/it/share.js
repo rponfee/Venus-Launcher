@@ -1,0 +1,23 @@
+'use strict';
+module.exports = {
+  errModrinth: "Impossibile consultare Modrinth per identificare le mod: {error}",
+  errBadManifest: "Il modpack condiviso è danneggiato o non valido.",
+  errNewerFormat: "Questo modpack è stato condiviso con una versione più recente di Venus Launcher. Aggiorna il launcher per usarlo.",
+  errTooLarge: "Il modpack è troppo grande per essere condiviso (troppe configurazioni). Disattiva \"Includi config delle mod\" oppure rimuovi i file grandi da config/.",
+  errGameRunning: "Chiudi il gioco prima di sincronizzare questa istanza.",
+  errBusyLaunch: "Il modpack condiviso di questa istanza è in fase di aggiornamento. Aspetta che finisca e torna a giocare.",
+  taskApply: "Sincronizzazione di {name}",
+  taskCreate: "Creazione di {name}",
+  stepCompare: "Confronto con il modpack condiviso...",
+  stepDownload_one: "Download di {count} file...",
+  stepDownload_other: "Download di {count} file...",
+  progressLabel: "Mod",
+  stepApply: "Applicazione delle modifiche...",
+  stepDone: "Fatto",
+  warnUnavailable: "{name} non può più essere scaricato: aggiungilo a mano.",
+  warnRemove: "Impossibile rimuovere {name}: {error}",
+  warnToggle: "Impossibile attivare o disattivare {name}: {error}",
+  warnConfig: "Impossibile scrivere {name}: {error}",
+  warnPrepare: "Le mod sono pronte, ma non è stato ancora possibile installare il gioco ({error}). Si riprova quando giochi.",
+  errBadPath: "Il modpack condiviso contiene un percorso di file non consentito.",
+};

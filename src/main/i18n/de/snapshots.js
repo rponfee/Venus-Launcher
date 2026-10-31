@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "Sicherungspunkt von {name} wird gespeichert",
+  taskRestore: "{name} wird wiederhergestellt",
+  stepScan: "Dateien werden geprüft…",
+  stepSaving: "Speichere {done} von {total}",
+  stepSafety: "Der aktuelle Zustand wird zur Sicherheit gespeichert…",
+  stepCompare: "Vergleich mit dem Sicherungspunkt…",
+  stepRestoring: "Stelle {done} von {total} wieder her",
+  errNoInstance: "Die Instanz existiert nicht oder wurde gelöscht.",
+  errNotFound: "Dieser Sicherungspunkt existiert nicht mehr.",
+  errRunning: "Schließe das Spiel, bevor du einen Sicherungspunkt wiederherstellst.",
+  errRunningWorlds: "Schließe das Spiel, um Welten in den Sicherungspunkt aufzunehmen: Das Spiel schreibt gerade in sie.",
+  errBadWorld: "Diese Welt wurde in der Instanz nicht gefunden.",
+  errTooMany: "Es sind zu viele Dateien zum Speichern vorhanden (mehr als {count}).",
+  errNoSpace: "Es ist nicht genug Speicherplatz vorhanden, um den Sicherungspunkt zu speichern.",
+  errDamaged: "Die Datei {file} des Sicherungspunkts ist beschädigt. Dein vorheriger Zustand wurde im Sicherungspunkt „Vor dem Wiederherstellen“ gespeichert.",
+  errMissingObjects: "Dateien dieses Sicherungspunkts fehlen im Speicher: Er kann nicht wiederhergestellt werden. Es wurde nichts verändert.",
+  errLocked: "{file} konnte nicht verwendet werden: Ein anderes Programm hat die Datei geöffnet. Schließe es und versuche es erneut.",
+};

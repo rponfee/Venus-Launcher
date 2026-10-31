@@ -1,0 +1,160 @@
+/* ============================================================
+   Mapa del mundo: visor desde arriba con teselas por region
+   Prefijo de clases: .wm-  ·  Colores con los tokens de main.css
+   ============================================================ */
+
+/* ---------- Ventana ---------- */
+.modal-backdrop.wm-backdrop { padding: var(--sp-4); }
+.modal.wm-modal { width: min(1480px, 100%); height: min(940px, calc(100vh - 32px)); max-height: none; }
+.wm-modal .modal-head { padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border); }
+.wm-modal .modal-head h3 { min-width: 0; font-size: var(--fs-lg); }
+.wm-modal .modal-head .icon-btn { align-self: center; margin: 0; }
+.wm-modal .modal-body.wm-body { flex: 1; min-height: 0; padding: 0; overflow: hidden; display: flex; }
+.wm-modal .modal-foot.wm-foot { align-items: center; padding: var(--sp-3) var(--sp-4); gap: var(--sp-2); }
+
+.wm-head { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.wm-head-icon { width: 36px; height: 36px; border-radius: var(--radius-s); display: grid; place-items: center; flex-shrink: 0; background: var(--accent-wash); color: var(--accent-hi); border: 1px solid var(--accent-line); }
+.wm-head-icon svg { width: 18px; height: 18px; }
+.wm-head-text { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+/* Titulo con la misma letra que los demas dialogos (modal({ icon, subtitle }) de ui.js) */
+.wm-title { font-size: var(--fs-xl); font-weight: 700; line-height: 1.3; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wm-sub { font-size: var(--fs-sm); font-weight: 500; line-height: 1.4; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wm-sub:empty { display: none; }
+
+/* ---------- Escenario del mapa ---------- */
+.wm-stage {
+  position: relative; isolation: isolate; flex: 1; min-width: 0; overflow: hidden; cursor: grab;
+  background:
+    radial-gradient(700px 420px at 50% 45%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%),
+    radial-gradient(color-mix(in srgb, var(--accent-hi) 9%, transparent) 1px, transparent 1.6px) 0 0 / 24px 24px,
+    var(--bg-0);
+}
+.wm-stage.dragging, .wm-stage.dragging .wm-canvas { cursor: grabbing; }
+.wm-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+/* El contorno se pinta arriba de los pixeles del canvas (una sombra interna quedaria debajo) */
+.wm-canvas:focus-visible { outline: var(--focus-ring); outline-offset: -2px; }
+
+/* Paneles flotantes (capas locales del escenario: marcadores < paneles < estados < menu) */
+.wm-panel { position: absolute; z-index: calc(var(--z-base) + 1); background: color-mix(in srgb, var(--bg-1) 86%, transparent); border: 1px solid var(--border-2); border-radius: var(--radius); box-shadow: var(--shadow-s); backdrop-filter: blur(8px); }
+.wm-panel[hidden] { display: none; }
+
+.wm-dims { top: var(--sp-3); left: var(--sp-3); padding: 3px; display: flex; align-items: center; gap: var(--sp-2); max-width: calc(100% - 96px); }
+.wm-seg.segmented { border: 0; background: transparent; padding: 0; }
+.wm-dim-select { height: var(--control-h-sm); max-width: 200px; padding: 0 28px 0 10px; border-radius: var(--radius-s); font-size: var(--fs-sm); background-position: right 8px center; }
+
+.wm-tools { top: var(--sp-3); right: var(--sp-3); display: flex; flex-direction: column; gap: 2px; padding: var(--sp-1); }
+.wm-tool {
+  width: 36px; height: 36px; border-radius: var(--radius-s); border: 0; background: transparent; color: var(--text-2); display: grid; place-items: center; cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.wm-tool svg { width: 18px; height: 18px; }
+.wm-tool:hover:not(:disabled) { background: var(--hover-bg); color: var(--text); }
+.wm-tool:active:not(:disabled) { transform: scale(0.94); }
+.wm-tool:focus-visible { outline: var(--focus-ring); outline-offset: -2px; }
+.wm-tool[aria-pressed='true'], .wm-tool[aria-expanded='true'] { background: var(--accent-wash); color: var(--accent-hi); box-shadow: inset 0 0 0 1px var(--accent-line); }
+.wm-tool:disabled { opacity: 0.45; cursor: not-allowed; }
+.wm-tool-sep { height: 1px; margin: 3px 6px; background: var(--border-2); }
+
+.wm-coords {
+  left: var(--sp-3); bottom: var(--sp-3); display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 180px; padding: var(--sp-2) var(--sp-3);
+  font: inherit; color: var(--text); text-align: left; cursor: copy; transition: border-color var(--dur-fast) var(--ease-out);
+}
+.wm-coords:hover { border-color: var(--border-3); }
+.wm-coord-main { font-family: var(--mono); font-size: var(--fs-sm); font-weight: 600; color: var(--cream); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wm-coord-sub { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.wm-scale { right: var(--sp-3); bottom: var(--sp-3); display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums; pointer-events: none; }
+.wm-scale-bar { display: block; height: 8px; border: 2px solid var(--text-2); border-top: 0; border-radius: 0 0 2px 2px; }
+.wm-north { display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: var(--pixel); font-size: var(--fs-xs); font-weight: 700; color: var(--accent-hi); padding-right: var(--sp-3); border-right: 1px solid var(--border-2); line-height: 1; }
+.wm-north::before { content: ''; width: 8px; height: 6px; background: currentColor; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+
+.wm-progress { top: var(--sp-3); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: var(--sp-3); min-width: 260px; max-width: 380px; padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3); }
+.wm-progress-main { flex: 1; min-width: 0; }
+.wm-progress-text { display: block; font-size: var(--fs-sm); font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.wm-progress .progress { height: 6px; margin-top: 6px; }
+.wm-progress-cancel {
+  width: 28px; height: 28px; flex-shrink: 0; border-radius: var(--radius-s); border: 1px solid var(--border); background: transparent; color: var(--text-2); display: grid; place-items: center; cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.wm-progress-cancel svg { width: 14px; height: 14px; }
+.wm-progress-cancel:hover { color: var(--text); background: color-mix(in srgb, var(--bad) 78%, var(--bg-0)); border-color: var(--bad); }
+.wm-progress-cancel[hidden] { display: none; }
+
+/* Estados (cargando, sin terreno, error) */
+.wm-overlay { position: absolute; inset: 0; z-index: calc(var(--z-base) + 2); display: grid; place-items: center; padding: var(--sp-6); pointer-events: none; }
+.wm-overlay[hidden] { display: none; }
+.wm-overlay > * { pointer-events: auto; animation: wm-in var(--dur) var(--ease-out); }
+@keyframes wm-in { from { opacity: 0; transform: translateY(4px); } }
+.wm-state { max-width: 440px; display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); text-align: center; }
+.wm-state.card { padding: var(--sp-6) var(--sp-7); box-shadow: var(--shadow); }
+.wm-state-icon { width: 52px; height: 52px; margin-bottom: var(--sp-2); border-radius: 16px; display: grid; place-items: center; background: color-mix(in srgb, var(--surface-3) 80%, transparent); color: var(--accent-hi); border: 1px solid var(--border-2); }
+.wm-state-icon.bad { background: var(--bad-wash); color: var(--bad-text); border-color: var(--bad-line); }
+.wm-state-icon svg { width: 26px; height: 26px; }
+.wm-state-title { font-weight: 700; font-size: var(--fs-lg); line-height: 1.3; color: var(--text); text-wrap: balance; }
+.wm-state-text { font-size: var(--fs-md); line-height: 1.5; color: var(--muted); max-width: 52ch; text-wrap: pretty; }
+.wm-state .btn { margin-top: var(--sp-2); }
+.wm-loading { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-5) var(--sp-6); border-radius: var(--radius-l); background: color-mix(in srgb, var(--bg-1) 86%, transparent); border: 1px solid var(--border); color: var(--text-2); font-size: var(--fs-md); }
+
+/* ---------- Marcadores ---------- */
+.wm-markers { position: absolute; inset: 0; z-index: var(--z-base); overflow: hidden; pointer-events: none; }
+.wm-markers[hidden] { display: none; }
+.wm-marker { position: absolute; left: 0; top: 0; width: 0; height: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; pointer-events: auto; will-change: transform; }
+.wm-marker[hidden] { display: none; }
+.wm-marker:focus-visible { outline: none; }
+.wm-marker:hover, .wm-marker:focus-visible { z-index: var(--z-base); }
+.wm-mlabel {
+  position: absolute; left: 0; top: 18px; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  padding: 2px var(--sp-2); border-radius: var(--radius-xs); font-size: var(--fs-xs); font-weight: 700; color: var(--cream);
+  background: color-mix(in srgb, var(--bg-0) 84%, transparent); border: 1px solid var(--border-2); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.wm-face {
+  position: absolute; left: 0; top: 0; width: 28px; height: 28px; transform: translate(-50%, -50%); overflow: hidden;
+  border-radius: var(--radius-s); border: 2px solid var(--pc, var(--info)); background: var(--surface-3);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bg-0) 80%, transparent), 0 4px 12px rgba(0, 0, 0, 0.55); transition: transform var(--dur-fast) var(--ease-out);
+}
+.wm-avatar { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.wm-m-player:hover .wm-face, .wm-m-player:focus-visible .wm-face { transform: translate(-50%, -50%) scale(1.15); }
+.wm-m-player:focus-visible .wm-face { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+
+.wm-pin {
+  position: absolute; left: 0; top: 0; width: 28px; height: 28px; transform: translate(-50%, calc(-100% - 6px)); display: grid; place-items: center;
+  border-radius: 50% 50% 50% 4px; rotate: -45deg; color: var(--accent-ink);
+  background: linear-gradient(180deg, var(--accent-hi), var(--accent) 60%, var(--accent-lo)); border: 2px solid var(--cream);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bg-0) 75%, transparent), 0 5px 14px rgba(0, 0, 0, 0.55), 0 0 18px var(--accent-glow); transition: scale var(--dur-fast) var(--ease-out);
+}
+.wm-pin svg { width: 14px; height: 14px; rotate: 45deg; }
+.wm-m-spawn::after { content: ''; position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-hi); box-shadow: 0 0 0 2px color-mix(in srgb, var(--bg-0) 80%, transparent); }
+.wm-m-spawn .wm-mlabel { top: 8px; }
+.wm-markers.wm-far .wm-mlabel { display: none; }
+.wm-markers.wm-far .wm-marker:hover .wm-mlabel, .wm-markers.wm-far .wm-marker:focus-visible .wm-mlabel { display: block; }
+.wm-m-spawn:hover .wm-pin, .wm-m-spawn:focus-visible .wm-pin { scale: 1.12; }
+.wm-m-spawn:focus-visible .wm-pin { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+
+/* ---------- Menu de jugadores ---------- */
+.wm-menu {
+  position: absolute; z-index: calc(var(--z-base) + 3); top: var(--sp-3); right: 64px; width: 280px; max-height: calc(100% - 24px); overflow-y: auto; padding: 6px;
+  background: var(--surface-raised); border: 1px solid var(--border-2); border-radius: var(--radius); box-shadow: var(--shadow); animation: wm-pop var(--dur-fast) var(--ease-out);
+}
+@keyframes wm-pop { from { opacity: 0; transform: translateX(4px) scale(0.98); } }
+.wm-menu-title { font-family: var(--pixel); font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); padding: 6px var(--sp-2) var(--sp-1); }
+.wm-menu-item {
+  display: flex; align-items: center; gap: var(--sp-3); width: 100%; padding: 6px var(--sp-2); border-radius: var(--radius-s); border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.wm-menu-item:hover, .wm-menu-item:focus-visible { background: var(--hover-bg); }
+.wm-menu-item:focus-visible { outline: var(--focus-ring); outline-offset: -2px; }
+.wm-menu-avatar { width: 32px; height: 32px; border-radius: var(--radius-s); image-rendering: pixelated; background: var(--surface-3); flex-shrink: 0; }
+.wm-menu-main { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.wm-menu-name { display: flex; align-items: center; gap: var(--sp-2); font-weight: 600; font-size: var(--fs-sm); min-width: 0; }
+.wm-menu-sub { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+
+/* ---------- Pie ---------- */
+.wm-status { margin-right: auto; display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); min-width: 0; font-size: var(--fs-sm); color: var(--text-2); }
+.wm-stat { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
+.wm-stat svg { width: 16px; height: 16px; color: var(--accent-hi); }
+.wm-pill { white-space: nowrap; }
+.wm-hint { color: var(--muted); white-space: nowrap; }
+
+@media (max-width: 1180px) {
+  .wm-hint { display: none; }
+}

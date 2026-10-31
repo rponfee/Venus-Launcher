@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "Niedozwolona ścieżka",
+  errUrlNotAllowed: "Niedozwolony adres URL",
+  errBadPath: "Nieprawidłowa ścieżka",
+  errBadKey: "Nieprawidłowy klucz",
+  selectFiles: "Wybierz pliki",
+  selectFolder: "Wybierz folder",
+  gpuUnknown: "Nieznana",
+  errCloseGameToDelete: "Zamknij grę, zanim usuniesz instancję",
+  taskAddOptifine: "Dodawanie OptiFine do {name}",
+  taskInstallInto: "Instalowanie w {name}",
+  taskModpack: "Instalowanie modpacka",
+  errNoModpack: "Nie wskazano modpacka",
+  errAlreadyRunning: "Ta instancja jest już uruchomiona",
+  errLaunchBlocked: "Uruchomienie anulowane",
+  logStarting: "Uruchamianie {name} ({version}) z Java {java}",
+  logMemoryMicrosoft: "Pamięć: {min} MB - {max} MB · Konto: {account} (Microsoft)",
+  logMemoryOffline: "Pamięć: {min} MB - {max} MB · Konto: {account} (offline)",
+  loginWindowTitle: "Zaloguj się przez Microsoft",
+};

@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "Não encontramos essa instância.",
+  errWorld: "Não encontramos esse mundo. Ele pode ter sido apagado ou movido.",
+  errDimension: "Essa dimensão não existe neste mundo.",
+  errRegion: "As coordenadas da região não são válidas.",
+  errRender: "Não foi possível desenhar a região {x}, {z}: {error}",
+  errWorker: "O renderizador do mapa foi encerrado inesperadamente (código {code}).",
+  errWorkerClosed: "O renderizador do mapa já está fechado.",
+  errImage: "A imagem do mapa não é válida.",
+  errSave: "Não foi possível salvar a imagem: {error}",
+  errReveal: "Essa imagem não foi exportada nesta sessão.",
+  taskTitle: "Desenhando o mapa de {world} ({dimension})",
+  taskProgress: "Região {done} de {total}",
+  canceled: "Cancelado pelo usuário",
+  dim_overworld: "Superfície",
+  dim_nether: "Nether",
+  dim_end: "O End",
+  saveTitle: "Salvar o mapa como imagem",
+  filterPng: "Imagem PNG",
+  fileName: "mapa",
+};

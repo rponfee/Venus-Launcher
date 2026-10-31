@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="assets/venus-64.png">
+<title>Venus Launcher</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Launcher de Minecraft: Java Edition para Windows. Mods, modpacks y shaders de Modrinth y CurseForge en un clic, servidores para jugar con amigos y un asistente con IA.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Pixelify+Sans:wght@500;600;700&display=swap">
+<style>
+  /* Layout: una sola columna de 1120 px sobre un cielo cálido; Venus (el planeta pixelado del launcher) es la única fuente de luz. */
+  :root {
+    --bg: #0c0705;
+    --surface: #1b130e;
+    --surface-2: #231912;
+    --line: rgba(255, 230, 176, 0.1);
+    --line-2: rgba(255, 230, 176, 0.18);
+    --text: #fff3e3;
+    --text-2: #d4bfa8;
+    --muted: #ad9781;
+    --accent: #f29a2e;
+    --accent-hi: #ffc562;
+    --accent-lo: #d9761c;
+    --accent-ink: #2b1405;
+    --accent-wash: rgba(242, 154, 46, 0.12);
+    --cream: #ffe6b0;
+    --good: #36c25a;
+    --pixel: "Pixelify Sans", "Outfit", system-ui, sans-serif;
+    --font: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { display: block; max-width: 100%; height: auto; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 3px; border-radius: 6px; }
+
+  /* Cielo: estrellas fijas y el brillo de Venus arriba a la derecha */
+  .sky {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(900px 520px at 82% -6%, rgba(242, 154, 46, 0.17), transparent 62%),
+      radial-gradient(1px 1px at 18px 24px, rgba(255, 243, 227, 0.55) 99%, transparent),
+      radial-gradient(1px 1px at 132px 96px, rgba(255, 243, 227, 0.32) 99%, transparent),
+      radial-gradient(1.5px 1.5px at 208px 172px, rgba(255, 197, 98, 0.42) 99%, transparent),
+      radial-gradient(1px 1px at 74px 210px, rgba(255, 243, 227, 0.25) 99%, transparent);
+    background-size: 100% 100%, 240px 240px, 240px 240px, 240px 240px, 240px 240px;
+  }
+
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .band { padding-block: 72px; }
+  .band + .band { border-top: 1px solid var(--line); }
+
+  /* Encabezado */
+  .top .wrap { display: flex; align-items: center; gap: 28px; padding-block: 18px; }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .brand img { width: 38px; height: 38px; image-rendering: pixelated; }
+  .brand span { font-family: var(--pixel); font-size: 20px; font-weight: 600; color: var(--cream); letter-spacing: 0.02em; }
+  .nav { display: flex; gap: 24px; margin-left: auto; }
+  .nav a { color: var(--text-2); text-decoration: none; font-size: 15px; font-weight: 500; }
+  .nav a:hover { color: var(--cream); }
+
+  /* Botones */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 12px 22px;
+    border-radius: 14px;
+    font: 600 16px/1.2 var(--font);
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+  .btn svg { width: 20px; height: 20px; flex: none; }
+  .btn-play {
+    font-family: var(--pixel);
+    font-size: 19px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    padding: 14px 28px;
+    background: linear-gradient(180deg, var(--accent-hi), var(--accent) 52%, var(--accent-lo));
+    border: 1px solid rgba(255, 230, 176, 0.55);
+    box-shadow: inset 0 -4px 0 rgba(43, 20, 5, 0.22), 0 12px 32px rgba(242, 154, 46, 0.28);
+  }
+  .btn-play:hover { transform: translateY(-1px); box-shadow: inset 0 -4px 0 rgba(43, 20, 5, 0.22), 0 16px 40px rgba(242, 154, 46, 0.36); }
+  .btn-play:active { transform: translateY(1px); box-shadow: inset 0 -2px 0 rgba(43, 20, 5, 0.22), 0 6px 18px rgba(242, 154, 46, 0.3); }
+  .btn-ghost { color: var(--text); background: rgba(255, 230, 176, 0.04); border: 1px solid var(--line-2); }
+  .btn-ghost:hover { background: rgba(255, 230, 176, 0.09); }
+  .btn-sm { min-height: 40px; padding: 8px 16px; font-size: 15px; border-radius: 12px; }
+
+  /* Portada */
+  .hero { padding-block: 48px 40px; }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: 40px; align-items: center; }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-hi);
+  }
+  .eyebrow::before { content: ""; width: 8px; height: 8px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  h1, h2 { font-family: var(--pixel); font-weight: 600; color: var(--cream); text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(40px, 6.2vw, 66px); line-height: 1.04; margin-top: 16px; letter-spacing: 0.01em; }
+  .lead { font-size: 19px; color: var(--text-2); max-width: 34em; margin: 20px 0 0; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 18px; font-size: 14px; color: var(--muted); }
+  .meta span + span::before { content: "·"; margin-right: 16px; color: var(--line-2); }
+  .planet { justify-self: center; position: relative; }
+  .planet::before {
+    content: "";
+    position: absolute;
+    inset: -14%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(242, 154, 46, 0.32), transparent);
+    z-index: -1;
+  }
+  .planet img { width: min(340px, 64vw); image-rendering: pixelated; animation: drift 9s ease-in-out infinite; }
+  @keyframes drift { 50% { transform: translateY(-10px) rotate(-2deg); } }
+
+  /* Captura del launcher */
+  .shot {
+    margin: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--line-2);
+    background: var(--surface);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  }
+  .shot img { width: 100%; }
+  .loaders { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 22px; font-size: 14px; color: var(--muted); }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    color: var(--text-2);
+    font-size: 13.5px;
+    font-weight: 500;
+    background: rgba(255, 230, 176, 0.03);
+  }
+  .chip::before { content: ""; width: 6px; height: 6px; background: var(--accent); }
+
+  /* Encabezados de sección */
+  .section-head { max-width: 40em; margin-bottom: 36px; }
+  h2 { font-size: clamp(30px, 4.2vw, 42px); line-height: 1.1; }
+  .section-head p { color: var(--text-2); font-size: 17px; margin: 14px 0 0; }
+
+  /* Funciones */
+  .features { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .feature {
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ico {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: var(--accent-wash);
+    color: var(--accent-hi);
+  }
+  .ico svg { width: 22px; height: 22px; }
+  .feature h3 { margin: 6px 0 0; font-size: 17px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .feature p { margin: 0; font-size: 14.5px; color: var(--text-2); line-height: 1.55; }
+
+  /* Vistas del launcher */
+  .show { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 48px; align-items: center; }
+  .show + .show { margin-top: 64px; }
+  .show.flip .show-media { order: 2; }
+  .show h3 { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 600; color: var(--cream); text-wrap: balance; }
+  .show p { color: var(--text-2); margin: 14px 0 0; }
+  .ticks { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; }
+  .ticks li { display: flex; gap: 12px; align-items: flex-start; color: var(--text); font-size: 15.5px; }
+  .ticks svg { width: 20px; height: 20px; flex: none; margin-top: 2px; color: var(--good); }
+  .ticks q { color: var(--accent-hi); quotes: "«" "»"; }
+
+  /* Planes */
+  .plans { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+  .plan {
+    padding: 20px 18px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .plan-name { font-family: var(--pixel); font-size: 21px; font-weight: 600; color: var(--cream); }
+  .price { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); line-height: 1.2; }
+  .price small { font-size: 14px; font-weight: 500; color: var(--muted); }
+  .plan p { margin: 4px 0 0; font-size: 13.5px; color: var(--text-2); line-height: 1.5; }
+  .plans-note { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+  .plans-note strong { color: var(--text-2); font-weight: 600; }
+
+  /* Descarga */
+  .get {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 32px;
+    align-items: center;
+    padding: 36px;
+    border: 1px solid var(--line-2);
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(242, 154, 46, 0.1), rgba(27, 19, 14, 0.85) 55%);
+  }
+  .get h2 { font-size: clamp(28px, 3.6vw, 38px); }
+  .specs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .get-actions { display: flex; flex-direction: column; gap: 10px; }
+  .notice {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(255, 230, 176, 0.04);
+    border: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--text-2);
+  }
+  .notice svg { width: 20px; height: 20px; flex: none; color: var(--accent-hi); margin-top: 1px; }
+  .notice b { color: var(--text); font-weight: 600; }
+
+  /* Preguntas */
+  .faq { max-width: 760px; }
+  .faq details { border-bottom: 1px solid var(--line); }
+  .faq summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 0;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; font-family: var(--pixel); font-size: 22px; color: var(--accent-hi); line-height: 1; transition: transform 0.2s ease; }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq p { margin: 0 0 18px; color: var(--text-2); max-width: 62ch; }
+
+  /* Pie */
+  .foot { border-top: 1px solid var(--line); padding-block: 32px 40px; }
+  .foot .wrap { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between; }
+  .foot .brand img { width: 30px; height: 30px; }
+  .foot .brand span { font-size: 17px; }
+  .legal { margin: 0; font-size: 13px; color: var(--muted); max-width: 52em; }
+
+  @media (max-width: 960px) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .planet { order: -1; }
+    .planet img { width: min(220px, 50vw); }
+    .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .show { grid-template-columns: 1fr; gap: 28px; }
+    .show.flip .show-media { order: 0; }
+    .plans { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .get { grid-template-columns: 1fr; padding: 28px 22px; }
+  }
+  @media (max-width: 720px) {
+    .nav { display: none; }
+    .top .btn-sm { margin-left: auto; }
+    .band { padding-block: 56px; }
+  }
+  @media (max-width: 520px) {
+    .features { grid-template-columns: 1fr; }
+    .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ctas .btn { flex: 1 1 100%; }
+    .lead { font-size: 17.5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .planet img { animation: none; }
+    .btn, .faq summary::after { transition: none; }
+  }
+</style>
+<style>body { margin: 0; } [hidden] { display: none !important; }</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#inicio" aria-label="Venus Launcher, inicio">
+      <img src="assets/venus-64.png" alt="" width="38" height="38">
+      <span>Venus Launcher</span>
+    </a>
+    <nav class="nav" aria-label="Secciones">
+      <a href="#funciones">Funciones</a>
+      <a href="#venus-ia">Venus IA</a>
+      <a href="#descargar">Descargar</a>
+      <a href="#preguntas">Preguntas</a>
+    </nav>
+    <a class="btn btn-ghost btn-sm" href="#descargar">Descargar</a>
+  </div>
+</header>
+
+<main id="inicio">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Launcher de Minecraft: Java Edition</span>
+        <h1>Minecraft con mods, sin complicarte</h1>
+        <p class="lead">Instalá mods, modpacks y shaders en un clic, armá un servidor para jugar con amigos y dejá que el asistente con IA resuelva los crashes por vos.</p>
+        <div class="ctas">
+          <a class="btn btn-play" href="https://dzchklzaxyygbvfpagvx.supabase.co/storage/v1/object/public/descargas/VenusLauncher-Setup-1.0.0.exe">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+            Descargar gratis
+          </a>
+          <a class="btn btn-ghost" href="#funciones">Ver qué trae</a>
+        </div>
+        <div class="meta"><span>Windows 10 y 11</span><span>Versión 1.0.0</span><span>14 idiomas</span></div>
+        <div class="loaders">
+          <span>Funciona con</span>
+          <span class="chip">Fabric</span>
+          <span class="chip">Forge</span>
+          <span class="chip">NeoForge</span>
+          <span class="chip">Quilt</span>
+          <span class="chip">OptiFine</span>
+          <span class="chip">Iris</span>
+          <span class="chip">Vanilla</span>
+        </div>
+      </div>
+      <div class="planet" aria-hidden="true">
+        <img src="assets/venus-256.png" alt="" width="256" height="256">
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="funciones">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Todo lo que necesitás para jugar con mods</h2>
+        <p>Desde la primera instancia hasta tu propio servidor, sin tocar carpetas ni archivos de configuración.</p>
+      </div>
+      <div class="features">
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg></div>
+          <h3>Modrinth y CurseForge</h3>
+          <p>Más de 170.000 mods, modpacks, shaders, resource packs, data packs y plugins, con filtros por versión, loader, autor y descargas.</p>
+        </article>
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.6L18 9.5l-4.2 1.9L12 16l-1.8-4.6L6 9.5l4.2-1.9Z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/></svg></div>
+          <h3>Buscador inteligente</h3>
+          <p>Contale qué querés jugar, por ejemplo un singleplayer de zombies, y te arma una lista compatible con tu versión.</p>
+        </article>
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 4 6 6-10 10H4v-6Z"/><path d="m12 6 6 6"/></svg></div>
+          <h3>Asistente con IA</h3>
+          <p>Diagnostica crashes, instala mods y optimiza tu instancia. Cada cambio se puede deshacer con un clic.</p>
+        </article>
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg></div>
+          <h3>Servidores locales</h3>
+          <p>Paper, Fabric, Forge y más, con todo el server.properties a mano y para jugar con amigos sin abrir puertos.</p>
+        </article>
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+          <h3>Amigos y Voice Chat</h3>
+          <p>Mensajes privados, invitaciones a tu mundo y salas de voz para coordinar sin salir del launcher.</p>
+        </article>
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg></div>
+          <h3>Instantáneas</h3>
+          <p>Guardá cómo estaba tu instancia antes de cambiar mods y volvé atrás en un clic si algo se rompe.</p>
+        </article>
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></svg></div>
+          <h3>Rendimiento a medida</h3>
+          <p>Ajusta la RAM y las opciones de video según tu PC, sin pelearte con números.</p>
+        </article>
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+          <h3>En tu idioma</h3>
+          <p>Español, inglés, portugués, francés, alemán, japonés, coreano, chino y seis idiomas más.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-label="El launcher por dentro">
+    <div class="wrap">
+      <div class="show">
+        <figure class="shot show-media">
+          <img src="assets/modrinth.jpg" alt="Buscador de Modrinth en Venus Launcher con Fabric API, Sodium e Iris, filtros y la opción de resultados por página." width="1038" height="790" loading="lazy">
+        </figure>
+        <div>
+          <h3>Todo el contenido, con filtros de verdad</h3>
+          <p>Buscá en Modrinth y CurseForge desde el mismo lugar e instalá lo que quieras en la instancia que elijas.</p>
+          <ul class="ticks">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Elegí cuántos resultados ver: 10, 20, 50 o 100.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Frase exacta, palabras a excluir, autor y descargas mínimas.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Revisa la compatibilidad con tu versión antes de instalar.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="show flip">
+        <figure class="shot show-media">
+          <img src="assets/asistente.jpg" alt="Chat del asistente de Venus Launcher con sugerencias como «Mi juego crashea, ¿qué pasa?» e «Instalá Sodium y Iris»." width="696" height="630" loading="lazy">
+        </figure>
+        <div>
+          <h3>Un asistente que hace, además de responder</h3>
+          <p>Pedile lo que necesitás con tus palabras y lo resuelve dentro del launcher.</p>
+          <ul class="ticks">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Probá con <q>Mi juego crashea, ¿qué pasa?</q> o <q>Optimizá mi instancia para tener más FPS</q>.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Te pide permiso antes de cualquier cambio importante.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>También lo podés usar desde Claude o ChatGPT, con tu propia cuenta.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="venus-ia">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Venus IA, el plan que quieras</h2>
+        <p>El launcher es gratis. Los planes de Venus IA suman el asistente con los modelos de Claude y la conexión con Claude o ChatGPT.</p>
+      </div>
+      <div class="plans">
+        <article class="plan"><span class="plan-name">Go</span><span class="price">US$ 3,50 <small>/mes</small></span><p>Claude Haiku para empezar.</p></article>
+        <article class="plan"><span class="plan-name">Pro</span><span class="price">US$ 9,25 <small>/mes</small></span><p>Haiku y Claude Sonnet.</p></article>
+        <article class="plan"><span class="plan-name">Super</span><span class="price">US$ 13,50 <small>/mes</small></span><p>Más preguntas con Sonnet.</p></article>
+        <article class="plan"><span class="plan-name">Ultra</span><span class="price">US$ 25,50 <small>/mes</small></span><p>Sonnet con esfuerzo alto.</p></article>
+        <article class="plan"><span class="plan-name">Max</span><span class="price">US$ 36,50 <small>/mes</small></span><p>Suma Claude Opus.</p></article>
+        <article class="plan"><span class="plan-name">Supreme</span><span class="price">US$ 42,50 <small>/mes</small></span><p>Opus con esfuerzo alto.</p></article>
+      </div>
+      <p class="plans-note"><strong>Precios en dólares, por mes.</strong> Cambiás de plan o cancelás cuando quieras desde el launcher.</p>
+    </div>
+  </section>
+
+  <section class="band" id="descargar">
+    <div class="wrap">
+      <div class="get">
+        <div>
+          <h2>Descargá Venus Launcher</h2>
+          <div class="specs"><span class="chip">Versión 1.0.0</span><span class="chip">Windows 10 y 11 de 64 bits</span><span class="chip">113 MB</span></div>
+        </div>
+        <div class="get-actions">
+          <a class="btn btn-play" href="https://dzchklzaxyygbvfpagvx.supabase.co/storage/v1/object/public/descargas/VenusLauncher-Setup-1.0.0.exe">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+            Instalador
+          </a>
+          <a class="btn btn-ghost" href="https://dzchklzaxyygbvfpagvx.supabase.co/storage/v1/object/public/descargas/VenusLauncher-Portable-1.0.0.exe">Versión portable, sin instalar</a>
+        </div>
+        <p class="notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          <span>Al instalar, Windows puede mostrar <b>«Windows protegió su PC»</b>. Tocá <b>Más información</b> y después <b>Ejecutar de todas formas</b>: aparece porque el instalador todavía no tiene firma digital.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="preguntas">
+    <div class="wrap">
+      <div class="section-head"><h2>Preguntas frecuentes</h2></div>
+      <div class="faq">
+        <details>
+          <summary>¿Es gratis?</summary>
+          <p>Sí. El launcher, los mods, los servidores locales y el Voice Chat son gratis. Solo el asistente con IA usa un plan de Venus IA.</p>
+        </details>
+        <details>
+          <summary>¿Necesito una cuenta de Microsoft?</summary>
+          <p>Para jugar en servidores que piden cuenta original, sí. Para un jugador, en LAN o en tus servidores locales también podés usar una cuenta sin conexión.</p>
+        </details>
+        <details>
+          <summary>¿Puedo seguir usando mis mods de siempre?</summary>
+          <p>Sí. Podés importar modpacks, agregar tus propios archivos e instalar cualquier cosa de Modrinth y CurseForge en instancias separadas, cada una con su versión y su loader.</p>
+        </details>
+        <details>
+          <summary>¿Es seguro?</summary>
+          <p>Descarga solo de fuentes oficiales y revisa cada archivo. El asistente te pide permiso antes de los cambios importantes y guarda una instantánea para que puedas volver atrás.</p>
+        </details>
+        <details>
+          <summary>¿Hay versión para Mac o Linux?</summary>
+          <p>Por ahora, solo para Windows 10 y 11.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <a class="brand" href="#inicio">
+      <img src="assets/venus-64.png" alt="" width="30" height="30">
+      <span>Venus Launcher</span>
+    </a>
+    <p class="legal">© 2026 Venus Launcher. No es un producto oficial de Minecraft. No está aprobado por Mojang ni por Microsoft, ni asociado con ellos.</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "Pad niet toegestaan",
+  errUrlNotAllowed: "URL niet toegestaan",
+  errBadPath: "Ongeldig pad",
+  errBadKey: "Ongeldige sleutel",
+  selectFiles: "Bestanden kiezen",
+  selectFolder: "Map kiezen",
+  gpuUnknown: "Onbekend",
+  errCloseGameToDelete: "Sluit het spel voordat je de instantie verwijdert",
+  taskAddOptifine: "OptiFine toevoegen aan {name}",
+  taskInstallInto: "Installeren in {name}",
+  taskModpack: "Modpack installeren",
+  errNoModpack: "Er is geen modpack opgegeven",
+  errAlreadyRunning: "Deze instantie draait al",
+  errLaunchBlocked: "Starten geannuleerd",
+  logStarting: "{name} ({version}) starten met Java {java}",
+  logMemoryMicrosoft: "Geheugen: {min} MB - {max} MB · Account: {account} (Microsoft)",
+  logMemoryOffline: "Geheugen: {min} MB - {max} MB · Account: {account} (offline)",
+  loginWindowTitle: "Inloggen met Microsoft",
+};

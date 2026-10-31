@@ -1,0 +1,26 @@
+'use strict';
+// Textos de los instaladores de loaders (Fabric, Quilt, Legacy Fabric, Babric, Forge, NeoForge, OptiFine).
+module.exports = {
+  errUnknown: 'Loader desconocido: {kind}',
+  errNoVersions: '{loader} no tiene versiones para Minecraft {mc}',
+  errProfile: 'No se pudo obtener el perfil de {loader} {version} para Minecraft {mc}',
+  downloadingProfile: 'Descargando el perfil de {loader} {version}...',
+  installingMinecraft: 'Instalando Minecraft {mc}...',
+  downloadingInstaller: 'Descargando el instalador de {loader} {version}...',
+  errNoInstaller: '{loader} {version} no tiene un instalador compatible (versión demasiado antigua)',
+  errInstallerFormat: 'El instalador de {loader} {version} tiene un formato desconocido',
+  errBadVersion: 'La versión de {loader} «{version}» no es válida',
+  librariesOf: 'Librerías de {loader}',
+  runningProcessor: 'Ejecutando {name} ({current}/{total})...',
+  errMainClass: 'El processor {name} no tiene Main-Class',
+  errProcess: '{name} falló (código {code}):\n{log}',
+  installer: 'Instalador',
+  errOptifineList: 'No se pudo leer la lista de versiones de OptiFine',
+  downloadingFile: 'Descargando {name}...',
+  errOptifineLink: 'No se encontró el enlace de descarga',
+  errOptifineDownload: 'No se pudo descargar OptiFine: {error}',
+  errOptifinePatch: 'El parcheador de OptiFine falló:\n{log}',
+  errOptifineMissing: 'No hay OptiFine para Minecraft {mc}',
+  errOptifineEdition: 'No hay OptiFine {edition} para Minecraft {mc}',
+  patchingOptifine: 'Aplicando los parches de OptiFine...',
+};

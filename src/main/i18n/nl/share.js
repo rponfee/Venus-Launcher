@@ -1,0 +1,23 @@
+'use strict';
+module.exports = {
+  errModrinth: "Modrinth kon niet worden geraadpleegd om de mods te identificeren: {error}",
+  errBadManifest: "Het gedeelde modpack is beschadigd of ongeldig.",
+  errNewerFormat: "Dit modpack is gedeeld met een nieuwere versie van Venus Launcher. Werk de launcher bij om het te gebruiken.",
+  errTooLarge: "Het modpack is te groot om te delen (te veel configs). Schakel “Mod-configs opnemen” uit of verwijder grote bestanden uit config/.",
+  errGameRunning: "Sluit het spel voordat je deze instantie synchroniseert.",
+  errBusyLaunch: "Het gedeelde modpack van deze instantie wordt bijgewerkt. Wacht tot het klaar is en speel dan opnieuw.",
+  taskApply: "{name} synchroniseren",
+  taskCreate: "{name} maken",
+  stepCompare: "Vergelijken met het gedeelde modpack...",
+  stepDownload_one: "{count} bestand downloaden...",
+  stepDownload_other: "{count} bestanden downloaden...",
+  progressLabel: "Mods",
+  stepApply: "Wijzigingen toepassen...",
+  stepDone: "Klaar",
+  warnUnavailable: "{name} kan niet meer worden gedownload: voeg het handmatig toe.",
+  warnRemove: "{name} kon niet worden verwijderd: {error}",
+  warnToggle: "{name} kon niet worden in- of uitgeschakeld: {error}",
+  warnConfig: "{name} kon niet worden geschreven: {error}",
+  warnPrepare: "De mods staan klaar, maar het spel kon nog niet worden geïnstalleerd ({error}). Er wordt opnieuw geprobeerd zodra je speelt.",
+  errBadPath: "Het gedeelde modpack bevat een bestandspad dat niet is toegestaan.",
+};

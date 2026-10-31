@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "_comment": "Opciones de options.txt que puede cambiar el asistente (set_option). type: int | float | bool | enum (texto) | enumInt (nombre -> numero) | fov (grados -> valor interno). since = primera version de Minecraft que la tiene. legacy = clave vieja equivalente. quotedSince = desde esa version el valor va entre comillas.",
+  "keys": {
+    "renderDistance": { "type": "int", "min": 2, "max": 32, "label": { "es": "Distancia de render", "en": "Render distance" }, "unit": "chunks" },
+    "simulationDistance": { "type": "int", "min": 5, "max": 32, "since": "1.18", "label": { "es": "Distancia de simulación", "en": "Simulation distance" }, "unit": "chunks" },
+    "graphicsMode": { "type": "enumInt", "values": { "fast": 0, "fancy": 1, "fabulous": 2 }, "since": "1.16", "legacy": "fancyGraphics", "label": { "es": "Gráficos", "en": "Graphics" } },
+    "particles": { "type": "enumInt", "values": { "all": 0, "decreased": 1, "minimal": 2 }, "label": { "es": "Partículas", "en": "Particles" } },
+    "maxFps": { "type": "int", "min": 10, "max": 260, "label": { "es": "FPS máximos", "en": "Max FPS" }, "note": "260 = unlimited" },
+    "enableVsync": { "type": "bool", "since": "1.8", "label": { "es": "VSync", "en": "VSync" } },
+    "entityShadows": { "type": "bool", "since": "1.8", "label": { "es": "Sombras de entidades", "en": "Entity shadows" } },
+    "mipmapLevels": { "type": "int", "min": 0, "max": 4, "since": "1.7", "label": { "es": "Niveles de mipmap", "en": "Mipmap levels" } },
+    "biomeBlendRadius": { "type": "int", "min": 0, "max": 7, "since": "1.13", "label": { "es": "Mezcla de biomas", "en": "Biome blend" } },
+    "renderClouds": { "type": "enum", "values": ["true", "fast", "false"], "aliases": { "fancy": "true", "on": "true", "off": "false", "none": "false" }, "quotedSince": "1.19", "label": { "es": "Nubes", "en": "Clouds" } },
+    "ao": { "type": "bool", "numericBefore": "1.19", "label": { "es": "Iluminación suave", "en": "Smooth lighting" } },
+    "entityDistanceScaling": { "type": "float", "min": 0.5, "max": 5, "since": "1.16", "label": { "es": "Distancia de entidades", "en": "Entity distance" } },
+    "fov": { "type": "fov", "min": 30, "max": 110, "label": { "es": "Campo de visión", "en": "Field of view" }, "unit": "degrees" },
+    "guiScale": { "type": "int", "min": 0, "max": 6, "label": { "es": "Escala de la interfaz", "en": "GUI scale" }, "note": "0 = auto" },
+    "gamma": { "type": "float", "min": 0, "max": 1, "label": { "es": "Brillo", "en": "Brightness" } }
+  }
+}

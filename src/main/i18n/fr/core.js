@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "Chemin non autorisé",
+  errUrlNotAllowed: "URL non autorisée",
+  errBadPath: "Chemin invalide",
+  errBadKey: "Clé invalide",
+  selectFiles: "Choisir des fichiers",
+  selectFolder: "Choisir un dossier",
+  gpuUnknown: "Inconnue",
+  errCloseGameToDelete: "Fermez le jeu avant de supprimer l'instance",
+  taskAddOptifine: "Ajout d'OptiFine à {name}",
+  taskInstallInto: "Installation dans {name}",
+  taskModpack: "Installation du modpack",
+  errNoModpack: "Le modpack n'a pas été indiqué",
+  errAlreadyRunning: "Cette instance est déjà en cours d'exécution",
+  errLaunchBlocked: "Lancement annulé",
+  logStarting: "Démarrage de {name} ({version}) avec Java {java}",
+  logMemoryMicrosoft: "Mémoire : {min} MB - {max} MB · Compte : {account} (Microsoft)",
+  logMemoryOffline: "Mémoire : {min} MB - {max} MB · Compte : {account} (hors ligne)",
+  loginWindowTitle: "Se connecter avec Microsoft",
+};

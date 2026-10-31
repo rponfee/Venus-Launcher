@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "İzin verilmeyen yol",
+  errUrlNotAllowed: "İzin verilmeyen URL",
+  errBadPath: "Geçersiz yol",
+  errBadKey: "Geçersiz anahtar",
+  selectFiles: "Dosya seç",
+  selectFolder: "Klasör seç",
+  gpuUnknown: "Bilinmiyor",
+  errCloseGameToDelete: "Örneği silmeden önce oyunu kapat",
+  taskAddOptifine: "{name} örneğine OptiFine ekleniyor",
+  taskInstallInto: "{name} içine yükleniyor",
+  taskModpack: "Mod paketi yükleniyor",
+  errNoModpack: "Mod paketi belirtilmedi",
+  errAlreadyRunning: "Bu örnek zaten çalışıyor",
+  errLaunchBlocked: "Başlatma iptal edildi",
+  logStarting: "{name} ({version}) Java {java} ile başlatılıyor",
+  logMemoryMicrosoft: "Bellek: {min} MB - {max} MB · Hesap: {account} (Microsoft)",
+  logMemoryOffline: "Bellek: {min} MB - {max} MB · Hesap: {account} (çevrimdışı)",
+  loginWindowTitle: "Microsoft ile giriş yap",
+};

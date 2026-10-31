@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "해당 인스턴스를 찾을 수 없어요.",
+  errWorld: "해당 월드를 찾을 수 없어요. 삭제되었거나 이동되었을 수 있어요.",
+  errDimension: "이 월드에는 해당 차원이 없어요.",
+  errRegion: "리전 좌표가 올바르지 않아요.",
+  errRender: "리전 {x}, {z} 렌더링에 실패했어요: {error}",
+  errWorker: "지도 렌더링 작업이 예기치 않게 종료되었어요 (코드 {code}).",
+  errWorkerClosed: "지도 렌더링 작업이 이미 종료되었어요.",
+  errImage: "지도 이미지가 올바르지 않아요.",
+  errSave: "이미지를 저장하지 못했어요: {error}",
+  errReveal: "이 세션에서 내보낸 이미지가 아니에요.",
+  taskTitle: "{world} 지도 그리는 중 ({dimension})",
+  taskProgress: "리전 {done}/{total}",
+  canceled: "사용자가 취소했어요",
+  dim_overworld: "오버월드",
+  dim_nether: "네더",
+  dim_end: "디 엔드",
+  saveTitle: "지도를 이미지로 저장",
+  filterPng: "PNG 이미지",
+  fileName: "지도",
+};

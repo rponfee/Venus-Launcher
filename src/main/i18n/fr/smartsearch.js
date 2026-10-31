@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errEmptyQuery: "Saisissez ce que vous voulez rechercher.",
+  errTooLong: "La demande est trop longue (400 caractères maximum).",
+  errModrinth: "Impossible de se connecter à Modrinth : {error}",
+  errCanceled: "Recherche annulée",
+  errInvalid: "La demande n'est pas valide.",
+  errBadAuthor: "L'auteur n'est pas valide : les noms d'utilisateur Modrinth ne contiennent ni espaces ni symboles.",
+  errNothingToInstall: "Il n'y a rien à installer.",
+  errTooMany: "Vous pouvez installer jusqu'à {max} éléments à la fois.",
+  errNoInstance: "L'instance n'existe plus.",
+  errNoServer: "Le serveur n'existe plus.",
+  errVanillaServer: "Les serveurs vanilla n'acceptent ni mods ni plugins.",
+  errNoWorld: "Les packs de données nécessitent un monde : choisissez-en un.",
+  taskInstallKit: "Installation du kit dans {name}",
+  taskInstallKitServer: "Installation de plugins dans {name}",
+  taskItem: "{title} ({index}/{total})",
+  taskPrepare: "Installation de {name}",
+  kitResult: "{ok} sur {total} installés",
+};

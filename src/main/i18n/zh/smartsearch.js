@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  errEmptyQuery: "请输入你想搜索的内容。",
+  errTooLong: "请求太长了（最多 400 个字符）。",
+  errModrinth: "无法连接到 Modrinth：{error}",
+  errCanceled: "已取消搜索",
+  errInvalid: "请求无效。",
+  errBadAuthor: "作者无效：Modrinth 用户名不能包含空格或符号。",
+  errNothingToInstall: "没有可安装的内容。",
+  errTooMany: "一次最多可以安装 {max} 项。",
+  errNoInstance: "该实例已不存在。",
+  errNoServer: "该服务器已不存在。",
+  errVanillaServer: "原版服务器不支持模组或插件。",
+  errNoWorld: "数据包需要一个世界：请选择一个。",
+  taskInstallKit: "正在向 {name} 安装套装",
+  taskInstallKitServer: "正在向 {name} 安装插件",
+  taskItem: "{title}（{index}/{total}）",
+  taskPrepare: "正在安装 {name}",
+  kitResult: "已安装 {ok}/{total} 项",
+};

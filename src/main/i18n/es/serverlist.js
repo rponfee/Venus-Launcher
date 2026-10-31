@@ -1,0 +1,41 @@
+'use strict';
+// Textos del proceso principal del modulo multijugador (serverlist).
+module.exports = {
+  errInvalidAddress: 'La dirección del servidor no es válida. Usá el formato servidor.com o servidor.com:25565.',
+  errNoInstance: 'La instancia no existe (puede que la hayas borrado).',
+  errBuildOffline: 'El servidor {address} no responde, así que no se puede analizar. Probá de nuevo en un rato.',
+  errUnknownVersion: 'No se pudo saber qué versión de Minecraft usa el servidor.',
+  errServersDat: 'No se pudo modificar la lista de servidores de {name}. Cerrá el juego si está abierto y probá de nuevo.',
+
+  err_notfound: 'No existe ese servidor. Revisá que la dirección esté bien escrita.',
+  err_refused: 'El servidor rechazó la conexión: puede estar apagado o usar otro puerto.',
+  err_timeout: 'El servidor no respondió a tiempo.',
+  err_unreachable: 'No se puede llegar al servidor desde tu red.',
+  err_closed: 'El servidor cortó la conexión sin responder.',
+  err_protocol: 'Respondió algo que no parece un servidor de Minecraft.',
+  err_unknown: 'No se pudo consultar el servidor.',
+
+  taskBuild: 'Armando instancia para {server}',
+  taskPrepare: 'Instalando {name}',
+  buildPinging: 'Consultando el servidor...',
+  buildVersion: 'Buscando la versión compatible...',
+  buildCreating: 'Creando la instancia {name}...',
+  buildResolving: 'Buscando mods en Modrinth ({done}/{total})...',
+  buildDownloading: 'Descargando mods ({done}/{total})...',
+  buildDone: 'Instancia lista',
+
+  featured_hypixel: 'La red de minijuegos más grande del mundo: SkyBlock, Bed Wars, SkyWars y muchísimo más.',
+  featured_universocraft: 'La red hispana más grande: minijuegos, Bed Wars, SkyWars y supervivencia con miles de jugadores.',
+  featured_cubecraft: 'Minijuegos clásicos como EggWars, SkyWars y Lucky Islands, con eventos todo el año.',
+  featured_minelatino: 'Comunidad latina con supervivencia OP y más de diez modalidades distintas.',
+  featured_wynncraft: 'Un MMORPG completo dentro de Minecraft: misiones, clases, mazmorras y un mundo enorme.',
+  featured_supercraft: 'Red española con supervivencias nuevas en cada versión y minijuegos.',
+  featured_minehut: 'Miles de servidores creados por la comunidad: entrá al lobby y elegí el que quieras.',
+  featured_complex: 'La red de Pixelmon más popular, además de supervivencia, SkyBlock y más.',
+  featured_librecraft: 'Red española veterana con supervivencia, minijuegos y una comunidad muy activa.',
+  featured_pika: 'Bed Wars, SkyWars, supervivencia y modos de PvP para todas las versiones.',
+  featured_2b2t: 'El servidor anárquico más antiguo: sin reglas, sin reinicios del mapa desde 2010.',
+  featured_manacube: 'SkyBlock, parkour, prisiones y supervivencia con mucho contenido propio.',
+  featured_blocksmc: 'Bed Wars y minijuegos rápidos para jugar partidas cortas con amigos.',
+  featured_hylex: 'Red brasileña de minijuegos con Bed Wars, SkyWars y torneos.',
+};

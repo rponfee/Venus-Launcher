@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "Bu örneği bulamadık.",
+  errWorld: "Bu dünyayı bulamadık. Silinmiş ya da taşınmış olabilir.",
+  errDimension: "Bu boyut bu dünyada yok.",
+  errRegion: "Bölge koordinatları geçerli değil.",
+  errRender: "{x}, {z} bölgesi çizilemedi: {error}",
+  errWorker: "Harita çizicisi aniden kapandı (kod {code}).",
+  errWorkerClosed: "Harita çizicisi zaten kapalı.",
+  errImage: "Harita görseli geçerli değil.",
+  errSave: "Görsel kaydedilemedi: {error}",
+  errReveal: "Bu görsel bu oturumda dışa aktarılmamış.",
+  taskTitle: "{world} haritası çiziliyor ({dimension})",
+  taskProgress: "Bölge {done}/{total}",
+  canceled: "Kullanıcı tarafından iptal edildi",
+  dim_overworld: "Overworld",
+  dim_nether: "Nether",
+  dim_end: "End",
+  saveTitle: "Haritayı görsel olarak kaydet",
+  filterPng: "PNG görseli",
+  fileName: "harita",
+};

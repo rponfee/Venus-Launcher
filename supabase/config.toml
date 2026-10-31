@@ -1,0 +1,7 @@
+# Configuracion minima para la CLI de Supabase (supabase functions deploy).
+# stripe-webhook recibe los avisos de Stripe, que no mandan un JWT de Supabase:
+# la funcion verifica la firma de Stripe por su cuenta.
+project_id = "dzchklzaxyygbvfpagvx"
+
+[functions.stripe-webhook]
+verify_jwt = false

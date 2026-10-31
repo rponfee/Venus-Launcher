@@ -1,0 +1,20 @@
+'use strict';
+module.exports = {
+  taskCreate: "Enregistrement d'un instantané de {name}",
+  taskRestore: "Restauration de {name}",
+  stepScan: "Analyse des fichiers…",
+  stepSaving: "Enregistrement : {done} sur {total}",
+  stepSafety: "Enregistrement de l'état actuel par précaution…",
+  stepCompare: "Comparaison avec l'instantané…",
+  stepRestoring: "Restauration : {done} sur {total}",
+  errNoInstance: "L'instance n'existe pas ou a été supprimée.",
+  errNotFound: "Cet instantané n'existe plus.",
+  errRunning: "Fermez le jeu avant de restaurer un instantané.",
+  errRunningWorlds: "Fermez le jeu pour inclure les mondes dans l'instantané : le jeu est en train de les écrire.",
+  errBadWorld: "Ce monde est introuvable dans l'instance.",
+  errTooMany: "Il y a trop de fichiers à enregistrer (plus de {count}).",
+  errNoSpace: "Il n'y a pas assez d'espace sur le disque pour enregistrer l'instantané.",
+  errDamaged: "Le fichier {file} de l'instantané est corrompu. Votre état précédent a été enregistré dans l'instantané « Avant la restauration ».",
+  errMissingObjects: "Des fichiers de cet instantané sont manquants dans le stockage : la restauration est impossible. Rien n'a été modifié.",
+  errLocked: "Impossible d'utiliser {file} : un autre programme l'a ouvert. Fermez-le et réessayez.",
+};

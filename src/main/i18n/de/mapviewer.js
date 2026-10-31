@@ -1,0 +1,22 @@
+'use strict';
+module.exports = {
+  errInstance: "Diese Instanz wurde nicht gefunden.",
+  errWorld: "Diese Welt wurde nicht gefunden. Möglicherweise wurde sie gelöscht oder verschoben.",
+  errDimension: "Diese Dimension existiert in dieser Welt nicht.",
+  errRegion: "Die Regionskoordinaten sind ungültig.",
+  errRender: "Die Region {x}, {z} konnte nicht gezeichnet werden: {error}",
+  errWorker: "Der Karten-Renderer wurde unerwartet beendet (Code {code}).",
+  errWorkerClosed: "Der Karten-Renderer ist bereits beendet.",
+  errImage: "Das Kartenbild ist ungültig.",
+  errSave: "Das Bild konnte nicht gespeichert werden: {error}",
+  errReveal: "Dieses Bild wurde in dieser Sitzung nicht exportiert.",
+  taskTitle: "Karte von {world} ({dimension}) wird gezeichnet",
+  taskProgress: "Region {done} von {total}",
+  canceled: "Vom Benutzer abgebrochen",
+  dim_overworld: "Oberwelt",
+  dim_nether: "Nether",
+  dim_end: "Das Ende",
+  saveTitle: "Karte als Bild speichern",
+  filterPng: "PNG-Bild",
+  fileName: "karte",
+};

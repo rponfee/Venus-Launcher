@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  errPathNotAllowed: "Caminho não permitido",
+  errUrlNotAllowed: "URL não permitida",
+  errBadPath: "Caminho inválido",
+  errBadKey: "Chave inválida",
+  selectFiles: "Escolher arquivos",
+  selectFolder: "Escolher pasta",
+  gpuUnknown: "Desconhecida",
+  errCloseGameToDelete: "Feche o jogo antes de apagar a instância",
+  taskAddOptifine: "Adicionando o OptiFine a {name}",
+  taskInstallInto: "Instalando em {name}",
+  taskModpack: "Instalando modpack",
+  errNoModpack: "Nenhum modpack foi indicado",
+  errAlreadyRunning: "Esta instância já está em execução",
+  errLaunchBlocked: "Inicialização cancelada",
+  logStarting: "Iniciando {name} ({version}) com Java {java}",
+  logMemoryMicrosoft: "Memória: {min} MB - {max} MB · Conta: {account} (Microsoft)",
+  logMemoryOffline: "Memória: {min} MB - {max} MB · Conta: {account} (offline)",
+  loginWindowTitle: "Entrar com a Microsoft",
+};
