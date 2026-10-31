@@ -1,6 +1,9 @@
 # Compila Venus Launcher desde el código fuente en un runner de GitHub, sube los ejecutables como artefacto y,
 # cuando SignPath está configurado, los manda a firmar. Corre al subir un tag v* (por ejemplo v1.0.13) o a mano
-# desde la pestaña Actions.
+# desde la pestaña Actions. Con un tag, además publica la release de GitHub con VenusLauncher-Setup.exe,
+# VenusLauncher-Portable.exe y latest.yml (nombres fijos: los links releases/latest/download/… bajan siempre
+# la última versión y los launchers instalados se actualizan solos). El tag tiene que coincidir con la
+# versión de package.json.
 #
 # Para activar la firma (después de que SignPath Foundation apruebe el proyecto), cargá en Settings > Secrets and
 # variables > Actions del repositorio:
@@ -20,7 +23,7 @@ on:
 
 permissions:
   actions: read
-  contents: read
+  contents: write # para publicar la release cuando se sube un tag
 
 jobs:
   build:
@@ -87,3 +90,34 @@ jobs:
           name: VenusLauncher-signed
           path: dist-signed/
           if-no-files-found: error
+
+      # Con los archivos firmados si hubo firma; si no, con los compilados. El .blockmap (descargas
+      # diferenciales del actualizador) solo sirve sin firma: la firma cambia el archivo.
+      - name: Publicar la release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ("v$version" -ne $env:TAG) { throw "El tag $env:TAG no coincide con la versión $version de package.json" }
+          $origen = if (Test-Path dist-signed) { 'dist-signed' } else { 'dist' }
+          $archivos = @("$origen/VenusLauncher-Setup.exe", "$origen/VenusLauncher-Portable.exe", "$origen/latest.yml")
+          if ($origen -eq 'dist') { $archivos += "$origen/VenusLauncher-Setup.exe.blockmap" }
+          foreach ($a in $archivos) { if (-not (Test-Path $a)) { throw "Falta $a" } }
+          $notas = @(
+            "Instalador y versión portable de Venus Launcher $version para Windows 10 y 11 (64 bits).",
+            "",
+            "- [Code signing policy](https://github.com/$env:REPO#code-signing-policy)",
+            "- [Privacy policy](https://github.com/$env:REPO#privacy-policy)",
+            "- [Funciones y guía](https://github.com/$env:REPO#readme)"
+          ) -join "`n"
+          gh release view $env:TAG --repo $env:REPO 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG $archivos --repo $env:REPO --clobber
+          } else {
+            gh release create $env:TAG $archivos --repo $env:REPO --title "Venus Launcher $version" --notes $notas
+          }
+          if ($LASTEXITCODE -ne 0) { throw "No se pudo publicar la release" }
