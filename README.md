@@ -4,9 +4,20 @@ Launcher de **Minecraft: Java Edition** para Windows hecho con Electron. Instala
 
 ![Logo](src/renderer/assets/logo-256.png)
 
-- Guía para usuarios, función por función: [docs/funciones.md](docs/funciones.md)
+- [Descargar](#descargar) · Guía para usuarios, función por función: [docs/funciones.md](docs/funciones.md)
 - Documentación para desarrolladores (índice): [docs/README.md](docs/README.md)
 - [Code signing policy](#code-signing-policy) · [Privacy policy](#privacy-policy) · Licencia [MIT](LICENSE)
+
+## Descargar
+
+Para Windows 10 y 11 (64 bits). Los links bajan siempre la última versión:
+
+- **Instalador:** [VenusLauncher-Setup.exe](https://github.com/rponfee/Venus-Launcher/releases/latest/download/VenusLauncher-Setup.exe). Se actualiza solo si activás las actualizaciones automáticas.
+- **Portable** (sin instalar, guarda los datos junto al ejecutable): [VenusLauncher-Portable.exe](https://github.com/rponfee/Venus-Launcher/releases/latest/download/VenusLauncher-Portable.exe)
+- Todas las versiones y sus notas: [Releases](https://github.com/rponfee/Venus-Launcher/releases)
+- Fondos de pantalla para el launcher: [venus-launcher-fondos.netlify.app](https://venus-launcher-fondos.netlify.app/)
+
+**Code signing:** the Windows builds are compiled from this repository with GitHub Actions and signed through the SignPath Foundation program. Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org). See the [Code signing policy](#code-signing-policy). Mientras SignPath no apruebe el proyecto, los instaladores van sin firma y Windows SmartScreen puede mostrar un aviso: tocá "Más información" y "Ejecutar de todas formas".
 
 ## Funciones
 
