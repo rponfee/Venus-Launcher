@@ -11,8 +11,21 @@
 #   - variable SIGNPATH_ORGANIZATION_ID      id de la organización en SignPath
 #   - variable SIGNPATH_PROJECT_SLUG         slug del proyecto (por ejemplo venus-launcher)
 #   - variable SIGNPATH_SIGNING_POLICY_SLUG  slug de la política de firma (por ejemplo release-signing)
-# Sin esas variables el workflow compila y sube el artefacto sin firmar.
 # Docs: https://docs.signpath.io/trusted-build-systems/github
+#
+# Firma de Microsoft (Azure Artifact Signing, antes "Trusted Signing"; guía en docs/firma-microsoft.md): con
+# AZURE_SIGNING_ENDPOINT cargada, electron-builder firma al compilar el ejecutable de la app, el desinstalador, el
+# instalador y la versión portable, y arma latest.yml y el .blockmap con los archivos ya firmados. Tiene prioridad:
+# con ella cargada, el paso de SignPath no corre.
+#   - secretos  AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET  (app registrada en Entra ID con el rol
+#               "Artifact Signing Certificate Profile Signer" en la cuenta de firma)
+#   - variable  AZURE_SIGNING_ENDPOINT   por ejemplo https://eus.codesigning.azure.net/ (según la región)
+#   - variable  AZURE_SIGNING_ACCOUNT    nombre de la cuenta de firma
+#   - variable  AZURE_SIGNING_PROFILE    nombre del perfil de certificado
+#   - variable  AZURE_SIGNING_PUBLISHER  nombre del editor tal cual figura en el certificado (CN). Va a app-update.yml:
+#               las versiones firmadas solo aceptan actualizaciones firmadas con ese mismo nombre
+# Las releases que ya estaban publicadas se firman con resign-releases.yml.
+# Sin ninguna de las dos configuraciones el workflow compila y publica sin firmar.
 name: Build
 
 on:
@@ -53,8 +66,37 @@ jobs:
           $code = $LASTEXITCODE
           if ($code -ne 0) { node scripts/ci-annotate.js test-results.tap; exit $code }
 
+      # Con la firma de Microsoft configurada, la configuración de firma se pasa solo acá (con -c): en una PC sin
+      # credenciales de Azure `npm run dist` sigue compilando sin firmar.
       - name: Compilar instalador y versión portable
-        run: npx electron-builder --win --x64 --publish never
+        shell: pwsh
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ENDPOINT: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ vars.AZURE_SIGNING_PROFILE }}
+          AZURE_SIGNING_PUBLISHER: ${{ vars.AZURE_SIGNING_PUBLISHER }}
+        run: |
+          $firma = @()
+          if ($env:AZURE_SIGNING_ENDPOINT) {
+            $firma = @(
+              "-c.win.azureSignOptions.endpoint=$env:AZURE_SIGNING_ENDPOINT",
+              "-c.win.azureSignOptions.codeSigningAccountName=$env:AZURE_SIGNING_ACCOUNT",
+              "-c.win.azureSignOptions.certificateProfileName=$env:AZURE_SIGNING_PROFILE",
+              "-c.win.azureSignOptions.publisherName=$env:AZURE_SIGNING_PUBLISHER"
+            )
+          }
+          npx electron-builder --win --x64 --publish never @firma
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($env:AZURE_SIGNING_ENDPOINT) {
+            foreach ($f in 'dist/VenusLauncher-Setup.exe', 'dist/VenusLauncher-Portable.exe', 'dist/win-unpacked/Venus Launcher.exe') {
+              $sig = Get-AuthenticodeSignature $f
+              if ($sig.Status -ne 'Valid') { Write-Output "::error title=Firma de Microsoft::$f no quedó firmado ($($sig.Status))"; exit 1 }
+              Write-Output "$f firmado por $($sig.SignerCertificate.Subject)"
+            }
+          }
 
       # Los dos .exe van sueltos en la raíz del zip del artefacto (la configuración de artefacto de SignPath
       # tiene que tener <zip-file> como raíz).
@@ -69,7 +111,7 @@ jobs:
           if-no-files-found: error
 
       - name: Firmar con SignPath
-        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && vars.AZURE_SIGNING_ENDPOINT == '' }}
         uses: signpath/github-action-submit-signing-request@v3
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -84,22 +126,23 @@ jobs:
 
       # Firmar cambia el instalador: latest.yml (actualización automática) se rearma con el archivo firmado.
       - name: latest.yml del instalador firmado
-        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && vars.AZURE_SIGNING_ENDPOINT == '' }}
         shell: pwsh
         run: |
           $setup = Get-ChildItem dist-signed -Filter 'VenusLauncher-Setup*.exe' | Select-Object -First 1
           node scripts/latest-yml.js $setup.FullName dist-signed/latest.yml
 
       - name: Subir el artefacto firmado
-        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && vars.AZURE_SIGNING_ENDPOINT == '' }}
         uses: actions/upload-artifact@v7
         with:
           name: VenusLauncher-signed
           path: dist-signed/
           if-no-files-found: error
 
-      # Con los archivos firmados si hubo firma; si no, con los compilados. El .blockmap (descargas
-      # diferenciales del actualizador) solo sirve sin firma: la firma cambia el archivo.
+      # Con los archivos firmados por SignPath si hubo esa firma; si no, con los de dist (sin firmar o firmados por
+      # Microsoft al compilar). El .blockmap (descargas diferenciales del actualizador) solo sirve en dist: la firma
+      # de SignPath cambia el archivo después de armarlo.
       - name: Publicar la release
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         shell: pwsh

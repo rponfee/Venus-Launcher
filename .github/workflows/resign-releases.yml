@@ -1,0 +1,86 @@
+# Firma con Microsoft (Azure Artifact Signing, antes "Trusted Signing") los .exe de releases que ya están
+# publicadas y vuelve a subirlos. Se corre a mano desde la pestaña Actions ("Firmar releases publicadas"), con una
+# release (por ejemplo v1.0.18) o "todas". Las releases nuevas no lo necesitan: build.yml ya las firma al compilar.
+#
+# Qué hace en cada release: baja los .exe y los .yml, saltea los .exe que ya tienen una firma válida, firma el resto,
+# rearma sha512/size de latest.yml (y demo.yml) con scripts/resign-yml.js, sube todo encima (--clobber) y borra el
+# .blockmap (ya no coincide; el actualizador baja el instalador completo). Solo se firma el .exe de afuera: el
+# ejecutable de la app que va adentro de un instalador viejo queda como estaba (para eso hay que recompilar).
+#
+# Usa las mismas variables y secretos que build.yml (ver docs/firma-microsoft.md):
+#   - secretos  AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+#   - variables AZURE_SIGNING_ENDPOINT, AZURE_SIGNING_ACCOUNT, AZURE_SIGNING_PROFILE
+name: Firmar releases publicadas
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release a firmar (por ejemplo v1.0.18) o "todas"'
+        required: true
+        default: todas
+
+permissions:
+  contents: write # para reemplazar los archivos de las releases
+
+jobs:
+  resign:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Revisar la configuración
+        if: ${{ vars.AZURE_SIGNING_ENDPOINT == '' || vars.AZURE_SIGNING_ACCOUNT == '' || vars.AZURE_SIGNING_PROFILE == '' }}
+        run: |
+          echo "::error title=Firma de Microsoft::Faltan las variables AZURE_SIGNING_* (ver docs/firma-microsoft.md)."
+          exit 1
+
+      - name: Instalar el módulo de firma
+        shell: pwsh
+        run: Install-Module -Name TrustedSigning -MinimumVersion 0.5.0 -Force -Repository PSGallery -Scope CurrentUser
+
+      - name: Firmar y volver a subir
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ENDPOINT: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ vars.AZURE_SIGNING_PROFILE }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tags = if ($env:TAG -eq 'todas') {
+            gh release list --repo $env:REPO --limit 200 --json tagName --jq '.[].tagName'
+          } else { @($env:TAG) }
+          foreach ($tag in $tags) {
+            Write-Output "::group::$tag"
+            $dir = Join-Path $env:RUNNER_TEMP ($tag -replace '[^\w.-]', '_')
+            New-Item -ItemType Directory -Force $dir | Out-Null
+            gh release download $tag --repo $env:REPO --dir $dir --pattern '*.exe' --pattern '*.yml' --clobber
+            if ($LASTEXITCODE -ne 0) { throw "No se pudo bajar $tag" }
+            $exes = Get-ChildItem $dir -Filter *.exe | Where-Object { (Get-AuthenticodeSignature $_.FullName).Status -ne 'Valid' }
+            if (-not $exes) { Write-Output "$tag ya estaba firmada."; Write-Output '::endgroup::'; continue }
+            Invoke-TrustedSigning -Endpoint $env:AZURE_SIGNING_ENDPOINT -CodeSigningAccountName $env:AZURE_SIGNING_ACCOUNT `
+              -CertificateProfileName $env:AZURE_SIGNING_PROFILE -Files ($exes.FullName -join ',') -FileDigest SHA256 `
+              -TimestampRfc3161 'http://timestamp.acs.microsoft.com' -TimestampDigest SHA256
+            foreach ($e in $exes) {
+              $sig = Get-AuthenticodeSignature $e.FullName
+              if ($sig.Status -ne 'Valid') { throw "$($e.Name) no quedó firmado ($($sig.Status))" }
+              Write-Output "$($e.Name): $($sig.SignerCertificate.Subject)"
+            }
+            $ymls = Get-ChildItem $dir -Filter *.yml
+            foreach ($y in $ymls) { node scripts/resign-yml.js $y.FullName $dir; if ($LASTEXITCODE -ne 0) { throw "Falló $($y.Name)" } }
+            gh release upload $tag @($exes.FullName) @($ymls.FullName) --repo $env:REPO --clobber
+            if ($LASTEXITCODE -ne 0) { throw "No se pudo subir $tag" }
+            $blockmaps = gh release view $tag --repo $env:REPO --json assets --jq '.assets[].name | select(endswith(".blockmap"))'
+            foreach ($b in $blockmaps) { gh release delete-asset $tag $b --repo $env:REPO --yes }
+            Write-Output '::endgroup::'
+          }
