@@ -33,6 +33,9 @@ const HOST = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](
 
 // Las variables de entorno solo valen en desarrollo: nunca en la app empaquetada.
 function devEnv() {
+  // En Node puro (pruebas, scripts) no hay app empaquetada. Ahí no se pide 'electron': el paquete de npm (44+)
+  // bajaría el binario entero en ese momento (así fallaron las pruebas de la 1.0.17 en GitHub Actions).
+  if (!process.versions.electron) return true;
   try {
     const electron = require('electron');
     return !(electron && typeof electron === 'object' && electron.app && electron.app.isPackaged);

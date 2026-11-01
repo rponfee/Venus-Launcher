@@ -35,3 +35,6 @@ web/latest.yml
 
 # Fondos de la página (los genera scripts/web-fondos.js; son de terceros y no van al repo)
 web/fondos/
+
+# Resultado de las pruebas en GitHub Actions (scripts/ci-annotate.js)
+test-results.tap
