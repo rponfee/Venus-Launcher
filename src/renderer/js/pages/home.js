@@ -233,7 +233,7 @@ function moreLink(label, route, fk) {
 // ===================================================================================
 
 export default {
-  ns: ['home'],
+  ns: ['home', 'recap'],
   css: ['pages/home'],
   render(root) {
     let alive = true;
@@ -1247,6 +1247,19 @@ export default {
             streak > 0 && sum.playedToday === false ? h('span', { class: 'hm-risk' }, icon('flame'), t('home.streakAtRisk')) : null,
             h('span', {}, icon('clock'), t('home.todayPlayed', { time: fmtDuration(Number(sum.todayMs) || 0) })),
             fav ? h('span', { title: fav }, icon('star'), h('span', { class: 'ellipsis' }, t('home.favorite', { name: fav }))) : null,
+          ),
+          // Tu resumen de Venus (features/recap.js): imagen para compartir
+          h(
+            'button',
+            {
+              class: 'btn tonal sm block',
+              type: 'button',
+              title: t('recap.shareHint'),
+              style: { marginTop: 'var(--sp-3)' },
+              onclick: () => import('../features/recap.js').then((m) => m.openRecap()).catch((err) => fail(t('recap.openFailed'), err)),
+            },
+            icon('share'),
+            t('recap.shareButton'),
           ),
         ),
       );

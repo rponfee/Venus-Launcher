@@ -17,7 +17,8 @@ const TABS = [
 let focusTabOnRender = false;
 
 export default {
-  ns: ['versions', 'instance'],
+  // mcimport: texto de "Del launcher oficial de Minecraft" en el menu Importar
+  ns: ['versions', 'instance', 'mcimport'],
   css: ['pages/versions'],
   render(root, params) {
     const tab = params[0] === 'new' ? 'new' : 'mine';

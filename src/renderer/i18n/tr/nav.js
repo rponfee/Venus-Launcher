@@ -9,6 +9,7 @@ export default {
   home: "Ana sayfa",
   versions: "Sürümler ve örnekler",
   worlds: "Dünyalar",
+  skins: "Görünümler",
   modrinth: "Modrinth",
   smartsearch: "Akıllı arama",
   multiplayer: "Çok oyunculu",

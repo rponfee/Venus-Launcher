@@ -1,0 +1,33 @@
+// Importar desde el launcher oficial (proceso principal): tareas y errores.
+module.exports = {
+  pickTitle: 'Elegí la carpeta .minecraft del launcher oficial',
+  nameLatestRelease: 'Minecraft {version}',
+  nameLatestSnapshot: 'Snapshot {version}',
+  nameUnnamed: '{loader} {version}',
+
+  taskTitle_one: 'Importando {count} perfil del launcher oficial',
+  taskTitle_other: 'Importando {count} perfiles del launcher oficial',
+  taskDone_one: 'Listo: {count} instancia nueva',
+  taskDone_other: 'Listo: {count} instancias nuevas',
+  stepCheck: 'Revisando que Minecraft esté cerrado y que haya espacio…',
+  stepCreate: 'Creando la instancia {name}…',
+  copy_worlds: 'Copiando los mundos de {name} · {done} de {total}',
+  copy_mods: 'Copiando los mods de {name} · {done} de {total}',
+  copy_resourcepacks: 'Copiando los paquetes de recursos de {name} · {done} de {total}',
+  copy_shaderpacks: 'Copiando los shaders de {name} · {done} de {total}',
+  copy_config: 'Copiando la configuración de los mods de {name} · {done} de {total}',
+  copy_options: 'Copiando las opciones de {name} · {done} de {total}',
+  copy_servers: 'Copiando la lista de servidores de {name} · {done} de {total}',
+
+  errBusy: 'Ya hay una importación en curso. Esperá a que termine.',
+  errNotAllowed: 'Esa carpeta no se puede importar. Elegila de nuevo con «Elegir otra carpeta».',
+  errNothing: 'Elegí al menos un perfil para importar.',
+  errTooMany: 'Son demasiados perfiles juntos. Importalos en tandas más chicas.',
+  errChanged: 'La carpeta cambió desde que la revisaste. Volvé a revisarla y probá de nuevo.',
+  errGameRunning: 'Minecraft está abierto desde {dir}. Cerralo y probá de nuevo, así los mundos se copian completos.',
+  errWorldOpen: 'El mundo «{name}» está abierto en Minecraft. Cerralo (o salí del juego) y probá de nuevo.',
+  errNoSpace: 'No hay espacio suficiente en el disco: hacen falta {need} y quedan {free}.',
+  errDiskFull: 'El disco se llenó mientras se copiaba. Liberá espacio y probá de nuevo.',
+  errCancelled: 'Se canceló la importación. No se creó ninguna instancia.',
+  errFailed: 'No se pudo importar: {error}',
+};

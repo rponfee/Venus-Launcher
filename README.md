@@ -27,11 +27,12 @@ Agrupadas como en el menú del launcher.
 
 - **Inicio**: la instancia elegida con el botón **JUGAR** (pasa a DETENER mientras jugás, con el tiempo y dónde estás), accesos rápidos, "Continuar donde quedaste" (entra directo al mundo con Quick Play), servidores destacados con ping en vivo, tus capturas, novedades de Minecraft, "Tu servidor", amigos en línea, tu actividad de la semana y consejos. Cada bloque se puede ocultar con **Personalizar inicio**.
 - **Asistente IA**: chat con Claude que responde dudas y hace cambios en tus instancias con herramientas controladas (más abajo).
-- **Versiones e instancias**: todas las versiones del manifiesto de Mojang (releases, snapshots, bromas del 1 de abril, beta, alpha, infdev, indev, classic) y 9 loaders con su lista completa de versiones. Instancias en cuadrícula o lista, con búsqueda, orden y grupos; importación de `.mrpack` y de otros launchers (CurseForge, MultiMC, Prism); arranque rápido sin red si nada cambió. La página de cada instancia tiene resumen, contenido (mods, resource packs, shaders y data packs por mundo), mundos, capturas, registros y ajustes, más estas **herramientas**:
+- **Versiones e instancias**: todas las versiones del manifiesto de Mojang (releases, snapshots, bromas del 1 de abril, beta, alpha, infdev, indev, classic) y 9 loaders con su lista completa de versiones. Instancias en cuadrícula o lista, con búsqueda, orden y grupos; importación de `.mrpack`, de otros launchers (CurseForge, MultiMC, Prism) y del launcher oficial de Minecraft (perfiles, mundos, mods y opciones; solo copia); arranque rápido sin red si nada cambió. La página de cada instancia tiene resumen, contenido (mods, resource packs, shaders y data packs por mundo), mundos, capturas, registros y ajustes, más estas **herramientas**:
   - Instantáneas (guardar y restaurar el estado, automáticas antes de jugar), exportar como `.mrpack` o `.zip` de Prism/MultiMC y actualizar el modpack viendo qué cambia.
   - Compartir con un código `PACK-XXXXXX` o en grupo (se actualiza solo para todos), nube de mundos y configuraciones, y "Mundo con amigos" para abrir tu mundo por internet.
   - Servidor espejo (un servidor local con el mismo loader y mods), buscar actualizaciones de mods con changelog e historial para volver atrás, análisis de seguridad contra malware (Fractureiser y otros), informe de mixins (conflictos entre mods), traducción de mods con IA, Optimizar (memoria y mods de rendimiento), diagnóstico de crashes y reparar.
 - **Mundos**: todos los mundos de todas las instancias con línea de tiempo de partidas y logros, estadísticas, copias de seguridad (restaurar o recuperar mundos borrados), copiar a otra instancia o a un servidor local, mapa del mundo y la pestaña **Capturas y clips** con opción de compartir por link.
+- **Skins**: tu skin en 3D, una biblioteca con tus propios PNG y el cambio de skin y capa de tu cuenta de Microsoft con la API oficial (sin skins de terceros incluidas).
 
 ### Contenido
 
@@ -47,7 +48,7 @@ Agrupadas como en el menú del launcher.
 
 ### Herramientas
 
-- **Estadísticas**: tiempo jugado, rachas, calendario, horarios, versiones y loaders, estadísticas del juego por mundo (bloques, criaturas, logros), tiempo por mundo y servidor, hitos y exportación a CSV o JSON.
+- **Estadísticas**: tiempo jugado, rachas, calendario, horarios, versiones y loaders, estadísticas del juego por mundo (bloques, criaturas, logros), tiempo por mundo y servidor, hitos, exportación a CSV o JSON y **Tu resumen de Venus**, una imagen para compartir (copiar o guardar como PNG) que se arma en tu PC.
 - **Rendimiento**: memoria automática según tu PC y cada modpack (o manual con un solo deslizador), recolector de Java explicado, prueba de rendimiento de la CPU, monitor en vivo y "Optimizar una instancia" con mods de rendimiento y packs de contenido verificados.
 - **Modo desarrollador**: para crear plugins de Paper/Purpur/Folia: compila con Gradle o Maven, levanta un servidor de prueba, despliega y recarga el plugin, y abre el juego conectado.
 - **Soporte**: consultas con el equipo de Venus desde el launcher (tickets con conversación).
@@ -62,7 +63,7 @@ General (idioma y qué hace el launcher al jugar), Apariencia (temas planetarios
 
 ### En todo el launcher
 
-Bienvenida guiada la primera vez (idioma, cuentas, primera instancia, contenido y rendimiento), diagnóstico automático cuando el juego crashea (con arreglos en un clic y búsqueda del mod culpable), avisos antes de jugar (malware, conflictos de mixins, Java incompatible), paleta de comandos con **Ctrl+K**, navegación completa con control (Xbox, PlayStation, Switch) y modo sofá, descargas que se retoman si se cortan e instantánea automática antes de jugar.
+Bienvenida guiada la primera vez (idioma, cuentas, primera instancia, contenido y rendimiento), diagnóstico automático cuando el juego crashea (con arreglos en un clic y búsqueda del mod culpable), avisos antes de jugar (malware, conflictos de mixins, Java incompatible), **Estado de los servicios** (si no podés iniciar sesión o algo no descarga, te dice si es tu conexión o un servicio caído), paleta de comandos con **Ctrl+K**, navegación completa con control (Xbox, PlayStation, Switch) y modo sofá, descargas que se retoman si se cortan e instantánea automática antes de jugar.
 
 ## Requisitos
 
@@ -161,6 +162,7 @@ Venus Launcher does not include telemetry or analytics. Features that would cont
 | When you… | The launcher contacts |
 |---|---|
 | Sign in with Microsoft or play | Microsoft / Xbox Live and Mojang (sign-in, ownership check, game files, Java runtime) |
+| Open **Skins** with a Microsoft account, or change your skin or cape | Minecraft Services (`api.minecraftservices.com`) with your Microsoft account, to read your profile and change your skin or cape, and `textures.minecraft.net` for the skin and cape images (plus Microsoft / Xbox Live if your sign-in needs renewing, as when you play). Your skin library stays on your PC |
 | Browse or install content | Modrinth, CurseForge, the loader sites (Fabric, Quilt, Forge, NeoForge, Legacy Fabric, Babric), OptiFine, PaperMC, Purpur, Mohist and Adoptium |
 | Use your Venus account (friends, messages, Voice Chat, cloud, shared modpacks, AI features, support) | The Venus Launcher server (Supabase); AI features send your question and the related launcher context (instance, mods, logs) to the AI provider through that server (Anthropic; OpenAI only if enabled there as a fallback) |
 | Use your own Claude Code or Codex in the assistant, or connect an MCP client | Anthropic or OpenAI through your own CLI and account; the MCP client you connect |
@@ -168,7 +170,10 @@ Venus Launcher does not include telemetry or analytics. Features that would cont
 | Talk in Voice Chat | The other people in the room, directly (peer-to-peer), and Google's public STUN servers to find a route. When a direct connection is not possible, or if you turn on “Hide my IP”, the encrypted audio is relayed through the Venus voice (TURN) server, which cannot listen to it |
 | Buy a Venus AI plan | Mercado Pago or PayPal, in your browser |
 | Play with friends over the internet | The tunnel service you choose (bore, playit.gg or e4mc) or your router (UPnP / NAT-PMP) |
+| Open **Service status** (Settings, Ctrl+K, or its button on a failed task or sign-in), or right after a Microsoft sign-in fails | One small request to each service, with nothing about you. After a failed sign-in: `login.live.com`, `user.auth.xboxlive.com` and `api.minecraftservices.com`, plus `www.cloudflare.com` and `1.1.1.1` (a neutral connection check) only if none of them answered; nothing when the error is about your account or already shows Microsoft failed on their side. When you open the panel: those five plus `piston-meta.mojang.com`, `libraries.minecraft.net`, `resources.download.minecraft.net`, `api.modrinth.com`, `api.curseforge.com` (only if the build includes CurseForge) and the Venus server (health check). Nothing in offline mode |
 | Turn on an optional connection | GitHub (updates), Mojang (news), the Venus server and each featured server (status), mc-heads.net (player heads), Discord (Rich Presence) |
+
+The stats recap image (**Share my recap**) and importing from the official Minecraft launcher work on your PC and upload nothing; the import only downloads Mojang's version list (`piston-meta.mojang.com`) if neither Venus nor the official launcher has saved it yet.
 
 Each of those services has its own privacy policy.
 

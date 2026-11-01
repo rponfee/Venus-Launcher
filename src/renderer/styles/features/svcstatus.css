@@ -1,0 +1,104 @@
+/* ============================================================
+   Estado de los servicios (prefijo .svc-)
+   Panel (modal ancho con dos columnas), veredicto corto después de un error,
+   botón del panel de tareas y tarjeta de Ajustes → Descargas y almacenamiento.
+   Solo tokens de main.css; el movimiento reducido lo resuelve main.css.
+   ============================================================ */
+
+/* ---------- Panel ---------- */
+.svc-panel { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.svc-panel [hidden] { display: none !important; }
+.svc-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--sp-3) var(--sp-4); align-items: start; min-width: 0; }
+.svc-col { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+
+.svc-group {
+  min-width: 0; padding: var(--sp-3) var(--sp-3) var(--sp-2); border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--well-bg); scroll-margin: var(--sp-3);
+  transition: border-color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out);
+}
+.svc-group.is-focus { border-color: var(--accent-line); background: color-mix(in srgb, var(--accent-wash) 70%, var(--well-bg)); }
+.svc-group-head { display: flex; align-items: center; gap: var(--sp-2); margin: 0 0 var(--sp-1); padding: 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 600; line-height: 1.3; color: var(--text-2); min-width: 0; }
+.svc-group-head > svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--accent-hi); }
+.svc-group-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.svc-focus-badge { margin-left: auto; flex-shrink: 0; }
+
+.svc-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.svc-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-1); min-height: 48px; }
+.svc-row + .svc-row { border-top: 1px solid var(--border); }
+.svc-row-icon { display: grid; place-items: center; width: 18px; height: 18px; color: var(--faint); }
+.svc-row-icon svg { width: 18px; height: 18px; }
+.svc-row-icon .spinner { width: 16px; height: 16px; border-width: 2px; }
+.svc-row.is-ok .svc-row-icon { color: var(--good); }
+.svc-row.is-slow .svc-row-icon { color: var(--warn); }
+.svc-row.is-down .svc-row-icon { color: var(--bad-text); }
+.svc-row-main { min-width: 0; }
+.svc-row-name { font-size: var(--fs-md); font-weight: 600; line-height: 1.3; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.svc-row-sub { margin-top: 2px; font-size: var(--fs-xs); line-height: 1.4; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.svc-row.is-down .svc-row-sub { color: var(--bad-text); white-space: normal; overflow-wrap: anywhere; }
+.svc-row.is-slow .svc-row-sub { color: var(--warn-text); white-space: normal; }
+.svc-row.is-skipped .svc-row-sub, .svc-row.is-none .svc-row-sub, .svc-row.is-inferred .svc-row-sub { white-space: normal; }
+/* La causa general la explica el aviso de arriba: la fila solo dice para qué sirve */
+.svc-row.is-plain .svc-row-sub { color: var(--muted); white-space: nowrap; }
+.svc-code { margin-left: var(--sp-2); padding: 0 5px; border-radius: var(--radius-xs); font-family: var(--mono); font-size: var(--fs-xs); color: var(--text-2); background: var(--surface-3); white-space: nowrap; }
+.svc-row-side { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-2); flex-shrink: 0; }
+.svc-pill { white-space: nowrap; }
+.svc-ms { min-width: 46px; text-align: right; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Veredicto arriba del panel */
+.svc-verdict { align-items: flex-start; }
+.svc-verdict.svc-checking { align-items: center; }
+.svc-verdict > .spinner { width: 18px; height: 18px; }
+.svc-verdict-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.svc-verdict-title { font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--text); text-wrap: balance; }
+.svc-verdict-text { max-width: 78ch; text-wrap: pretty; }
+.svc-verdict-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }
+
+.svc-privacy { display: flex; align-items: flex-start; gap: var(--sp-2); margin: 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--muted); max-width: 90ch; }
+.svc-privacy svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--accent-hi); }
+
+/* Pie: hora de la última comprobación a la izquierda */
+.svc-when { margin-right: auto; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; min-width: 0; }
+.btn.svc-recheck[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* ---------- Veredicto corto (inicio de sesión, tarjeta de Ajustes) ---------- */
+.svc-inline {
+  display: flex; align-items: flex-start; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); min-width: 0;
+  padding: 10px var(--sp-3); border-radius: var(--radius); border: 1px solid var(--border-2); background: var(--well-bg);
+  font-size: var(--fs-sm); line-height: 1.45; color: var(--text-2);
+}
+.svc-inline > svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+.svc-inline > .spinner { width: 14px; height: 14px; border-width: 2px; margin-top: 3px; }
+.svc-inline.is-good > svg { color: var(--good); }
+.svc-inline.is-bad { border-color: var(--bad-line); }
+.svc-inline.is-bad > svg { color: var(--bad-text); }
+.svc-inline.is-warn > svg { color: var(--warn); }
+.svc-inline.is-info > svg { color: var(--info); }
+.svc-inline-text { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
+.svc-link {
+  display: inline-flex; align-items: center; gap: 2px; min-height: 24px; padding: 0 2px; margin: -2px 0;
+  border: 0; border-radius: var(--radius-xs); background: none; font: inherit; font-weight: 600; color: var(--accent-hi); cursor: pointer; white-space: nowrap;
+}
+.svc-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.svc-link svg { width: 14px; height: 14px; }
+
+/* ---------- Panel de tareas ---------- */
+.svc-task-hint { display: flex; margin-top: var(--sp-2); }
+
+/* ---------- Tarjeta de Ajustes ---------- */
+.svc-card { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.svc-card-head { display: flex; align-items: flex-start; flex-wrap: wrap; gap: var(--sp-3); }
+.svc-card-icon {
+  width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0;
+  background: var(--accent-wash); color: var(--accent-hi); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.svc-card-icon svg { width: 18px; height: 18px; }
+.svc-card-text { flex: 1 1 260px; min-width: 0; }
+.svc-card-title { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--text); }
+.svc-card-sub { margin: var(--sp-1) 0 0; font-size: var(--fs-sm); line-height: 1.45; color: var(--muted); max-width: 72ch; }
+.svc-card-btn { flex-shrink: 0; }
+.svc-card-last { display: flex; flex-direction: column; gap: var(--sp-2); }
+.svc-card-last[hidden] { display: none; }
+.svc-card-when { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Alto contraste: bordes más marcados */
+html.ax-hc .svc-group, html.ax-hc .svc-inline { border-color: var(--border-3); }

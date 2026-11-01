@@ -9,6 +9,7 @@ export default {
   home: "Accueil",
   versions: "Versions et instances",
   worlds: "Mondes",
+  skins: "Skins",
   modrinth: "Modrinth",
   smartsearch: "Recherche intelligente",
   multiplayer: "Multijoueur",

@@ -15,11 +15,11 @@ Java no hace falta: Venus descarga solo el Java que pide cada versión de Minecr
 
 ### Bienvenida
 
-La primera vez que abrís el launcher te guía en 8 pasos: idioma, cuenta de Minecraft, cuenta de Venus (opcional), tu primera instancia (combinaciones recomendadas o a tu gusto), contenido extra (rendimiento, shaders, minimapa y más), rendimiento (memoria automática o manual y modo para PC de pocos recursos), preferencias y un resumen. Con **Enter** avanzás y con **Escape** volvés. Al terminar, la instancia se instala en segundo plano y ya podés usar el launcher.
+La primera vez que abrís el launcher te guía en 8 pasos: idioma, cuenta de Minecraft, cuenta de Venus (opcional), tu primera instancia (combinaciones recomendadas o a tu gusto), contenido extra (rendimiento, shaders, minimapa y más), rendimiento (memoria automática o manual y modo para PC de pocos recursos), preferencias y un resumen. Con **Enter** avanzás y con **Escape** volvés. Al terminar, la instancia se instala en segundo plano y ya podés usar el launcher. Si en la PC está el launcher oficial de Minecraft con perfiles que agregaste o usaste, o con mundos, el paso de la primera instancia te muestra **¿Venís del launcher oficial? Traé tus mundos y perfiles**: con **Importar** traés tus perfiles, mundos y mods (se copian, no se mueven; ver [Importar desde el launcher oficial](#importar-desde-el-launcher-oficial)) y después elegís con cuál empezar.
 
 ### Cuentas de Minecraft
 
-Tocá tu cuenta abajo a la izquierda (o andá a **Ajustes → Cuenta y nube**). **Iniciar sesión con Microsoft** abre la ventana de Microsoft y comprueba que la cuenta tenga Minecraft: Java Edition. Para una cuenta sin conexión, escribí un nombre y tocá **Agregar**. Podés tener varias y elegir con cuál jugar. Si la sesión de una cuenta de Microsoft vence, la cuenta aparece marcada para que vuelvas a iniciar sesión.
+Tocá tu cuenta abajo a la izquierda (o andá a **Ajustes → Cuenta y nube**). **Iniciar sesión con Microsoft** abre la ventana de Microsoft y comprueba que la cuenta tenga Minecraft: Java Edition. Para una cuenta sin conexión, escribí un nombre y tocá **Agregar**. Podés tener varias y elegir con cuál jugar. Si la sesión de una cuenta de Microsoft vence, la cuenta aparece marcada para que vuelvas a iniciar sesión. Si no podés iniciar sesión, debajo del botón Venus te dice si es tu conexión o un servicio caído (ver [Estado de los servicios](#estado-de-los-servicios)).
 
 ### Cuenta de Venus
 
@@ -41,11 +41,22 @@ Una **instancia** es una instalación independiente de Minecraft, con su versió
 
 - **Instalar nueva**: elegí cualquier versión (releases, snapshots, bromas del 1 de abril, beta, alpha y versiones antiguas hasta la pre-classic) y un loader: Vanilla, Fabric, Quilt, Forge, NeoForge, OptiFine, Iris (Fabric + Iris + Sodium), Legacy Fabric o Babric. La instalación sigue en segundo plano y la ves en el panel de tareas.
 - **Mis instancias**: en cuadrícula o lista, con búsqueda, orden (jugadas hace poco, nombre, versión o tiempo jugado) y agrupadas por loader. Desde el menú de cada una podés renombrarla, duplicarla, repararla o eliminarla (va a la papelera).
-- **Importar**: modpacks de Modrinth (`.mrpack`), modpacks de otros launchers (CurseForge, MultiMC, Prism) o **Usar código** para un modpack que te compartieron (`PACK-XXXXXX`). También podés arrastrar el archivo a la ventana.
+- **Importar**: modpacks de Modrinth (`.mrpack`), modpacks de otros launchers (CurseForge, MultiMC, Prism), **Usar código** para un modpack que te compartieron (`PACK-XXXXXX`) o **Del launcher oficial de Minecraft** (ver [Importar desde el launcher oficial](#importar-desde-el-launcher-oficial)). También podés arrastrar el archivo a la ventana.
 
 La página de cada instancia tiene las pestañas **Resumen** (tiempo jugado, espacio en disco y las herramientas de la instancia), **Contenido** (mods, resource packs, shaders y data packs de cada mundo, con interruptores para activarlos y botón para agregar más), **Mundos** (jugar directo o ver el mapa), **Capturas**, **Registros** (la consola en vivo y los archivos de registro) y **Ajustes** (memoria, Java, ventana y **Optimizar**). Las herramientas del Resumen se explican en [Herramientas de cada instancia](#herramientas-de-cada-instancia).
 
 Si la instancia ya se verificó hace poco y no cambió nada, arranca rápido sin revisar todo por internet. **Reparar** revisa todos los archivos.
+
+### Importar desde el launcher oficial
+
+En **Versiones → Importar → Del launcher oficial de Minecraft** (o desde la bienvenida) traés a Venus lo que tenías en el launcher oficial. Venus lee tu carpeta `.minecraft`, con los perfiles del launcher oficial y los del launcher de la Microsoft Store o la app de Xbox (marcados **Microsoft Store**); si la carpeta está en otro lado, tocá **Elegir otra carpeta**. Te muestra:
+
+- **Perfiles**: cada uno con su versión, su loader (Vanilla, Fabric, Quilt, Forge, NeoForge, OptiFine, Legacy Fabric o Babric) y cuándo lo usaste. Cada perfil que marcás se convierte en una instancia nueva (si ya tenés una con ese nombre, queda «Nombre (2)»). **Última versión** usa la más nueva entre la lista de versiones de Mojang y las que ya instaló el launcher oficial. Los que no se pueden traer dicen por qué (LiteLoader, LabyMod, Lunar Client y otros clientes, o una versión desconocida, como la copia renombrada de una versión) y los que ya importaste aparecen como **Ya importado**.
+- **Contenido** de cada carpeta: mundos (todos, o algunos con **Elegir mundos**), mods, paquetes de recursos, shaders, configuración de mods, opciones del juego y la lista de servidores, con cantidades y tamaños. Si varios perfiles comparten la carpeta (lo normal en el launcher oficial), su contenido se copia una sola vez, a la instancia que elijas en **Va a**: por defecto, la del perfil que usaste hace menos tiempo o, si la carpeta tiene mods, la del más reciente con mods. Los mods y su configuración solo van a perfiles con Fabric, Quilt, Forge, NeoForge, Legacy Fabric o Babric. Un perfil con carpeta propia trae lo suyo; si esa carpeta ya no existe o no se puede usar (está en la red, es del sistema o está dentro de Venus), te lo avisa y se importa sin su contenido.
+
+La copia sigue en segundo plano, con progreso y **Cancelar importación**. Antes revisa que haya lugar en el disco y que Minecraft no esté abierto desde esa carpeta (un mundo abierto aparece como **Abierto**: cerralo antes de importar). Si algo falla o cancelás, no queda ninguna instancia a medias. El launcher oficial queda como estaba: no se importan cuentas, contraseñas ni argumentos de Java, y los accesos directos (enlaces y uniones) se saltean y se avisan. Minecraft y el loader se descargan la primera vez que jugás cada instancia.
+
+- Necesita: nada. No usa internet, salvo para bajar la lista de versiones de Mojang si ni Venus ni el launcher oficial la tienen guardada.
 
 ### Mundos
 
@@ -61,6 +72,17 @@ La pestaña **Capturas y clips** de la página junta todas tus capturas y clips,
 ### Mapa del mundo
 
 Desde **Mapa** (en Mundos o en la pestaña Mundos de una instancia) ves el mapa desde arriba: arrastrá para moverte, usá la rueda para acercar, elegí la dimensión (Superficie, Nether, End o las de mods y data packs), mirá las coordenadas del bloque bajo el cursor (clic para copiarlas), la aparición y los jugadores. **Renderizar todo** dibuja el mundo completo y podés **exportar la vista como PNG**. Funciona con mundos de la 1.2 en adelante; los más viejos se indican como no compatibles.
+
+### Skins
+
+En **Skins** (menú Jugar) mirás tu skin en 3D, guardás las tuyas en una biblioteca y cambiás la skin y la capa de tu cuenta de Minecraft con la API oficial de Mojang. Venus no trae skins ni capas de terceros: cada uno usa las suyas.
+
+- **Vista previa en 3D**: arrastrá para girar al personaje o usá las flechas del teclado (**Inicio**: de frente, **Fin**: de espalda); también están los botones **Frente**, **Espalda** y para girar. Se ve como en el juego: brazos clásicos o finos, las skins viejas de 64×32 convertidas como lo hace Minecraft y la capa que tenés puesta (la podés ocultar en la vista previa). Con movimiento reducido no se anima; si no, un botón pausa la animación.
+- **Mi biblioteca**: con **Agregar skin** (o soltando archivos PNG en la página) se guarda una copia de tus skins: PNG de 64×64 o 64×32 de hasta 64 KB, hasta 20 por vez y 100 en total. Las repetidas no se agregan dos veces. El modelo (**Clásico** o **Slim**) se adivina por los brazos y se puede cambiar. Cada skin se puede renombrar, exportar como PNG o borrar (va a la papelera).
+- **Usar en mi cuenta**: sube la skin elegida a tu cuenta de Microsoft. **Volver a la skin por defecto** deja una de las skins por defecto de Minecraft. En los dos casos, si tu skin actual no está en la biblioteca, antes te ofrece guardar una copia. **Guardar en mi biblioteca** guarda la que tenés puesta.
+- **Capa**: elegí cuál de las capas de tu cuenta se ve, o **Sin capa**.
+- Para cambiar la skin o la capa, primero tiene que cargarse tu perfil de Minecraft; si no carga, tocá **Reintentar**. Los cambios se ven en el juego la próxima vez que entres a un mundo o a un servidor.
+- Necesita: nada para la vista previa y la biblioteca, que funcionan sin internet (también con una cuenta sin conexión o sin cuenta). Para cambiar la skin o la capa, una cuenta de Microsoft con Minecraft: Java Edition; si la sesión venció, la página te ofrece volver a iniciar sesión. Con el modo sin conexión activado (**Ajustes → Descargas y almacenamiento**) no se conecta a nada.
 
 ## Contenido
 
@@ -134,6 +156,16 @@ Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, F
 
 Cuatro pestañas: **Launcher** (tiempo jugado, rachas, calendario, horarios, instancias, versiones y loaders, crashes), **En el juego** (bloques minados, criaturas, distancias y más, por instancia y por mundo), **Mundos y servidores** (dónde jugaste más, con **Jugar** o **Entrar** directo) y **Logros** (hitos del launcher y logros del juego con su progreso). Podés exportar tus sesiones en CSV o todo en JSON. Se actualiza solo mientras jugás.
 
+### Tu resumen de Venus
+
+Una imagen lista para compartir con tus estadísticas: tiempo jugado y partidas, racha, tu instancia favorita (versión, loader y mods), el mundo o servidor donde más jugaste y tu colección (mods, mundos e instancias). Se abre con **Compartir mi resumen**, arriba a la derecha en **Estadísticas** o en la tarjeta **Tu actividad** del Inicio.
+
+- **Período**: **Esta semana** (últimos 7 días), **Este mes** (últimos 30 días) o **Desde siempre**; cada opción muestra cuánto jugaste. Si en ese período no jugaste, te lo avisa y te ofrece ver todo tu historial.
+- **Formato**: **Horizontal** (1600 × 900, para Discord y X) o **Vertical** (1080 × 1920, para TikTok e historias).
+- **Mostrar mi nombre** suma el nombre de tu cuenta de Minecraft (solo el texto, sin la skin). Viene apagado.
+- **Copiar imagen** la deja en el portapapeles para pegarla con **Ctrl+V**; **Guardar PNG** la guarda (por defecto en Imágenes) y te ofrece mostrarla en la carpeta. Recuerda el último período, formato y si mostrar tu nombre.
+- Se arma en tu PC con tus estadísticas y los colores de tu tema: no usa internet ni sube nada. Solo aparecen servidores con un dominio público: los que son una IP, de tu red, de túneles (bore, e4mc, playit.gg) o con DNS dinámico no se muestran.
+
 ### Rendimiento
 
 La memoria de Minecraft en una sola tarjeta:
@@ -148,6 +180,16 @@ En **Opciones avanzadas** están el recolector de Java (explicado en criollo), a
 Para programar plugins de Paper: elegí la carpeta de tu proyecto (Gradle o Maven) y Venus detecta cómo compilarlo, qué Java necesita y qué jar genera. **Empezar a probar** compila, crea un servidor de prueba (Paper, Purpur o Folia, mundo plano y vos como operador), copia el plugin y abre Minecraft conectado. Después, **Compilar y recargar** aplica tus cambios con un reinicio, `/reload` o recarga en caliente con PlugManX. También puede compilar solo al guardar, mostrar los errores de compilación con pistas y activar la depuración para conectar IntelliJ.
 
 - Necesita: un proyecto de plugin de Paper, un JDK instalado y cuenta de Minecraft para entrar a probar.
+
+### Estado de los servicios
+
+Cuando no podés iniciar sesión o algo no descarga, Venus te dice si el problema es tu conexión o un servicio caído (Microsoft y Xbox Live, Mojang, Modrinth, CurseForge o el servidor de Venus).
+
+- **Después de un error al iniciar sesión** (en la bienvenida y en el diálogo de cuentas) aparece abajo un aviso corto con un enlace al panel, por ejemplo "Microsoft no responde: esperá unos minutos y probá de nuevo" o "Tu internet no responde: revisá el wifi o el cable". Consulta solo los servicios de inicio de sesión (y, si ninguno contesta, prueba tu conexión). Si el error es de la cuenta (cancelaste, no tiene Minecraft, falta el perfil, Xbox la restringió), no consulta nada; si el error ya muestra que Microsoft falló de su lado (por ejemplo, un error 503), lo dice sin consultar nada.
+- **En el panel de tareas**, una descarga o instalación que falló por la red muestra el botón **Ver estado de los servicios**, que abre el panel con el grupo relacionado marcado.
+- **El panel completo** está en **Ajustes → Descargas y almacenamiento → Estado de los servicios → Comprobar** y en la paleta de comandos (**Ctrl+K**). Muestra cada servicio con su estado (**Responde**, **Lento** o **No responde**), cuánto tardó y qué hacer. También detecta si falla solo el DNS de tu red, si un antivirus, un proxy o la hora de Windows rompen las conexiones seguras y si tu red bloquea todos los servicios del juego. Si Cloudflare (la prueba neutral de tu conexión) no contesta pero los servicios sí, no culpa a tu conexión. El resultado se reusa 20 segundos y después podés **Volver a comprobar**.
+- Con el **modo sin conexión** activado no consulta nada y te ofrece ir a desactivarlo.
+- Privacidad: nunca consulta en segundo plano, solo cuando abrís el panel o justo después de un error al iniciar sesión. Hace un pedido corto a cada servicio, sin datos tuyos.
 
 ## Asistente IA
 
@@ -242,7 +284,7 @@ El engranaje de abajo a la izquierda. Cada sección tiene su enlace directo (por
 - **Inteligencia artificial**: estado de la IA, tu plan con las preguntas que te quedan por modelo y el presupuesto del mes, activar o desactivar la IA, **Probar la IA**, la conexión con **Claude y ChatGPT (MCP)**, los **servidores MCP del asistente** y qué se envía.
 - **Plan**: tu plan de Venus IA (con aviso si un pago falló o si la suscripción se cancela), las tarjetas de los 6 planes con su precio, modelos y preguntas, **Mejorar plan** (abre el pago de Stripe en tu navegador) y **Administrar suscripción** (cambiar la tarjeta, ver facturas o cancelar).
 - **Java**: el Java que descargó Venus, el que encuentra en tu PC, probar un ejecutable y qué Java usa cada versión de Minecraft.
-- **Descargas y almacenamiento**: medidor de descargas en vivo, pausa, límite de velocidad, descargas simultáneas y **modo sin conexión**; uso del disco por categoría; **unificar archivos repetidos** (los mods y packs iguales de varias instancias pasan a ocupar lugar una sola vez, también en automático) y limpieza con vista previa (caché, versiones y Java que no usa nadie, descargas incompletas). La limpieza borra para siempre lo que se puede volver a descargar, y pide confirmación.
+- **Descargas y almacenamiento**: medidor de descargas en vivo, pausa, límite de velocidad, descargas simultáneas y **modo sin conexión**; **estado de los servicios** (¿es tu conexión o un servicio caído?); uso del disco por categoría; **unificar archivos repetidos** (los mods y packs iguales de varias instancias pasan a ocupar lugar una sola vez, también en automático) y limpieza con vista previa (caché, versiones y Java que no usa nadie, descargas incompletas). La limpieza borra para siempre lo que se puede volver a descargar, y pide confirmación.
 - **Datos**: dónde se guarda todo (podés moverlo a otra carpeta o disco, con reinicio), cuánto ocupa cada cosa, vaciar la caché y el modo portable.
 - **Acerca de**: versión, información para copiar y créditos. Venus no se actualiza solo por ahora: las versiones nuevas se instalan a mano.
 

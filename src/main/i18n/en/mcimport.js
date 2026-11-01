@@ -1,0 +1,33 @@
+// Import from the official launcher (main process): tasks and errors.
+module.exports = {
+  pickTitle: 'Choose the official launcher’s .minecraft folder',
+  nameLatestRelease: 'Minecraft {version}',
+  nameLatestSnapshot: 'Snapshot {version}',
+  nameUnnamed: '{loader} {version}',
+
+  taskTitle_one: 'Importing {count} profile from the official launcher',
+  taskTitle_other: 'Importing {count} profiles from the official launcher',
+  taskDone_one: 'Done: {count} new instance',
+  taskDone_other: 'Done: {count} new instances',
+  stepCheck: 'Checking that Minecraft is closed and there is enough space…',
+  stepCreate: 'Creating the {name} instance…',
+  copy_worlds: 'Copying the worlds of {name} · {done} of {total}',
+  copy_mods: 'Copying the mods of {name} · {done} of {total}',
+  copy_resourcepacks: 'Copying the resource packs of {name} · {done} of {total}',
+  copy_shaderpacks: 'Copying the shaders of {name} · {done} of {total}',
+  copy_config: 'Copying the mod settings of {name} · {done} of {total}',
+  copy_options: 'Copying the options of {name} · {done} of {total}',
+  copy_servers: 'Copying the server list of {name} · {done} of {total}',
+
+  errBusy: 'An import is already running. Wait for it to finish.',
+  errNotAllowed: 'That folder can’t be imported. Choose it again with “Choose another folder”.',
+  errNothing: 'Choose at least one profile to import.',
+  errTooMany: 'That’s too many profiles at once. Import them in smaller batches.',
+  errChanged: 'The folder changed since you checked it. Check it again and retry.',
+  errGameRunning: 'Minecraft is open from {dir}. Close it and try again so the worlds are copied in full.',
+  errWorldOpen: 'The world “{name}” is open in Minecraft. Close it (or quit the game) and try again.',
+  errNoSpace: 'Not enough disk space: {need} needed and {free} left.',
+  errDiskFull: 'The disk filled up while copying. Free some space and try again.',
+  errCancelled: 'The import was cancelled. No instance was created.',
+  errFailed: 'Couldn’t import: {error}',
+};

@@ -412,11 +412,13 @@ export function importShareCode(code) {
 }
 
 // Opciones del menu "Importar" (cabecera de Versiones y estado vacio).
+// La ultima es del modulo mcimport (perfiles, mundos y mods del launcher oficial; textos en su namespace).
 export function importMenuItems() {
   return [
     { icon: 'package', label: t('versions.importMrpack'), run: pickMrpack },
     { icon: 'hash', label: t('versions.useCodeLong'), run: () => importShareCode() },
     { icon: 'archive', label: t('versions.importOther'), run: () => importOtherPack() },
+    { icon: 'pickaxe', label: t('mcimport.menuItem'), run: () => runFeature('mcimport', 'openOfficialImport') },
   ];
 }
 

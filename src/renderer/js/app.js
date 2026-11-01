@@ -14,6 +14,7 @@ const NAV = [
   { id: 'assistant', icon: 'wand' },
   { id: 'versions', icon: 'layers' },
   { id: 'worlds', icon: 'globe' },
+  { id: 'skins', icon: 'user' },
   { group: 'content' },
   { id: 'modrinth', icon: 'package', cls: 'modrinth' },
   { id: 'smartsearch', icon: 'sparkles' },
@@ -39,6 +40,7 @@ const PAGES = {
   versions: () => import('./pages/versions.js'),
   instance: () => import('./pages/instance.js'),
   worlds: () => import('./pages/worlds.js'),
+  skins: () => import('./pages/skins.js'),
   modrinth: () => import('./pages/modrinth.js'),
   smartsearch: () => import('./pages/smartsearch.js'),
   performance: () => import('./pages/performance.js'),
@@ -80,6 +82,7 @@ const STARTUP = [
   () => import('./features/admin.js'),
   () => import('./features/support-staff.js'),
   () => import('./features/mcp.js'),
+  () => import('./features/svcstatus.js'), // solo registra "Estado de los servicios" en Ctrl+K (no consulta nada)
 ];
 
 let cleanup = null;
@@ -295,12 +298,23 @@ export function openAccounts({ welcome = false } = {}) {
     t('common.loginMicrosoft'),
   );
 
+  // Estado de los servicios (features/svcstatus.js): si falla el inicio de sesion, dice abajo del boton si es la
+  // conexion o un servicio caido (consulta solo los servicios de Microsoft y solo si el error lo amerita).
+  const svcSlot = h('div', { hidden: true });
+  const showServiceStatus = (err) => {
+    import('./features/svcstatus.js')
+      .then((m) => m.mountVerdict(svcSlot, { source: 'login', code: typeof err?.code === 'string' ? err.code : null, text: String(err?.message || '') }))
+      .catch((e) => console.warn('[svcstatus]', e));
+  };
+
   // Inicio de sesion con Microsoft: el boton grande o "Iniciar sesion" de una cuenta vencida (needsLogin).
   // Si se entra con la misma cuenta, el registro se actualiza y deja de pedir el inicio de sesion.
   let loggingIn = false;
   const msLogin = async (btn, { compact = false, name = null } = {}) => {
     if (loggingIn) return;
     loggingIn = true;
+    svcSlot.hidden = true;
+    delete svcSlot.dataset.svcToken; // un resultado del intento anterior que llegue tarde ya no se muestra
     const old = [...btn.childNodes];
     btn.disabled = true;
     msBtn.disabled = true;
@@ -311,7 +325,10 @@ export function openAccounts({ welcome = false } = {}) {
       renderList();
       ok(t('common.loggedIn'), t('common.hello', { name: name || store.selectedAccount()?.name }));
     } catch (err) {
-      if (!isLoginCancelled(err)) fail(t('common.loginFailed'), err);
+      if (!isLoginCancelled(err)) {
+        fail(t('common.loginFailed'), err);
+        showServiceStatus(err);
+      }
     } finally {
       loggingIn = false;
       msBtn.disabled = false;
@@ -409,6 +426,7 @@ export function openAccounts({ welcome = false } = {}) {
       listBox,
       h('div', { class: 'divider' }),
       msBtn,
+      svcSlot,
       h('div', { class: 'label', style: { marginTop: '6px' } }, t('common.offlineAccount')),
       h('div', { class: 'row' }, nameInput, h('button', { class: 'btn', onclick: addOffline }, icon('plus'), t('common.add'))),
       h('div', { class: 'small muted' }, t('common.offlineHint')),
@@ -446,6 +464,8 @@ function renderTask(task) {
     state === 'running' ? h('div', { class: ['progress', pct === null && 'indeterminate'] }, h('i', { style: { width: `${pct || 0}%` } })) : null,
     task.detail ? h('div', { class: 'task-detail', title: task.detail }, task.detail) : null,
   );
+  // Error de red o de descarga: boton "Ver estado de los servicios" (features/svcstatus.js)
+  if (state === 'error') import('./features/svcstatus.js').then((m) => m.taskHint(el, task)).catch(() => {});
   if (state === 'done') setTimeout(() => el.remove(), 2500);
   if (state === 'cancelled') setTimeout(() => el.remove(), 4000);
   if (state === 'error') setTimeout(() => el.isConnected && el.remove(), 20000);

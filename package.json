@@ -1,7 +1,7 @@
 {
   "name": "venus-launcher",
   "productName": "Venus Launcher",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Venus Launcher - Launcher de Minecraft con Modrinth, Fabric, Forge, NeoForge, Quilt, OptiFine, Iris, servidores locales, amigos, Voice Chat y nube",
   "main": "src/main/main.js",
   "author": "Venus Launcher",

@@ -688,12 +688,25 @@ async function loginMicrosoft(ctx) {
     S.accMsg = { kind: 'good', text: t('welcome.accAddedOk', { name: store.selectedAccount()?.name || '' }) };
     pendingFocus = 'next';
   } catch (err) {
-    const cancelled = /cancel/i.test(err?.message || '');
-    S.accMsg = { kind: cancelled ? 'info' : 'bad', text: err?.message || String(err), offerOffline: !cancelled };
+    // Cancelar no es un error: core/accounts manda err.code 'cancelled' en cualquier idioma (el texto no siempre dice "cancel")
+    const cancelled = err?.code === 'cancelled' || /cancel/i.test(err?.message || '');
+    // svc: estado de los servicios debajo del error (un token por error: redibujar no vuelve a consultar)
+    const svc = cancelled ? null : { code: typeof err?.code === 'string' ? err.code : null, text: String(err?.message || ''), token: `wl-login-${Date.now()}` };
+    S.accMsg = { kind: cancelled ? 'info' : 'bad', text: err?.message || String(err), offerOffline: !cancelled, svc };
   } finally {
     S.accBusy = false;
     if (ctx.alive()) ctx.refresh();
   }
+}
+
+// Estado de los servicios (features/svcstatus.js): después de un error al iniciar sesión dice si es tu conexión o
+// un servicio caído. Consulta solo los servicios de Microsoft y solo si el error lo amerita (no los de la cuenta).
+function svcVerdict(svc) {
+  const slot = h('div', { hidden: true });
+  import('../features/svcstatus.js')
+    .then((m) => m.mountVerdict(slot, { source: 'login', code: svc.code, text: svc.text, token: svc.token }))
+    .catch((err) => console.warn('[welcome] svcstatus', err?.message || err));
+  return slot;
 }
 
 async function addOffline(ctx) {
@@ -1285,6 +1298,7 @@ function stepAccount(ctx) {
       choices,
       S.accMode === 'premium' ? premiumBox(ctx) : S.accMode === 'offline' ? offlineBox(ctx) : null,
       msg,
+      S.accMsg?.svc ? svcVerdict(S.accMsg.svc) : null,
     ),
     h(
       'aside',
@@ -1932,6 +1946,32 @@ function versionsError(ctx) {
   return h('div', { class: 'wl-stack' }, parts);
 }
 
+// Tarjeta "¿Venís del launcher oficial?" (features/mcimport.js): arranca oculta y el módulo la llena solo si
+// encuentra perfiles o mundos; si no carga o falla, no se ve nada. Al importar, el paso pasa a "usar una
+// existente" con la primera instancia importada.
+let mciFeature = null;
+function officialImportSlot(ctx) {
+  const slot = h('div', { hidden: true });
+  const fill = (mod) =>
+    mod.welcomeSuggestion?.(slot, {
+      onImported: (ids) => {
+        if (!S || !ids?.length) return;
+        S.instMode = 'existing';
+        S.existingId = ids[0];
+        ctx.refresh();
+      },
+    });
+  if (mciFeature) fill(mciFeature);
+  else
+    import('../features/mcimport.js')
+      .then((mod) => {
+        mciFeature = mod;
+        fill(mod);
+      })
+      .catch(() => {});
+  return slot;
+}
+
 function stepInstance(ctx) {
   const insts = store.instances;
   if (S.instMode === 'existing' && !insts.length) S.instMode = 'new';
@@ -1955,6 +1995,7 @@ function stepInstance(ctx) {
       ),
     );
   }
+  if (S.instMode === 'new') parts.push(officialImportSlot(ctx));
   if (S.instMode === 'existing') parts.push(existingList(ctx));
   else if (data.manifest?.status === 'error') parts.push(versionsError(ctx));
   else {

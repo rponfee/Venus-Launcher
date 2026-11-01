@@ -9,6 +9,7 @@ export default {
   home: "홈",
   versions: "버전 및 인스턴스",
   worlds: "월드",
+  skins: "스킨",
   modrinth: "Modrinth",
   smartsearch: "스마트 검색",
   multiplayer: "멀티플레이",

@@ -62,7 +62,7 @@ function loadingView() {
 }
 
 export default {
-  ns: ['stats'],
+  ns: ['stats', 'recap'],
   css: ['pages/stats'],
   async render(root, params = []) {
     const deepWorld = params[0] === 'world' && params[1] && params[2] ? { instanceId: params[1], folder: params[2] } : null;
@@ -128,7 +128,20 @@ export default {
     const exportWrap = h('div', { class: 'st-export' }, exportBtn);
     // Reiniciar borra el historial: va separado y con aspecto de accion destructiva (pide confirmacion)
     const resetBtn = h('button', { class: 'btn ghost st-reset', type: 'button', title: t('stats.resetHint') }, icon('trash'), t('stats.reset'));
-    const head = pageHead(sub, [resetBtn, exportWrap]);
+    // Tu resumen de Venus (features/recap.js): imagen para compartir con estas estadisticas. El dialogo
+    // muestra su propia carga; el boton queda con el foco para que vuelva a el al cerrar.
+    const shareBtn = h('button', { class: 'btn', type: 'button', title: t('recap.shareHint') }, icon('share'), t('recap.shareButton'));
+    shareBtn.addEventListener('click', () => {
+      import('../features/recap.js').then((m) => m.openRecap()).catch((err) => fail(t('recap.openFailed'), err));
+    });
+    // Primario solo con partidas: sin partidas el primario de la vista es "Ir a jugar" del estado vacio
+    const drawShare = () => {
+      const played = (Number(state.report?.totals?.ms) || 0) > 0;
+      shareBtn.classList.toggle('primary', played);
+      shareBtn.classList.toggle('tonal', !played);
+    };
+    drawShare();
+    const head = pageHead(sub, [resetBtn, exportWrap, shareBtn]);
     const runningBox = h('div', { class: 'st-notices' });
     const exportBox = h('div', { class: 'st-notices' });
     const kpiBox = h('div', { class: 'st-kpis' }, kpiRow(state.report));
@@ -401,6 +414,7 @@ export default {
       for (const m of report.milestones || []) if (m.isNew) state.newIds.add(m.id);
       mount(kpiBox, kpiRow(report));
       drawSub();
+      drawShare();
       drawTabs();
       invalidate('launcher', 'achievements');
       state.places = null;

@@ -22,8 +22,11 @@ export function renderA11y(body, ctx) {
 export function renderStorage(body, ctx) {
   const downloads = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'downloads' } });
   const storage = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'disk' } });
-  body.append(sectionHead('storage', 'drive'), downloads, storage);
+  // Estado de los servicios (features/svcstatus.js): ¿es tu conexión o un servicio caído?
+  const services = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'services' } });
+  body.append(sectionHead('storage', 'drive'), downloads, services, storage);
   const load = () => import('../../features/storage.js');
   embedPanel(downloads, { load, fn: 'downloadsPanel', ns: ['storage'], label: t('settings.storageDownloads'), iconName: 'download' }, ctx);
+  embedPanel(services, { load: () => import('../../features/svcstatus.js'), fn: 'statusCard', ns: ['svcstatus'] }, ctx);
   embedPanel(storage, { load, fn: 'storagePanel', ns: ['storage'], label: t('settings.storageDisk'), iconName: 'drive' }, ctx);
 }

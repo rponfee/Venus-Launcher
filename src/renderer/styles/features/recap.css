@@ -1,0 +1,94 @@
+/* ============================================================
+   Tu resumen de Venus (imagen para compartir)
+   Prefijo de clases: .rcp-
+   ============================================================ */
+
+.rcp-modal .modal-body { padding-top: var(--sp-2); }
+
+/* Vista previa a la izquierda, opciones a la derecha. Alto fijo: cambiar de formato no mueve el dialogo */
+.rcp-body {
+  display: grid; grid-template-columns: minmax(0, 1fr) 292px; gap: var(--sp-5);
+  height: clamp(340px, calc(100vh - 252px), 600px); min-height: 0;
+}
+.rcp-body.is-empty { display: block; height: auto; }
+.rcp-empty .empty { padding: var(--sp-7) var(--sp-4) var(--sp-6); }
+
+/* ---------- Escenario (vista previa) ---------- */
+.rcp-stage {
+  position: relative; min-width: 0; min-height: 0; display: grid; place-items: center; padding: var(--sp-4); overflow: hidden;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%),
+    var(--well-bg);
+}
+.rcp-stage > * { grid-area: 1 / 1; }
+.rcp-canvas {
+  display: block; border-radius: 10px; background: var(--bg-0);
+  box-shadow: var(--shadow-s), 0 0 0 1px var(--border-2);
+}
+.rcp-ghost { border-radius: 10px; overflow: hidden; }
+.rcp-ghost .skeleton-group, .rcp-ghost .skeleton-shapes { width: 100%; height: 100%; }
+.rcp-ghost .skeleton-block { width: 100%; height: 100%; border-radius: 10px; }
+.rcp-stage-msg { width: 100%; max-width: 460px; display: flex; justify-content: center; }
+.rcp-stage-msg .empty { padding: var(--sp-5) var(--sp-3); }
+.rcp-error { align-items: center; width: 100%; }
+.rcp-error-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rcp-error .btn { flex-shrink: 0; }
+
+/* ---------- Opciones ---------- */
+.rcp-side { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; min-height: 0; overflow-y: auto; padding: 2px; margin: -2px; }
+.rcp-group { display: flex; flex-direction: column; gap: var(--sp-2); }
+.rcp-label { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
+.rcp-periods { display: flex; flex-direction: column; gap: 6px; }
+.rcp-period, .rcp-format {
+  border: 1px solid var(--border-2); background: var(--well-bg); color: var(--text); border-radius: 10px; cursor: pointer; text-align: left; font: inherit;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.rcp-period:hover:not(:disabled):not(.active), .rcp-format:hover:not(:disabled):not(.active) { border-color: var(--border-3); background: var(--hover-bg); }
+.rcp-period.active, .rcp-format.active {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: var(--accent-wash);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.rcp-period:disabled, .rcp-format:disabled { cursor: default; }
+.rcp-period:disabled .rcp-period-text, .rcp-format:disabled .rcp-format-text { opacity: 0.6; }
+
+.rcp-period { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3); min-height: 44px; padding: 6px var(--sp-3); }
+.rcp-dot { width: 16px; height: 16px; border-radius: var(--radius-full); border: 2px solid var(--border-3); background: transparent; flex-shrink: 0; }
+.rcp-period.active .rcp-dot { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 3px var(--surface-2); }
+.rcp-period-text { display: flex; flex-direction: column; min-width: 0; }
+.rcp-period-title { font-weight: 600; font-size: var(--fs-md); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcp-period-hint { font-size: var(--fs-xs); line-height: 1.35; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcp-period.active .rcp-period-title { color: var(--cream); }
+.rcp-period-value { font-size: var(--fs-sm); font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rcp-period.active .rcp-period-value { color: var(--accent-hi); }
+.rcp-period-value.zero { color: var(--muted); font-weight: 600; }
+.rcp-sk-value { display: inline-block; width: 56px; height: 12px; border-radius: 6px; }
+
+.rcp-formats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+/* Figura del formato arriba y, debajo, el nombre y para que sirve: el nombre usa todo el ancho del boton
+   (al lado de la figura no entraban "Горизонтальный", "Горизонтальний" ni "Orizzontale") */
+.rcp-format { display: block; min-height: 58px; padding: var(--sp-2); min-width: 0; text-align: center; }
+.rcp-format-text { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.rcp-shape { flex-shrink: 0; border: 2px solid var(--muted); border-radius: 3px; margin-bottom: 2px; }
+.rcp-shape.landscape { width: 22px; height: 13px; margin-top: 3px; margin-bottom: 6px; }
+.rcp-shape.portrait { width: 12px; height: 20px; }
+.rcp-format.active .rcp-shape { border-color: var(--accent-hi); background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.rcp-format-title { max-width: 100%; font-weight: 600; font-size: var(--fs-md); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcp-format.active .rcp-format-title { color: var(--cream); }
+.rcp-format-hint { max-width: 100%; font-size: var(--fs-xs); line-height: 1.35; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.toggle-row.rcp-name { padding: var(--sp-1) 0 0; border-bottom: 0; gap: var(--sp-3); }
+.rcp-name .tr-sub { overflow-wrap: anywhere; }
+
+.rcp-note { display: flex; align-items: flex-start; gap: var(--sp-2); margin: auto 0 0; padding-top: var(--sp-1); font-size: var(--fs-xs); line-height: 1.45; color: var(--muted); }
+.rcp-note svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; color: var(--accent-hi); }
+
+/* ---------- Pie ---------- */
+.rcp-foot { display: flex; align-items: center; gap: var(--sp-2); width: 100%; min-width: 0; }
+.rcp-status { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--good-text); }
+.rcp-status:empty { visibility: hidden; }
+.rcp-status > svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--good); }
+.rcp-status-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcp-status .btn { flex-shrink: 0; }
+.rcp-foot > .btn { flex-shrink: 0; }

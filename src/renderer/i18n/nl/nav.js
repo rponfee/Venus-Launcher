@@ -9,6 +9,7 @@ export default {
   home: "Home",
   versions: "Versies en instanties",
   worlds: "Werelden",
+  skins: "Skins",
   modrinth: "Modrinth",
   smartsearch: "Slimme zoekfunctie",
   multiplayer: "Multiplayer",

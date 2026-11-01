@@ -9,6 +9,7 @@ export default {
   home: "主页",
   versions: "版本与实例",
   worlds: "世界",
+  skins: "皮肤",
   modrinth: "Modrinth",
   smartsearch: "智能搜索",
   multiplayer: "多人游戏",

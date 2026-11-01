@@ -243,7 +243,9 @@ function slugFor(name) {
       .replace(/[^a-z0-9.-]+/g, '-')
       .replace(/^[-.]+|[-.]+$/g, '')
       .slice(0, 40)
-      .replace(/[-.]+$/g, '') || 'instancia'
+      .replace(/[-.]+$/g, '')
+      // CON, NUL, COM1... son dispositivos en Windows (en Windows 10 la carpeta no se puede crear)
+      .replace(/^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?=\.|$)/, '$1-instancia') || 'instancia'
   );
 }
 
