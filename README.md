@@ -47,7 +47,7 @@ Abrilo desde el menú, con el botón **Asistente** de la barra de título o con 
 
 ### Ajustes
 
-General (idioma y qué hace el launcher al jugar), Apariencia (temas planetarios, color propio, fondo, música y marca propia), Accesibilidad (daltonismo, alto contraste, escala, movimiento reducido, control), Cuenta y nube (cuentas de Minecraft y cuenta de Venus), Privacidad (con Discord Rich Presence), Inteligencia artificial (con Claude y ChatGPT por MCP, y tu Claude Code o tu Codex como motor del Asistente), Plan (planes, compra y saldo de Venus IA), Java, Descargas y almacenamiento (límite de velocidad, modo sin conexión, uso del disco, unificar archivos repetidos y limpieza), Datos (carpeta, caché y modo portable) y Acerca de.
+General (idioma y qué hace el launcher al jugar), Apariencia (temas planetarios, color propio, galería de fondos con imágenes y fondos animados, tu propia imagen o video, música y marca propia), Accesibilidad (daltonismo, alto contraste, escala, movimiento reducido, control), Cuenta y nube (cuentas de Minecraft y cuenta de Venus), Privacidad (con Discord Rich Presence), Inteligencia artificial (con Claude y ChatGPT por MCP, y tu Claude Code o tu Codex como motor del Asistente), Plan (planes, compra y saldo de Venus IA), Java, Descargas y almacenamiento (límite de velocidad, modo sin conexión, uso del disco, unificar archivos repetidos y limpieza), Datos (carpeta, caché y modo portable) y Acerca de.
 
 ### En todo el launcher
 
@@ -82,6 +82,7 @@ npm run dist:dir     # solo la carpeta sin empaquetar (dist/win-unpacked)
 | `node scripts/check.js [carpeta-o-archivo]` | Chequeo de sintaxis sin abrir Electron (proceso principal como CommonJS e interfaz como módulos ES). Tiene que dar 0 errores. |
 | `node scripts/i18n-check.js [idioma...]` · `--summary` | Compara cada idioma contra el español: archivos y claves faltantes, claves sobrantes y `{variables}` distintas. |
 | `node scripts/contracts-check.js` | Cruza los canales que usa la interfaz con los que registra el proceso principal: tiene que dar 0 "sin handler". También lista los canales que nadie usa y los registrados dos veces. |
+| `python scripts/import-wallpapers.py <carpeta o .zip>` | Agrega imágenes y videos a la galería de fondos sin repetir los que ya están (compara un hash perceptual). Convierte las imágenes a WebP y los videos a MP4 1080p sin audio (con el ffmpeg de `imageio-ffmpeg` o del PATH), y rearma `src/renderer/js/wallpapers.js`. |
 | `scripts/devshot.js` | Capturas automáticas de las páginas y su consola, con una carpeta de datos temporal (ejemplo abajo; detalles en [docs/arquitectura.md](docs/arquitectura.md#9-cómo-verificar)). La ventana se abre sin robar el foco. |
 
 Ejemplo de `devshot` en PowerShell (las capturas y `console.log` quedan en la carpeta de `VENUS_DEVSHOT`):
@@ -123,7 +124,7 @@ Electron 44 con JavaScript sin frameworks ni build: proceso principal en CommonJ
 
 ## Notas
 
-- **Cuentas**: el inicio de sesión de Microsoft usa el flujo de Xbox Live y verifica que la cuenta tenga Minecraft: Java Edition (compra o Game Pass). Las cuentas sin conexión, como en el launcher oficial, solo se pueden agregar y usar si en el launcher hay una cuenta de Microsoft con el juego; sirven para jugar solo, en LAN o en servidores con `online-mode=false`.
+- **Cuentas**: el inicio de sesión de Microsoft usa el flujo de Xbox Live y verifica que la cuenta tenga Minecraft: Java Edition (compra o Game Pass). También se pueden usar cuentas sin conexión, sin cuenta de Microsoft: solo piden un nombre de jugador y sirven para jugar solo, en LAN o en servidores con `online-mode=false`.
 - **OptiFine** se descarga desde optifine.net. Si lo usás, considerá apoyar a su autor.
 - **Servidores**: crear un servidor requiere aceptar el [EULA de Minecraft](https://aka.ms/MinecraftEULA).
 
@@ -161,3 +162,5 @@ Each of those services has its own privacy policy.
 ## Licencia
 
 [MIT](LICENSE). Venus Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Synergies AB.
+
+Los fondos de la galería (`src/renderer/assets/wallpapers`) son de sus autores y de los dueños de cada personaje o marca: no están cubiertos por la licencia MIT. El origen de cada uno está en `manifest.json`, en esa carpeta.

@@ -28,7 +28,8 @@ export const APPEARANCE_DEFAULTS = {
   customColor: '#f29a2e',
   tint: true, // teñir fondos y textos con el tono del acento
   background: 'stars', // 'stars' | 'wallpaper' | 'image'
-  wallpaperId: WALLPAPERS[0]?.id || '',
+  // la primera imagen (los animados van primero en la galería, pero gastan más al elegir "Galería" sin mirar)
+  wallpaperId: (WALLPAPERS.find((w) => !w.video) || WALLPAPERS[0])?.id || '',
   bgFile: '',
   bgDim: 45, // 0-90 %
   bgBlur: 0, // 0-24 px
@@ -287,7 +288,7 @@ function applyBackground() {
   }
   if (layer.dataset.src !== url) {
     layer.dataset.src = url;
-    const media = makeMedia(url, ap.background === 'image' && isVideo(ap.bgFile));
+    const media = makeMedia(url, wallpaper ? Boolean(wallpaper.video) : isVideo(ap.bgFile));
     media.addEventListener(
       'error',
       () => {
@@ -816,7 +817,7 @@ function createAppearanceControls({ compact = false } = {}) {
 
   // --- Fondo ---
   const bgSeg = h('div', { class: 'segmented ax-seg', role: 'radiogroup', 'aria-label': t('appearance.background') });
-  // La galería solo aparece si el launcher trae fondos (wallpapers.js; hoy ninguno).
+  // La galería solo aparece si el launcher trae fondos (wallpapers.js: imágenes y animados).
   const bgOptions = [
     { value: 'stars', label: t('appearance.bgStars'), icon: 'sparkles' },
     WALLPAPERS.length ? { value: 'wallpaper', label: t('appearance.bgGallery'), icon: 'image' } : null,
@@ -861,11 +862,12 @@ function createAppearanceControls({ compact = false } = {}) {
   const gallery = h('div', { class: 'ap-wallpapers', role: 'radiogroup', 'aria-labelledby': galleryLabel });
   const wallpaperBtns = WALLPAPERS.map((wallpaper, i) => h('button', {
     type: 'button', class: 'ap-wallpaper', role: 'radio', title: wallpaper.name,
-    'aria-label': wallpaper.name, 'aria-checked': 'false', tabindex: i === 0 ? 0 : -1,
+    'aria-label': wallpaper.video ? `${wallpaper.name}, ${t('appearance.liveBadge')}` : wallpaper.name, 'aria-checked': 'false', tabindex: i === 0 ? 0 : -1,
     dataset: { id: wallpaper.id },
     onclick: () => save({ appearance: { background: 'wallpaper', wallpaperId: wallpaper.id } }),
   },
   h('img', { src: wallpaper.thumb, alt: '', loading: 'lazy', decoding: 'async', width: 320, height: 180 }),
+  wallpaper.video ? h('span', { class: 'ap-wallpaper-live', 'aria-hidden': 'true' }, icon('play'), t('appearance.liveBadge')) : null,
   h('span', { class: 'ap-wallpaper-name', 'aria-hidden': 'true' }, wallpaper.name),
   h('span', { class: 'ap-wallpaper-check', 'aria-hidden': 'true' }, icon('check'))));
   gallery.append(...wallpaperBtns);
@@ -976,7 +978,7 @@ function createAppearanceControls({ compact = false } = {}) {
     fileActions.hidden = ap.background !== 'image';
     if (showBg) {
       const url = wallpaper?.src || fileUrl(ap.bgFile);
-      const video = !wallpaper && isVideo(ap.bgFile);
+      const video = wallpaper ? Boolean(wallpaper.video) : isVideo(ap.bgFile);
       if (bgThumb.dataset.src !== url) {
         bgThumb.dataset.src = url;
         const media = makeMedia(url, video);

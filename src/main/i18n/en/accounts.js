@@ -3,7 +3,6 @@ module.exports = {
   notFound: 'That account was not found.',
   noAccount: 'Add an account before playing.',
   invalidName: 'The name must be 3 to 16 characters long: letters, numbers or underscore (_).',
-  offlineNeedsMicrosoft: 'To play offline, first sign in with a Microsoft account that owns Minecraft: Java Edition (like the official launcher).',
   unavailable: 'Microsoft sign-in is not available right now.',
   cancelled: 'Sign-in cancelled.',
   network: 'Could not connect to {service}. Check your internet connection and try again.',

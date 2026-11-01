@@ -5,6 +5,8 @@
 - Las preferencias se guardan automáticamente. Los fondos incluidos funcionan sin conexión y no dependen de la ubicación del ZIP.
 - La comunidad de Discord está disponible desde la bienvenida, la barra lateral y **Ajustes → Acerca de**: https://discord.gg/8KuvU5Cswn.
 
+(Desde la 1.0.14 la galería se arma con `scripts/import-wallpapers.py`, que suma imágenes y fondos animados sin repetir; ver el README.)
+
 La colección entregada contiene 49 fondos únicos válidos. Se omitieron dos duplicados y un PNG incompleto (`(36).png`). El inventario y los nombres originales están en `src/renderer/assets/wallpapers/manifest.json`.
 
 Los ejecutables 1.0.1 y los datos existentes se conservan. El portable 1.0.2 utiliza la carpeta `VenusData` junto al ejecutable, igual que la versión anterior.

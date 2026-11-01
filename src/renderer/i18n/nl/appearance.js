@@ -1,6 +1,7 @@
 export default {
   bgGallery: "Galerij",
   galleryTitle: "{count} meegeleverde achtergronden",
+  liveBadge: "Bewegend",
   galleryChoose: "Kies je favoriet",
   gallerySelected: "Geselecteerd: {name}",
   livePreview: "Livevoorbeeld",

@@ -1,6 +1,7 @@
 export default {
   bgGallery: "Galeria",
   galleryTitle: "Liczba dołączonych tapet: {count}",
+  liveBadge: "Animowana",
   galleryChoose: "Wybierz ulubioną",
   gallerySelected: "Wybrano: {name}",
   livePreview: "Podgląd na żywo",

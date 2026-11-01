@@ -76,7 +76,7 @@ export default {
   accPremium: 'Sí, tengo Minecraft',
   accPremiumSub: 'Iniciá sesión con la cuenta de Microsoft con la que lo compraste.',
   accOffline: 'No, quiero jugar sin conexión',
-  accOfflineSub: 'Necesitás tener agregada una cuenta de Microsoft con Minecraft. Después elegí un nombre de jugador.',
+  accOfflineSub: 'Elegí un nombre de jugador y listo.',
   accProPremiumServers: 'Servidores premium (Hypixel y similares)',
   accProSkin: 'Tu skin y tu capa',
   accProAll: 'Un jugador, LAN y servidores propios',

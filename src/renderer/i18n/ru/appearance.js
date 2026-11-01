@@ -1,6 +1,7 @@
 export default {
   bgGallery: "Галерея",
   galleryTitle: "Встроенных обоев: {count}",
+  liveBadge: "Анимация",
   galleryChoose: "Выберите понравившиеся",
   gallerySelected: "Выбрано: {name}",
   livePreview: "Предпросмотр в реальном времени",

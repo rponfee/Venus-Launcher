@@ -1,6 +1,7 @@
 export default {
   bgGallery: "图库",
   galleryTitle: "内置 {count} 张壁纸",
+  liveBadge: "动态",
   galleryChoose: "选择你喜欢的壁纸",
   gallerySelected: "已选择：{name}",
   livePreview: "实时预览",

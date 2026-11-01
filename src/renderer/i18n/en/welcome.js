@@ -76,7 +76,7 @@ export default {
   accPremium: 'Yes, I own Minecraft',
   accPremiumSub: 'Sign in with the Microsoft account you bought it with.',
   accOffline: 'No, I want to play offline',
-  accOfflineSub: 'You need a Microsoft account that owns Minecraft added first. Then pick a player name.',
+  accOfflineSub: 'Pick a player name and you are done.',
   accProPremiumServers: 'Premium servers (Hypixel and similar)',
   accProSkin: 'Your skin and cape',
   accProAll: 'Singleplayer, LAN and your own servers',

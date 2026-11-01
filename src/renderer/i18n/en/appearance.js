@@ -39,6 +39,7 @@ export default {
   bgGallery: 'Gallery',
   bgImage: 'Image or video',
   galleryTitle: '{count} included wallpapers',
+  liveBadge: 'Live',
   galleryChoose: 'Choose your favorite',
   gallerySelected: 'Selected: {name}',
   livePreview: 'Live preview',

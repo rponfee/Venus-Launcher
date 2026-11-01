@@ -1,6 +1,7 @@
 export default {
   bgGallery: "Галерея",
   galleryTitle: "Вбудованих шпалер: {count}",
+  liveBadge: "Анімація",
   galleryChoose: "Виберіть улюблені",
   gallerySelected: "Вибрано: {name}",
   livePreview: "Попередній перегляд наживо",

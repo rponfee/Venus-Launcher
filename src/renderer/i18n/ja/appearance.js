@@ -1,6 +1,7 @@
 export default {
   bgGallery: "ギャラリー",
   galleryTitle: "内蔵の壁紙：{count}枚",
+  liveBadge: "ライブ",
   galleryChoose: "お気に入りを選択",
   gallerySelected: "選択中：{name}",
   livePreview: "ライブプレビュー",

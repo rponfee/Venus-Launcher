@@ -1,0 +1,1994 @@
+{
+  "wallpapers": [
+    {
+      "id": "wallpaper-01",
+      "kind": "image",
+      "name": "Luna turquesa y dragón",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (1).png",
+      "pixelSha256": "af66a25400b455c72eaf5dbb86dc9cea72c242eabfe908c4029fdf6690f88287",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 1083616,
+      "thumbnailBytes": 10106,
+      "dhash": [
+        "049f08ef10f7013f04db09bf092f092f106f1b4719471f8f4f432f6333717231"
+      ]
+    },
+    {
+      "id": "wallpaper-02",
+      "kind": "image",
+      "name": "Miku",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (2).png",
+      "pixelSha256": "84de09a8671691ae816f9e2dac5c66ad7f9aec397d715c2006dc6f8b66613bdb",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 211428,
+      "thumbnailBytes": 10222,
+      "dhash": [
+        "097f89bf8aef8be9827f826713e303b301b281b291b7933b985b90dbc15c405a"
+      ]
+    },
+    {
+      "id": "wallpaper-03",
+      "kind": "image",
+      "name": "Atardecer sobre la ciudad",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (4).png",
+      "pixelSha256": "0376224524fe424f2a57301c2b6f2b4d0b1bfb2816375f54205b3d5bb9fe2867",
+      "originalSize": [
+        5120,
+        3120
+      ],
+      "size": [
+        2363,
+        1440
+      ],
+      "imageBytes": 130942,
+      "thumbnailBytes": 3672,
+      "dhash": [
+        "6346418007431489933e80deccdb8cd484a834c8906987198c18895b811c9588"
+      ]
+    },
+    {
+      "id": "wallpaper-04",
+      "kind": "image",
+      "name": "Ciudad de neón",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (5).png",
+      "pixelSha256": "fc8964f0bf5490efc6199f0bb9e3c7d553e9c96b9284abcbdf3b02d605330619",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 632716,
+      "thumbnailBytes": 12094,
+      "dhash": [
+        "80e5106d8964993699ae88889b29990a98c8d98ac94ac90c899d989a066b64e3"
+      ]
+    },
+    {
+      "id": "wallpaper-05",
+      "kind": "image",
+      "name": "Monte Fuji",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (6).png",
+      "pixelSha256": "298be1b7332c5fa5db2609ff87a1c5c4cf8c3c98a224493c9778bb6b3ae925dc",
+      "originalSize": [
+        7680,
+        4320
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 715392,
+      "thumbnailBytes": 11216,
+      "dhash": [
+        "0400000100800280019000c001c3e1c781c586591ec702c3c61960fcc8c69e63"
+      ]
+    },
+    {
+      "id": "wallpaper-06",
+      "kind": "image",
+      "name": "Valle de cerezos",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (7).png",
+      "pixelSha256": "150410b1d3566397dd31bcd15e816b88843898b772480cfcdda99225831b3a76",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 697446,
+      "thumbnailBytes": 17494,
+      "dhash": [
+        "f71db219393226039327433f076729c70d8f4e9b3cc902cba03f0c5f018eb606"
+      ]
+    },
+    {
+      "id": "wallpaper-07",
+      "kind": "image",
+      "name": "Bosque de niebla",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (8).png",
+      "pixelSha256": "b8e842c6b7490547febd8a3fe8afc84a5348f847053b27cd7f0b22aaf80391a0",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 1240308,
+      "thumbnailBytes": 15992,
+      "dhash": [
+        "247602f7c0d6c03c4298961192555ae34cd31497247621e343e746cd18515939"
+      ]
+    },
+    {
+      "id": "wallpaper-08",
+      "kind": "image",
+      "name": "Paisaje lunar",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (9).png",
+      "pixelSha256": "96313d2a855eb4332ab6f507f155b02e1d585bc674edb04ecb23f423b6f8d7e0",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 498988,
+      "thumbnailBytes": 5532,
+      "dhash": [
+        "06d00ff82ff425e604eb066613e600e400f70a270e199f9e1d8f0be313f12198"
+      ]
+    },
+    {
+      "id": "wallpaper-09",
+      "kind": "image",
+      "name": "Campo bajo las nubes",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (10).png",
+      "pixelSha256": "ddbabe07cd4a3519a74438880df5e1b36e6b4abf1b72d1c19050d1bb4074cdbb",
+      "originalSize": [
+        8192,
+        4560
+      ],
+      "size": [
+        2560,
+        1425
+      ],
+      "imageBytes": 447786,
+      "thumbnailBytes": 9768,
+      "dhash": [
+        "6308e30c67912faa2fda27523257989e99d6964f8cc509d62a5b272b6c5b3097"
+      ]
+    },
+    {
+      "id": "wallpaper-10",
+      "kind": "image",
+      "name": "Lago y cerezos",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (11).png",
+      "pixelSha256": "95a3b0e57beb563298a4818a4d339ce1ed77861a15dbde6a650db8afb273c6c7",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 617786,
+      "thumbnailBytes": 14934,
+      "dhash": [
+        "30fa798c781a7a39e4cde4cf498d8b9d1c33ce7d61f911730307812c107ac476"
+      ]
+    },
+    {
+      "id": "wallpaper-11",
+      "kind": "image",
+      "name": "Miles Morales",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (12).png",
+      "pixelSha256": "7c37902efd492a78016ebfaa04ecf6721cad2974ec7541f5b559df2b7baa61e8",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 827356,
+      "thumbnailBytes": 15330,
+      "dhash": [
+        "4eb3475343154b254b51795a755a7736e323c3278b139f1a1b5c065de0ee2cec"
+      ]
+    },
+    {
+      "id": "wallpaper-12",
+      "kind": "image",
+      "name": "Horizonte rojo",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (13).png",
+      "pixelSha256": "3ab388b14576a8b59a45bdd344691e228118805792852c3e6aabcfb53ae7c86d",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 128074,
+      "thumbnailBytes": 2498,
+      "dhash": [
+        "002e001f00bf006f00c300c321d325c063a007b005a138260310000000000000"
+      ]
+    },
+    {
+      "id": "wallpaper-13",
+      "kind": "image",
+      "name": "Venom",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (14).png",
+      "pixelSha256": "b0855b187b16ed22aa59b06fd328f30ae4b90a40ef1e11ff6a3b809c5fb79c6c",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 187904,
+      "thumbnailBytes": 5036,
+      "dhash": [
+        "222726032726068b44bb643b23520b466b4d323f123f02bf00ff027f063f0678"
+      ]
+    },
+    {
+      "id": "wallpaper-14",
+      "kind": "image",
+      "name": "Spider-Man en la ciudad",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (15).png",
+      "pixelSha256": "92585342821e6023aa20e8208a0a5f46756e6d82427ae3fbec1fa2acbcf242f9",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 547950,
+      "thumbnailBytes": 10938,
+      "dhash": [
+        "00df0edb0cdb04d30d9723272367078727a76dcf69c729c36be527a62f968f97"
+      ]
+    },
+    {
+      "id": "wallpaper-15",
+      "kind": "image",
+      "name": "Wolverine",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (16).png",
+      "pixelSha256": "91d10854ea4cab6438cf87fc88f73032e7f68c736fb5d0e091b05dbabcb05f45",
+      "originalSize": [
+        7680,
+        4320
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 479122,
+      "thumbnailBytes": 8010,
+      "dhash": [
+        "667036543b642d240da24f810db49fd20ff11ff03dd03fe0f738767e1ed8b9d9"
+      ]
+    },
+    {
+      "id": "wallpaper-16",
+      "kind": "image",
+      "name": "Spider-Man nocturno",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (17).png",
+      "pixelSha256": "2c30ff11f6883a3df85b45fa02742d795b5745fd6a618b2778b4507e9c252752",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 504230,
+      "thumbnailBytes": 8906,
+      "dhash": [
+        "21bf32df124e724c364d246b223734d94c492c4b2e2b6c339c791cd9bc913c99"
+      ]
+    },
+    {
+      "id": "wallpaper-17",
+      "kind": "image",
+      "name": "Deportivo junto al mar",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (18).png",
+      "pixelSha256": "3da08187fa23fd2633f102e42eb26b099c4d9a54c7307fbbac737e6b0b0f9b0d",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 390398,
+      "thumbnailBytes": 8752,
+      "dhash": [
+        "b648b9e9e5eee57ce74bf979f1e1e763b772b30933399fb8ff90d9c18ae702f5"
+      ]
+    },
+    {
+      "id": "wallpaper-18",
+      "kind": "image",
+      "name": "Spider-Man bajo la lluvia",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (19).png",
+      "pixelSha256": "2df99ffe4c613e2ba197e052889bf1f2d95c2a96657c98eba1ffd1f56aa99fdc",
+      "originalSize": [
+        7680,
+        4320
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 444612,
+      "thumbnailBytes": 8878,
+      "dhash": [
+        "039d265a235e03740736061e054e0f4e0baf162714b69c969896b6b2b732b33e"
+      ]
+    },
+    {
+      "id": "wallpaper-19",
+      "kind": "image",
+      "name": "ROG carmesí",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (20).png",
+      "pixelSha256": "4a1ebdcb77b9e64a9a625ae1fca76323416135205adcb98936be287db94f3972",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 315336,
+      "thumbnailBytes": 2182,
+      "dhash": [
+        "000f0907048708e710b51135827884b8217593b409e940684191006020221002"
+      ]
+    },
+    {
+      "id": "wallpaper-20",
+      "kind": "image",
+      "name": "Spider-Man y luces",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (21).png",
+      "pixelSha256": "3a6b10100553397a40b4662de1b9dab68a5e491c18231689ec4b9ad251e73eb0",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 551236,
+      "thumbnailBytes": 13092,
+      "dhash": [
+        "2873047fc37d432e873f833f033f413e40be13f843bc13ae8b3a01bb03be0596"
+      ]
+    },
+    {
+      "id": "wallpaper-21",
+      "kind": "image",
+      "name": "Spider-Man rojo",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (22).png",
+      "pixelSha256": "851e33586aac2107d1f8c986b15dde35d5c810e952dfff2edeb8072c7a288f5d",
+      "originalSize": [
+        7680,
+        4320
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 114020,
+      "thumbnailBytes": 3444,
+      "dhash": [
+        "007b007300f7006f00df015f00ff00bf033f02df00ff01ff00ff007e007e007c"
+      ]
+    },
+    {
+      "id": "wallpaper-22",
+      "kind": "image",
+      "name": "Spider-Man en acción",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (23).png",
+      "pixelSha256": "003955e12752843061471a27114710ab61bd3f53257299ab86419cf0f81ea294",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 214684,
+      "thumbnailBytes": 8978,
+      "dhash": [
+        "82e5a03bc9714968684099385970096366a37293fcd54cdad9ce1b440fd61753"
+      ]
+    },
+    {
+      "id": "wallpaper-23",
+      "kind": "image",
+      "name": "Spider-Man en las sombras",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (24).png",
+      "pixelSha256": "94cffd306e790d139d6272a6901ef8821aa2b0f1daf3ec0c03252414e803a8ab",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 70888,
+      "thumbnailBytes": 1586,
+      "dhash": [
+        "0080000004a000a000c004c004d002600068006800600260006000c000c00040"
+      ]
+    },
+    {
+      "id": "wallpaper-24",
+      "kind": "image",
+      "name": "Mármol azul",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (25).png",
+      "pixelSha256": "0bced4f431b0531e2d95601598f7384da06918ef2aed83efedf74c1145985247",
+      "originalSize": [
+        9216,
+        5184
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 707708,
+      "thumbnailBytes": 15744,
+      "dhash": [
+        "1fd95ceb4f745f7037bd6fbfeeeadfabeedace58ddd5ee75c678d7d0e666c333"
+      ]
+    },
+    {
+      "id": "wallpaper-25",
+      "kind": "image",
+      "name": "Ondas de seda",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (26).png",
+      "pixelSha256": "8f3c6a005199da2195d7ed87605588435d9820057997d939a0d3de0f4d471a35",
+      "originalSize": [
+        2912,
+        1632
+      ],
+      "size": [
+        2560,
+        1435
+      ],
+      "imageBytes": 356168,
+      "thumbnailBytes": 11856,
+      "dhash": [
+        "67b323f3c9fe59ee79c9b8cd398b3f86538c3b0d3b0db21be219c63cc6ee01db"
+      ]
+    },
+    {
+      "id": "wallpaper-26",
+      "kind": "image",
+      "name": "Ola estrellada",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (27).png",
+      "pixelSha256": "555fd7eddf581f6e27b55f6de43c1caa20a1dd998f713a8b555614090bbfa4a1",
+      "originalSize": [
+        5120,
+        3320
+      ],
+      "size": [
+        2221,
+        1440
+      ],
+      "imageBytes": 1389114,
+      "thumbnailBytes": 23834,
+      "dhash": [
+        "53314dc2ddc918c93ce34c5ad588d89ad296721d8792adc4f79dcadb8d36a698"
+      ]
+    },
+    {
+      "id": "wallpaper-27",
+      "kind": "image",
+      "name": "Pradera en flor",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (28).png",
+      "pixelSha256": "463efb77fef1263c83b769ecf152ff55ad940d247f92c1c98230e1eeca67f1ad",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 619174,
+      "thumbnailBytes": 15968,
+      "dhash": [
+        "f0746a71ccbb60be712b2adf23dcf9c87dc43a11166705cd831dc27e68e6b06d"
+      ]
+    },
+    {
+      "id": "wallpaper-28",
+      "kind": "image",
+      "name": "Camino de otoño",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (29).png",
+      "pixelSha256": "62eb8850cc32a2897d755ce789fd5bd05aab5e22a238f8369b31e2f36828aa8b",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 995810,
+      "thumbnailBytes": 16498,
+      "dhash": [
+        "986fa87f147f80f780fa80fb80efa0f3a0e7b06b883b0c77188732896c89cce1"
+      ]
+    },
+    {
+      "id": "wallpaper-29",
+      "kind": "image",
+      "name": "Sukuna carmesí",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (30).png",
+      "pixelSha256": "0b72befbf0b63b2ac54a80843bfbf05cdd77aa5439aa0c33ee6d07943fcc1182",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 192760,
+      "thumbnailBytes": 7026,
+      "dhash": [
+        "00b4013800dc24dc24fc04cc04dd04ed0ce802dc02d802d804b804a804880098"
+      ]
+    },
+    {
+      "id": "wallpaper-30",
+      "kind": "image",
+      "name": "Pikachu en el bosque",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (31).png",
+      "pixelSha256": "a92894dbb23fd4bb4b04479bace07c989fd3ed0ea9d6e4eda72b3aff49f80265",
+      "originalSize": [
+        3840,
+        2144
+      ],
+      "size": [
+        2560,
+        1429
+      ],
+      "imageBytes": 412632,
+      "thumbnailBytes": 17132,
+      "dhash": [
+        "edf96d596dab25b225b6a594260926996417442dc11d4f3b09360b32171414f0"
+      ]
+    },
+    {
+      "id": "wallpaper-31",
+      "kind": "image",
+      "name": "Luffy Gear 5",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (32).png",
+      "pixelSha256": "d97e492a849f875b7da2c8691deb6031361e6205c87f05cb2c02ed1f63e14ae3",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 592754,
+      "thumbnailBytes": 15358,
+      "dhash": [
+        "57e4b226343264328cb148f309e1e1d2d3d94bc3c5c381a99b2dc9cea1a521a5"
+      ]
+    },
+    {
+      "id": "wallpaper-32",
+      "kind": "image",
+      "name": "Gojo ilustrado",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (33).png",
+      "pixelSha256": "d54770822575ff5c545677f332ba0382f2d6d0eb938eb1b2a9192f077bab6ca9",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 293982,
+      "thumbnailBytes": 9986,
+      "dhash": [
+        "3cb03cb02e321bb069b035a063a04d4495c8b080b0403c4078405c605e721c38"
+      ]
+    },
+    {
+      "id": "wallpaper-33",
+      "kind": "image",
+      "name": "Luna de sombras",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (34).png",
+      "pixelSha256": "c5e38650c1c78a0c31cb5b06e0fb4ebe12634cd609921c8ed0a6ac64aa93081e",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 476908,
+      "thumbnailBytes": 8588,
+      "dhash": [
+        "1cc72d1e2e197a133e97394d4949cb330d39932c933c81390132413b9209d70b"
+      ]
+    },
+    {
+      "id": "wallpaper-34",
+      "kind": "image",
+      "name": "Mirada carmesí",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (35).png",
+      "pixelSha256": "3f9e4333d28245c205f8ecbf1c4702599540f24e50b6268d80d5cae48a1c7ae8",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 139234,
+      "thumbnailBytes": 6928,
+      "dhash": [
+        "160216435643068302a30ad30b9601960517409f498e418e058c240c20191319"
+      ]
+    },
+    {
+      "id": "wallpaper-35",
+      "kind": "image",
+      "name": "Ruta al atardecer",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (37).png",
+      "pixelSha256": "40b89c8108455fda6c857bc49d691f6a1bacb6a02336384c529bf97234799ce9",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 783404,
+      "thumbnailBytes": 12744,
+      "dhash": [
+        "86208200c260c264b244d06418a484a4888c822d86727c18d0a524996c99ccb6"
+      ]
+    },
+    {
+      "id": "wallpaper-36",
+      "kind": "image",
+      "name": "Mirada azul",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (38).png",
+      "pixelSha256": "adefe8561356474654cf04f8dd28e379049cd65251a375d6b03de52415c2c488",
+      "originalSize": [
+        4096,
+        2288
+      ],
+      "size": [
+        2560,
+        1430
+      ],
+      "imageBytes": 203136,
+      "thumbnailBytes": 7678,
+      "dhash": [
+        "128b528796859536b4222c468f17eb93b187306f325b1836587d1ceb2d925d04"
+      ]
+    },
+    {
+      "id": "wallpaper-37",
+      "kind": "image",
+      "name": "Noche de neón",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (39).png",
+      "pixelSha256": "6001ed91c2c75dd66a2942b37a68906f1a1a25b73ca64b47641ddcdfadcd7731",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 194874,
+      "thumbnailBytes": 6906,
+      "dhash": [
+        "932510e4b0c4b0c5c865ec67e06ba26bae74ae33245160716665e665a0658871"
+      ]
+    },
+    {
+      "id": "wallpaper-38",
+      "kind": "image",
+      "name": "Horizonte costero",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (40).png",
+      "pixelSha256": "f7e51b77beae0a7e386583708e61114e3e0daf41af86b9a8627511c882127756",
+      "originalSize": [
+        5640,
+        2400
+      ],
+      "size": [
+        2560,
+        1089
+      ],
+      "imageBytes": 121452,
+      "thumbnailBytes": 3060,
+      "dhash": [
+        "00110071187110cc00cd008313974195361e50bee0b3318d490d23e1079b039e"
+      ]
+    },
+    {
+      "id": "wallpaper-39",
+      "kind": "image",
+      "name": "Sukuna",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (41).png",
+      "pixelSha256": "9d0ab5c2a2ff189de53bf9db9719a150d83516487819704f13bfb606851fc9dc",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 163826,
+      "thumbnailBytes": 6972,
+      "dhash": [
+        "09d900e8226910e121f513551458251a469d0f069687161713713c69319830ea"
+      ]
+    },
+    {
+      "id": "wallpaper-40",
+      "kind": "image",
+      "name": "Kakashi",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (42).png",
+      "pixelSha256": "d0c86a7c911517088fe1a2eb76b409e302f7cec391d7b66cab3e31cd03255e4f",
+      "originalSize": [
+        9830,
+        5529
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 205350,
+      "thumbnailBytes": 6936,
+      "dhash": [
+        "9861d8e17973733173357335f3317611f615f6943e906e9176897624bb24bb24"
+      ]
+    },
+    {
+      "id": "wallpaper-41",
+      "kind": "image",
+      "name": "Goku azul",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (43).png",
+      "pixelSha256": "e22fcdc7383ba236504c41dc1d36dd2b6a93b36c42cb73cd18e6e723f0c0aaa7",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 147998,
+      "thumbnailBytes": 5148,
+      "dhash": [
+        "024000c009e009200528112822ba23bc0338251a25281120096812b026d42758"
+      ]
+    },
+    {
+      "id": "wallpaper-42",
+      "kind": "image",
+      "name": "Mirada violeta",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (44).png",
+      "pixelSha256": "50f9d96c2bb21e3a0d2af0f62e2e812264c85e8a741dd86edf3e45e35f1258d9",
+      "originalSize": [
+        3000,
+        1666
+      ],
+      "size": [
+        2560,
+        1422
+      ],
+      "imageBytes": 165334,
+      "thumbnailBytes": 9142,
+      "dhash": [
+        "6ce74ce7c967a96fa9cd52df38c79db714b918fd1cff0d970f0f164e019f02dd"
+      ]
+    },
+    {
+      "id": "wallpaper-43",
+      "kind": "image",
+      "name": "Kaneki",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (45).png",
+      "pixelSha256": "9fe699d0ef9de636771e17074e4d22872d86a15484293c43039cac0ac69f886c",
+      "originalSize": [
+        7680,
+        4320
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 199130,
+      "thumbnailBytes": 6622,
+      "dhash": [
+        "48bb2877156724672cf66c640d650c6d0d395b1933986458e622d209a8002800"
+      ]
+    },
+    {
+      "id": "wallpaper-44",
+      "kind": "image",
+      "name": "Goku y Shenron",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (46).png",
+      "pixelSha256": "7d1ca8055050d8a620aab470376eea13c657f2c6afbb9456ae1bd278b084f873",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 313370,
+      "thumbnailBytes": 8494,
+      "dhash": [
+        "011f011f03170317031d079f468f069b26cdb56da1693945794766573ccb1842"
+      ]
+    },
+    {
+      "id": "wallpaper-45",
+      "kind": "image",
+      "name": "Kame House",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (47).png",
+      "pixelSha256": "47f38bc57b71777c064857c7eda18249f4883cf6893ee4ab54eef41f3c396e77",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 198914,
+      "thumbnailBytes": 8152,
+      "dhash": [
+        "2630262036358c380e352e37a633235b2032192b132133b723ff02ff037f033f"
+      ]
+    },
+    {
+      "id": "wallpaper-46",
+      "kind": "image",
+      "name": "Pikachu en las termas",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (49).png",
+      "pixelSha256": "3dfcff593637abf97ef161a62b9d655b8789f35008a7ec81867ca29d683adc7c",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 584294,
+      "thumbnailBytes": 16542,
+      "dhash": [
+        "2725272663a744e520f3238d270e23371f3e193d823c42664be663dfd16f90ce"
+      ]
+    },
+    {
+      "id": "wallpaper-47",
+      "kind": "image",
+      "name": "Mar de nubes",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (50).png",
+      "pixelSha256": "0d5d60eef4f6fdb1f3f8c2120ace20ce7e04a3114daf60e7efc8719c9c33a3a9",
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 160916,
+      "thumbnailBytes": 7744,
+      "dhash": [
+        "cf1bccdb80f688bec83fc07fc07b806bc06e626f407300e788e7817f837b1c67"
+      ]
+    },
+    {
+      "id": "wallpaper-48",
+      "kind": "image",
+      "name": "Goku al atardecer",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (52).png",
+      "pixelSha256": "ef40163f72d228914a4e2c4e55be1e7e9c3db15588e1e93d8011ae75fe89d746",
+      "originalSize": [
+        4080,
+        2304
+      ],
+      "size": [
+        2550,
+        1440
+      ],
+      "imageBytes": 175730,
+      "thumbnailBytes": 7894,
+      "dhash": [
+        "c8ed44eb60e23065d179633823379333e3321b2d9929833fc33f4f8d3d053a27"
+      ]
+    },
+    {
+      "id": "wallpaper-49",
+      "kind": "image",
+      "name": "Sombra rosa",
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (53).png",
+      "pixelSha256": "c081f72f2a454bbb59213d89d09f0eaf5cd6b46a827b7d19520158a707aaf950",
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 59862,
+      "thumbnailBytes": 1994,
+      "dhash": [
+        "33000340130001c008d005e005e0014001600060016001a001e0016003000000"
+      ]
+    },
+    {
+      "id": "live-01",
+      "kind": "video",
+      "name": "Espadachina en blanco y negro",
+      "source": "aaxcpc6n7y-wallsflow-com.mp4",
+      "dhash": [
+        "024500c404a604b204b204e204fb047b003900f9e1b100b108f90b98129b029b",
+        "02cd00e404b604b204b204eb04fb043b003900f9e0b1007148f903d812db029b",
+        "02cd04a504b605b204f304fb04fb003b0039a1f180f1107108e903d8124a1293",
+        "02cd00e404a604b204b204eb04fb003b003900f9e0b100f148f90398129b029b"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 16.9,
+      "videoBytes": 3335162,
+      "thumbnailBytes": 4850
+    },
+    {
+      "id": "live-02",
+      "kind": "video",
+      "name": "Todo, Itadori y Mahito",
+      "source": "aoi-todo-itadori-yuji-mahito-wallsflow-com.mp4",
+      "dhash": [
+        "db26cb2792a1162a36e212f23260326132e332a3b23372317231f320faa4b2a7",
+        "d9b689238b2116b236b232f23260326132e312b3923372317231b262fa269227",
+        "99a68327922116a236a232f23260326132e332a3923372317231d063fa265227",
+        "99a6c92782a916a236a232f23270327132f332b3b23332317231d030daa4d2a7"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 10.0,
+      "videoBytes": 7352544,
+      "thumbnailBytes": 12022
+    },
+    {
+      "id": "wallpaper-50",
+      "kind": "image",
+      "name": "Aston Martin V8",
+      "source": "aston-martin-v8-auto-deportivo-clasico-en-juego-007-first-light_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "45b785ff4def6affdaf9faf9b9dd63fd10fd05378c3f3e263647366f166845e6"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 636802,
+      "thumbnailBytes": 9878
+    },
+    {
+      "id": "wallpaper-51",
+      "kind": "image",
+      "name": "Mustang Shelby GT500",
+      "source": "auto-arte-digital-inspirado-en-ford-mustang-shelby-gt500_5160x2880_xtrafondos.com.jpg",
+      "dhash": [
+        "02df42df02d782d7cb1f0ebf00de20ce346f18371ce32c630e63470d039f026f"
+      ],
+      "originalSize": [
+        5160,
+        2880
+      ],
+      "size": [
+        2560,
+        1429
+      ],
+      "imageBytes": 314834,
+      "thumbnailBytes": 7140
+    },
+    {
+      "id": "live-03",
+      "kind": "video",
+      "name": "Batman en la noche",
+      "source": "batman-el-caballero-de-la-noche-espera-animado-el-fondo-de-p-wallsflow-com.mp4",
+      "dhash": [
+        "278e4713c5cb04ce00d3117390f350f1d0f9d99bd34fda734c618c638c66186e",
+        "278e4313d5cb04ce0053117390f350f1d0f9d99bd34fda73cc638c6388761866",
+        "379e4713c5cb04ce00d3117390b350f5d0f9d99bd34fda734c618c6388761866",
+        "279e4312d5cb04ce00d3117390b350f1d0f9d98bd34fda734c618c6b8c76186e"
+      ],
+      "originalSize": [
+        1920,
+        1080
+      ],
+      "duration": 16.3,
+      "videoBytes": 2317833,
+      "thumbnailBytes": 9402
+    },
+    {
+      "id": "wallpaper-52",
+      "kind": "image",
+      "name": "Cyberpunk 2077",
+      "source": "cyberpunk-2077_4096x2295_xtrafondos.com.jpg",
+      "dhash": [
+        "e65bc67be63bc67db259a6694661c665862d264b0f0d16342638a639a678a63c"
+      ],
+      "originalSize": [
+        4096,
+        2295
+      ],
+      "size": [
+        2560,
+        1434
+      ],
+      "imageBytes": 286708,
+      "thumbnailBytes": 13600
+    },
+    {
+      "id": "wallpaper-53",
+      "kind": "image",
+      "name": "Denji",
+      "source": "denji-de-chainsaw-man_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "9e38d6f41d9c689e0b943fa8632b4b6e1b6dcbcefacbbb63edb35bdf1be3fd8a"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 343526,
+      "thumbnailBytes": 11306
+    },
+    {
+      "id": "wallpaper-54",
+      "kind": "image",
+      "name": "Dodge Challenger de neón",
+      "source": "dodge-challenger-gasolinera-iluminacion-neon_4096x2304_xtrafondos.com.jpg",
+      "dhash": [
+        "003f043f0a4f0ca705bf01350155013f0037023f0337084d060d0a8f040f027f"
+      ],
+      "originalSize": [
+        4096,
+        2304
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 227944,
+      "thumbnailBytes": 5706
+    },
+    {
+      "id": "wallpaper-55",
+      "kind": "image",
+      "name": "Spider-Man de cabeza",
+      "source": "el-hombre-arana-de-cabeza_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "8135a2f5ace69c66bc643d2d1e3a8eb70b5e052b213ee1aff12fa137819fa1c7"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 651710,
+      "thumbnailBytes": 5152
+    },
+    {
+      "id": "wallpaper-56",
+      "kind": "image",
+      "name": "Spider-Man negro",
+      "source": "el-hombre-arana-negro_2752x1548_xtrafondos.com.jpg",
+      "dhash": [
+        "07f79373b373a9f3dcf3d217b717ad87b5ad2dad5d0d789c7814f0b6e236c60d"
+      ],
+      "originalSize": [
+        2752,
+        1548
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 239408,
+      "thumbnailBytes": 8776
+    },
+    {
+      "id": "live-04",
+      "kind": "video",
+      "name": "Bufanda roja",
+      "source": "ene-project-wallsflow-com.mp4",
+      "dhash": [
+        "20fe017c097505f505950bb10bb5073f171b0b3b0a5a48b8457248f2027002f1",
+        "00fe017c957505f505950bb907bf173f071b8a3b8a5a213894f28572007022f1",
+        "00fe057c257505f505950bb947bf173f571b4a3b165a913828f244f2807042f1",
+        "007e297c057505f505952bb107b5173f171b2b3b275a54b84d722cf2027002f1"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 103.0,
+      "videoBytes": 7018669,
+      "thumbnailBytes": 6360
+    },
+    {
+      "id": "wallpaper-57",
+      "kind": "image",
+      "name": "Escudo del Capitán América",
+      "source": "escudo-capitan-america_1680x1050_xtrafondos.com.jpg",
+      "dhash": [
+        "0c471a8fd939d8247a4e764576c774c774e474ce36ca3e7218643b393a878d07"
+      ],
+      "originalSize": [
+        1680,
+        1050
+      ],
+      "size": [
+        1680,
+        1050
+      ],
+      "imageBytes": 215826,
+      "thumbnailBytes": 7774
+    },
+    {
+      "id": "wallpaper-58",
+      "kind": "image",
+      "name": "Goku",
+      "source": "goku-de-dragon-ball_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "000000c000c00140036000b000e004b000b0109805bc25bc24f800e004c00000"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 145456,
+      "thumbnailBytes": 5252
+    },
+    {
+      "id": "wallpaper-59",
+      "kind": "image",
+      "name": "Goku en rojo",
+      "source": "goku-fondo-rojo_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "589c32566a7af33c7a3aa2db066f16123616e7166b162316032cab222b220320"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 94600,
+      "thumbnailBytes": 2832
+    },
+    {
+      "id": "wallpaper-60",
+      "kind": "image",
+      "name": "Goku Super Saiyan",
+      "source": "goku-super-saiyan_5120x2880_xtrafondos.com.jpg",
+      "dhash": [
+        "007f007f013f033f033f033f013f033f079f069f069f071f0d4f0d0f0f0f069f"
+      ],
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 160820,
+      "thumbnailBytes": 4720
+    },
+    {
+      "id": "wallpaper-61",
+      "kind": "image",
+      "name": "Goku Ultra Instinto",
+      "source": "goku-ultra-instinct-dragon-ball-super_5586x4966_xtrafondos.com.jpg",
+      "dhash": [
+        "23182b915d8bda0b3a175e975b0f0d374d277c873713771b54fa6c6c4f6ccea8"
+      ],
+      "originalSize": [
+        5586,
+        4966
+      ],
+      "size": [
+        1620,
+        1440
+      ],
+      "imageBytes": 213388,
+      "thumbnailBytes": 10208
+    },
+    {
+      "id": "wallpaper-62",
+      "kind": "image",
+      "name": "Goku contra Vegeta",
+      "source": "goku-vs-vegeta-ilustracion_5120x2880_xtrafondos.com.jpg",
+      "dhash": [
+        "f0b4f8b4fd2cfd68fc6ce4ecd068d868c878c4f848f84ada12dc035408aa0422"
+      ],
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 242706,
+      "thumbnailBytes": 5508
+    },
+    {
+      "id": "live-05",
+      "kind": "video",
+      "name": "Miku en el cielo",
+      "source": "hatsune-miku-sky-wallsflow-com.mp4",
+      "dhash": [
+        "8b2c198c18cf9a36192699977066d06ef1ceb99efbdff396b1c7f2ecb6bdb65a",
+        "a3a6999292c69243d31bf38bb0cb72b7f347f863ebf363c9f3e2f2e67656325d",
+        "d8d339c928e369b3dac5fb85f1c4f257331b716d78e771e571e3f4d33666367e",
+        "f233d874d87050587248f0e2f06a7158f19d799c62b970f2f4c1f4f1b633367e"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 46.4,
+      "videoBytes": 9800148,
+      "thumbnailBytes": 10690
+    },
+    {
+      "id": "wallpaper-63",
+      "kind": "image",
+      "name": "Iron Man 3D",
+      "source": "iron-man-render-3d_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "21ce30ec88648d26096e406cc37ba97b397b720d9295961f1e0b5a29e218c30a"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 336538,
+      "thumbnailBytes": 8632
+    },
+    {
+      "id": "wallpaper-64",
+      "kind": "image",
+      "name": "Iron Man volando",
+      "source": "iron-man-volando_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "6d016db189618a618a619923b1339129b3e4e380eb1069316d38263c46194711"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 332032,
+      "thumbnailBytes": 8982
+    },
+    {
+      "id": "wallpaper-65",
+      "kind": "image",
+      "name": "Kirby",
+      "source": "kirby-fanart_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "8d5e0d9d126f01654cd33a131d2f8e2b6f235fb215b64c584669066591c60787"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 361418,
+      "thumbnailBytes": 11730
+    },
+    {
+      "id": "live-06",
+      "kind": "video",
+      "name": "Esqueleto LEGO cromado",
+      "source": "lego-skeleton-chrome-figure-live-wallpaper-wallsflow-com.mp4",
+      "dhash": [
+        "0100026000e804f008f409b409b408b409f411b012f8261a109a215a24da235a",
+        "0100026000e804f008f409b409b400b409f413b012f8249a129a215a24da2b5c",
+        "0100026000e804f008f409b409b400b409f413b012f8249a12da215a26da2b5c",
+        "0100026000e804f008f409b409b408b409f411b012f8241a109a215a24da235a"
+      ],
+      "originalSize": [
+        1920,
+        1080
+      ],
+      "duration": 18.9,
+      "videoBytes": 1515515,
+      "thumbnailBytes": 6244
+    },
+    {
+      "id": "live-07",
+      "kind": "video",
+      "name": "Pelea en la calle de neón",
+      "source": "ling-street-punk-wallsflow-com.mp4",
+      "dhash": [
+        "043f2f2c29652c778e7696799c5b5c5f4e5bca734a7b4c4b484a12c734ad35ad",
+        "043f2f2d296d2c778e7696789c5adcde465b4a534a7b4d4b4c4a18c734afb4ac",
+        "043f2f2c29652c778e7696799c5b5c5f4e5bca734a7b4c4b484a12c734ad35ad",
+        "043f2f2d296d2c778e7696789c5adcde465b4a534a7b4d4b4c4a18c736afb4ac"
+      ],
+      "originalSize": [
+        1920,
+        1080
+      ],
+      "duration": 60.0,
+      "videoBytes": 16532939,
+      "thumbnailBytes": 11350
+    },
+    {
+      "id": "wallpaper-66",
+      "kind": "image",
+      "name": "Messi campeón del mundo",
+      "source": "lionel-messi-con-trofeo-copa-mundial-fifa_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "b9cef98df3a57231e731873197302724a63ca63ce63ce25ce17ce35e724a718e"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 280250,
+      "thumbnailBytes": 7684
+    },
+    {
+      "id": "live-08",
+      "kind": "video",
+      "name": "Gato lofi durmiendo",
+      "source": "lofi-cat-sleeping-wallsflow-com.mp4",
+      "dhash": [
+        "4a195a2f4a2f622652225930a658628809800e580e2406a687e7c866861e2196",
+        "4a395b2f4a2f620612225930a658628809800e584e2406a687e7c866861ea196",
+        "4a195a2f4a2f620612225b30a658628809800e584e2406a687e7c866861ea196",
+        "4e195a2f4a2f620652225930a458628809800e580e2406a687e7c866861e2196"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 25.1,
+      "videoBytes": 1835650,
+      "thumbnailBytes": 9340
+    },
+    {
+      "id": "wallpaper-67",
+      "kind": "image",
+      "name": "Luffy Nika",
+      "source": "luffy-gear-5-nika-dios-del-sol_5000x2812_xtrafondos.com.jpg",
+      "dhash": [
+        "1938254d304d9517672f670b0333632d270907590d9b4c970e93999732d73176"
+      ],
+      "originalSize": [
+        5000,
+        2812
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 485278,
+      "thumbnailBytes": 13266
+    },
+    {
+      "id": "live-09",
+      "kind": "video",
+      "name": "Gear 5 de Luffy",
+      "source": "luffys-mighty-gear-5-wallsflow-com.mp4",
+      "dhash": [
+        "0d7b8d8f2486249f21bf212f332b320f324736673266b32311a309970a5f114d",
+        "0d3f8cad2486249f209f212f332b330f32473267b367932311a30997085e004c",
+        "0d3b8c872486249f219f212f332b330f32473267b326113311b30997085e114d",
+        "8d3b84a7248e249f21bf212f332b330f32473267b367932311a30997025e005c"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 8.0,
+      "videoBytes": 1851308,
+      "thumbnailBytes": 9492
+    },
+    {
+      "id": "wallpaper-68",
+      "kind": "image",
+      "name": "Mar bioluminiscente",
+      "source": "mar-nocturno-con-bioluminiscencia-y-cielo-estrellado_7680x4320_xtrafondos.com.jpg",
+      "dhash": [
+        "005f00ff00ff01ff00f701f301f301f301f70337083f85ff37bf49cdc4cd267c"
+      ],
+      "originalSize": [
+        7680,
+        4320
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 813548,
+      "thumbnailBytes": 7592
+    },
+    {
+      "id": "wallpaper-69",
+      "kind": "image",
+      "name": "Simbionte de Spider-Man 2",
+      "source": "marvels-el-hombre-arana-2-venom-symbiote-logo_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "50d4b4eb10f3086700fd02bb02f912f5c0f70979836c8176107722fc44b5884c"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 201126,
+      "thumbnailBytes": 10224
+    },
+    {
+      "id": "wallpaper-70",
+      "kind": "image",
+      "name": "Mercedes Vision EQXX",
+      "source": "mercedes-vision-eqxx_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "03ff010f40e3016002e9116801f424dc273a03da01bc00e4008400c400840004"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 116788,
+      "thumbnailBytes": 4744
+    },
+    {
+      "id": "wallpaper-71",
+      "kind": "image",
+      "name": "Logo de Jordan",
+      "source": "michael-jordan-logo_3840x2160_xtrafondos.com.jpg",
+      "dhash": [
+        "00000000004000000250025000d004c004d000f0092802a00140000000000000"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 13688,
+      "thumbnailBytes": 894
+    },
+    {
+      "id": "wallpaper-72",
+      "kind": "image",
+      "name": "Miles Morales 3D",
+      "source": "miles-morales-spider-man-3d_5120x2880_xtrafondos.com.jpg",
+      "dhash": [
+        "448720d7222f322f161f061f0c3f5137509758db5a5f38572827282b60296846"
+      ],
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 245594,
+      "thumbnailBytes": 5698
+    },
+    {
+      "id": "wallpaper-73",
+      "kind": "image",
+      "name": "Miles Morales minimalista",
+      "source": "minimalista-miles-morales_7680x4320_xtrafondos.com (1).jpg",
+      "dhash": [
+        "000000000000000000400200054004d004d00200004000c004c004c000800100"
+      ],
+      "originalSize": [
+        7680,
+        4320
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 23260,
+      "thumbnailBytes": 1054
+    },
+    {
+      "id": "wallpaper-74",
+      "kind": "image",
+      "name": "Moon Knight",
+      "source": "moon-knight_5120x2880_xtrafondos.com.jpg",
+      "dhash": [
+        "00cc04cc04c9005b00630067801f000f00078093819a81db009b009f003f027d"
+      ],
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 230298,
+      "thumbnailBytes": 4214
+    },
+    {
+      "id": "live-10",
+      "kind": "video",
+      "name": "Nissan GT-R",
+      "source": "nissan-gt-r-performance-wallsflow-com.mp4",
+      "dhash": [
+        "017f033f015f015f034f014f03e71fe519992db6238f03e682b613b6598a8f21",
+        "017f01bf035f015f014f014f03e71fe5199925b6208f012681b619b6598a8d21",
+        "02ff01bf015f01df014f014f03e71fe519992db6209f0036813611b6598a8d21",
+        "017f01bf015f01df014f014f03671de519992db6218f012681b611b6598a8f21"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 20.6,
+      "videoBytes": 2515235,
+      "thumbnailBytes": 7374
+    },
+    {
+      "id": "wallpaper-75",
+      "kind": "image",
+      "name": "Porsche 911 GT3 RS rojo",
+      "source": "porsche-911-gt3-rs-rojo_5120x2880_xtrafondos.com.jpg",
+      "dhash": [
+        "ff00ff00ff00ff00fec0fdd4fcd4b8f073d06e4866cc66e86e513fd207ff007f"
+      ],
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 160542,
+      "thumbnailBytes": 5686
+    },
+    {
+      "id": "wallpaper-76",
+      "kind": "image",
+      "name": "Porsche 911 GT3 RS",
+      "source": "porsche-911-gt3-rs_3840x2560_xtrafondos.com.jpg",
+      "dhash": [
+        "00000080040000e000d0147c22664b7b04df265b101b013f007f003f00000000"
+      ],
+      "originalSize": [
+        3840,
+        2560
+      ],
+      "size": [
+        2160,
+        1440
+      ],
+      "imageBytes": 75300,
+      "thumbnailBytes": 3460
+    },
+    {
+      "id": "wallpaper-77",
+      "kind": "image",
+      "name": "Porsche GT3 RS Gran Turismo",
+      "source": "porsche-911-gt3rs-gran-turismo_7680x4320_xtrafondos.com.jpg",
+      "dhash": [
+        "9938c4bce265d068e433b917b1c70767696368637a07787404fd050305600161"
+      ],
+      "originalSize": [
+        7680,
+        4320
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 231900,
+      "thumbnailBytes": 9500
+    },
+    {
+      "id": "wallpaper-78",
+      "kind": "image",
+      "name": "Rick y Morty",
+      "source": "rick-y-morty_8000x4500_xtrafondos.com.jpg",
+      "dhash": [
+        "972b8990719e489f14998cb92b3a13168d9b8f848f94ded1ced94cae4e4b0669"
+      ],
+      "originalSize": [
+        8000,
+        4500
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 204196,
+      "thumbnailBytes": 11660
+    },
+    {
+      "id": "wallpaper-79",
+      "kind": "image",
+      "name": "Rostro de Venom",
+      "source": "rostro-de-venom_3840x2160_xtrafondos.com (1).jpg",
+      "dhash": [
+        "004001600b208b280b281b2d3b2f296b696bc177897484db555328e63aa63902"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 138876,
+      "thumbnailBytes": 3358
+    },
+    {
+      "id": "live-11",
+      "kind": "video",
+      "name": "Samurái y carpas koi",
+      "source": "samurai-anime-boy-koi-in-sword-enhanced-wallsflow-com.mp4",
+      "dhash": [
+        "3c4afd6ae8eae9e26c624cca1e8a5d525693c6b7669727892f0f0f078d073d47",
+        "8cdaad48adc989d189c18cc99cc9dd43ce99b62366996198551987078b079e45",
+        "3c4afd6ae8eae9e26c624cca0e825f525693c6b7669627892f0f2f078d073d47",
+        "8cdaad48adc989d189c18cc99cc9dd43ce99b62366996198551987078b079e45"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 24.0,
+      "videoBytes": 6980221,
+      "thumbnailBytes": 6998
+    },
+    {
+      "id": "live-12",
+      "kind": "video",
+      "name": "Silver Surfer",
+      "source": "silver-surfer-space-stars-enhanced-wallsflow-com.mp4",
+      "dhash": [
+        "00001001000100000040400040d004d505e084d084d10068803404b400d801da",
+        "00010100000210001840000000d004d505e200d204d10068003204b400d801da",
+        "00000000000200000040200000d004d505e400d084d10068003204b400d801da",
+        "00080000000200004040200000d004c5056204f004d10068003204b400d801da"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 17.2,
+      "videoBytes": 773378,
+      "thumbnailBytes": 2710
+    },
+    {
+      "id": "wallpaper-80",
+      "kind": "image",
+      "name": "Goku niño",
+      "source": "son-goku-nino-de-dragon-ball-z_5120x2880_xtrafondos.com.jpg",
+      "dhash": [
+        "09200e002e480e181e001c842c942ce40cc815c005881690078002900a602c80"
+      ],
+      "originalSize": [
+        5120,
+        2880
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 143064,
+      "thumbnailBytes": 4384
+    },
+    {
+      "id": "wallpaper-81",
+      "kind": "image",
+      "name": "Spider-Man realista",
+      "source": "spider-man-arte-digital-realista_3840x2156_xtrafondos.com.jpg",
+      "dhash": [
+        "02ff027f067d067f867e867e866dcc6f0cdd6ced44efc857c0dfc0b7a2f7a067"
+      ],
+      "originalSize": [
+        3840,
+        2156
+      ],
+      "size": [
+        2560,
+        1437
+      ],
+      "imageBytes": 429508,
+      "thumbnailBytes": 7682
+    },
+    {
+      "id": "live-13",
+      "kind": "video",
+      "name": "Spider-Man simbionte",
+      "source": "spider-man-symbiote-suit-enhanced-wallsflow-com.mp4",
+      "dhash": [
+        "6ab459b4d52e8c7298f61ace12fc2b34231c3399233b211e685c48fc119e1e1c",
+        "6ab451b4d5269c7298f49acc12f81b34331c3399333b611ee85c48f811961f1c",
+        "6ab151b3d52e8c7698f61ace52fc1b7c331c3399339b211e285c48e8199e1f1c",
+        "60b451b4dd2e8c7298f61bce52f43b74331c3399339b211c685c48f019961e1c"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 25.1,
+      "videoBytes": 9315621,
+      "thumbnailBytes": 6418
+    },
+    {
+      "id": "wallpaper-82",
+      "kind": "image",
+      "name": "Toyota GR Supra",
+      "source": "vehiculo-deportivo-inspirado-en-toyota-gr-supra-widebody_5120x3200_xtrafondos.com.jpg",
+      "dhash": [
+        "16134b1b590c5a04222599276652642db73232617961bba0c44d9f001f011d09"
+      ],
+      "originalSize": [
+        5120,
+        3200
+      ],
+      "size": [
+        2304,
+        1440
+      ],
+      "imageBytes": 102646,
+      "thumbnailBytes": 3376
+    },
+    {
+      "id": "wallpaper-83",
+      "kind": "image",
+      "name": "Venom minimalista",
+      "source": "venom-ilustracion-minimalista_2560x1440_xtrafondos.com.jpg",
+      "dhash": [
+        "000000400060012001600150012004f000f00278006800c800d0000000000000"
+      ],
+      "originalSize": [
+        2560,
+        1440
+      ],
+      "size": [
+        2560,
+        1440
+      ],
+      "imageBytes": 77012,
+      "thumbnailBytes": 2212
+    },
+    {
+      "id": "live-14",
+      "kind": "video",
+      "name": "Rueda deportiva",
+      "source": "vid-20251014-enhanced-wallsflow-com.mp4",
+      "dhash": [
+        "4316931693368337c17530342cfe2778263c2638349f240f27fc01ff05ff02bf",
+        "02b103cb012d431f18674ccf7aad78c7d4663d6705a709cf41e781a727250ce7",
+        "338131b132b91499079c07193699349028e405c97b126d19de1353a04e1728cf",
+        "12f3117730b370733c313733719364836d0b699a6f0b63ca6049600be01bc01b"
+      ],
+      "originalSize": [
+        1920,
+        1080
+      ],
+      "duration": 24.2,
+      "videoBytes": 11057530,
+      "thumbnailBytes": 10072
+    },
+    {
+      "id": "live-15",
+      "kind": "video",
+      "name": "Chica lobo con espada",
+      "source": "wallpaper-wallsflow-com.mp4",
+      "dhash": [
+        "00ff013f01ab01f321f600f680f600f600f300f201f801fc01bf01fe01f801b9",
+        "007f003f20a100fa20f200f300f300fb00fb00fb00fc01fe00ff01fe01fc01bc",
+        "00ff003f41eb01f701f600f600f680f600f380f201f801fc01bf01fe01f801b9",
+        "00ff013f41ab01f321f600f680f600f200f300fa01f801fe01bf01fe01f801f9"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 11.5,
+      "videoBytes": 2424588,
+      "thumbnailBytes": 5638
+    },
+    {
+      "id": "live-16",
+      "kind": "video",
+      "name": "Yuta y Rika",
+      "source": "yuta-okkotsu-curse-spirit-wallsflow-com.mp4",
+      "dhash": [
+        "5a4d586c306c3064302631a7b4a33417725b706b38632847090b184bf289f23c",
+        "5ccf64ce354c34e470e631a6b0a3104b1255d05358672847490bf84bf288f22c",
+        "5a4e7a4671443164b02698a39821386c124cd86a586a28464907384b7289f23c",
+        "5a4c724eb54433653226b0a698a3184472463067b866a886690b784b7288f23c"
+      ],
+      "originalSize": [
+        3840,
+        2160
+      ],
+      "duration": 20.7,
+      "videoBytes": 7608646,
+      "thumbnailBytes": 10450
+    }
+  ],
+  "duplicates": [
+    {
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (48).png",
+      "sameAs": "wallpaper-10"
+    },
+    {
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (51).png",
+      "sameAs": "wallpaper-09"
+    },
+    {
+      "source": "goku-enfrentandose-a-shenron_5120x2880_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-44"
+    },
+    {
+      "source": "goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-01"
+    },
+    {
+      "source": "hatsune-miku_3840x2160_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-02"
+    },
+    {
+      "source": "itachi-uchiha-naruto_3000x1666_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-42"
+    },
+    {
+      "source": "marvel-s-wolverine_7680x4320_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-15"
+    },
+    {
+      "source": "paisaje-de-pequena-costa-en-primavera_5120x2880_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-10"
+    },
+    {
+      "source": "rostro-de-venom_3840x2160_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-79"
+    },
+    {
+      "source": "satoru-gojo-de-jjk_7680x4320_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-43"
+    },
+    {
+      "source": "spider-man-el-hombre-arana-marvels_5120x2880_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-23"
+    },
+    {
+      "source": "spider-man-ps4_3840x2160_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-22"
+    },
+    {
+      "source": "venom-de-marvels-spider-man-2_3840x2160_xtrafondos.com.jpg",
+      "sameAs": "wallpaper-13"
+    }
+  ],
+  "rejected": [
+    {
+      "source": "67/goku-y-shenron-de-dragon-ball_3840x2160_xtrafondos.com (36).png",
+      "reason": "image file is truncated (2 bytes not processed)"
+    }
+  ]
+}

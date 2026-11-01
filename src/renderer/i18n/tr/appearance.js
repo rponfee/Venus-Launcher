@@ -1,6 +1,7 @@
 export default {
   bgGallery: "Galeri",
   galleryTitle: "{count} hazır duvar kâğıdı",
+  liveBadge: "Hareketli",
   galleryChoose: "Favorini seç",
   gallerySelected: "Seçilen: {name}",
   livePreview: "Canlı önizleme",

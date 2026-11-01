@@ -1,6 +1,7 @@
 export default {
   bgGallery: "Galerie",
   galleryTitle: "{count} fonds d’écran inclus",
+  liveBadge: "Animé",
   galleryChoose: "Choisissez votre préféré",
   gallerySelected: "Sélectionné : {name}",
   livePreview: "Aperçu en direct",

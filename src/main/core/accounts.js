@@ -115,14 +115,9 @@ function upsert(data, account) {
   data.selected = account.id;
 }
 
-// Como el launcher oficial: jugar sin conexión requiere una cuenta de Microsoft con Minecraft en el launcher (al
-// agregarla se comprueba la compra o Game Pass con verifyOwnership). Sin ella no se agregan ni se usan cuentas sin conexión.
-const hasLicensedAccount = (data) => data.accounts.some((a) => a.type === 'msa');
-
 async function addOffline(name) {
   const clean = String(name || '').trim();
   if (!OFFLINE_NAME.test(clean)) throw fail('invalidName');
-  if (!hasLicensedAccount(await load())) throw fail('offlineNeedsMicrosoft');
   const uuid = offlineUUID(clean);
   await mutate((data) => upsert(data, { id: `offline-${uuid}`, type: 'offline', name: clean, uuid, addedAt: Date.now() }));
   return list();
@@ -397,10 +392,7 @@ async function getLaunchAccount(id) {
   const data = await load();
   const acc = (id && data.accounts.find((a) => a.id === id)) || data.accounts.find((a) => a.id === data.selected) || data.accounts[0];
   if (!acc) throw fail('noAccount');
-  if (acc.type !== 'msa') {
-    if (!hasLicensedAccount(data)) throw fail('offlineNeedsMicrosoft');
-    return { type: 'offline', name: acc.name, uuid: acc.uuid, accessToken: '0', clientId: data.clientId, xuid: '0' };
-  }
+  if (acc.type !== 'msa') return { type: 'offline', name: acc.name, uuid: acc.uuid, accessToken: '0', clientId: data.clientId, xuid: '0' };
 
   let current = acc;
   const left = (acc.expiresAt || 0) - Date.now();

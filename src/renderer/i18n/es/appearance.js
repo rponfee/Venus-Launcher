@@ -39,6 +39,7 @@ export default {
   bgGallery: 'Galería',
   bgImage: 'Imagen o video',
   galleryTitle: '{count} fondos incluidos',
+  liveBadge: 'Animado',
   galleryChoose: 'Elegí tu favorito',
   gallerySelected: 'Elegido: {name}',
   livePreview: 'Vista previa en vivo',

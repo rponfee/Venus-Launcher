@@ -1,20 +1,31 @@
-"""Import user-supplied wallpapers without extracting or modifying the ZIP.
+"""Agrega fondos a la galería del launcher sin repetir los que ya están.
 
-Requires Pillow. Run from any directory:
-    python scripts/import-wallpapers.py path/to/67-png.zip
+Uso (desde cualquier carpeta; necesita Pillow):
+    python scripts/import-wallpapers.py <carpeta o .zip> [<carpeta o .zip> ...]
+    python scripts/import-wallpapers.py --catalog     (solo rearma src/renderer/js/wallpapers.js)
 
-Full-size WebP images preserve their aspect ratio and fit within 2560 x 1440.
-Small, cropped previews keep the appearance picker inexpensive to load.
-Invalid files and duplicates are recorded in the generated manifest.
+- Imágenes (.png .jpg .jpeg .webp): WebP de hasta 2560 x 1440 y una miniatura de 320 x 180.
+- Videos (.mp4 .webm .mov .mkv): fondos animados en H.264 de hasta 1920 x 1080 y 30 cuadros por segundo, sin
+  audio, con una miniatura sacada del video. Usa ffmpeg: el de la variable FFMPEG, el de imageio-ffmpeg
+  (pip install imageio-ffmpeg) o el del PATH.
+- Repetidos: cada fondo guarda en manifest.json un hash perceptual (dHash 16 x 16) de la imagen o de cuatro cuadros
+  del video. Un archivo nuevo parecido a uno que ya está (o a otro nuevo) se saltea y queda anotado como repetido,
+  aunque cambien el tamaño, el formato o el recorte.
+- Los fondos que ya están no se tocan: sus ids (wallpaper-NN y live-NN) se mantienen para quien ya los eligió.
+- wallpapers.js lista primero los animados y después las imágenes.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import io
 import json
+import os
 import re
+import shutil
+import subprocess
+import sys
+import tempfile
 import warnings
 from pathlib import Path
 from zipfile import ZipFile
@@ -24,164 +35,284 @@ from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "src/renderer/assets/wallpapers"
+MANIFEST = ASSETS / "manifest.json"
 CATALOG = ROOT / "src/renderer/js/wallpapers.js"
-EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp"}
+VIDEO_EXT = {".mp4", ".webm", ".mov", ".mkv"}
+SAME = 10  # bits distintos (de 256) hasta los que dos fondos se consideran el mismo
 
-# Labels refer to the original archive's numbered filenames, not output IDs.
+# Nombres para mostrar, por el nombre del archivo sin tamaño ni sitio (ver slug()).
 NAMES = {
-    1: "Luna turquesa y dragón",
-    2: "Miku",
-    4: "Atardecer sobre la ciudad",
-    5: "Ciudad de neón",
-    6: "Monte Fuji",
-    7: "Valle de cerezos",
-    8: "Bosque de niebla",
-    9: "Paisaje lunar",
-    10: "Campo bajo las nubes",
-    11: "Lago y cerezos",
-    12: "Miles Morales",
-    13: "Horizonte rojo",
-    14: "Venom",
-    15: "Spider-Man en la ciudad",
-    16: "Wolverine",
-    17: "Spider-Man nocturno",
-    18: "Deportivo junto al mar",
-    19: "Spider-Man bajo la lluvia",
-    20: "ROG carmesí",
-    21: "Spider-Man y luces",
-    22: "Spider-Man rojo",
-    23: "Spider-Man en acción",
-    24: "Spider-Man en las sombras",
-    25: "Mármol azul",
-    26: "Ondas de seda",
-    27: "Ola estrellada",
-    28: "Pradera en flor",
-    29: "Camino de otoño",
-    30: "Sukuna carmesí",
-    31: "Pikachu en el bosque",
-    32: "Luffy Gear 5",
-    33: "Gojo ilustrado",
-    34: "Luna de sombras",
-    35: "Mirada carmesí",
-    37: "Ruta al atardecer",
-    38: "Mirada azul",
-    39: "Noche de neón",
-    40: "Horizonte costero",
-    41: "Sukuna",
-    42: "Kakashi",
-    43: "Goku azul",
-    44: "Mirada violeta",
-    45: "Kaneki",
-    46: "Goku y Shenron",
-    47: "Kame House",
-    49: "Pikachu en las termas",
-    50: "Mar de nubes",
-    52: "Goku al atardecer",
-    53: "Sombra rosa",
+    "aston-martin-v8-auto-deportivo-clasico-en-juego-007-first-light": "Aston Martin V8",
+    "auto-arte-digital-inspirado-en-ford-mustang-shelby-gt500": "Mustang Shelby GT500",
+    "cyberpunk-2077": "Cyberpunk 2077",
+    "denji-de-chainsaw-man": "Denji",
+    "dodge-challenger-gasolinera-iluminacion-neon": "Dodge Challenger de neón",
+    "el-hombre-arana-de-cabeza": "Spider-Man de cabeza",
+    "el-hombre-arana-negro": "Spider-Man negro",
+    "escudo-capitan-america": "Escudo del Capitán América",
+    "goku-de-dragon-ball": "Goku",
+    "goku-fondo-rojo": "Goku en rojo",
+    "goku-super-saiyan": "Goku Super Saiyan",
+    "goku-ultra-instinct-dragon-ball-super": "Goku Ultra Instinto",
+    "goku-vs-vegeta-ilustracion": "Goku contra Vegeta",
+    "iron-man-render-3d": "Iron Man 3D",
+    "iron-man-volando": "Iron Man volando",
+    "kirby-fanart": "Kirby",
+    "lionel-messi-con-trofeo-copa-mundial-fifa": "Messi campeón del mundo",
+    "luffy-gear-5-nika-dios-del-sol": "Luffy Nika",
+    "mar-nocturno-con-bioluminiscencia-y-cielo-estrellado": "Mar bioluminiscente",
+    "marvels-el-hombre-arana-2-venom-symbiote-logo": "Simbionte de Spider-Man 2",
+    "mercedes-vision-eqxx": "Mercedes Vision EQXX",
+    "michael-jordan-logo": "Logo de Jordan",
+    "miles-morales-spider-man-3d": "Miles Morales 3D",
+    "minimalista-miles-morales": "Miles Morales minimalista",
+    "moon-knight": "Moon Knight",
+    "porsche-911-gt3-rs-rojo": "Porsche 911 GT3 RS rojo",
+    "porsche-911-gt3-rs": "Porsche 911 GT3 RS",
+    "porsche-911-gt3rs-gran-turismo": "Porsche GT3 RS Gran Turismo",
+    "rick-y-morty": "Rick y Morty",
+    "rostro-de-venom": "Rostro de Venom",
+    "son-goku-nino-de-dragon-ball-z": "Goku niño",
+    "spider-man-arte-digital-realista": "Spider-Man realista",
+    "vehiculo-deportivo-inspirado-en-toyota-gr-supra-widebody": "Toyota GR Supra",
+    "venom-ilustracion-minimalista": "Venom minimalista",
+    # Animados
+    "aaxcpc6n7y": "Espadachina en blanco y negro",
+    "aoi-todo-itadori-yuji-mahito": "Todo, Itadori y Mahito",
+    "batman-el-caballero-de-la-noche-espera-animado-el-fondo-de-p": "Batman en la noche",
+    "ene-project": "Bufanda roja",
+    "hatsune-miku-sky": "Miku en el cielo",
+    "lego-skeleton-chrome-figure-live-wallpaper": "Esqueleto LEGO cromado",
+    "ling-street-punk": "Pelea en la calle de neón",
+    "lofi-cat-sleeping": "Gato lofi durmiendo",
+    "luffys-mighty-gear-5": "Gear 5 de Luffy",
+    "nissan-gt-r-performance": "Nissan GT-R",
+    "samurai-anime-boy-koi-in-sword-enhanced": "Samurái y carpas koi",
+    "silver-surfer-space-stars-enhanced": "Silver Surfer",
+    "spider-man-symbiote-suit-enhanced": "Spider-Man simbionte",
+    "vid-20251014-enhanced": "Rueda deportiva",
+    "wallpaper": "Chica lobo con espada",
+    "yuta-okkotsu-curse-spirit": "Yuta y Rika",
 }
 
 
+def slug(filename: str) -> str:
+    """'goku-fondo-rojo_3840x2160_xtrafondos.com (1).jpg' -> 'goku-fondo-rojo'."""
+    stem = Path(filename).stem.lower()
+    stem = re.sub(r"\s*\(\d+\)$", "", stem)
+    stem = re.sub(r"_\d+x\d+_xtrafondos\.com$", "", stem)
+    return re.sub(r"-wallsflow-com$", "", stem)
+
+
 def natural_key(value: str) -> list:
-    return [int(part) if part.isdigit() else part.lower()
-            for part in re.split(r"(\d+)", value)]
+    return [int(part) if part.isdigit() else part.lower() for part in re.split(r"(\d+)", value)]
 
 
-def import_wallpapers(archive_path: Path) -> None:
-    ASSETS.mkdir(parents=True, exist_ok=True)
-    entries = []
-    sources = []
-    rejected = []
-    duplicates = []
-    seen = {}
+def dhash(picture: Image.Image, size: int = 16) -> str:
+    gray = picture.convert("L").resize((size + 1, size), Image.Resampling.LANCZOS)
+    px = gray.tobytes()
+    bits = 0
+    for y in range(size):
+        row = y * (size + 1)
+        for x in range(size):
+            bits = (bits << 1) | (px[row + x] > px[row + x + 1])
+    return f"{bits:064x}"
 
-    with ZipFile(archive_path) as archive:
-        images = sorted(
-            (entry for entry in archive.infolist()
-             if not entry.is_dir() and Path(entry.filename).suffix.lower() in EXTENSIONS),
-            key=lambda entry: natural_key(entry.filename),
-        )
-        for entry in images:
-            try:
-                # Read in memory; archive filenames never become filesystem paths.
-                if entry.file_size > 100 * 1024 * 1024:
-                    raise ValueError("Image exceeds the 100 MiB import limit")
-                with warnings.catch_warnings():
-                    warnings.simplefilter("error", Image.DecompressionBombWarning)
-                    with Image.open(io.BytesIO(archive.read(entry))) as original:
-                        original.load()  # Reject incomplete images instead of showing broken previews.
-                        picture = ImageOps.exif_transpose(original).convert("RGB")
-                digest = hashlib.sha256(
-                    f"{picture.width}x{picture.height}:".encode() + picture.tobytes()
-                ).hexdigest()
-                if digest in seen:
-                    duplicates.append({"source": entry.filename, "sameAs": seen[digest]})
-                    continue
 
-                number = len(entries) + 1
-                wallpaper_id = f"wallpaper-{number:02d}"
-                match = re.search(r"\((\d+)\)\.[^.]+$", entry.filename)
-                label = NAMES.get(int(match[1])) if match else None
-                full_path = ASSETS / f"{wallpaper_id}.webp"
-                thumb_path = ASSETS / f"{wallpaper_id}-thumb.webp"
-                original_size = list(picture.size)
-                picture.thumbnail((2560, 1440), Image.Resampling.LANCZOS)
-                picture.save(full_path, "WEBP", quality=88, method=6)
-                thumbnail = ImageOps.fit(picture, (320, 180), Image.Resampling.LANCZOS)
-                thumbnail.save(thumb_path, "WEBP", quality=78, method=6)
-                seen[digest] = wallpaper_id
-                entries.append({
-                    "id": wallpaper_id,
-                    "name": label or f"Fondo {number:02d}",
-                    "src": f"assets/wallpapers/{full_path.name}",
-                    "thumb": f"assets/wallpapers/{thumb_path.name}",
-                })
-                sources.append({
-                    "id": wallpaper_id,
-                    "source": entry.filename,
-                    "pixelSha256": digest,
-                    "originalSize": original_size,
-                    "size": list(picture.size),
-                    "imageBytes": full_path.stat().st_size,
-                    "thumbnailBytes": thumb_path.stat().st_size,
-                })
-                print(f"Imported {wallpaper_id}: {entries[-1]['name']}", flush=True)
-            except (OSError, ValueError, Image.DecompressionBombWarning,
-                    Image.DecompressionBombError) as error:
-                rejected.append({"source": entry.filename, "reason": str(error)})
-                print(f"Skipped {entry.filename}: {error}", flush=True)
+def distance(a: list[str], b: list[str]) -> int:
+    return min(bin(int(x, 16) ^ int(y, 16)).count("1") for x in a for y in b)
 
-    if not entries:
-        raise SystemExit("No valid images found; the catalog was not replaced.")
 
+def find_ffmpeg() -> str:
+    if os.environ.get("FFMPEG"):
+        return os.environ["FFMPEG"]
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError:
+        pass
+    found = shutil.which("ffmpeg")
+    if not found:
+        sys.exit("Para importar videos hace falta ffmpeg: pip install imageio-ffmpeg o poné ffmpeg en el PATH.")
+    return found
+
+
+def run(cmd: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, capture_output=True, check=True)
+
+
+def video_duration(ffmpeg: str, path: Path) -> float:
+    # ffmpeg sin salida termina con error, pero antes imprime la duración.
+    info = subprocess.run([ffmpeg, "-hide_banner", "-i", str(path)], capture_output=True).stderr.decode("utf-8", "replace")
+    m = re.search(r"Duration: (\d+):(\d+):(\d+(?:\.\d+)?)", info)
+    if not m:
+        raise ValueError("No se pudo leer la duración del video")
+    return int(m[1]) * 3600 + int(m[2]) * 60 + float(m[3])
+
+
+def video_frame(ffmpeg: str, path: Path, at: float) -> Image.Image:
+    out = run([ffmpeg, "-hide_banner", "-loglevel", "error", "-ss", f"{at:.2f}", "-i", str(path),
+               "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "-"]).stdout
+    picture = Image.open(io.BytesIO(out))
+    picture.load()
+    return picture.convert("RGB")
+
+
+def load_manifest() -> dict:
+    if MANIFEST.exists():
+        data = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        data.setdefault("wallpapers", data.pop("images", []))
+    else:
+        data = {"wallpapers": []}
+    data.setdefault("duplicates", [])
+    data.setdefault("rejected", [])
+    for item in data["wallpapers"]:
+        item.setdefault("kind", "image")
+        if "dhash" not in item:  # fondos importados antes de comparar por parecido
+            with Image.open(ASSETS / f"{item['id']}.webp") as picture:
+                item["dhash"] = [dhash(picture)]
+    return data
+
+
+def next_id(data: dict, prefix: str) -> str:
+    used = [int(m[1]) for item in data["wallpapers"] if (m := re.fullmatch(rf"{prefix}-(\d+)", item["id"]))]
+    return f"{prefix}-{max(used, default=0) + 1:02d}"
+
+
+def add_image(data: dict, source: str, path: Path) -> dict | None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", Image.DecompressionBombWarning)
+        with Image.open(path) as original:
+            original.load()  # una imagen incompleta se rechaza en vez de verse rota
+            picture = ImageOps.exif_transpose(original).convert("RGB")
+    hashes = [dhash(picture)]
+    if (same := similar(data, hashes)):
+        data["duplicates"].append({"source": source, "sameAs": same})
+        return None
+    wallpaper_id = next_id(data, "wallpaper")
+    full_path = ASSETS / f"{wallpaper_id}.webp"
+    thumb_path = ASSETS / f"{wallpaper_id}-thumb.webp"
+    original_size = list(picture.size)
+    picture.thumbnail((2560, 1440), Image.Resampling.LANCZOS)
+    picture.save(full_path, "WEBP", quality=88, method=6)
+    ImageOps.fit(picture, (320, 180), Image.Resampling.LANCZOS).save(thumb_path, "WEBP", quality=78, method=6)
+    return {"id": wallpaper_id, "kind": "image", "name": NAMES.get(slug(source)), "source": source,
+            "dhash": hashes, "originalSize": original_size, "size": list(picture.size),
+            "imageBytes": full_path.stat().st_size, "thumbnailBytes": thumb_path.stat().st_size}
+
+
+def add_video(data: dict, source: str, path: Path, ffmpeg: str) -> dict | None:
+    duration = video_duration(ffmpeg, path)
+    frames = [video_frame(ffmpeg, path, duration * f) for f in (0.0, 0.25, 0.5, 0.75)]
+    hashes = [dhash(frame) for frame in frames]
+    if (same := similar(data, hashes)):
+        data["duplicates"].append({"source": source, "sameAs": same})
+        return None
+    wallpaper_id = next_id(data, "live")
+    video_path = ASSETS / f"{wallpaper_id}.mp4"
+    thumb_path = ASSETS / f"{wallpaper_id}-thumb.webp"
+    # Un fondo detrás de la interfaz no necesita 4K ni 60 cuadros: 1080p a 30 cuadros pesa 10 veces menos.
+    run([ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", str(path), "-an", "-map_metadata", "-1",
+         "-vf", "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease:flags=lanczos,"
+                "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+         "-fpsmax", "30", "-c:v", "libx264", "-preset", "slow", "-crf", "27", "-pix_fmt", "yuv420p",
+         "-profile:v", "high", "-movflags", "+faststart", str(video_path)])
+    ImageOps.fit(frames[1], (320, 180), Image.Resampling.LANCZOS).save(thumb_path, "WEBP", quality=78, method=6)
+    return {"id": wallpaper_id, "kind": "video", "name": NAMES.get(slug(source)), "source": source,
+            "dhash": hashes, "originalSize": list(frames[0].size), "duration": round(duration, 1),
+            "videoBytes": video_path.stat().st_size, "thumbnailBytes": thumb_path.stat().st_size}
+
+
+def similar(data: dict, hashes: list[str]) -> str | None:
+    for item in data["wallpapers"]:
+        if distance(hashes, item["dhash"]) <= SAME:
+            return item["id"]
+    return None
+
+
+def sources(arg: str, tmp: Path):
+    """(nombre original, ruta) de cada imagen o video de una carpeta o un .zip."""
+    root = Path(arg)
+    exts = IMAGE_EXT | VIDEO_EXT
+    if root.is_dir():
+        for path in sorted(root.rglob("*"), key=lambda p: natural_key(str(p))):
+            if path.is_file() and path.suffix.lower() in exts:
+                yield path.relative_to(root).as_posix(), path
+        return
+    with ZipFile(root) as archive:
+        entries = sorted((e for e in archive.infolist() if not e.is_dir() and Path(e.filename).suffix.lower() in exts),
+                         key=lambda e: natural_key(e.filename))
+        for n, entry in enumerate(entries):
+            # El nombre del zip nunca se usa como ruta: se extrae a un archivo temporal con nombre propio.
+            path = tmp / f"{n}{Path(entry.filename).suffix.lower()}"
+            with archive.open(entry) as src, open(path, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            yield entry.filename, path
+            path.unlink()
+
+
+def write_catalog(data: dict) -> None:
+    ordered = ([i for i in data["wallpapers"] if i["kind"] == "video"]
+               + [i for i in data["wallpapers"] if i["kind"] == "image"])
+    catalog = []
+    for item in ordered:
+        entry = {"id": item["id"], "name": item.get("name") or f"Fondo {item['id'].split('-')[-1]}",
+                 "src": f"assets/wallpapers/{item['id']}.{'mp4' if item['kind'] == 'video' else 'webp'}",
+                 "thumb": f"assets/wallpapers/{item['id']}-thumb.webp"}
+        if item["kind"] == "video":
+            entry["video"] = True
+        catalog.append(entry)
     CATALOG.write_text(
-        "// Generated by scripts/import-wallpapers.py from the user's wallpaper archive.\n"
-        "// Paths are relative to renderer/index.html and work inside packaged apps.\n"
-        "export const WALLPAPERS = " + json.dumps(entries, ensure_ascii=False, indent=2)
-        + ";\n\n"
+        "// Generado por scripts/import-wallpapers.py (no editar a mano: los datos están en assets/wallpapers/manifest.json).\n"
+        "// Las rutas son relativas a renderer/index.html y funcionan dentro del launcher empaquetado.\n"
+        "// Los fondos con video: true son animados (MP4); van primero en la galería.\n"
+        f"export const WALLPAPERS = {json.dumps(catalog, ensure_ascii=False, indent=2)};\n\n"
         "const WALLPAPERS_BY_ID = new Map(WALLPAPERS.map(wallpaper => [wallpaper.id, wallpaper]));\n\n"
         "export function getWallpaper(id) {\n"
         "  return WALLPAPERS_BY_ID.get(id) || null;\n"
         "}\n",
-        encoding="utf-8",
-    )
-    manifest = {
-        "archive": archive_path.name,
-        "imageCount": len(images),
-        "importedCount": len(entries),
-        "images": sources,
-        "duplicates": duplicates,
-        "rejected": rejected,
-    }
-    (ASSETS / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
-    )
-    total = sum(source["imageBytes"] + source["thumbnailBytes"] for source in sources)
-    print(f"Done: {len(entries)} wallpapers, {len(duplicates)} duplicates, "
-          f"{len(rejected)} invalid; {total / (1024 * 1024):.2f} MiB total.")
+        encoding="utf-8", newline="\n")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("inputs", nargs="*", help="carpetas o .zip con imágenes y videos")
+    parser.add_argument("--catalog", action="store_true", help="solo rearmar wallpapers.js")
+    args = parser.parse_args()
+    if not args.inputs and not args.catalog:
+        parser.error("indicá al menos una carpeta o .zip")
+
+    ASSETS.mkdir(parents=True, exist_ok=True)
+    data = load_manifest()
+    ffmpeg = None
+    with tempfile.TemporaryDirectory() as tmp:
+        for arg in args.inputs:
+            for source, path in sources(arg, Path(tmp)):
+                try:
+                    if path.suffix.lower() in VIDEO_EXT:
+                        ffmpeg = ffmpeg or find_ffmpeg()
+                        item = add_video(data, source, path, ffmpeg)
+                    else:
+                        item = add_image(data, source, path)
+                except (OSError, ValueError, subprocess.CalledProcessError, Image.DecompressionBombWarning,
+                        Image.DecompressionBombError) as error:
+                    data["rejected"].append({"source": source, "reason": str(error)})
+                    print(f"Rechazado {source}: {error}", flush=True)
+                    continue
+                if item is None:
+                    print(f"Repetido  {source} (igual a {data['duplicates'][-1]['sameAs']})", flush=True)
+                    continue
+                data["wallpapers"].append(item)
+                print(f"Agregado  {item['id']}: {item['name'] or source}", flush=True)
+                MANIFEST.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+
+    MANIFEST.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+    write_catalog(data)
+    kinds = [i["kind"] for i in data["wallpapers"]]
+    print(f"Galería: {kinds.count('video')} animados y {kinds.count('image')} imágenes. "
+          f"Repetidos salteados: {len(data['duplicates'])}. Rechazados: {len(data['rejected'])}.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("archive", type=Path)
-    args = parser.parse_args()
-    import_wallpapers(args.archive.resolve(strict=True))
+    main()

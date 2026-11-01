@@ -3,7 +3,6 @@ module.exports = {
   notFound: 'No se encontró esa cuenta.',
   noAccount: 'Agregá una cuenta antes de jugar.',
   invalidName: 'El nombre tiene que tener de 3 a 16 caracteres: letras, números o guion bajo (_).',
-  offlineNeedsMicrosoft: 'Para jugar sin conexión primero iniciá sesión con una cuenta de Microsoft que tenga Minecraft: Java Edition (como en el launcher oficial).',
   unavailable: 'El inicio de sesión con Microsoft no está disponible en este momento.',
   cancelled: 'Inicio de sesión cancelado.',
   network: 'No se pudo conectar con {service}. Revisá tu conexión a internet y probá de nuevo.',

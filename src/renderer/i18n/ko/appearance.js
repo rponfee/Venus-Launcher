@@ -1,6 +1,7 @@
 export default {
   bgGallery: "갤러리",
   galleryTitle: "기본 제공 배경 화면 {count}개",
+  liveBadge: "라이브",
   galleryChoose: "마음에 드는 배경 선택",
   gallerySelected: "선택됨: {name}",
   livePreview: "실시간 미리 보기",

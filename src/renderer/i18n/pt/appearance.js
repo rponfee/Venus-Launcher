@@ -1,6 +1,7 @@
 export default {
   bgGallery: "Galeria",
   galleryTitle: "{count} papéis de parede incluídos",
+  liveBadge: "Animado",
   galleryChoose: "Escolha seu favorito",
   gallerySelected: "Selecionado: {name}",
   livePreview: "Prévia ao vivo",

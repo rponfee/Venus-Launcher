@@ -689,7 +689,7 @@ async function loginMicrosoft(ctx) {
     pendingFocus = 'next';
   } catch (err) {
     const cancelled = /cancel/i.test(err?.message || '');
-    S.accMsg = { kind: cancelled ? 'info' : 'bad', text: err?.message || String(err) };
+    S.accMsg = { kind: cancelled ? 'info' : 'bad', text: err?.message || String(err), offerOffline: !cancelled };
   } finally {
     S.accBusy = false;
     if (ctx.alive()) ctx.refresh();
