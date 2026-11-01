@@ -6,12 +6,26 @@ import { t } from './i18n.js';
 export const DISCORD_INVITE = 'https://discord.gg/8KuvU5Cswn';
 // Página con los fondos de Venus (imágenes y animados): se bajan y se eligen con "Imagen o video" en Apariencia.
 export const WALLPAPERS_PAGE = 'https://venus-launcher-fondos.netlify.app/';
+// Sitio de Venus (cuenta regresiva del lanzamiento y, desde el 8 de noviembre, el sitio completo) y el codigo.
+export const WEBSITE = 'https://venus-launcher.netlify.app/';
+export const GITHUB_REPO = 'https://github.com/rponfee/Venus-Launcher';
 
 export async function openWallpapersPage() {
   try {
     await api.app.openExternal(WALLPAPERS_PAGE);
   } catch (err) {
     fail(t('appearance.moreBgError'), err);
+  }
+}
+
+// Abre un link de Venus en el navegador; errorKey es el aviso si no se puede.
+export async function openLink(url, errorKey = 'common.linkOpenError') {
+  try {
+    await api.app.openExternal(url);
+    return true;
+  } catch (err) {
+    fail(t(errorKey), err);
+    return false;
   }
 }
 

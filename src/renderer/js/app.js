@@ -8,9 +8,11 @@ import { t, loadNs, setLanguage, onLanguageChange, systemLanguage } from './i18n
 import { discordButton } from './community.js';
 
 // Menu lateral. { group } dibuja un separador con titulo. La etiqueta sale de t(`nav.<id>`).
+// img: imagen en lugar del icono (la entrada de Venus usa el logo).
 const NAV = [
   { group: 'play' },
   { id: 'home', icon: 'home' },
+  { id: 'venus', icon: 'globe', img: 'assets/logo-64.png', cls: 'venus' },
   { id: 'assistant', icon: 'wand' },
   { id: 'versions', icon: 'layers' },
   { id: 'worlds', icon: 'globe' },
@@ -35,6 +37,7 @@ const NAV = [
 const PAGES = {
   welcome: () => import('./pages/welcome.js'),
   home: () => import('./pages/home.js'),
+  venus: () => import('./pages/venus.js'),
   assistant: () => import('./pages/assistant.js'),
   stats: () => import('./pages/stats.js'),
   versions: () => import('./pages/versions.js'),
@@ -209,7 +212,7 @@ function buildNav() {
         : h(
             'div',
             { class: ['nav-item', item.cls], dataset: { route: item.id }, onclick: () => navigate(item.id), title: navLabel(item), role: 'link', tabindex: 0 },
-            icon(item.icon),
+            item.img ? h('img', { class: 'nav-img', src: item.img, alt: '', 'aria-hidden': 'true' }) : icon(item.icon),
             h('span', {}, navLabel(item)),
             h('span', { class: 'nav-extra', dataset: { for: item.id } }),
           ),
@@ -736,7 +739,7 @@ async function init() {
   await waitAtMost(early, EARLY_WAIT_MS);
   window.addEventListener('hashchange', renderRoute);
   if (onboarding) location.hash = '#/welcome';
-  renderRoute();
+  renderRoute().finally(hideBoot);
   refreshServerDot();
 
   voice.on('room', (room) => setNavBadge('voice', room ? 1 : 0, 'dot'));
@@ -779,6 +782,14 @@ async function init() {
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'r') location.reload();
   });
+}
+
+// Pantalla de carga de index.html: se va con un fundido cuando ya se dibujo la primera pagina.
+function hideBoot() {
+  const boot = document.getElementById('boot');
+  if (!boot || boot.classList.contains('out')) return;
+  boot.classList.add('out');
+  setTimeout(() => boot.remove(), 600);
 }
 
 async function refreshServerDot() {

@@ -7,6 +7,7 @@ export default {
   group_tools: "ツール",
   assistant: "AIアシスタント",
   home: "ホーム",
+  venus: "Venus",
   versions: "バージョンとインスタンス",
   worlds: "ワールド",
   skins: "スキン",
@@ -18,6 +19,7 @@ export default {
   messages: "メッセージ",
   stats: "統計",
   performance: "パフォーマンス",
-  devmode: "開発者モード",  settings: "設定",
+  devmode: "開発者モード",
+  settings: "設定",
   welcome: "ようこそ",
 };

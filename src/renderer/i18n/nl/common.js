@@ -3,6 +3,7 @@ export default {
   discordCommunity: "Venus Launcher-community",
   discordCommunityText: "Deel je ideeën, ontdek het laatste nieuws en ontmoet andere spelers op onze Discord-server.",
   discordOpenError: "Discord kon niet worden geopend",
+  linkOpenError: "De link kon niet worden geopend",
   ok: "OK",
   cancel: "Annuleren",
   close: "Sluiten",

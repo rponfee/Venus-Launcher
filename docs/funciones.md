@@ -35,6 +35,26 @@ Debajo hay accesos rápidos y bloques que se ocultan solos si no tienen datos: *
 
 - Necesita: cuenta de Minecraft para jugar. Los amigos en línea necesitan cuenta de Venus.
 
+### Venus
+
+La web de Venus dentro del launcher, en el menú después de Inicio. Tiene cuatro pestañas:
+
+- **Inicio**: la cuenta regresiva hasta el lanzamiento oficial (domingo 8 de noviembre de 2026, 00:00 de Argentina), los botones del Discord, el sitio web y GitHub, accesos a cada función del launcher y las novedades de cada versión.
+- **Fondos**: los 99 fondos de Venus (16 animados) con filtros y búsqueda. Tocás uno, lo ves en grande y con **Usar de fondo** queda como fondo del launcher. **Descargar** abre ese fondo en la galería web.
+- **Venus IA**: qué hace el asistente y los planes, con el mismo panel de compra de Ajustes → Plan.
+- **Preguntas**: las preguntas frecuentes y los accesos a Soporte y al Discord.
+
+- Necesita: nada. Los fondos vienen con el launcher; los botones abren el navegador.
+
+### Venus en el juego
+
+Cada vez que abrís una instancia de la 1.13 en adelante, el launcher activa el resource pack **Venus Launcher**: la pantalla de carga muestra el logo de Venus en lugar del de Mojang Studios, debajo del logo de Minecraft dice "Venus Launcher" (donde decía "Java Edition") y aparecen frases de Venus en el menú, mezcladas con las del juego y en el idioma del launcher. Va con la prioridad más baja: si activás otro resource pack que cambia lo mismo, gana el tuyo.
+
+Con el juego abierto, la ventana lleva el ícono de Venus y "· Venus Launcher" al final del título.
+
+- Se apaga en **Ajustes → General → Al jugar → Venus en el juego** (las dos cosas por separado); el cambio se aplica la próxima vez que abrís el juego.
+- Las imágenes salen de `scripts/make-ingame-assets.py`.
+
 ### Versiones e instancias
 
 Una **instancia** es una instalación independiente de Minecraft, con su versión, su loader y sus propios mods, mundos y ajustes.

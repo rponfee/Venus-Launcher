@@ -7,6 +7,7 @@ export default {
   group_tools: "Araçlar",
   assistant: "Yapay zekâ asistanı",
   home: "Ana sayfa",
+  venus: "Venus",
   versions: "Sürümler ve örnekler",
   worlds: "Dünyalar",
   skins: "Görünümler",
@@ -18,6 +19,7 @@ export default {
   messages: "Mesajlar",
   stats: "İstatistikler",
   performance: "Performans",
-  devmode: "Geliştirici modu",  settings: "Ayarlar",
+  devmode: "Geliştirici modu",
+  settings: "Ayarlar",
   welcome: "Hoş geldin",
 };

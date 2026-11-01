@@ -7,6 +7,7 @@ export default {
   group_tools: "Tools",
   assistant: "KI-Assistent",
   home: "Startseite",
+  venus: "Venus",
   versions: "Versionen und Instanzen",
   worlds: "Welten",
   skins: "Skins",
@@ -18,6 +19,7 @@ export default {
   messages: "Nachrichten",
   stats: "Statistiken",
   performance: "Leistung",
-  devmode: "Entwicklermodus",  settings: "Einstellungen",
+  devmode: "Entwicklermodus",
+  settings: "Einstellungen",
   welcome: "Willkommen",
 };

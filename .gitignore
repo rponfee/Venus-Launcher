@@ -7,7 +7,7 @@ Thumbs.db
 dist/
 dist-*/
 dist-final/
-venus/
+/venus/
 *.zip
 
 # Respaldos, videos y material de promoción (solo en la PC)

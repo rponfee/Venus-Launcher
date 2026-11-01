@@ -3,6 +3,7 @@ export default {
   discordCommunity: "Venus Launcher topluluğu",
   discordCommunityText: "Discord sunucumuzda fikirlerini paylaş, yenilikleri takip et ve diğer oyuncularla tanış.",
   discordOpenError: "Discord açılamadı",
+  linkOpenError: "Bağlantı açılamadı",
   ok: "Tamam",
   cancel: "İptal",
   close: "Kapat",

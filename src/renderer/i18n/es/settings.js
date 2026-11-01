@@ -63,6 +63,11 @@ export default {
   consoleTitle: 'Abrir la consola al jugar',
   consoleSub: 'Muestra el registro del juego en vivo cada vez que iniciás una instancia.',
   perfHint: 'La memoria, los argumentos de Java y el tamaño de la ventana del juego están en Rendimiento.',
+  ingameLabel: 'Venus en el juego',
+  ingamePack: 'Logo y frases de Venus en Minecraft',
+  ingamePackSub: 'Pantalla de carga con el logo de Venus, "Venus Launcher" debajo del logo del juego y frases de Venus en el menú (1.13 en adelante). Se activa como un resource pack: los tuyos tienen prioridad.',
+  ingameWindow: 'Ícono y título de Venus en la ventana',
+  ingameWindowSub: 'La ventana del juego muestra el ícono de Venus y "· Venus Launcher" al final del título.',
   perfGo: 'Ir a Rendimiento',
 
   // Cuenta y nube: cuentas de Minecraft

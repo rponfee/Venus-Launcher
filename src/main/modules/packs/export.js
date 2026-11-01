@@ -88,7 +88,8 @@ async function collect(inst, o) {
     const st = await fsp.stat(path.join(inst.dir, 'saves', w, 'level.dat')).catch(() => null);
     if (st) await walk(path.join(inst.dir, 'saves', w), `saves/${w}`, out, { group: 'worlds', world: w, disabled: true });
   }
-  return out;
+  // El paquete de Venus en el juego (modules/ingame) lo arma el launcher antes de cada partida: no viaja en el modpack.
+  return out.filter((f) => !f.rel.startsWith('resourcepacks/venus-launcher/'));
 }
 
 function side(v) {

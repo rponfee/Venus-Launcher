@@ -134,6 +134,20 @@ export function renderGeneral(body, ctx) {
         checked: Boolean(store.settings?.openConsoleOnLaunch),
         onChange: (v) => saveSettings({ openConsoleOnLaunch: v }),
       }),
+      // Venus dentro del juego (modules/ingame.js): se aplica la proxima vez que se abre el juego
+      h('div', { class: 'cfg-label', style: { marginTop: '18px' } }, t('settings.ingameLabel')),
+      toggleRow({
+        title: t('settings.ingamePack'),
+        sub: t('settings.ingamePackSub'),
+        checked: store.settings?.ingame?.pack !== false,
+        onChange: (v) => saveSettings({ ingame: { pack: v } }),
+      }),
+      toggleRow({
+        title: t('settings.ingameWindow'),
+        sub: t('settings.ingameWindowSub'),
+        checked: store.settings?.ingame?.window !== false,
+        onChange: (v) => saveSettings({ ingame: { window: v } }),
+      }),
       h(
         'div',
         { class: 'cfg-crosslink' },

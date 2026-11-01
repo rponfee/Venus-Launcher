@@ -7,6 +7,7 @@ export default {
   group_tools: 'Tools',
   assistant: 'AI assistant',
   home: 'Home',
+  venus: 'Venus',
   versions: 'Versions & instances',
   worlds: 'Worlds',
   skins: 'Skins',
@@ -18,6 +19,7 @@ export default {
   messages: 'Messages',
   stats: 'Statistics',
   performance: 'Performance',
-  devmode: 'Developer mode',  settings: 'Settings',
+  devmode: 'Developer mode',
+  settings: 'Settings',
   welcome: 'Welcome',
 };

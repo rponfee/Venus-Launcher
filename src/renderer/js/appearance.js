@@ -122,6 +122,25 @@ export function appearanceSettings() {
   return { appearance: { ...ap, music: { ...ap.music } }, branding: { ...br } };
 }
 
+// Para otras paginas (Venus > Fondos): el fondo de la galeria elegido, cambiarlo y enterarse de los cambios.
+export function currentWallpaperId() {
+  return ap.background === 'wallpaper' ? ap.wallpaperId || null : null;
+}
+
+export function useWallpaper(id) {
+  if (!getWallpaper(id)) return false;
+  save({ appearance: { background: 'wallpaper', wallpaperId: id } });
+  return true;
+}
+
+export function useStars() {
+  save({ appearance: { background: 'stars' } });
+}
+
+export function onAppearanceChange(fn) {
+  return onChange(fn);
+}
+
 // Guarda cambios: se aplican al instante y se escriben con una pequeña espera (deslizadores, textos)
 function save({ appearance, branding } = {}, delay = 0) {
   if (appearance) {

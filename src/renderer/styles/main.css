@@ -250,6 +250,33 @@ body.reduce-motion .skeleton::after { display: none; }
 .brand .brand-name { font-family: var(--pixel); font-weight: 700; font-size: 24px; line-height: 1; letter-spacing: 0.04em; background: linear-gradient(180deg, var(--cream), var(--accent) 70%, var(--accent-lo)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .brand .brand-sub { font-family: var(--pixel); font-size: var(--fs-xs); letter-spacing: 0.32em; color: var(--muted); margin-top: var(--sp-1); }
 @keyframes planet-float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(4deg); } }
+.brand img { transition: filter var(--dur-slow) var(--ease-out); }
+.brand:hover img { filter: drop-shadow(0 0 22px var(--accent)) brightness(1.08); animation-duration: 2.6s; }
+.nav-item .nav-img { width: 18px; height: 18px; flex-shrink: 0; image-rendering: pixelated; filter: drop-shadow(0 0 4px var(--accent-glow)); transition: transform var(--dur-fast) var(--ease-out); }
+.nav-item:hover .nav-img { transform: rotate(-14deg) scale(1.1); }
+.nav-item.venus.active { background: linear-gradient(90deg, var(--accent-wash), transparent 85%); }
+
+/* Pantalla de carga (index.html): el logo de Venus hasta que se dibuja la primera pagina (app.js -> hideBoot).
+   Deja libre la barra de titulo para poder mover o cerrar la ventana. Si algo falla, se va sola a los 12 s. */
+.boot {
+  position: fixed; z-index: 10000; inset: var(--titlebar-h) 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: radial-gradient(60% 55% at 50% 45%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%), var(--bg-0);
+  transition: opacity 0.45s var(--ease-out), visibility 0.45s;
+  animation: boot-failsafe 0.45s 12s forwards;
+}
+.boot.out { opacity: 0; visibility: hidden; pointer-events: none; }
+.boot-planet { position: relative; width: 150px; height: 150px; display: grid; place-items: center; margin-bottom: 14px; }
+.boot-planet img { width: 104px; height: 104px; image-rendering: pixelated; filter: drop-shadow(0 0 26px var(--accent-glow)); animation: boot-in 0.7s var(--ease-out) both, planet-float 5s 0.7s ease-in-out infinite; }
+.boot-orbit { position: absolute; inset: 0; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent); transform: rotateX(68deg); animation: boot-orbit 6s linear infinite; }
+.boot-orbit i { position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--accent-hi); box-shadow: 0 0 12px var(--accent-hi); }
+.boot-name { font-family: var(--pixel); font-weight: 700; font-size: 42px; line-height: 1; letter-spacing: 0.08em; background: linear-gradient(180deg, var(--cream), var(--accent) 70%, var(--accent-lo)); -webkit-background-clip: text; background-clip: text; color: transparent; animation: boot-in 0.7s 0.12s var(--ease-out) both; }
+.boot-sub { font-family: var(--pixel); font-size: var(--fs-sm); letter-spacing: 0.5em; margin-right: -0.5em; color: var(--muted); animation: boot-in 0.7s 0.2s var(--ease-out) both; }
+.boot-bar { position: relative; width: 160px; height: 3px; margin-top: 26px; border-radius: 3px; overflow: hidden; background: var(--border-2); animation: boot-in 0.7s 0.3s var(--ease-out) both; }
+.boot-bar i { position: absolute; top: 0; bottom: 0; width: 40%; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--accent-hi), transparent); animation: boot-bar 1.3s ease-in-out infinite; }
+@keyframes boot-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes boot-orbit { to { transform: rotateX(68deg) rotateZ(360deg); } }
+@keyframes boot-bar { from { left: -40%; } to { left: 100%; } }
+@keyframes boot-failsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
 
 /* ---------- Menu lateral ---------- */
 .nav { flex: 1; overflow-y: auto; padding: 6px 10px var(--sp-3); display: flex; flex-direction: column; gap: 2px; }

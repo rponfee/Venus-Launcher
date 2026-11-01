@@ -3,6 +3,7 @@ export default {
   discordCommunity: "Venus Launcher 社区",
   discordCommunityText: "在我们的 Discord 服务器分享想法、了解最新消息并结识其他玩家。",
   discordOpenError: "无法打开 Discord",
+  linkOpenError: "无法打开链接",
   ok: "确定",
   cancel: "取消",
   close: "关闭",

@@ -3,6 +3,7 @@ export default {
   discordCommunity: "Сообщество Venus Launcher",
   discordCommunityText: "Делитесь идеями, узнавайте новости и знакомьтесь с другими игроками на нашем сервере Discord.",
   discordOpenError: "Не удалось открыть Discord",
+  linkOpenError: "Не удалось открыть ссылку",
   ok: "ОК",
   cancel: "Отмена",
   close: "Закрыть",

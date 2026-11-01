@@ -7,6 +7,7 @@ export default {
   group_tools: "工具",
   assistant: "AI 助手",
   home: "主页",
+  venus: "Venus",
   versions: "版本与实例",
   worlds: "世界",
   skins: "皮肤",
@@ -18,6 +19,7 @@ export default {
   messages: "消息",
   stats: "统计",
   performance: "性能",
-  devmode: "开发者模式",  settings: "设置",
+  devmode: "开发者模式",
+  settings: "设置",
   welcome: "欢迎",
 };

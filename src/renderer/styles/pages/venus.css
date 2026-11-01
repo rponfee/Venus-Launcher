@@ -1,0 +1,160 @@
+/* Pagina Venus: la web de Venus dentro del launcher. Usa los colores y tamanos del tema. */
+.vn-page { max-width: 1180px; margin: 0 auto; min-width: 0; container: venus / inline-size; }
+.vn-page [hidden] { display: none !important; }
+.vn-tabs { margin-bottom: var(--sp-5); }
+.vn-body { min-width: 0; }
+.vn-panel { display: flex; flex-direction: column; gap: var(--sp-6); animation: page-in var(--dur-slow) var(--ease-out); }
+.vn-home { display: flex; flex-direction: column; gap: var(--sp-6); }
+
+/* ---------- Planeta (logo animado) ---------- */
+.vn-planet { position: relative; width: 168px; height: 168px; flex-shrink: 0; display: grid; place-items: center; }
+.vn-planet img { position: relative; width: 74%; height: 74%; image-rendering: pixelated; filter: drop-shadow(0 0 22px var(--accent-glow)); animation: vn-float 7s ease-in-out infinite; }
+.vn-planet .vn-glow { position: absolute; inset: 14%; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--accent) 40%, transparent), transparent 70%); filter: blur(18px); animation: vn-pulse 5s ease-in-out infinite; }
+.vn-planet .vn-orbit { position: absolute; inset: 0; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--accent) 35%, transparent); transform: rotateX(68deg) rotateZ(0deg); animation: vn-orbit 18s linear infinite; }
+.vn-planet .vn-orbit i { position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--accent-hi); box-shadow: 0 0 10px var(--accent-hi); }
+@keyframes vn-float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-6px) rotate(5deg); } }
+@keyframes vn-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.96); } 50% { opacity: 0.95; transform: scale(1.06); } }
+@keyframes vn-orbit { to { transform: rotateX(68deg) rotateZ(360deg); } }
+
+/* ---------- Portada ---------- */
+.vn-hero {
+  position: relative; overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--sp-5) var(--sp-6);
+  padding: var(--sp-6); border-radius: var(--radius-xl); border: 1px solid var(--border-2);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 55%),
+    radial-gradient(90% 120% at 100% 100%, color-mix(in srgb, var(--accent-deep) 22%, transparent), transparent 60%),
+    var(--card-bg);
+  backdrop-filter: blur(6px);
+}
+.vn-hero-text { min-width: 0; }
+.vn-kicker { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-3); }
+.vn-wordmark { font-family: var(--pixel); font-weight: 700; font-size: var(--fs-md); letter-spacing: 0.24em; background: linear-gradient(180deg, var(--cream), var(--accent) 75%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.vn-version { font-family: var(--pixel); font-size: var(--fs-xs); color: var(--accent-hi); padding: 2px 8px; border-radius: var(--radius-full); border: 1px solid var(--accent-line); background: var(--accent-wash); }
+.vn-title { margin: 0; font-size: clamp(24px, 3.2vw, 36px); line-height: 1.12; font-weight: 800; color: var(--text); text-wrap: balance; }
+.vn-lead { margin: var(--sp-3) 0 0; max-width: 62ch; color: var(--text-2); line-height: 1.65; }
+.vn-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-5); }
+
+/* Cuenta regresiva */
+.vn-countdown { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-3) var(--sp-5); padding: var(--sp-4) var(--sp-5); border-radius: var(--radius-l); background: var(--well-bg); border: 1px solid var(--border); }
+.vn-cd-head { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.vn-cd-title { display: flex; align-items: center; gap: var(--sp-2); font-weight: 700; color: var(--text); }
+.vn-cd-title svg { width: 18px; height: 18px; color: var(--accent-hi); }
+.vn-cd-date { color: var(--muted); font-size: var(--fs-sm); }
+.vn-cd-units { display: flex; gap: var(--sp-2); }
+.vn-cd-unit { min-width: 66px; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border-2); text-align: center; }
+.vn-cd-num { display: block; font-family: var(--pixel); font-size: 26px; font-weight: 700; line-height: 1.1; color: var(--cream); font-variant-numeric: tabular-nums; }
+.vn-cd-label { font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.vn-countdown.done { justify-content: flex-start; }
+.vn-cd-done { display: flex; align-items: center; gap: var(--sp-3); }
+.vn-cd-done > svg { width: 26px; height: 26px; color: var(--accent-hi); flex-shrink: 0; }
+.vn-cd-done strong { color: var(--text); font-size: var(--fs-lg); }
+.vn-cd-done p { margin: 2px 0 0; color: var(--text-2); }
+
+/* ---------- Secciones ---------- */
+.vn-section { min-width: 0; }
+.vn-section-head { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.vn-section-text { min-width: 0; flex: 1; }
+.vn-section-text h2 { margin: 0; font-size: var(--fs-2xl); font-weight: 700; color: var(--text); }
+.vn-section-text p { margin: 4px 0 0; color: var(--muted); line-height: 1.55; }
+
+/* Funciones */
+/* 8 accesos: 4 columnas, o 2 en pantallas angostas (nunca una fila a medias) */
+.vn-features { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); }
+.vn-feature {
+  display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-4); text-align: left; cursor: pointer; color: inherit; font: inherit;
+  border-radius: var(--radius-l); border: 1px solid var(--border); background: var(--card-bg-flat);
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.vn-feature:hover { border-color: var(--accent-line); background: var(--hover-bg); transform: translateY(-2px); }
+.vn-feature:active { transform: translateY(0); }
+.vn-feature-icon { width: 38px; height: 38px; flex-shrink: 0; display: grid; place-items: center; border-radius: var(--radius); background: var(--accent-wash); border: 1px solid var(--accent-line); color: var(--accent-hi); }
+.vn-feature-icon svg { width: 19px; height: 19px; }
+.vn-feature-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.vn-feature-text strong { color: var(--text); font-weight: 600; }
+.vn-feature-text span { color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; }
+.vn-feature-go { width: 16px; height: 16px; margin-top: 2px; color: var(--muted); flex-shrink: 0; transition: transform var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+.vn-feature:hover .vn-feature-go { color: var(--accent-hi); transform: translateX(3px); }
+
+/* Novedades */
+.vn-news { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+.vn-news-item { position: relative; display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: var(--sp-4); padding: var(--sp-4) var(--sp-5); border-radius: var(--radius-l); border: 1px solid var(--border); background: var(--card-bg-flat); }
+.vn-news-item.current { border-color: var(--accent-line); background: linear-gradient(90deg, var(--accent-wash), transparent 60%), var(--card-bg-flat); }
+.vn-news-tag { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
+.vn-news-ver { font-family: var(--pixel); font-weight: 700; font-size: var(--fs-xl); color: var(--cream); }
+.vn-news-item ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--text-2); line-height: 1.55; }
+.vn-news-item li::marker { color: var(--accent); }
+
+/* ---------- Fondos ---------- */
+.vn-wp-tools { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.vn-wp-search { flex: 1; min-width: 200px; max-width: 360px; }
+.vn-wp-count { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; margin-left: auto; }
+.vn-wp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
+.vn-wp-card {
+  position: relative; aspect-ratio: 16 / 9; padding: 0; overflow: hidden; cursor: pointer; border-radius: var(--radius-l);
+  border: 1px solid var(--border-2); background: var(--surface-2); color: inherit;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.vn-wp-card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--dur-slow) var(--ease-out); }
+.vn-wp-card:hover { border-color: var(--accent-line); box-shadow: var(--shadow-s); transform: translateY(-2px); }
+.vn-wp-card:hover img { transform: scale(1.04); }
+.vn-wp-card:active { transform: translateY(0); }
+.vn-wp-name { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 10px 8px; font-size: var(--fs-sm); font-weight: 600; text-align: left; color: #fff; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.78)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vn-wp-live, .vn-wp-current { position: absolute; top: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--radius-full); font-size: var(--fs-xs); font-weight: 700; }
+.vn-wp-live { left: 8px; color: #fff; background: rgba(0, 0, 0, 0.62); }
+.vn-wp-live svg, .vn-wp-current svg { width: 11px; height: 11px; }
+.vn-wp-current { right: 8px; display: none; background: var(--accent); color: var(--accent-ink); }
+.vn-wp-card.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px var(--accent-glow); }
+.vn-wp-card.current .vn-wp-current { display: inline-flex; }
+.vn-empty { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); padding: var(--sp-6); color: var(--muted); }
+.vn-empty svg { width: 18px; height: 18px; }
+.vn-wp-preview { display: flex; flex-direction: column; gap: var(--sp-3); }
+.vn-wp-media { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius); background: var(--bg-0); display: block; }
+.vn-wp-status { margin: 0; min-height: 1.4em; color: var(--good-text); font-size: var(--fs-sm); }
+.modal-foot .vn-wp-web { margin-right: auto; }
+
+/* ---------- Venus IA ---------- */
+.vn-ai-intro { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-4); }
+.vn-ai-icon { width: 48px; height: 48px; flex-shrink: 0; display: grid; place-items: center; border-radius: var(--radius-l); background: var(--accent-wash); border: 1px solid var(--accent-line); color: var(--accent-hi); }
+.vn-ai-icon svg { width: 24px; height: 24px; }
+.vn-ai-points { list-style: none; margin: var(--sp-4) 0 var(--sp-5); padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-2) var(--sp-4); }
+.vn-ai-points li { display: flex; align-items: flex-start; gap: var(--sp-2); color: var(--text-2); line-height: 1.5; }
+.vn-ai-points svg { width: 16px; height: 16px; margin-top: 3px; color: var(--good); flex-shrink: 0; }
+.vn-loading { display: grid; place-items: center; padding: var(--sp-6); }
+
+/* ---------- Preguntas ---------- */
+.vn-faq-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.vn-faq-item { border-radius: var(--radius-l); border: 1px solid var(--border); background: var(--card-bg-flat); }
+.vn-faq-item[open] { border-color: var(--border-2); }
+.vn-faq-item summary { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); cursor: pointer; list-style: none; font-weight: 600; color: var(--text); border-radius: var(--radius-l); }
+.vn-faq-item summary::-webkit-details-marker { display: none; }
+.vn-faq-item summary > span { flex: 1; }
+.vn-faq-item summary svg { width: 18px; height: 18px; color: var(--muted); transition: transform var(--dur-fast) var(--ease-out); flex-shrink: 0; }
+.vn-faq-item[open] summary svg { transform: rotate(180deg); color: var(--accent-hi); }
+.vn-faq-item summary:hover { background: var(--hover-bg); }
+.vn-faq-item > p { margin: 0; padding: 0 var(--sp-5) var(--sp-4); color: var(--text-2); line-height: 1.65; max-width: 80ch; }
+.vn-faq-item > .btn { margin: 0 var(--sp-5) var(--sp-4); }
+.vn-help { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-3) var(--sp-4); margin-top: var(--sp-4); padding: var(--sp-4) var(--sp-5); border-radius: var(--radius-l); background: var(--well-bg); border: 1px solid var(--border); }
+.vn-help > svg { width: 22px; height: 22px; color: var(--accent-hi); flex-shrink: 0; }
+.vn-help > div { flex: 1; min-width: 200px; }
+.vn-help strong { color: var(--text); }
+.vn-help p { margin: 2px 0 0; color: var(--text-2); font-size: var(--fs-sm); }
+
+.vn-disclaimer { margin: var(--sp-7) 0 0; text-align: center; color: var(--faint); font-size: var(--fs-xs); line-height: 1.6; }
+
+/* ---------- Pantallas angostas ---------- */
+@container venus (max-width: 900px) {
+  .vn-features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container venus (max-width: 720px) {
+  .vn-hero { grid-template-columns: minmax(0, 1fr); justify-items: start; padding: var(--sp-5); }
+  .vn-planet { width: 120px; height: 120px; }
+  .vn-news-item { grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); }
+  .vn-news-tag { flex-direction: row; align-items: center; }
+  .vn-wp-count { margin-left: 0; }
+}
+@container venus (max-width: 460px) {
+  .vn-features { grid-template-columns: minmax(0, 1fr); }
+  .vn-cd-units { width: 100%; }
+  .vn-cd-unit { flex: 1; min-width: 0; }
+  .vn-actions .btn { flex: 1 1 100%; justify-content: center; }
+}

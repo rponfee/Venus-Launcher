@@ -7,6 +7,7 @@ export default {
   group_tools: "도구",
   assistant: "AI 어시스턴트",
   home: "홈",
+  venus: "Venus",
   versions: "버전 및 인스턴스",
   worlds: "월드",
   skins: "스킨",
@@ -18,6 +19,7 @@ export default {
   messages: "메시지",
   stats: "통계",
   performance: "성능",
-  devmode: "개발자 모드",  settings: "설정",
+  devmode: "개발자 모드",
+  settings: "설정",
   welcome: "시작하기",
 };

@@ -7,6 +7,7 @@ export default {
   group_tools: "Инструменты",
   assistant: "ИИ-ассистент",
   home: "Главная",
+  venus: "Venus",
   versions: "Версии и экземпляры",
   worlds: "Миры",
   skins: "Скины",
@@ -18,6 +19,7 @@ export default {
   messages: "Сообщения",
   stats: "Статистика",
   performance: "Производительность",
-  devmode: "Режим разработчика",  settings: "Настройки",
+  devmode: "Режим разработчика",
+  settings: "Настройки",
   welcome: "Приветствие",
 };

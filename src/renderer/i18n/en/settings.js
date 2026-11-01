@@ -63,6 +63,11 @@ export default {
   consoleTitle: 'Open the console when playing',
   consoleSub: 'Shows the live game log every time you launch an instance.',
   perfHint: 'Memory, Java arguments and the game window size are in Performance.',
+  ingameLabel: 'Venus in the game',
+  ingamePack: 'Venus logo and splashes in Minecraft',
+  ingamePackSub: 'Loading screen with the Venus logo, "Venus Launcher" under the game logo and Venus splashes in the menu (1.13 and later). It is applied as a resource pack: yours take priority.',
+  ingameWindow: 'Venus icon and title on the window',
+  ingameWindowSub: 'The game window shows the Venus icon and "· Venus Launcher" at the end of the title.',
   perfGo: 'Go to Performance',
 
   // Account & cloud: Minecraft accounts
