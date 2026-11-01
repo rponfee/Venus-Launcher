@@ -12,8 +12,10 @@ const NOW = Date.UTC(2026, 10, 1, 12, 0, 0);
 // Las carpetas temporales de las pruebas se borran al terminar el proceso (no quedan en %TEMP%). Las uniones de
 // adentro se borran como enlaces (rm no las sigue) y sus destinos son otras carpetas temporales de esta lista.
 const created = [];
+// Con la ruta real (realpath nativo, como el codigo): en GitHub Actions %TEMP% viene con el nombre corto
+// C:\Users\RUNNER~1\... y el realpath nativo lo expande; si no, las rutas esperadas no coinciden.
 function tmpDir(prefix = 'mci-') {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), prefix)));
   created.push(dir);
   return dir;
 }

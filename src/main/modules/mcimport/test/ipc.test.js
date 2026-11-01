@@ -52,7 +52,7 @@ describe('canales de mcimport', () => {
     const scan = await call('mcimport:scan');
     assert.equal(scan.found, true);
     assert.equal(scan.isDefault, true);
-    assert.equal(scan.dir, fs.realpathSync(fx.root));
+    assert.equal(scan.dir, fs.realpathSync.native(fx.root));
     assert.ok(scan.profiles.length >= 4);
     assert.equal(scan.profiles[0].key, undefined, 'solo lo que dibuja el dialogo');
     await assert.rejects(call('mcimport:scan', path.dirname(fx.root)), (err) => err.code === 'notAllowed');

@@ -43,7 +43,7 @@ test('carpeta compartida y carpeta propia: un grupo por carpeta con su contenido
   assert.equal(main.label, '.minecraft');
   assert.equal(main.profileIds.length, 4);
   assert.equal(forge.label, 'profiles/forge');
-  assert.equal(forge.dir, fs.realpathSync(fx.forgeDir));
+  assert.equal(forge.dir, fs.realpathSync.native(fx.forgeDir));
   assert.deepEqual(forge.profileIds, ['o:cccc3333']);
 
   const c = main.content;
@@ -181,7 +181,7 @@ test('carpetas por defecto de cada sistema', () => {
 
 test('marca de importado: el perfil que ya se importo desde esta carpeta', async () => {
   const fx = buildMinecraft();
-  const existing = [{ id: 'fabric-1-21-1', name: 'Fabric 1.21.1', mcimport: { dir: fs.realpathSync(fx.root), profile: 'bbbb2222' } }];
+  const existing = [{ id: 'fabric-1-21-1', name: 'Fabric 1.21.1', mcimport: { dir: fs.realpathSync.native(fx.root), profile: 'bbbb2222' } }];
   const scan = await scanFolder(fx.root, { venusRoot: tmpDir(), manifest: MANIFEST, now: NOW, names, existing, checkLocks: false });
   assert.deepEqual(scan.profiles.find((p) => p.key === 'bbbb2222').imported, { instanceId: 'fabric-1-21-1', name: 'Fabric 1.21.1' });
   assert.equal(scan.profiles.find((p) => p.key === 'aaaa1111').imported, null);
