@@ -1,0 +1,60 @@
+# Compila el mod "Venus Badge" (mod/venus-badge: Fabric + Loom, Java 21), corre sus pruebas y sube los .jar como
+# artefacto "venus-badge-mod". Corre solo al cambiar algo en mod/ (push o pull request), a mano desde la pestaña
+# Actions y desde build.yml, que empaqueta los .jar en el launcher (src/main/modules/ingame/mods) y los publica en la
+# release. Guía: docs/insignia.md.
+name: Mod Venus Badge
+
+on:
+  push:
+    paths:
+      - 'mod/**'
+      - '.github/workflows/mod.yml'
+  pull_request:
+    paths:
+      - 'mod/**'
+      - '.github/workflows/mod.yml'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  mod:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mod/venus-badge
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Valida el gradle-wrapper.jar y guarda la caché de Gradle y de Loom (Minecraft remapeado).
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compilar y probar
+        run: |
+          chmod +x gradlew
+          ./gradlew build --console=plain
+
+      # Nombre fijo por versión de Minecraft: es el que busca src/main/modules/ingame/badgemod.js (BUILDS).
+      - name: Preparar los .jar
+        run: |
+          mkdir -p out
+          for f in build/libs/venus-badge-*+mc*.jar; do
+            case "$f" in *-sources.jar) continue ;; esac
+            mc="${f##*+mc}"; mc="${mc%.jar}"
+            cp "$f" "out/venus-badge-mc${mc}.jar"
+          done
+          ls -l out
+          test -n "$(ls out)"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: venus-badge-mod
+          path: mod/venus-badge/out/*.jar
+          if-no-files-found: error

@@ -15,6 +15,18 @@ const AFTER_LAUNCH = [
   ['hide', 'eyeOff'],
 ];
 
+// Versiones de Minecraft con el mod de la insignia (modules/ingame/badgemod.js, BUILDS)
+const BADGE_VERSIONS = ['1.21', '1.21.1'];
+
+// "1.21 y 1.21.1" en el idioma de la interfaz
+function listFormat(items) {
+  try {
+    return new Intl.ListFormat(locale(), { type: 'conjunction' }).format(items);
+  } catch {
+    return items.join(', ');
+  }
+}
+
 // Nombre del idioma en el idioma actual de la interfaz ("portugués (Brasil)", "Brazilian Portuguese").
 function localName(l) {
   try {
@@ -120,6 +132,43 @@ export function renderGeneral(body, ctx) {
   };
   drawAfter();
 
+  // Insignia de Venus (modules/ingame.js): estado del registro en el servidor debajo del interruptor
+  const badgeNote = h('div', { class: 'cfg-note-slot', 'aria-live': 'polite' });
+  const drawBadge = (st) => {
+    if (!st?.enabled) {
+      mount(badgeNote, st?.state === 'removed' ? note('good', 'check', h('div', {}, t('settings.ingameBadgeRemoved'))) : null);
+      return;
+    }
+    let n;
+    if (!st.bundled) n = note('info', 'info', h('div', {}, t('settings.ingameBadgeMissing')));
+    else if (!st.signedIn)
+      n = note(
+        'info',
+        'info',
+        h('div', {}, t('settings.ingameBadgeSignIn')),
+        h('button', { type: 'button', class: 'btn sm cfg-note-btn', onclick: () => ctx.go('cloud', 'venus') }, icon('cloud'), t('settings.privGoAccount')),
+      );
+    else if (st.state === 'working') n = note('info', 'refresh', h('div', {}, t('settings.ingameBadgeWorking')));
+    else if (st.state === 'ok') n = note('good', 'check', h('div', {}, t('settings.ingameBadgeOk', { name: st.account || '?' })));
+    else if (st.state === 'error') {
+      const key = `settings.ingameBadgeErr_${st.code}`;
+      const text = t(key);
+      n = note('bad', 'alert', h('div', {}, text === key ? t('settings.ingameBadgeErr_server') : text));
+    } else n = note('info', 'info', h('div', {}, t('settings.ingameBadgeIdle')));
+    mount(badgeNote, n);
+  };
+  const readBadge = async () => {
+    try {
+      const st = await api.invoke('ingame:badgeStatus');
+      if (ctx.alive()) drawBadge(st);
+    } catch {
+      /* launcher sin el modulo: sin aviso */
+    }
+  };
+  ctx.onCleanup(api.on('ingame:badgeStatus', () => ctx.alive() && readBadge()));
+  ctx.onCleanup(cloud.on('auth', () => ctx.alive() && readBadge()));
+  readBadge();
+
   mount(
     body,
     sectionHead('general', 'sliders'),
@@ -148,6 +197,15 @@ export function renderGeneral(body, ctx) {
         checked: store.settings?.ingame?.window !== false,
         onChange: (v) => saveSettings({ ingame: { window: v } }),
       }),
+      toggleRow({
+        title: t('settings.ingameBadge'),
+        sub: t('settings.ingameBadgeSub', { versions: listFormat(BADGE_VERSIONS) }),
+        checked: store.settings?.ingame?.badge === true,
+        onChange: async (v) => {
+          if (await saveSettings({ ingame: { badge: v } })) readBadge();
+        },
+      }),
+      badgeNote,
       h(
         'div',
         { class: 'cfg-crosslink' },

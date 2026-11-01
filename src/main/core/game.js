@@ -34,7 +34,8 @@ async function withStoppedInstance(id, operation) {
 const MAX_LOG = 5000;
 
 // Chequeos previos al lanzamiento que registran otros modulos (seguridad, mixins, rendimiento...).
-// Cada funcion recibe { id, instance, resolved, settings, quiet } y puede devolver
+// Cada funcion recibe { id, instance, resolved, settings, quiet, account } (account: la de la partida, con su token;
+// solo ingame.js lo usa, para la insignia) y puede devolver
 // { block: true, message } para impedir el arranque, { warnings: [texto, ...] } para avisar y/o
 // { memory: { min, max } } (MB) para la memoria de esta partida cuando la instancia no tiene memoria propia.
 // `settings` es una copia para esta partida: modificarla (p. ej. settings.memory) no toca los ajustes guardados.
@@ -174,7 +175,7 @@ async function start(id, opts = {}) {
     for (const check of beforeLaunch) {
       let r = null;
       try {
-        r = await check({ id, instance, resolved, settings, quiet });
+        r = await check({ id, instance, resolved, settings, quiet, account });
       } catch (err) {
         console.error('[game] chequeo previo', err);
       }

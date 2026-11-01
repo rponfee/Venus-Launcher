@@ -39,11 +39,22 @@ permissions:
   contents: write # para publicar la release cuando se sube un tag
 
 jobs:
+  # Mod de la insignia de Venus (mod/venus-badge): va empaquetado en el launcher y como archivo de la release.
+  mod:
+    uses: ./.github/workflows/mod.yml
+
   build:
+    needs: mod
     # SignPath solo firma lo que se compiló en runners alojados por GitHub.
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+
+      - name: Bajar el mod de la insignia
+        uses: actions/download-artifact@v7
+        with:
+          name: venus-badge-mod
+          path: src/main/modules/ingame/mods
 
       - uses: actions/setup-node@v7
         with:
@@ -62,7 +73,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { Write-Output '::error title=check.js::Hay errores de sintaxis (ver node scripts/check.js).'; exit 1 }
           node scripts/contracts-check.js
           if ($LASTEXITCODE -ne 0) { Write-Output '::error title=contracts-check.js::Hay canales de la interfaz sin handler.'; exit 1 }
-          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=test-results.tap supabase/functions/payments/tests/payments.test.ts supabase/functions/voice-turn/tests/voice-turn.test.ts src/main/modules/billing/test/client.test.js src/main/modules/support/test/client.test.js "src/main/modules/recap/test/*.test.js" "src/main/modules/skins/test/*.test.js" "src/main/modules/mcimport/test/*.test.js" "src/main/modules/svcstatus/test/*.test.js" "src/main/modules/ingame/test/*.test.js"
+          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=test-results.tap supabase/functions/payments/tests/payments.test.ts supabase/functions/voice-turn/tests/voice-turn.test.ts supabase/functions/badge/tests/badge.test.ts src/main/modules/billing/test/client.test.js src/main/modules/support/test/client.test.js "src/main/modules/recap/test/*.test.js" "src/main/modules/skins/test/*.test.js" "src/main/modules/mcimport/test/*.test.js" "src/main/modules/svcstatus/test/*.test.js" "src/main/modules/ingame/test/*.test.js"
           $code = $LASTEXITCODE
           if ($code -ne 0) { node scripts/ci-annotate.js test-results.tap; exit $code }
 
@@ -156,6 +167,8 @@ jobs:
           $origen = if (Test-Path dist-signed) { 'dist-signed' } else { 'dist' }
           $archivos = @("$origen/VenusLauncher-Setup.exe", "$origen/VenusLauncher-Portable.exe", "$origen/latest.yml")
           if ($origen -eq 'dist') { $archivos += "$origen/VenusLauncher-Setup.exe.blockmap" }
+          # El mod de la insignia (el mismo .jar que va dentro del launcher), para instalarlo a mano o en Modrinth
+          $archivos += (Get-ChildItem src/main/modules/ingame/mods -Filter 'venus-badge-mc*.jar').FullName
           foreach ($a in $archivos) { if (-not (Test-Path $a)) { throw "Falta $a" } }
           $notas = @(
             "Instalador y versión portable de Venus Launcher $version para Windows 10 y 11 (64 bits).",

@@ -88,8 +88,10 @@ async function collect(inst, o) {
     const st = await fsp.stat(path.join(inst.dir, 'saves', w, 'level.dat')).catch(() => null);
     if (st) await walk(path.join(inst.dir, 'saves', w), `saves/${w}`, out, { group: 'worlds', world: w, disabled: true });
   }
-  // El paquete de Venus en el juego (modules/ingame) lo arma el launcher antes de cada partida: no viaja en el modpack.
-  return out.filter((f) => !f.rel.startsWith('resourcepacks/venus-launcher/'));
+  // El paquete de Venus en el juego y el mod de la insignia (modules/ingame) los pone el launcher antes de cada
+  // partida segun los ajustes de cada jugador: no viajan en el modpack.
+  const own = new Set(['mods/venus-badge.jar', 'mods/venus-badge.jar.disabled', 'config/venus-badge.json']);
+  return out.filter((f) => !f.rel.startsWith('resourcepacks/venus-launcher/') && !own.has(f.rel));
 }
 
 function side(v) {

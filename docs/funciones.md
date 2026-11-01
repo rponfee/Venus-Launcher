@@ -55,6 +55,16 @@ Con el juego abierto, la ventana lleva el ícono de Venus y "· Venus Launcher" 
 - Se apaga en **Ajustes → General → Al jugar → Venus en el juego** (las dos cosas por separado); el cambio se aplica la próxima vez que abrís el juego.
 - Las imágenes salen de `scripts/make-ingame-assets.py`.
 
+#### Insignia de Venus
+
+Con **Ajustes → General → Venus en el juego → Insignia de Venus junto a tu nombre** (apagada por defecto), los jugadores que también usan Venus ven el planeta de Venus antes de tu nombre, sobre la cabeza y en la lista de jugadores (Tab), y vos lo ves junto al de ellos. Sirve en cualquier servidor premium, sin plugins.
+
+- Antes de jugar, el launcher instala el mod **Venus Badge** en las instancias **Fabric o Quilt de Minecraft 1.21 y 1.21.1**. Vanilla, Forge, NeoForge y OptiFine no pueden cargar mods de Fabric: ahí no se instala nada y la insignia no se ve. Si cambiás la versión de la instancia, el mod se quita solo.
+- Pide tu **cuenta de Venus** y una **cuenta de Microsoft**: al prenderla (y al jugar, si todavía no estaba) el launcher verifica con Mojang que la cuenta de Minecraft es tuya y la anota en el servidor de Venus. Las cuentas sin conexión no pueden tener insignia. Hasta 5 cuentas de Minecraft por cuenta de Venus.
+- Debajo del interruptor se ve el estado: verificando, listo con el nombre de la cuenta o qué falta (iniciar sesión, cuenta sin multijugador, sin conexión…).
+- Al apagarla se borran tus cuentas del servidor y el mod sale de las instancias la próxima vez que jugás. Si lo desactivás a mano en la lista de mods de una instancia, el launcher lo respeta.
+- El mod no se exporta en los modpacks. Cómo funciona por dentro, qué se manda y cómo se despliega: [insignia.md](insignia.md).
+
 ### Versiones e instancias
 
 Una **instancia** es una instalación independiente de Minecraft, con su versión, su loader y sus propios mods, mundos y ajustes.

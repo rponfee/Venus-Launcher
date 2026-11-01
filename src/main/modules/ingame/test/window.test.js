@@ -47,9 +47,11 @@ test('si PowerShell no se puede abrir, no rompe el lanzamiento', () => {
   assert.equal(r, null);
 });
 
-test('ajustes: los dos vienen prendidos y se apagan por separado', () => {
-  assert.deepEqual(ingame.prefs({}), { pack: true, window: true });
-  assert.deepEqual(ingame.prefs({ ingame: { pack: false } }), { pack: false, window: true });
-  assert.deepEqual(ingame.prefs({ ingame: { window: false } }), { pack: true, window: false });
-  assert.deepEqual(ingame.prefs(null), { pack: true, window: true });
+test('ajustes: paquete y ventana vienen prendidos, la insignia apagada, y se cambian por separado', () => {
+  assert.deepEqual(ingame.prefs({}), { pack: true, window: true, badge: false });
+  assert.deepEqual(ingame.prefs({ ingame: { pack: false } }), { pack: false, window: true, badge: false });
+  assert.deepEqual(ingame.prefs({ ingame: { window: false } }), { pack: true, window: false, badge: false });
+  assert.deepEqual(ingame.prefs(null), { pack: true, window: true, badge: false });
+  assert.deepEqual(ingame.prefs({ ingame: { badge: true } }), { pack: true, window: true, badge: true });
+  assert.deepEqual(ingame.prefs({ ingame: { badge: 'si' } }), { pack: true, window: true, badge: false });
 });
