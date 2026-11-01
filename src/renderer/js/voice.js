@@ -55,6 +55,19 @@ const LEVELS_MS = 80;
 const AWAY_GRACE_MS = 15000;
 const MSG_MAX_AGE = 120000;
 const STUN = { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] };
+
+// Servidores ICE válidos ({ urls: ['turn:…'], username?, credential? }) de app-config o de la Edge Function "voice-turn"
+function iceList(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((x) => x && Array.isArray(x.urls))
+    .map((x) => ({
+      urls: x.urls.filter((u) => typeof u === 'string' && /^(turns?|stun):\S{1,290}$/i.test(u)).slice(0, 8),
+      username: typeof x.username === 'string' && x.username ? x.username : undefined,
+      credential: typeof x.credential === 'string' && x.credential ? x.credential : undefined,
+    }))
+    .filter((x) => x.urls.length);
+}
 const ROOM_COLS = 'id,owner,name,code,is_private,has_password,max_members,is_locked,created_at,last_active';
 const SIGNAL_KINDS = new Set(['desc', 'ice', 'reset', 'bye']);
 
@@ -266,7 +279,12 @@ export class VoiceEngine {
     this.pttDown = false;
     this.pttTimer = null;
     this.capturingKeys = false;
-    this.iceServers = []; // servidores TURN que trae el launcher (core/app-config.js, canal voice:iceServers)
+    this.iceServers = []; // servidores TURN: los del launcher (launcherIce) más los de claves temporales (turnIce)
+    this.launcherIce = []; // fijos en core/app-config.js (canal voice:iceServers)
+    this.turnIce = []; // Edge Function "voice-turn": el servidor de Venus con una clave que vence
+    this.turnUntil = 0;
+    this.turnUser = null;
+    this.turnPending = null;
     this.inviteSeen = new Map();
     this.test = null;
     this.tickTimer = null;
@@ -376,6 +394,13 @@ export class VoiceEngine {
     cloud.on('auth', (session) => {
       const s = this.session;
       if (s && !s.demo && session?.user?.id !== s.userId) this.leaveRoom({ silent: true });
+      // las claves TURN son de cada usuario: al cambiar de cuenta (o salir) se descartan y se piden de nuevo
+      if (session?.user?.id !== this.turnUser) {
+        this.turnIce = [];
+        this.turnUntil = 0;
+        this.setIce();
+        if (session?.user?.id) this.refreshTurn();
+      }
     });
     cloud.on('config', () => {
       if (this.session && !this.session.demo) this.leaveRoom({ silent: true });
@@ -386,14 +411,51 @@ export class VoiceEngine {
     const retry = setInterval(() => {
       if (this.hookSocial() || ++tries > 12) clearInterval(retry);
     }, 5000);
-    // Servidores TURN del launcher (core/app-config.js): sin ellos, solo STUN
+    // Servidores TURN del launcher (core/app-config.js) y, con sesión, el de Venus con claves temporales: sin ninguno, solo STUN
     const ice = api.invoke('voice:iceServers');
     ice
       .then((list) => {
-        this.iceServers = Array.isArray(list) ? list.filter((x) => x && Array.isArray(x.urls) && x.urls.length) : [];
-        this.emit('settings', this.cfg);
+        this.launcherIce = iceList(list);
+        this.setIce();
       })
       .catch(() => {});
+    if (this.signedIn()) this.refreshTurn();
+  }
+
+  setIce() {
+    this.iceServers = [...this.launcherIce, ...this.turnIce];
+    this.emit('settings', this.cfg);
+  }
+
+  // Pide (o renueva una hora antes de que venza) la clave del servidor TURN de Venus. Nunca tira error: si falla,
+  // la voz sigue con lo que haya (STUN alcanza en casi todas las redes) y se vuelve a probar al entrar a una sala.
+  refreshTurn() {
+    if (this.backend || !this.configured() || !this.signedIn()) return Promise.resolve();
+    if (this.turnIce.length && Date.now() < this.turnUntil - 3600e3) return Promise.resolve();
+    if (this.turnPending) return this.turnPending;
+    const userId = this.user?.id || null;
+    this.turnPending = (async () => {
+      try {
+        const { data, error } = await this.client.functions.invoke('voice-turn', { body: {} });
+        if (error) throw error;
+        if (this.user?.id !== userId) return; // cambió la cuenta mientras tanto
+        const list = iceList(data?.iceServers).filter((x) => x.username && x.credential);
+        const until = Date.parse(data?.expiresAt || '');
+        this.turnIce = list.length && Number.isFinite(until) ? list : [];
+        this.turnUntil = this.turnIce.length ? until : 0;
+        this.turnUser = userId;
+        this.setIce();
+      } catch (err) {
+        console.warn('[voice] servidor TURN', err?.message || err);
+        if (Date.now() >= this.turnUntil) {
+          this.turnIce = [];
+          this.setIce();
+        }
+      } finally {
+        this.turnPending = null;
+      }
+    })();
+    return this.turnPending;
   }
 
   hookSocial() {
@@ -1032,6 +1094,8 @@ export class VoiceEngine {
       if (this.session) await this.leaveRoom({ silent: true });
       this.stopMicTest();
       this.setStatus('joining');
+      // la clave TURN tiene que estar vigente antes de armar las conexiones (si tarda, se entra igual con STUN)
+      await Promise.race([this.refreshTurn(), new Promise((r) => setTimeout(r, 4000))]);
       const identity = await createIdentity();
       const sessionId = randomId(20);
       const res = await this.rpc('voice_join', { p_code: code, p_password: opts.password || null, p_session: sessionId, p_key: identity.publicJwk });

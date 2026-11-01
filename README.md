@@ -136,6 +136,7 @@ Electron 44 con JavaScript sin frameworks ni build: proceso principal en CommonJ
 ## Notas
 
 - **Cuentas**: el inicio de sesión de Microsoft usa el flujo de Xbox Live y verifica que la cuenta tenga Minecraft: Java Edition (compra o Game Pass). También se pueden usar cuentas sin conexión, sin cuenta de Microsoft: solo piden un nombre de jugador y sirven para jugar solo, en LAN o en servidores con `online-mode=false`.
+- **Voice Chat**: las llamadas van directo entre los jugadores (WebRTC). Cuando la red no lo permite, o con "Ocultar mi IP", el audio pasa por el servidor TURN de Venus con claves temporales que entrega la Edge Function `voice-turn`: [docs/voice-turn.md](docs/voice-turn.md).
 - **OptiFine** se descarga desde optifine.net. Si lo usás, considerá apoyar a su autor.
 - **Servidores**: crear un servidor requiere aceptar el [EULA de Minecraft](https://aka.ms/MinecraftEULA).
 
@@ -164,6 +165,7 @@ Venus Launcher does not include telemetry or analytics. Features that would cont
 | Use your Venus account (friends, messages, Voice Chat, cloud, shared modpacks, AI features, support) | The Venus Launcher server (Supabase); AI features send your question and the related launcher context (instance, mods, logs) to the AI provider through that server (Anthropic; OpenAI only if enabled there as a fallback) |
 | Use your own Claude Code or Codex in the assistant, or connect an MCP client | Anthropic or OpenAI through your own CLI and account; the MCP client you connect |
 | Check or join a server | That server, and GitHub (public Minecraft protocol list) |
+| Talk in Voice Chat | The other people in the room, directly (peer-to-peer), and Google's public STUN servers to find a route. When a direct connection is not possible, or if you turn on “Hide my IP”, the encrypted audio is relayed through the Venus voice (TURN) server, which cannot listen to it |
 | Buy a Venus AI plan | Mercado Pago or PayPal, in your browser |
 | Play with friends over the internet | The tunnel service you choose (bore, playit.gg or e4mc) or your router (UPnP / NAT-PMP) |
 | Turn on an optional connection | GitHub (updates), Mojang (news), the Venus server and each featured server (status), mc-heads.net (player heads), Discord (Rich Presence) |

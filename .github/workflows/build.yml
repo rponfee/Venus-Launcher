@@ -44,7 +44,7 @@ jobs:
         run: |
           node scripts/check.js
           node scripts/contracts-check.js
-          node --test supabase/functions/payments/tests/payments.test.ts src/main/modules/billing/test/client.test.js src/main/modules/support/test/client.test.js
+          node --test supabase/functions/payments/tests/payments.test.ts supabase/functions/voice-turn/tests/voice-turn.test.ts src/main/modules/billing/test/client.test.js src/main/modules/support/test/client.test.js
 
       - name: Compilar instalador y versión portable
         run: npx electron-builder --win --x64 --publish never
