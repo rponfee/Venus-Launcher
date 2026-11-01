@@ -1,11 +1,12 @@
-"""Agrega fondos a la página de fondos (web/fondos.html) sin repetir los que ya están.
+"""Agrega fondos a la galería sin repetir los que ya están: la del launcher y la de la página web.
 
-Desde la 1.0.15 los fondos no vienen dentro del launcher: viven en web/fondos/ (fuera del repositorio, porque son de
-terceros), se suben con la página y cada usuario baja el que quiere y lo elige con "Imagen o video".
+Los originales viven en web/fondos/ (con manifest.json): de ahí sale la página web/fondos.html y una copia para la
+galería de Apariencia del launcher (src/renderer/assets/wallpapers/ y src/renderer/js/wallpapers.js). Cada vez que
+corre, las dos quedan iguales.
 
 Uso (desde cualquier carpeta; necesita Pillow):
     python scripts/import-wallpapers.py <carpeta o .zip> [<carpeta o .zip> ...]
-    python scripts/import-wallpapers.py --catalog     (solo rearma web/fondos/lista.js)
+    python scripts/import-wallpapers.py --catalog     (solo rearma las dos listas y copia los fondos al launcher)
 
 - Imágenes (.png .jpg .jpeg .webp): WebP de hasta 2560 x 1440 y una miniatura de 320 x 180.
 - Videos (.mp4 .webm .mov .mkv): fondos animados en H.264 de hasta 1920 x 1080 y 30 cuadros por segundo, sin
@@ -40,6 +41,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "web/fondos"
 MANIFEST = ASSETS / "manifest.json"
 CATALOG = ASSETS / "lista.js"
+APP_ASSETS = ROOT / "src/renderer/assets/wallpapers"
+APP_CATALOG = ROOT / "src/renderer/js/wallpapers.js"
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp"}
 VIDEO_EXT = {".mp4", ".webm", ".mov", ".mkv"}
 SAME = 10  # bits distintos (de 256) hasta los que dos fondos se consideran el mismo
@@ -285,10 +288,46 @@ def write_catalog(data: dict) -> None:
         encoding="utf-8", newline="\n")
 
 
+def write_app(data: dict) -> None:
+    """La misma galería adentro del launcher (Apariencia -> Fondo -> Galería): copia los archivos y arma wallpapers.js."""
+    APP_ASSETS.mkdir(parents=True, exist_ok=True)
+    ordered = ([i for i in data["wallpapers"] if i["kind"] == "video"]
+               + [i for i in data["wallpapers"] if i["kind"] == "image"])
+    keep = {"manifest.json"}
+    catalog = []
+    for item in ordered:
+        video = item["kind"] == "video"
+        files = (f"{item['id']}.{'mp4' if video else 'webp'}", f"{item['id']}-thumb.webp")
+        for name in files:
+            src, dst = ASSETS / name, APP_ASSETS / name
+            if not dst.exists() or dst.stat().st_size != src.stat().st_size:
+                shutil.copy2(src, dst)
+            keep.add(name)
+        entry = {"id": item["id"], "name": item.get("name") or f"Fondo {item['id'].split('-')[-1]}",
+                 "src": f"assets/wallpapers/{files[0]}", "thumb": f"assets/wallpapers/{files[1]}"}
+        if video:
+            entry["video"] = True
+        catalog.append(entry)
+    for old in APP_ASSETS.iterdir():
+        if old.name not in keep:
+            old.unlink()
+    shutil.copy2(MANIFEST, APP_ASSETS / "manifest.json")
+    APP_CATALOG.write_text(
+        "// Generado por scripts/import-wallpapers.py (no editar a mano: los datos están en web/fondos/manifest.json).\n"
+        "// Las rutas son relativas a renderer/index.html y funcionan dentro del launcher empaquetado.\n"
+        "// Los fondos con video: true son animados (MP4); van primero en la galería.\n"
+        f"export const WALLPAPERS = {json.dumps(catalog, ensure_ascii=False, indent=2)};\n\n"
+        "const WALLPAPERS_BY_ID = new Map(WALLPAPERS.map(wallpaper => [wallpaper.id, wallpaper]));\n\n"
+        "export function getWallpaper(id) {\n"
+        "  return WALLPAPERS_BY_ID.get(id) || null;\n"
+        "}\n",
+        encoding="utf-8", newline="\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("inputs", nargs="*", help="carpetas o .zip con imágenes y videos")
-    parser.add_argument("--catalog", action="store_true", help="solo rearmar wallpapers.js")
+    parser.add_argument("--catalog", action="store_true", help="solo rearmar las listas y copiar los fondos al launcher")
     args = parser.parse_args()
     if not args.inputs and not args.catalog:
         parser.error("indicá al menos una carpeta o .zip")
@@ -319,6 +358,7 @@ def main() -> None:
 
     MANIFEST.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     write_catalog(data)
+    write_app(data)
     kinds = [i["kind"] for i in data["wallpapers"]]
     print(f"Galería: {kinds.count('video')} animados y {kinds.count('image')} imágenes. "
           f"Repetidos salteados: {len(data['duplicates'])}. Rechazados: {len(data['rejected'])}.")

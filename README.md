@@ -32,7 +32,7 @@ Agrupadas como en el menú del launcher.
   - Compartir con un código `PACK-XXXXXX` o en grupo (se actualiza solo para todos), nube de mundos y configuraciones, y "Mundo con amigos" para abrir tu mundo por internet.
   - Servidor espejo (un servidor local con el mismo loader y mods), buscar actualizaciones de mods con changelog e historial para volver atrás, análisis de seguridad contra malware (Fractureiser y otros), informe de mixins (conflictos entre mods), traducción de mods con IA, Optimizar (memoria y mods de rendimiento), diagnóstico de crashes y reparar.
 - **Mundos**: todos los mundos de todas las instancias con línea de tiempo de partidas y logros, estadísticas, copias de seguridad (restaurar o recuperar mundos borrados), copiar a otra instancia o a un servidor local, mapa del mundo y la pestaña **Capturas y clips** con opción de compartir por link.
-- **Skins**: tu skin en 3D, una biblioteca con tus propios PNG y el cambio de skin y capa de tu cuenta de Microsoft con la API oficial (sin skins de terceros incluidas).
+- **Skins**: tu skin en 3D, un catálogo de 4.311 skins (Estéticas, Kawaii y Lindas) con búsqueda y favoritas, una biblioteca con tus propios PNG y el cambio de skin y capa de tu cuenta de Microsoft con la API oficial.
 
 ### Contenido
 
@@ -59,7 +59,7 @@ Abrilo desde el menú, con el botón **Asistente** de la barra de título o con 
 
 ### Ajustes
 
-General (idioma y qué hace el launcher al jugar), Apariencia (temas planetarios, color propio, tu propia imagen o video de fondo, con un botón a la página de fondos de Venus para bajar imágenes y fondos animados, música y marca propia), Accesibilidad (daltonismo, alto contraste, escala, movimiento reducido, control), Cuenta y nube (cuentas de Minecraft y cuenta de Venus), Privacidad (con Discord Rich Presence), Inteligencia artificial (con Claude y ChatGPT por MCP, y tu Claude Code o tu Codex como motor del Asistente), Plan (planes, compra y saldo de Venus IA), Java, Descargas y almacenamiento (límite de velocidad, modo sin conexión, uso del disco, unificar archivos repetidos y limpieza), Datos (carpeta, caché y modo portable) y Acerca de.
+General (idioma y qué hace el launcher al jugar), Apariencia (temas planetarios, color propio, galería de 99 fondos con 16 animados, tu propia imagen o video, la página de fondos para bajarlos, música y marca propia), Accesibilidad (daltonismo, alto contraste, escala, movimiento reducido, control), Cuenta y nube (cuentas de Minecraft y cuenta de Venus), Privacidad (con Discord Rich Presence), Inteligencia artificial (con Claude y ChatGPT por MCP, y tu Claude Code o tu Codex como motor del Asistente), Plan (planes, compra y saldo de Venus IA), Java, Descargas y almacenamiento (límite de velocidad, modo sin conexión, uso del disco, unificar archivos repetidos y limpieza), Datos (carpeta, caché y modo portable) y Acerca de.
 
 ### En todo el launcher
 
@@ -94,7 +94,7 @@ npm run dist:dir     # solo la carpeta sin empaquetar (dist/win-unpacked)
 | `node scripts/check.js [carpeta-o-archivo]` | Chequeo de sintaxis sin abrir Electron (proceso principal como CommonJS e interfaz como módulos ES). Tiene que dar 0 errores. |
 | `node scripts/i18n-check.js [idioma...]` · `--summary` | Compara cada idioma contra el español: archivos y claves faltantes, claves sobrantes y `{variables}` distintas. |
 | `node scripts/contracts-check.js` | Cruza los canales que usa la interfaz con los que registra el proceso principal: tiene que dar 0 "sin handler". También lista los canales que nadie usa y los registrados dos veces. |
-| `python scripts/import-wallpapers.py <carpeta o .zip>` | Agrega imágenes y videos a la página de fondos (`web/fondos/`, fuera del repositorio) sin repetir los que ya están (compara un hash perceptual). Convierte las imágenes a WebP y los videos a MP4 1080p sin audio (con el ffmpeg de `imageio-ffmpeg` o del PATH) y rearma `web/fondos/lista.js`, que lee `web/fondos.html`. |
+| `python scripts/import-wallpapers.py <carpeta o .zip>` | Agrega imágenes y videos a la galería de fondos (los originales en `web/fondos/`, fuera del repositorio, y una copia en `src/renderer/assets/wallpapers/` para el launcher) sin repetir los que ya están (compara un hash perceptual). Convierte las imágenes a WebP y los videos a MP4 1080p sin audio (con el ffmpeg de `imageio-ffmpeg` o del PATH) y rearma `web/fondos/lista.js`, que lee `web/fondos.html`. |
 | `scripts/devshot.js` | Capturas automáticas de las páginas y su consola, con una carpeta de datos temporal (ejemplo abajo; detalles en [docs/arquitectura.md](docs/arquitectura.md#9-cómo-verificar)). La ventana se abre sin robar el foco. |
 
 Ejemplo de `devshot` en PowerShell (las capturas y `console.log` quedan en la carpeta de `VENUS_DEVSHOT`):
@@ -181,4 +181,4 @@ Each of those services has its own privacy policy.
 
 [MIT](LICENSE). Venus Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Synergies AB.
 
-El launcher no trae fondos de terceros. Los fondos de la página web (`web/fondos/`, que no está en el repositorio) son de sus autores y de los dueños de cada personaje o marca: no están cubiertos por la licencia MIT. El origen de cada uno está en `web/fondos/manifest.json`.
+Los fondos de la galería (`src/renderer/assets/wallpapers/` y la página `web/fondos/`) y las skins del catálogo (`src/renderer/assets/skins/`) son de sus autores y de los dueños de cada personaje o marca: no están cubiertos por la licencia MIT. El origen de cada uno está en `web/fondos/manifest.json`.

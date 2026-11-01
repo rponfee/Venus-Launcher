@@ -35,7 +35,7 @@ export default {
   previewLink: "링크",
   previewSwitch: "예시 스위치",
   panelBackground: "배경",
-  panelBackgroundSub: "Venus의 별 또는 내 이미지나 동영상을 선택하세요.",
+  panelBackgroundSub: "갤러리 배경 화면, Venus의 별 또는 내 이미지나 동영상을 선택하세요.",
   background: "배경 유형",
   bgStars: "별",
   bgImage: "이미지 또는 동영상",

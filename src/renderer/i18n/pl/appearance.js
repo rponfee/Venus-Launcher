@@ -35,7 +35,7 @@ export default {
   previewLink: "Link",
   previewSwitch: "Przykładowy przełącznik",
   panelBackground: "Tło",
-  panelBackgroundSub: "Wybierz gwiazdy Venus albo własny obraz lub wideo.",
+  panelBackgroundSub: "Wybierz tapetę z galerii, gwiazdy Venus albo własny obraz lub wideo.",
   background: "Typ tła",
   bgStars: "Gwiazdy",
   bgImage: "Obraz lub wideo",

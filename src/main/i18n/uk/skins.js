@@ -37,4 +37,8 @@ module.exports = {
   textureMissing: 'У Minecraft більше немає цієї текстури.',
   textureUnavailable: 'Не вдалося завантажити текстуру з Minecraft.',
   textureInvalid: 'Текстура, яку повернув Minecraft, не є коректним зображенням.',
+  // Catálogo
+  catalogUnavailable: 'Не вдалося завантажити каталог скінів. Перевстановіть Venus Launcher, щоб відновити його файли.',
+  catalogNotFound: 'Цього скіна більше немає в каталозі.',
+  catalogDamaged: 'Файл цього скіна з каталогу відсутній або пошкоджений. Перевстановіть Venus Launcher, щоб відновити його.',
 };

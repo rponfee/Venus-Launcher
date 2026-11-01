@@ -37,4 +37,8 @@ module.exports = {
   textureMissing: 'Minecraft no longer has that texture.',
   textureUnavailable: 'The texture could not be downloaded from Minecraft.',
   textureInvalid: 'The texture Minecraft returned is not a valid image.',
+  // Catálogo
+  catalogUnavailable: 'The skin catalog could not be loaded. Reinstall Venus Launcher to restore its files.',
+  catalogNotFound: 'That skin is no longer in the catalog.',
+  catalogDamaged: 'The file of this catalog skin is missing or damaged. Reinstall Venus Launcher to restore it.',
 };

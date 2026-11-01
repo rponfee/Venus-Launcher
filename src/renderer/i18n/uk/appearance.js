@@ -35,7 +35,7 @@ export default {
   previewLink: "Посилання",
   previewSwitch: "Приклад перемикача",
   panelBackground: "Тло",
-  panelBackgroundSub: "Виберіть зірки Venus або власне зображення чи відео.",
+  panelBackgroundSub: "Виберіть шпалери з галереї, зірки Venus або власне зображення чи відео.",
   background: "Тип тла",
   bgStars: "Зірки",
   bgImage: "Зображення або відео",

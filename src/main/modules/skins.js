@@ -1,9 +1,10 @@
 'use strict';
-// Skins: vista previa en 3D, biblioteca local de PNG propios del jugador y cambio de skin y capa en la
-// cuenta de Microsoft con la API oficial de Minecraft Services. La logica esta en skins/ (sin Electron,
-// con pruebas en skins/test/). No trae skins ni capas de terceros: cada jugador usa las suyas.
+// Skins: vista previa en 3D, biblioteca local de PNG propios del jugador, catalogo de skins incluido con el
+// launcher (assets/skins, solo lectura) y cambio de skin y capa en la cuenta de Microsoft con la API oficial
+// de Minecraft Services. La logica esta en skins/ (sin Electron, con pruebas en skins/test/).
 // Canales: skins:account, :profile, :texture, :library, :add, :addData, :rename, :setVariant, :remove,
-//          :export, :saveCurrent, :apply, :reset, :cape
+//          :export, :saveCurrent, :apply, :reset, :cape, :catalog, :catalogFavorite, :catalogSave,
+//          :catalogApply, :catalogExport
 // Errores con err.code 'skins:<codigo>' (sessionExpired, offline, rateLimited, forbidden, network...).
 const fsp = require('fs/promises');
 const path = require('path');
@@ -13,6 +14,8 @@ const { sanitizeFileName } = require('../core/util');
 const { validSegment } = require('./packs/safety');
 
 const MAX_PICK = 20; // archivos por vez
+// Catalogo incluido (tambien dentro de app.asar): catalog.json + <categoria>/<archivo>.png
+const CATALOG_DIR = path.resolve(__dirname, '../../renderer/assets/skins');
 
 function fail(code, vars) {
   const err = new Error(t(`skins.${code}`, vars));
@@ -54,10 +57,12 @@ function getService() {
     api = fake.api;
     console.warn('[skins] Modo de capturas (VENUS_SKINS_FAKE=1): cuenta y API de ejemplo, sin red.');
   }
+  const catalog = require('./skins/catalog').createCatalog({ dir: CATALOG_DIR, favoritesFile: paths.data('skin-favorites.json'), fail });
   service = createSkinsService({
     accounts,
     api,
     library,
+    catalog,
     fail,
     t,
     isOffline: () => {
@@ -73,6 +78,8 @@ function getService() {
 
 const plain = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? o : {});
 const accountId = (v) => (typeof v === 'string' && v.length <= 80 ? v : '');
+const catalogId = (v) => (typeof v === 'string' && v.length <= 100 ? v : '');
+const variantArg = (v) => (v === 'classic' || v === 'slim' ? v : undefined);
 
 function register({ handle, getWindow }) {
   const win = () => {
@@ -134,11 +141,10 @@ function register({ handle, getWindow }) {
   handle('skins:setVariant', (id, variant) => getService().setVariant(id, variant));
   handle('skins:remove', (id) => getService().remove(id));
 
-  // Guardar una copia del PNG donde elija el jugador. null si se cancela.
-  handle('skins:export', async (id) => {
-    const { item, bytes } = await getService().read(id);
+  // Guardar una copia del PNG donde elija el jugador (Descargas por defecto). null si se cancela.
+  async function savePng(name, bytes) {
     const { dialog, app } = require('electron');
-    let base = sanitizeFileName(item.name);
+    let base = sanitizeFileName(name);
     // Sin nombre o con un nombre que Windows no deja usar (CON, NUL, COM1...): "skin.png"
     if (!base || base === 'sin-nombre' || !validSegment(`${base}.png`)) base = 'skin';
     const opts = {
@@ -157,12 +163,28 @@ function register({ handle, getWindow }) {
       throw fail('exportFailed');
     }
     return { path: dest, name: path.basename(dest) };
+  }
+
+  handle('skins:export', async (id) => {
+    const { item, bytes } = await getService().read(id);
+    return savePng(item.name, bytes);
   });
 
   handle('skins:saveCurrent', (id) => getService().saveCurrent(accountId(id)));
   handle('skins:apply', (libraryId, id, variant) => getService().apply(libraryId, accountId(id), variant));
   handle('skins:reset', (id) => getService().reset(accountId(id)));
   handle('skins:cape', (capeId, id) => getService().cape(capeId === null || capeId === undefined ? null : capeId, accountId(id)));
+
+  // Catalogo: { query, category, model, onlyFavorites, offset, limit } -> { items, total, offset, limit,
+  // categories, favoriteCount, catalogTotal }. Las imagenes van como data: (ya revisadas).
+  handle('skins:catalog', (opts) => getService().catalog(plain(opts)));
+  handle('skins:catalogFavorite', (id, enabled) => getService().catalogFavorite(catalogId(id), enabled === true));
+  handle('skins:catalogSave', (id, variant) => getService().catalogSave(catalogId(id), variantArg(variant)));
+  handle('skins:catalogApply', (id, accId, variant) => getService().catalogApply(catalogId(id), accountId(accId), variantArg(variant)));
+  handle('skins:catalogExport', async (id) => {
+    const { item, bytes } = await getService().catalogRead(catalogId(id));
+    return savePng(item.name, bytes);
+  });
 }
 
 module.exports = { register };

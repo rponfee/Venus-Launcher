@@ -37,4 +37,8 @@ module.exports = {
   textureMissing: 'Minecraftにこのテクスチャはもうありません。',
   textureUnavailable: 'Minecraftからテクスチャをダウンロードできませんでした。',
   textureInvalid: 'Minecraftから返されたテクスチャは有効な画像ではありません。',
+  // Catálogo
+  catalogUnavailable: 'スキンカタログを読み込めませんでした。Venus Launcherを再インストールしてファイルを復元してください。',
+  catalogNotFound: 'このスキンはもうカタログにありません。',
+  catalogDamaged: 'このカタログスキンのファイルが見つからないか、壊れています。Venus Launcherを再インストールして復元してください。',
 };

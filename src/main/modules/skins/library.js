@@ -10,6 +10,7 @@ const { resolveInside, writeFileAtomic } = require('../packs/safety');
 
 const ID = /^[a-z0-9]{8,24}$/;
 const VARIANTS = new Set(['classic', 'slim']);
+const SOURCES = new Set(['file', 'account', 'catalog']); // de donde salio la copia
 const NAME_MAX = 40;
 const MAX_ITEMS = 100;
 const MAX_BYTES = 64 * 1024;
@@ -51,7 +52,7 @@ function validItem(it, seen) {
     pixelHash: typeof it.pixelHash === 'string' && /^[0-9a-f]{40}$/.test(it.pixelHash) ? it.pixelHash : null,
     addedAt: num(it.addedAt),
     updatedAt: num(it.updatedAt),
-    source: it.source === 'account' ? 'account' : 'file',
+    source: SOURCES.has(it.source) ? it.source : 'file',
   };
 }
 
@@ -163,7 +164,7 @@ function createLibrary({ dir, fail, trash = null, now = Date.now, makeId = newId
             pixelHash,
             addedAt: at,
             updatedAt: at,
-            source: source === 'account' ? 'account' : 'file',
+            source: SOURCES.has(source) ? source : 'file',
           };
           index.items.unshift(item);
           return { item: publicItem(item), duplicate: false };

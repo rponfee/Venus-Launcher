@@ -33,7 +33,7 @@ export default {
 
   // Fondo
   panelBackground: 'Fondo',
-  panelBackgroundSub: 'Elegí las estrellas de Venus o tu propia imagen o video.',
+  panelBackgroundSub: 'Elegí un fondo de la galería, las estrellas de Venus o tu propia imagen o video.',
   background: 'Tipo de fondo',
   bgStars: 'Estrellas',
   bgGallery: 'Galería',

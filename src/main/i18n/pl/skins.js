@@ -37,4 +37,8 @@ module.exports = {
   textureMissing: 'Minecraft nie ma już tej tekstury.',
   textureUnavailable: 'Nie udało się pobrać tekstury z Minecrafta.',
   textureInvalid: 'Tekstura zwrócona przez Minecrafta nie jest prawidłowym obrazem.',
+  // Catálogo
+  catalogUnavailable: 'Nie udało się wczytać katalogu skórek. Zainstaluj ponownie Venus Launcher, aby przywrócić pliki.',
+  catalogNotFound: 'Tej skórki nie ma już w katalogu.',
+  catalogDamaged: 'Plik tej skórki z katalogu nie istnieje lub jest uszkodzony. Zainstaluj ponownie Venus Launcher, aby go przywrócić.',
 };

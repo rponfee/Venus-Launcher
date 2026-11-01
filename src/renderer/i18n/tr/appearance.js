@@ -35,7 +35,7 @@ export default {
   previewLink: "Bir bağlantı",
   previewSwitch: "Örnek anahtar",
   panelBackground: "Arka plan",
-  panelBackgroundSub: "Venus’un yıldızlarını veya kendi resmini ya da videonu seç.",
+  panelBackgroundSub: "Galeriden bir duvar kâğıdı, Venus’un yıldızlarını veya kendi resmini ya da videonu seç.",
   background: "Arka plan türü",
   bgStars: "Yıldızlar",
   bgImage: "Resim veya video",

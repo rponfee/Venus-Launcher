@@ -1,7 +1,8 @@
-// Skins: vista previa en 3D de la skin de tu cuenta o de las de tu biblioteca (PNG propios), y cambio de
-// skin y capa en tu cuenta de Microsoft con la API oficial de Minecraft Services. Ruta: #/skins
-// Con una cuenta sin conexion (o sin cuenta) la vista previa y la biblioteca funcionan igual, sin red.
-// Las texturas de la cuenta llegan como data: desde el proceso principal (skins:texture).
+// Skins: vista previa en 3D de la skin de tu cuenta, de las de tu biblioteca (PNG propios) o de las del
+// catalogo incluido con el launcher, y cambio de skin y capa en tu cuenta de Microsoft con la API oficial
+// de Minecraft Services. Ruta: #/skins
+// Con una cuenta sin conexion (o sin cuenta) la vista previa, la biblioteca y el catalogo funcionan igual,
+// sin red. Las texturas de la cuenta llegan como data: desde el proceso principal (skins:texture).
 import { h, icon, mount, confirmDialog, promptDialog, toast, ok, fail, setBusy, skeleton, emptyState, sectionTitle, fmtDate, reducedMotion } from '../ui.js';
 import { api, store } from '../store.js';
 import { t } from '../i18n.js';
@@ -9,8 +10,9 @@ import { navigate, openAccounts } from '../app.js';
 import { createViewer } from './skins/viewer.js';
 import { loadImage, normalizeSkin, normalizeCape, mannequin } from './skins/texture.js';
 import { variantLabel, skinThumb, headThumb, capeThumb, confirmChange, readDropped, problemOf } from './skins/parts.js';
+import { createCatalogView, memory as catMem, catalogKey, isCatalogKey, catalogVariant, setCatalogVariant, catalogNorm, ensureNorm, catalogMeta, categoryLabel, fmtCount } from './skins/catalog.js';
 
-let lastPick = null; // ultima skin elegida: se recuerda al volver a la pagina
+let lastPick = null; // ultima skin elegida ('account', un id de la biblioteca o 'cat:<id>'): se recuerda al volver
 
 export default {
   ns: ['skins'],
@@ -32,7 +34,7 @@ export default {
       accountSkinState: 'none', // 'none' | 'loading' | 'ready' | 'error'
       capes: new Map(), // id -> canvas | 'loading' | 'error'
       norm: new Map(), // id de la biblioteca -> { key, canvas, legacy } o { key, error }
-      busy: null, // cambio en curso: 'apply', 'reset', 'save', 'cape:<id>'
+      busy: null, // cambio en curso: 'apply', 'reset', 'save', 'catalogSave', 'cape:<id>'
     };
     const blank = mannequin();
     let shown = null;
@@ -42,6 +44,9 @@ export default {
     let focusAfter = null; // control que recupera el foco cuando termina un cambio (mientras tanto queda deshabilitado)
     let accountsChanged = false; // las cuentas cambiaron durante un cambio en curso: se vuelve a leer al terminar
     let reloads = 0; // recargas seguidas por "la cuenta cambio" (para no quedar en un ciclo)
+    let detailVisible = true; // el boton Usar de la tarjeta de detalle se ve (si no, el pie del visor lo repite)
+    let detailObserver = null;
+    let watchedApply = null;
 
     // ---------- Encabezado y vista previa ----------
     const refreshBtn = h('button', { class: 'icon-btn', type: 'button', title: t('skins.refresh'), 'aria-label': t('skins.refresh'), onclick: () => refreshAll() }, icon('refresh'));
@@ -69,19 +74,38 @@ export default {
       h('div', { class: 'sk-viewbar-end' }, rotL, rotR, capeBtn, pauseBtn),
     );
     barReady = true;
+    // Pie del visor: que skin se ve y, si la tarjeta de detalle quedo fuera de la vista, el boton Usar
+    const caption = h('div', { class: 'sk-caption', hidden: true });
     const stageCard = h(
       'section',
       { class: 'card sk-stage-card', 'aria-label': t('skins.previewTitle') },
       h('div', { class: 'sk-viewer-wrap' }, viewer.el, viewerStatus),
       viewBar,
       h('p', { class: 'sk-hint', id: 'sk-viewer-hint' }, t(viewer.has3d ? 'skins.viewerHint' : 'skins.viewerHintFlat')),
+      caption,
     );
 
     const accountCard = h('section', { class: 'card sk-account', 'aria-label': t('skins.accountTitle') });
     const detailCard = h('section', { class: 'card sk-detail', 'aria-labelledby': 'sk-detail-title' });
     const libCount = h('span', { class: 'sk-count' });
     const libraryHost = h('div', { class: 'sk-library' });
-    const libSection = h('section', { class: 'sk-section', 'aria-label': t('skins.libraryTitle') }, sectionTitle(t('skins.libraryTitle'), libCount), libraryHost);
+    // Pestanas: Mi biblioteca y Catalogo (con la cantidad de cada una)
+    const libTabCount = h('span', { class: 'count' });
+    const catTabCount = h('span', { class: 'count' });
+    const tabButton = (tab, ic, label, count) =>
+      h('button', { class: 'tab', type: 'button', role: 'tab', id: `sk-tab-${tab}`, 'aria-controls': `sk-panel-${tab}`, dataset: { skFocus: `tab:${tab}` }, onclick: () => setTab(tab) }, icon(ic), h('span', {}, label), count);
+    const tabLib = tabButton('library', 'folder', t('skins.libraryTitle'), libTabCount);
+    const tabCat = tabButton('catalog', 'grid', t('skins.catalogTab'), catTabCount);
+    const cat = createCatalogView({ selectedKey: () => S.selected, inUse: (it) => inUse(it), onPick: (it) => pick(catalogKey(it.id)), onChange: () => drawAll() });
+    const libPanel = h('div', { class: 'sk-panel', role: 'tabpanel', id: 'sk-panel-library', 'aria-labelledby': 'sk-tab-library' }, libraryHost);
+    const catPanel = h('div', { class: 'sk-panel', role: 'tabpanel', id: 'sk-panel-catalog', 'aria-labelledby': 'sk-tab-catalog' }, cat.el);
+    const libSection = h(
+      'section',
+      { class: 'sk-section sk-browse', 'aria-label': t('skins.browseLabel') },
+      h('div', { class: 'sk-browse-head' }, h('div', { class: 'tabs sk-tabs', role: 'tablist', 'aria-label': t('skins.browseLabel'), onkeydown: onTabKey }, tabLib, tabCat), libCount),
+      libPanel,
+      catPanel,
+    );
     const capesHost = h('div', { class: 'sk-capes-host' });
     const capesSection = h('section', { class: 'sk-section', 'aria-label': t('skins.capesTitle'), hidden: true }, sectionTitle(t('skins.capesTitle')), h('p', { class: 'sk-section-sub' }, t('skins.capesSub')), capesHost);
 
@@ -140,6 +164,9 @@ export default {
     const inUse = (it) => Boolean(it?.pixelHash && S.accountSkin?.pixelHash && it.pixelHash === S.accountSkin.pixelHash);
     const accountTile = () => isMsa() && (S.profileLoading || S.profile === undefined || S.accountSkinState !== 'none');
     const currentInLibrary = () => (S.library || []).some((i) => inUse(i));
+    // Skin del catalogo elegida (se guarda entera: puede no estar en los resultados que se ven)
+    const catItem = () => (isCatalogKey(S.selected) && catMem.pick && catalogKey(catMem.pick.id) === S.selected ? catMem.pick : null);
+    const inLibrary = (it) => Boolean(it?.pixelHash) && (S.library || []).some((i) => i.pixelHash === it.pixelHash);
 
     // Por que no se puede cambiar la skin de la cuenta ahora (null = se puede). Mientras no se conoce la skin
     // actual tampoco: antes de reemplazarla hay que poder ofrecer guardar una copia.
@@ -155,6 +182,18 @@ export default {
       return null;
     }
 
+    // Lo mismo para una skin en particular: ademas, que el archivo este bien y que no sea ya la de la cuenta.
+    function libReason(it) {
+      const n = S.norm.get(it.id);
+      if (it.broken || n?.error) return t('skins.reasonDamaged');
+      return blockReason() || (inUse(it) && it.variant === S.profile?.skin?.variant ? t('skins.reasonInUse') : null);
+    }
+
+    function catReason(it) {
+      if (it.broken || catalogNorm(it)?.error) return t('skins.reasonCatalogDamaged');
+      return blockReason() || (inUse(it) && catalogVariant(it) === S.profile?.skin?.variant ? t('skins.reasonInUse') : null);
+    }
+
     // Por defecto se ve la skin de la cuenta; si no hay, la primera de la biblioteca.
     function ensureSelection() {
       const lib = S.library || [];
@@ -168,6 +207,8 @@ export default {
         return;
       }
       if (S.selected === 'account' && accountTile()) return;
+      // La skin del catalogo elegida se conserva aunque cambien los filtros
+      if (isCatalogKey(S.selected) && catItem()) return;
       // La biblioteca todavia no llego: se conserva la skin recordada hasta saber si sigue estando
       if (S.selected && S.selected !== 'account' && S.library === undefined) return;
       if (S.selected && S.selected !== 'account' && itemOf(S.selected)) return;
@@ -182,6 +223,41 @@ export default {
       S.selected = id;
       lastPick = id;
       drawAll();
+    }
+
+    // ---------- Pestanas ----------
+    function setTab(tab, { focus = false } = {}) {
+      catMem.tab = tab === 'catalog' ? 'catalog' : 'library';
+      drawTabs();
+      if (catMem.tab === 'catalog') cat.activate();
+      if (focus) (catMem.tab === 'catalog' ? tabCat : tabLib).focus();
+    }
+
+    function drawTabs() {
+      const onCat = catMem.tab === 'catalog';
+      for (const [b, on] of [
+        [tabLib, !onCat],
+        [tabCat, onCat],
+      ]) {
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', String(on));
+        b.tabIndex = on ? 0 : -1;
+      }
+      libPanel.hidden = onCat;
+      catPanel.hidden = !onCat;
+      libCount.hidden = onCat;
+      libTabCount.textContent = S.library ? fmtCount(S.library.length) : '';
+      catTabCount.textContent = catMem.catalogTotal === null ? '' : fmtCount(catMem.catalogTotal);
+    }
+
+    // Flechas, Inicio y Fin entre las pestanas (se activan al llegar)
+    function onTabKey(e) {
+      const order = ['library', 'catalog'];
+      const i = order.indexOf(catMem.tab);
+      const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: order.length - 1 }[e.key];
+      if (next === undefined) return;
+      e.preventDefault();
+      setTab(order[(next + order.length) % order.length], { focus: true });
     }
 
     // ---------- Carga ----------
@@ -337,11 +413,14 @@ export default {
       const inside = Boolean(active?.closest?.('.sk-root'));
       let focusKey = inside ? active.dataset?.skFocus || null : null;
       if (!inside && focusAfter && (!active || active === document.body)) focusKey = focusAfter;
+      drawTabs();
       drawAccount();
       drawDetail();
       drawLibrary();
+      cat.sync();
       drawCapes();
       updatePreview();
+      drawCaption();
       if (focusKey) restoreFocus(focusKey);
     }
 
@@ -355,7 +434,7 @@ export default {
       } else if (S.busy) focusAfter = key;
       else {
         focusAfter = null;
-        (root.querySelector('.sk-tile[aria-selected="true"]') || viewer.el).focus({ preventScroll: true });
+        (root.querySelector('.sk-panel:not([hidden]) .sk-tile[aria-selected="true"]') || viewer.el).focus({ preventScroll: true });
       }
     }
 
@@ -445,7 +524,22 @@ export default {
       return h('div', { class: 'notice bad' }, icon('alert'), h('div', {}, h('div', {}, pr.message), retry()));
     }
 
+    // El pie del visor repite Usar cuando el boton de la tarjeta no se ve: se observa ese boton (se vuelve a
+    // crear en cada dibujo)
+    function watchApply() {
+      const btn = detailCard.hidden ? null : detailCard.querySelector('[data-sk-focus="apply"]');
+      if (!detailObserver || btn === watchedApply) return;
+      detailObserver.disconnect();
+      watchedApply = btn;
+      if (btn) detailObserver.observe(btn);
+    }
+
     function drawDetail() {
+      drawDetailCard();
+      watchApply();
+    }
+
+    function drawDetailCard() {
       const sel = S.selected;
       const titleId = 'sk-detail-title';
       if (sel === 'account' && accountTile()) {
@@ -474,6 +568,11 @@ export default {
         );
         return;
       }
+      if (catItem()) {
+        detailCard.hidden = false;
+        drawCatalogDetail(catItem());
+        return;
+      }
       const it = itemOf(sel);
       // Sin nada elegido la tarjeta no se muestra: la biblioteca vacia ya invita a agregar una skin
       detailCard.hidden = !it && (S.library === undefined || !S.library.length);
@@ -487,8 +586,7 @@ export default {
       }
       const n = S.norm.get(it.id);
       const damaged = it.broken || n?.error;
-      const current = inUse(it) && it.variant === S.profile?.skin?.variant; // ya es la skin de la cuenta, con el mismo modelo
-      const reason = damaged ? t('skins.reasonDamaged') : blockReason() || (current ? t('skins.reasonInUse') : null);
+      const reason = libReason(it);
       const seg = h(
         'div',
         { class: 'segmented sk-seg', role: 'group', 'aria-labelledby': 'sk-variant-label' },
@@ -533,6 +631,128 @@ export default {
         ),
         reason ? h('p', { class: 'sk-reason' }, icon('info'), h('span', {}, reason)) : h('p', { class: 'sk-note' }, icon('info'), h('span', {}, t('skins.inGameNote'))),
       );
+    }
+
+    // Detalle de una skin del catalogo: favorita, modelo, usar, guardar en la biblioteca y exportar.
+    function drawCatalogDetail(it) {
+      const damaged = it.broken || catalogNorm(it)?.error;
+      const variant = catalogVariant(it);
+      const saved = inLibrary(it);
+      const reason = catReason(it);
+      const seg = h(
+        'div',
+        { class: 'segmented sk-seg', role: 'group', 'aria-labelledby': 'sk-variant-label' },
+        ['classic', 'slim'].map((v) =>
+          h(
+            'button',
+            {
+              type: 'button',
+              class: variant === v ? 'active' : null,
+              'aria-pressed': String(variant === v),
+              disabled: damaged || (v === 'slim' && it.legacy),
+              title: v === 'slim' && it.legacy ? t('skins.legacyOnlyClassic') : null,
+              dataset: { skFocus: `variant:${v}` },
+              onclick: () => {
+                setCatalogVariant(it, v);
+                drawAll();
+              },
+            },
+            variantLabel(v),
+          ),
+        ),
+      );
+      mount(
+        detailCard,
+        h(
+          'div',
+          { class: 'sk-detail-head' },
+          h('h2', { class: 'sk-detail-title ellipsis', id: 'sk-detail-title', title: it.name }, it.name),
+          h('div', { class: 'sk-detail-tools' }, favoriteButton(it, 'detailFavorite'), damaged ? null : iconAction('download', t('skins.export'), (e) => exportCatalog(it, e.currentTarget), 'export')),
+        ),
+        h(
+          'div',
+          { class: 'sk-detail-meta' },
+          h('span', { class: 'badge accent' }, icon('grid'), t('skins.fromCatalog')),
+          inUse(it) ? h('span', { class: 'badge good' }, icon('check'), t('skins.inUse')) : null,
+          saved ? h('span', { class: 'badge' }, icon('folder'), t('skins.inLibraryBadge')) : null,
+          it.legacy ? h('span', { class: 'badge', title: t('skins.legacyHint') }, t('skins.legacyBadge')) : null,
+          damaged ? h('span', { class: 'badge bad' }, icon('alert'), t('skins.damaged')) : null,
+          h('span', {}, categoryLabel(it.category)),
+        ),
+        h(
+          'div',
+          { class: 'sk-field' },
+          h('span', { class: 'sk-label', id: 'sk-variant-label' }, t('skins.model')),
+          seg,
+          h('span', { class: 'sk-field-help' }, it.legacy ? t('skins.legacyHint') : t('skins.catalogModelHelp', { variant: variantLabel(it.model) })),
+        ),
+        h(
+          'div',
+          { class: 'sk-actions' },
+          busyButton(h('button', { class: 'btn primary', type: 'button', disabled: Boolean(S.busy) || Boolean(reason), dataset: { skFocus: 'apply' }, onclick: applyCatalog }, icon('check'), t('skins.apply')), 'apply'),
+          busyButton(
+            h(
+              'button',
+              { class: 'btn', type: 'button', disabled: Boolean(S.busy) || damaged || saved, dataset: { skFocus: 'catalogSave' }, onclick: saveCatalog },
+              icon(saved ? 'check' : 'save'),
+              t(saved ? 'skins.alreadySavedBtn' : 'skins.saveToLibrary'),
+            ),
+            'catalogSave',
+          ),
+        ),
+        reason ? h('p', { class: 'sk-reason' }, icon('info'), h('span', {}, reason)) : h('p', { class: 'sk-note' }, icon('info'), h('span', {}, t('skins.inGameNote'))),
+      );
+    }
+
+    // Estrella de favorita (nombre fijo y aria-pressed; el title dice lo que va a hacer)
+    function favoriteButton(it, key) {
+      const on = Boolean(it.favorite);
+      return h(
+        'button',
+        { class: ['icon-btn sm sk-fav-btn', on && 'active'], type: 'button', title: t(on ? 'skins.favoriteRemove' : 'skins.favoriteAdd'), 'aria-label': t('skins.favorite'), 'aria-pressed': String(on), dataset: { skFocus: key }, onclick: () => cat.toggleFavorite(it) },
+        icon('star'),
+      );
+    }
+
+    // Pie del visor: nombre y datos de la skin que se ve. Si la tarjeta de detalle no se ve (la grilla
+    // quedo mas abajo), suma la favorita y Usar en mi cuenta, para no tener que volver arriba.
+    function drawCaption() {
+      const sel = S.selected;
+      let name = null;
+      let meta = null;
+      let kind = null;
+      let it = null;
+      if (sel === 'account' && accountTile()) {
+        name = t('skins.currentSkin');
+        meta = S.accountSkinState === 'ready' ? t('skins.currentTileMeta', { variant: variantLabel(S.profile?.skin?.variant) }) : t('skins.loadingShort');
+      } else if (catItem()) {
+        it = catItem();
+        kind = 'catalog';
+        name = it.name;
+        meta = catalogMeta(it);
+      } else if (itemOf(sel)) {
+        it = itemOf(sel);
+        kind = 'library';
+        name = it.name;
+        meta = it.legacy ? t('skins.legacyShort') : variantLabel(it.variant);
+      }
+      caption.hidden = !name;
+      if (!name) return;
+      const keep = caption.contains(document.activeElement); // no se saca un boton que tiene el foco
+      const actions = [];
+      if (kind && (!detailVisible || keep)) {
+        const reason = kind === 'catalog' ? catReason(it) : libReason(it);
+        if (kind === 'catalog') actions.push(favoriteButton(it, 'captionFavorite'));
+        actions.push(
+          busyButton(
+            h('button', { class: 'btn primary sm', type: 'button', disabled: Boolean(S.busy) || Boolean(reason), title: reason || null, dataset: { skFocus: 'captionApply' }, onclick: kind === 'catalog' ? applyCatalog : applySelected }, icon('check'), t('skins.apply')),
+            'apply',
+          ),
+        );
+      }
+      const focusKey = keep ? document.activeElement.dataset?.skFocus : null;
+      mount(caption, h('div', { class: 'sk-caption-text' }, h('div', { class: 'sk-caption-name ellipsis', title: name }, name), h('div', { class: 'sk-caption-meta ellipsis', title: meta }, meta)), actions.length ? h('div', { class: 'sk-caption-actions' }, actions) : null);
+      if (focusKey) caption.querySelector(`[data-sk-focus="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
     }
 
     function iconAction(name, label, onclick, key, danger = false) {
@@ -603,12 +823,24 @@ export default {
           h(
             'div',
             { class: 'sk-drop-empty' },
-            emptyState('skShirt', t('skins.emptyTitle'), t('skins.emptyText'), h('button', { class: 'btn tonal', type: 'button', dataset: { skFocus: 'addLibrary' }, onclick: () => addSkins() }, icon('plus'), t('skins.add'))),
+            emptyState(
+              'skShirt',
+              t('skins.emptyTitle'),
+              t('skins.emptyText'),
+              h(
+                'div',
+                { class: 'sk-empty-actions' },
+                h('button', { class: 'btn tonal', type: 'button', dataset: { skFocus: 'addLibrary' }, onclick: () => addSkins() }, icon('plus'), t('skins.add')),
+                h('button', { class: 'btn ghost', type: 'button', dataset: { skFocus: 'exploreCatalog' }, onclick: () => setTab('catalog', { focus: true }) }, icon('grid'), t('skins.exploreCatalog')),
+              ),
+            ),
           ),
         );
         return;
       }
       const grid = h('div', { class: 'sk-grid', role: 'listbox', 'aria-label': t('skins.libraryTitle'), 'aria-orientation': 'horizontal', onkeydown: onGridKey }, tiles);
+      // Con una skin del catalogo elegida, la primera de la biblioteca es la que recibe el foco con Tab
+      if (!grid.querySelector('[tabindex="0"]')) grid.querySelector('[role="option"]')?.setAttribute('tabindex', '0');
       mount(libraryHost, notice, grid, h('p', { class: 'sk-drop-hint' }, icon('upload'), h('span', {}, t('skins.dropHint'))));
     }
 
@@ -673,6 +905,17 @@ export default {
           skin = S.accountSkin.canvas;
           variant = S.profile?.skin?.variant || 'classic';
         } else status = S.accountSkinState === 'error' ? t('skins.previewFailed') : t('skins.loadingSkin');
+      } else if (isCatalogKey(S.selected)) {
+        const it = catItem();
+        const n = it ? catalogNorm(it) : undefined;
+        if (n?.canvas) {
+          skin = n.canvas;
+          variant = catalogVariant(it);
+        } else if (!it || it.broken || n?.error) status = t('skins.previewFailed');
+        else {
+          status = t('skins.loadingSkin');
+          ensureNorm(it).then(() => S.alive && updatePreview());
+        }
       } else if (S.selected) {
         const it = itemOf(S.selected);
         const n = it && S.norm.get(it.id);
@@ -739,6 +982,7 @@ export default {
         S.selected = first.id;
         S.userPicked = true;
         lastPick = first.id;
+        if (catMem.tab !== 'library') setTab('library');
       }
       loadLibrary();
     }
@@ -815,6 +1059,61 @@ export default {
           if (S.alive) actionError(err, t('skins.applyFailed'));
         }
       });
+    }
+
+    // Usar una skin del catalogo: misma confirmacion, copia de seguridad y errores que las de la biblioteca.
+    async function applyCatalog() {
+      const it = catItem();
+      if (!it || S.busy || catReason(it)) return;
+      const variant = catalogVariant(it);
+      const answer = await confirmChange({
+        title: t('skins.applyTitle'),
+        text: t('skins.applyText', { skin: it.name, account: S.account.name, variant: variantLabel(variant) }),
+        okText: t('skins.apply'),
+        offerBackup: S.accountSkinState === 'ready' && !currentInLibrary() && !inUse(it),
+        note: t('skins.inGameNote'),
+      });
+      if (!answer || !S.alive) return;
+      await withChange('apply', async () => {
+        if (answer.backup && !(await backupCurrent())) return;
+        try {
+          const view = await api.invoke('skins:catalogApply', it.id, S.account.id, variant);
+          if (!S.alive) return;
+          ok(t('skins.applied', { skin: it.name }), t('skins.inGameNote'));
+          if (view) setProfile(view);
+          else loadProfile({ force: true });
+        } catch (err) {
+          if (S.alive) actionError(err, t('skins.applyFailed'));
+        }
+      });
+    }
+
+    async function saveCatalog() {
+      const it = catItem();
+      if (!it || S.busy) return;
+      await withChange('catalogSave', async () => {
+        try {
+          const r = await api.invoke('skins:catalogSave', it.id, catalogVariant(it));
+          if (!S.alive) return;
+          if (r?.duplicate) toast('info', t('skins.alreadyInLibrary'), r.item?.name);
+          else ok(t('skins.savedToLibrary', { name: r?.item?.name || it.name }));
+          await loadLibrary();
+        } catch (err) {
+          if (S.alive) fail(t('skins.saveToLibraryFailed'), err);
+        }
+      });
+    }
+
+    async function exportCatalog(it, btn) {
+      const done = setBusy(btn);
+      try {
+        const r = await api.invoke('skins:catalogExport', it.id);
+        if (r && S.alive) ok(t('skins.exported'), r.name);
+      } catch (err) {
+        if (S.alive) fail(t('skins.exportFailed'), err);
+      } finally {
+        done();
+      }
     }
 
     async function resetSkin() {
@@ -933,9 +1232,25 @@ export default {
     }
 
     // ---------- Arranque ----------
+    // Con el boton Usar de la tarjeta fuera de la vista (la grilla quedo mas abajo), el pie del visor lo repite
+    detailObserver =
+      typeof IntersectionObserver === 'function'
+        ? new IntersectionObserver(
+            (entries) => {
+              const e = entries[entries.length - 1];
+              const visible = e.isIntersecting && e.intersectionRatio >= 0.5;
+              if (visible === detailVisible || !S.alive) return;
+              detailVisible = visible;
+              drawCaption();
+            },
+            { threshold: [0, 0.5, 1] },
+          )
+        : null;
     drawAll();
     loadLibrary();
     loadAccount();
+    if (catMem.tab === 'catalog') setTab('catalog');
+    else cat.prefetch();
     // Si cambian las cuentas durante un cambio en curso, se vuelve a leer la cuenta cuando termina
     const offAccounts = store.on('accounts', () => {
       if (!S.alive) return;
@@ -949,6 +1264,8 @@ export default {
       S.token++;
       if (S.selected) lastPick = S.selected;
       offAccounts();
+      detailObserver?.disconnect();
+      cat.destroy();
       viewer.destroy();
     };
   },

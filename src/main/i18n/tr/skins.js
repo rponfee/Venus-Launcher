@@ -37,4 +37,8 @@ module.exports = {
   textureMissing: 'Minecraft’ta artık bu doku yok.',
   textureUnavailable: 'Doku Minecraft’tan indirilemedi.',
   textureInvalid: 'Minecraft’ın döndürdüğü doku geçerli bir görsel değil.',
+  // Catálogo
+  catalogUnavailable: 'Görünüm kataloğu yüklenemedi. Dosyalarını geri yüklemek için Venus Launcher’ı yeniden kur.',
+  catalogNotFound: 'Bu görünüm artık katalogda değil.',
+  catalogDamaged: 'Bu katalog görünümünün dosyası eksik veya bozuk. Geri yüklemek için Venus Launcher’ı yeniden kur.',
 };

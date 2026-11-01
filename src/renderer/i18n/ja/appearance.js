@@ -35,7 +35,7 @@ export default {
   previewLink: "リンク",
   previewSwitch: "サンプルのスイッチ",
   panelBackground: "背景",
-  panelBackgroundSub: "Venusの星空、またはお好きな画像・動画を選びましょう。",
+  panelBackgroundSub: "ギャラリーの壁紙、Venusの星空、またはお好きな画像・動画を選びましょう。",
   background: "背景の種類",
   bgStars: "星空",
   bgImage: "画像または動画",

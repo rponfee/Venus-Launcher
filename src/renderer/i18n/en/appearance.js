@@ -33,7 +33,7 @@ export default {
 
   // Background
   panelBackground: 'Background',
-  panelBackgroundSub: 'Choose Venus’s stars or your own image or video.',
+  panelBackgroundSub: 'Choose a gallery wallpaper, Venus’s stars or your own image or video.',
   background: 'Background type',
   bgStars: 'Stars',
   bgGallery: 'Gallery',

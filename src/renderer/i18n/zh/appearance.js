@@ -35,7 +35,7 @@ export default {
   previewLink: "一个链接",
   previewSwitch: "示例开关",
   panelBackground: "背景",
-  panelBackgroundSub: "选择 Venus 星空或你自己的图片或视频。",
+  panelBackgroundSub: "选择图库壁纸、Venus 星空或你自己的图片或视频。",
   background: "背景类型",
   bgStars: "星空",
   bgImage: "图片或视频",

@@ -15,7 +15,7 @@
 .sk-stage-card { position: sticky; top: 0; padding: var(--sp-3); z-index: var(--z-base); }
 .sk-viewer-wrap { position: relative; }
 .sk-viewer {
-  position: relative; height: clamp(300px, calc(100vh - 330px), 520px); border-radius: var(--radius); overflow: hidden;
+  position: relative; height: clamp(300px, calc(100vh - 390px), 520px); border-radius: var(--radius); overflow: hidden;
   cursor: grab; touch-action: none; user-select: none; outline: none;
   background: radial-gradient(60% 52% at 50% 42%, var(--accent-wash), transparent 72%), var(--well-bg);
   border: 1px solid var(--border);
@@ -154,3 +154,43 @@ body.reduce-motion .sk-cape.loading::after { animation-duration: 1.6s !important
 .sk-confirm > .sk-note { margin: var(--sp-2) 0 0; }
 .sk-check { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--fs-md); line-height: 1.45; color: var(--text); cursor: pointer; }
 .sk-check input { width: 16px; height: 16px; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
+
+/* ---------- Pie del visor (skin que se ve) ---------- */
+.sk-caption { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--border); min-width: 0; }
+.sk-caption-text { flex: 1 1 140px; min-width: 0; }
+.sk-caption-name { font-size: var(--fs-md); font-weight: 600; line-height: 1.3; color: var(--text); }
+.sk-caption-meta { margin-top: 2px; font-size: var(--fs-xs); line-height: 1.45; color: var(--muted); }
+.sk-caption-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
+
+/* ---------- Biblioteca y catalogo (pestanas) ---------- */
+.sk-browse-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); margin: var(--sp-1) 0 var(--sp-3); }
+.sk-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); }
+
+/* ---------- Catalogo ---------- */
+.sk-cat-tools { display: flex; flex-direction: column; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.sk-cat-search .input { width: 100%; }
+.sk-cat-search .input::-webkit-search-cancel-button { cursor: pointer; }
+.sk-cat-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); }
+.sk-cat-favs svg { color: var(--accent-hi); }
+.sk-cat-favs.active svg { fill: currentColor; }
+.sk-cat-status { margin: 0 0 var(--sp-3); min-height: 19px; font-size: var(--fs-sm); line-height: 1.45; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sk-cat-results { transition: opacity var(--dur) var(--ease-out); }
+.sk-cat-results.sk-stale { opacity: 0.55; }
+.sk-cat-more { display: flex; justify-content: center; margin-top: var(--sp-4); }
+.sk-cat-results > .notice .small { margin-top: 2px; color: var(--muted); overflow-wrap: anywhere; }
+.sk-tile-badge.sk-left { left: 6px; right: auto; }
+
+/* Estrella de favorita: siempre visible en las favoritas; en las demas, al pasar el mouse o elegirlas */
+.sk-fav {
+  position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; padding: 0; display: grid; place-items: center; cursor: pointer;
+  border-radius: var(--radius-full); border: 1px solid var(--border-2); color: var(--text-2);
+  background: color-mix(in srgb, var(--bg-0) 72%, transparent); opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.sk-fav svg { width: 14px; height: 14px; }
+.sk-tile:hover .sk-fav, .sk-tile:focus-visible .sk-fav, .sk-tile.active .sk-fav, .sk-tile.fav .sk-fav { opacity: 1; }
+.sk-fav:hover { color: var(--accent-hi); border-color: var(--accent-line); }
+.sk-fav:active { transform: scale(0.92); }
+.sk-tile.fav .sk-fav { color: var(--accent-hi); border-color: var(--accent-line); background: color-mix(in srgb, var(--bg-0) 60%, var(--accent-wash)); }
+.sk-tile.fav .sk-fav svg, .sk-fav-btn.active svg { fill: currentColor; }
+.sk-fav-btn.active { color: var(--accent-hi); }

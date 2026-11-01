@@ -35,7 +35,7 @@ export default {
   previewLink: "Een link",
   previewSwitch: "Voorbeeldschakelaar",
   panelBackground: "Achtergrond",
-  panelBackgroundSub: "Kies de sterren van Venus of je eigen afbeelding of video.",
+  panelBackgroundSub: "Kies een galerijachtergrond, de sterren van Venus of je eigen afbeelding of video.",
   background: "Type achtergrond",
   bgStars: "Sterren",
   bgImage: "Afbeelding of video",

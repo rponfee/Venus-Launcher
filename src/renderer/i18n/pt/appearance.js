@@ -35,7 +35,7 @@ export default {
   previewLink: "Um link",
   previewSwitch: "Interruptor de exemplo",
   panelBackground: "Fundo",
-  panelBackgroundSub: "Escolha as estrelas do Venus ou sua própria imagem ou vídeo.",
+  panelBackgroundSub: "Escolha um fundo da galeria, as estrelas do Venus ou sua própria imagem ou vídeo.",
   background: "Tipo de fundo",
   bgStars: "Estrelas",
   bgImage: "Imagem ou vídeo",

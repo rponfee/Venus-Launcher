@@ -37,4 +37,8 @@ module.exports = {
   textureMissing: 'Minecraft에 이 텍스처가 더 이상 없습니다.',
   textureUnavailable: 'Minecraft에서 텍스처를 내려받을 수 없습니다.',
   textureInvalid: 'Minecraft가 반환한 텍스처가 올바른 이미지가 아닙니다.',
+  // Catálogo
+  catalogUnavailable: '스킨 카탈로그를 불러오지 못했습니다. Venus Launcher를 다시 설치하여 파일을 복원하세요.',
+  catalogNotFound: '이 스킨은 더 이상 카탈로그에 없습니다.',
+  catalogDamaged: '이 카탈로그 스킨의 파일이 없거나 손상되었습니다. Venus Launcher를 다시 설치하여 복원하세요.',
 };

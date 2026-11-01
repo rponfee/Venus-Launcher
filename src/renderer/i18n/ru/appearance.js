@@ -35,7 +35,7 @@ export default {
   previewLink: "Ссылка",
   previewSwitch: "Пример переключателя",
   panelBackground: "Фон",
-  panelBackgroundSub: "Выберите звёзды Venus или своё изображение или видео.",
+  panelBackgroundSub: "Выберите обои из галереи, звёзды Venus или своё изображение или видео.",
   background: "Тип фона",
   bgStars: "Звёзды",
   bgImage: "Изображение или видео",

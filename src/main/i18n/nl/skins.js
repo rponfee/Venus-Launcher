@@ -37,4 +37,8 @@ module.exports = {
   textureMissing: 'Minecraft heeft die textuur niet meer.',
   textureUnavailable: 'De textuur kon niet van Minecraft worden gedownload.',
   textureInvalid: 'De textuur die Minecraft terugstuurde is geen geldige afbeelding.',
+  // Catálogo
+  catalogUnavailable: 'De skincatalogus kon niet worden geladen. Installeer Venus Launcher opnieuw om de bestanden te herstellen.',
+  catalogNotFound: 'Deze skin staat niet meer in de catalogus.',
+  catalogDamaged: 'Het bestand van deze catalogusskin ontbreekt of is beschadigd. Installeer Venus Launcher opnieuw om het te herstellen.',
 };

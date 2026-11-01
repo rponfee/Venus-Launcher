@@ -1,6 +1,7 @@
 'use strict';
-// Skins: cuenta elegida, perfil de Minecraft (skin y capas), texturas, biblioteca local y cambios en la
-// cuenta. Sin Electron (cuentas, API, biblioteca y reloj se inyectan): test/service.test.js.
+// Skins: cuenta elegida, perfil de Minecraft (skin y capas), texturas, biblioteca local, catalogo incluido y
+// cambios en la cuenta. Sin Electron (cuentas, API, biblioteca, catalogo y reloj se inyectan):
+// test/service.test.js y test/catalog.test.js.
 //  - Un pedido de red a la vez por cuenta (cola) y un solo cambio a la vez (el segundo da skins:busy).
 //  - Antes de cada cambio se vuelve a revisar que la cuenta elegida sea la misma que vio la interfaz,
 //    tambien despues de renovar el token (getLaunchAccount puede tardar).
@@ -18,7 +19,7 @@ const CAPE_SIZES = [
 ];
 const cleanUuid = (v) => String(v || '').replace(/-/g, '').toLowerCase();
 
-function createSkinsService({ accounts, api, library, fail, t = (k) => k, isOffline = () => false, now = Date.now, profileTtl = PROFILE_TTL } = {}) {
+function createSkinsService({ accounts, api, library, catalog = null, fail, t = (k) => k, isOffline = () => false, now = Date.now, profileTtl = PROFILE_TTL } = {}) {
   const queues = new Map(); // accountId -> cola de pedidos de red
   const writing = new Set(); // cuentas con un cambio en curso
   const reading = new Map(); // accountId -> Promise del perfil
@@ -29,6 +30,14 @@ function createSkinsService({ accounts, api, library, fail, t = (k) => k, isOffl
   function online() {
     if (isOffline()) throw fail('launcherOffline');
   }
+
+  function needCatalog() {
+    if (!catalog) throw fail('catalogUnavailable');
+    return catalog;
+  }
+
+  // Modelo con el que va una skin del catalogo: el elegido en la interfaz o el del catalogo (64x32: clasico).
+  const catalogVariant = (item, variant) => (item.legacy ? 'classic' : VARIANTS.has(variant) ? variant : item.model);
 
   function enqueue(accountId, fn) {
     const prev = queues.get(accountId) || Promise.resolve();
@@ -215,6 +224,25 @@ function createSkinsService({ accounts, api, library, fail, t = (k) => k, isOffl
     },
 
     reset: (accountId) => change(accountId, (token) => api.resetSkin(token)),
+
+    // Catalogo: lista, favoritas y lectura (los bytes ya revisados).
+    catalog: async (opts) => needCatalog().list(opts),
+    catalogFavorite: async (id, enabled) => needCatalog().setFavorite(id, enabled),
+    catalogRead: async (id) => needCatalog().read(id),
+
+    // Copia una skin del catalogo a la biblioteca, con su nombre y su modelo (o el elegido).
+    async catalogSave(catalogId, variant) {
+      const { item, bytes } = await needCatalog().read(catalogId);
+      return library.add(bytes, { name: item.name, variant: catalogVariant(item, variant), source: 'catalog' });
+    },
+
+    // Sube una skin del catalogo a la cuenta sin pasar por la biblioteca: mismo candado, misma revision de
+    // la cuenta y mismos errores que apply.
+    async catalogApply(catalogId, accountId, variant) {
+      await guard(accountId);
+      const { item, bytes } = await needCatalog().read(catalogId);
+      return change(accountId, (token) => api.uploadSkin(token, { bytes, variant: catalogVariant(item, variant), fileName: `${item.id}.png` }));
+    },
 
     // capeId null o '' oculta la capa.
     async cape(capeId, accountId) {

@@ -37,4 +37,8 @@ module.exports = {
   textureMissing: 'Minecraft 已不再提供该纹理。',
   textureUnavailable: '无法从 Minecraft 下载该纹理。',
   textureInvalid: 'Minecraft 返回的纹理不是有效的图片。',
+  // Catálogo
+  catalogUnavailable: '无法加载皮肤目录。请重新安装 Venus Launcher 以恢复文件。',
+  catalogNotFound: '此皮肤已不在目录中。',
+  catalogDamaged: '此目录皮肤的文件缺失或已损坏。请重新安装 Venus Launcher 以恢复。',
 };
