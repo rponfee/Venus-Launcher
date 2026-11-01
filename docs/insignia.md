@@ -48,7 +48,7 @@ Por qué una función SQL y no una Edge Function para consultar: las Edge Functi
    ```
 
    No tiene secretos propios: `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` los pone Supabase.
-3. El mod se compila solo en las releases (`build.yml` llama a `mod.yml`): va dentro del launcher (`src/main/modules/ingame/mods/venus-badge-mc1.21.1.jar`) y como archivo de la release. Para probar en la PC: `npm run mod:badge` (Java 21 o más nuevo).
+3. El mod se compila solo en las releases (`build.yml` llama a `mod.yml`): va dentro del launcher (`src/main/modules/ingame/mods/venus-badge-mc1.21.1.jar`) y como archivo de la release. Para probar en la PC: `npm run mod:badge` (Gradle y Loom necesitan Java 25 o más nuevo; el mod sale para Java 21, el de Minecraft 1.21.1).
 
 Sin la migración o sin la función, el interruptor muestra "El servidor de Venus todavía no tiene activada la insignia" y el mod no dibuja nada (`badge_lookup` responde 404 y el mod reintenta con espera).
 

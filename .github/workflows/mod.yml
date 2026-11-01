@@ -1,4 +1,4 @@
-# Compila el mod "Venus Badge" (mod/venus-badge: Fabric + Loom, Java 21), corre sus pruebas y sube los .jar como
+# Compila el mod "Venus Badge" (mod/venus-badge: Fabric + Loom), corre sus pruebas y sube los .jar como
 # artefacto "venus-badge-mod". Corre solo al cambiar algo en mod/ (push o pull request), a mano desde la pestaña
 # Actions y desde build.yml, que empaqueta los .jar en el launcher (src/main/modules/ingame/mods) y los publica en la
 # release. Guía: docs/insignia.md.
@@ -28,10 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Loom 1.19 necesita Java 25 para correr Gradle; el mod se compila igual para Java 21 (options.release en
+      # build.gradle), que es lo que usa Minecraft 1.21.1.
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       # Valida el gradle-wrapper.jar y guarda la caché de Gradle y de Loom (Minecraft remapeado).
       - uses: gradle/actions/setup-gradle@v4
