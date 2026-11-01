@@ -1,6 +1,6 @@
 # Página web de Venus Launcher
 
-Esta carpeta es la página lista para subir a cualquier hosting estático: `index.html` y `assets/` (logo y capturas del launcher). Pesa menos de 1 MB: entra en cualquier hosting gratis.
+Esta carpeta es la página lista para subir a cualquier hosting estático: `index.html`, `fondos.html` (la galería de fondos), `assets/` (logo y capturas del launcher) y `fondos/` (los fondos, que se generan aparte: ver más abajo).
 
 ## Qué muestra
 
@@ -27,6 +27,14 @@ Además, la página consulta la API de GitHub para mostrar la versión, el tama�
 - **Versión y descargas:** de la última release de GitHub.
 - **Precios en pesos:** los pide al servidor de Venus (`payments_catalog`): salen de la cotización y los impuestos que cargaste en Administración → Pagos, como precio final con el IVA incluido y el precio sin impuestos. Con Mercado Pago apagado muestra "al cambio del día". Los precios en dólares también se toman de ahí.
 - En la vista previa de claude.ai esas consultas están bloqueadas: ahí se ve el texto fijo y los botones usan los links fijos.
+
+## Fondos de pantalla (`fondos.html`)
+
+Una galería con todos los fondos de Venus (imágenes y animados) para ver en grande y descargar. Cada usuario lo pone en el launcher desde Ajustes → Apariencia → Fondo → Imagen o video. No espera al 8 de noviembre: se abre siempre, y la pantalla de espera tiene un botón "Fondos de pantalla".
+
+- Los archivos están en `web/fondos/` y **no están en el repositorio** (son de terceros): esa carpeta es la única copia, junto con la del hosting. Hacé una copia de respaldo. Para agregar fondos: `python scripts/import-wallpapers.py <carpeta o .zip>` (convierte, saltea repetidos y rearma `fondos/lista.js`). Desde la 1.0.15 el launcher no trae fondos: el botón "Ver fondos de Venus" de Apariencia abre `https://venus-launcher-fondos.netlify.app/`: la galería es un sitio aparte de Netlify (así la página principal queda liviana), donde `fondos.html` se sube como `index.html`. Ese sitio tiene que ser público (sin "Visitor access"/protección con login).
+- Con los fondos, `web/` pesa unos 120 MB (los videos más grandes, hasta 16 MB). Netlify recomienda carpetas de menos de 50 MB para arrastrar y soltar: si la subida se queda trabada, usá la Netlify CLI (`npx netlify-cli deploy --dir web --prod`) o Cloudflare Pages, que acepta archivos de hasta 25 MB.
+- Un link con `#id` abre un fondo directo, por ejemplo `fondos.html#live-05`.
 
 ## Cambiar la fecha
 

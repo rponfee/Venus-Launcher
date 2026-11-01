@@ -33,7 +33,7 @@ export default {
 
   // Background
   panelBackground: 'Background',
-  panelBackgroundSub: 'Choose a gallery wallpaper, Venus’s stars or your own image or video.',
+  panelBackgroundSub: 'Choose Venus’s stars or your own image or video.',
   background: 'Background type',
   bgStars: 'Stars',
   bgGallery: 'Gallery',
@@ -44,6 +44,9 @@ export default {
   gallerySelected: 'Selected: {name}',
   livePreview: 'Live preview',
   bgHint: 'Use an image (PNG, JPG, WEBP, GIF) or a short video (MP4, WEBM). Videos play muted and pause while you play.',
+  moreBg: 'Browse Venus wallpapers',
+  moreBgSub: 'Images and live wallpapers to download from the web and pick with “Image or video”.',
+  moreBgError: 'Could not open the wallpapers page',
   pickBg: 'Change file',
   removeBg: 'Remove',
   pickBgTitle: 'Pick an image or a video for the background',

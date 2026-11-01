@@ -13,6 +13,7 @@ import { topDialog } from './a11y/aria.js';
 import { dispatchEscape } from './a11y/gamepad.js';
 import { navigate } from './app.js';
 import { WALLPAPERS, getWallpaper } from './wallpapers.js';
+import { openWallpapersPage } from './community.js';
 
 export const PRESETS = [
   { id: 'venus', color: '#f29a2e' },
@@ -919,7 +920,11 @@ function createAppearanceControls({ compact = false } = {}) {
     ),
   );
   const bgHint = h('div', { class: 'ax-hint' }, t('appearance.bgHint'));
-  const bgCard = card('image', t('appearance.panelBackground'), compact ? null : t('appearance.panelBackgroundSub'), bgSeg, galleryWrap, bgError_, bgControls, compact ? null : bgHint);
+  // Los fondos de Venus están en la página web: se bajan y se eligen con "Imagen o video".
+  const moreBg = h('div', { class: 'ap-more-bg' },
+    compact ? null : h('span', { class: 'ax-hint' }, t('appearance.moreBgSub')),
+    h('button', { type: 'button', class: 'btn sm', title: compact ? t('appearance.moreBgSub') : null, onclick: openWallpapersPage }, icon('external'), t('appearance.moreBg')));
+  const bgCard = card('image', t('appearance.panelBackground'), compact ? null : t('appearance.panelBackgroundSub'), bgSeg, galleryWrap, bgError_, bgControls, compact ? null : bgHint, moreBg);
   bgCard.classList.add('ap-background-card');
   let lastGallerySelection = null;
 

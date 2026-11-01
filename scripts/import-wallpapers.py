@@ -1,8 +1,11 @@
-"""Agrega fondos a la galería del launcher sin repetir los que ya están.
+"""Agrega fondos a la página de fondos (web/fondos.html) sin repetir los que ya están.
+
+Desde la 1.0.15 los fondos no vienen dentro del launcher: viven en web/fondos/ (fuera del repositorio, porque son de
+terceros), se suben con la página y cada usuario baja el que quiere y lo elige con "Imagen o video".
 
 Uso (desde cualquier carpeta; necesita Pillow):
     python scripts/import-wallpapers.py <carpeta o .zip> [<carpeta o .zip> ...]
-    python scripts/import-wallpapers.py --catalog     (solo rearma src/renderer/js/wallpapers.js)
+    python scripts/import-wallpapers.py --catalog     (solo rearma web/fondos/lista.js)
 
 - Imágenes (.png .jpg .jpeg .webp): WebP de hasta 2560 x 1440 y una miniatura de 320 x 180.
 - Videos (.mp4 .webm .mov .mkv): fondos animados en H.264 de hasta 1920 x 1080 y 30 cuadros por segundo, sin
@@ -11,8 +14,8 @@ Uso (desde cualquier carpeta; necesita Pillow):
 - Repetidos: cada fondo guarda en manifest.json un hash perceptual (dHash 16 x 16) de la imagen o de cuatro cuadros
   del video. Un archivo nuevo parecido a uno que ya está (o a otro nuevo) se saltea y queda anotado como repetido,
   aunque cambien el tamaño, el formato o el recorte.
-- Los fondos que ya están no se tocan: sus ids (wallpaper-NN y live-NN) se mantienen para quien ya los eligió.
-- wallpapers.js lista primero los animados y después las imágenes.
+- Los fondos que ya están no se tocan: sus ids (wallpaper-NN y live-NN) se mantienen (los links fondos.html#id siguen andando).
+- lista.js (lo que lee fondos.html) pone primero los animados y después las imágenes.
 """
 
 from __future__ import annotations
@@ -34,9 +37,9 @@ from PIL import Image, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "src/renderer/assets/wallpapers"
+ASSETS = ROOT / "web/fondos"
 MANIFEST = ASSETS / "manifest.json"
-CATALOG = ROOT / "src/renderer/js/wallpapers.js"
+CATALOG = ASSETS / "lista.js"
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp"}
 VIDEO_EXT = {".mp4", ".webm", ".mov", ".mkv"}
 SAME = 10  # bits distintos (de 256) hasta los que dos fondos se consideran el mismo
@@ -252,26 +255,33 @@ def sources(arg: str, tmp: Path):
             path.unlink()
 
 
+def fit(size: list[int], box: tuple[int, int]) -> list[int]:
+    k = min(1, box[0] / size[0], box[1] / size[1])
+    return [round(size[0] * k / 2) * 2, round(size[1] * k / 2) * 2]
+
+
 def write_catalog(data: dict) -> None:
     ordered = ([i for i in data["wallpapers"] if i["kind"] == "video"]
                + [i for i in data["wallpapers"] if i["kind"] == "image"])
     catalog = []
     for item in ordered:
-        entry = {"id": item["id"], "name": item.get("name") or f"Fondo {item['id'].split('-')[-1]}",
-                 "src": f"assets/wallpapers/{item['id']}.{'mp4' if item['kind'] == 'video' else 'webp'}",
-                 "thumb": f"assets/wallpapers/{item['id']}-thumb.webp"}
-        if item["kind"] == "video":
-            entry["video"] = True
+        video = item["kind"] == "video"
+        name = item.get("name") or f"Fondo {item['id'].split('-')[-1]}"
+        file = f"{item['id']}.{'mp4' if video else 'webp'}"
+        # Lo que mide el archivo convertido: los videos quedaron en 1080p como máximo.
+        width, height = fit(item.get("originalSize") or [1920, 1080], (1920, 1080)) if video else item["size"]
+        # "Venus - Miku en el cielo.mp4", sin caracteres que Windows no acepta en un nombre de archivo
+        safe = re.sub(r'[<>:"/\\|?*]+', "", name).strip()
+        entry = {"id": item["id"], "name": name, "video": video, "file": f"fondos/{file}",
+                 "thumb": f"fondos/{item['id']}-thumb.webp", "download": f"Venus - {safe}.{file.rsplit('.', 1)[1]}",
+                 "bytes": (ASSETS / file).stat().st_size, "width": width, "height": height}
+        if video and item.get("duration"):
+            entry["duration"] = item["duration"]
         catalog.append(entry)
+    # Un .js (no un .json) para que fondos.html también funcione abriéndola con doble clic (file://).
     CATALOG.write_text(
-        "// Generado por scripts/import-wallpapers.py (no editar a mano: los datos están en assets/wallpapers/manifest.json).\n"
-        "// Las rutas son relativas a renderer/index.html y funcionan dentro del launcher empaquetado.\n"
-        "// Los fondos con video: true son animados (MP4); van primero en la galería.\n"
-        f"export const WALLPAPERS = {json.dumps(catalog, ensure_ascii=False, indent=2)};\n\n"
-        "const WALLPAPERS_BY_ID = new Map(WALLPAPERS.map(wallpaper => [wallpaper.id, wallpaper]));\n\n"
-        "export function getWallpaper(id) {\n"
-        "  return WALLPAPERS_BY_ID.get(id) || null;\n"
-        "}\n",
+        "// Generado por scripts/import-wallpapers.py: no editar a mano (los datos están en manifest.json).\n"
+        f"window.FONDOS = {json.dumps(catalog, ensure_ascii=False, indent=1)};\n",
         encoding="utf-8", newline="\n")
 
 

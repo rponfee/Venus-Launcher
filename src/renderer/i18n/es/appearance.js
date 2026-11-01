@@ -33,7 +33,7 @@ export default {
 
   // Fondo
   panelBackground: 'Fondo',
-  panelBackgroundSub: 'Elegí un fondo de la galería, las estrellas de Venus o tu propia imagen o video.',
+  panelBackgroundSub: 'Elegí las estrellas de Venus o tu propia imagen o video.',
   background: 'Tipo de fondo',
   bgStars: 'Estrellas',
   bgGallery: 'Galería',
@@ -44,6 +44,9 @@ export default {
   gallerySelected: 'Elegido: {name}',
   livePreview: 'Vista previa en vivo',
   bgHint: 'Usá una imagen (PNG, JPG, WEBP, GIF) o un video corto (MP4, WEBM). Los videos van sin sonido y se pausan mientras jugás.',
+  moreBg: 'Ver fondos de Venus',
+  moreBgSub: 'Imágenes y fondos animados para bajar de la web y elegir con “Imagen o video”.',
+  moreBgError: 'No se pudo abrir la página de fondos',
   pickBg: 'Cambiar archivo',
   removeBg: 'Quitar',
   pickBgTitle: 'Elegí una imagen o un video para el fondo',

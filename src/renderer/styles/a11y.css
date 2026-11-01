@@ -311,6 +311,8 @@ html.ap-themed .hero-planet { filter: hue-rotate(var(--ap-hue, 0deg)) saturate(v
 .ap-thumb-tag { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; background: rgba(0, 0, 0, 0.6); color: #fff; }
 .ap-bg-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .ap-file-row { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text-2); }
+.ap-more-bg { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.ap-more-bg .ax-hint { flex: 1 1 260px; }
 .ap-file-row svg { width: 16px; height: 16px; color: var(--muted); flex-shrink: 0; }
 .ap-file-name { font-weight: 600; font-size: 13px; color: var(--text-2); min-width: 0; }
 .ap-file-error span { min-width: 0; }
