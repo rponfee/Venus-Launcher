@@ -388,4 +388,18 @@ export default {
   credIcons: 'Icons (ISC license).',
   credHeads: 'Player avatars.',
   aboutLegal: 'Venus Launcher is not affiliated with Mojang Studios or Microsoft. Minecraft is a trademark of Mojang Synergies AB.',
+  // Streamer mode (Privacy; features/streamer.js)
+  streamerTitle: 'Streamer mode',
+  streamerSub: 'Stream or record without showing more than you want. Also available from Ctrl+K.',
+  streamerToggle: 'Turn on streamer mode',
+  streamerToggleSub: 'Stays on until you turn it off; an indicator shows in the title bar meanwhile.',
+  streamerCodes: 'Codes',
+  streamerCodesSub: 'Your friend code, pack codes and voice room codes are blurred.',
+  streamerAddresses: 'Addresses',
+  streamerAddressesSub: 'IPs, server and tunnel addresses, in the launcher and in notifications.',
+  streamerFriends: 'Friends and messages',
+  streamerFriendsSub: 'Friend names and message contents, in Messages, Home and notifications.',
+  streamerGame: 'In the game and on Discord',
+  streamerGameSub: 'The overlay shows "A friend" and "Friend 1, 2…" instead of names, and Discord shows neither the world nor the server.',
+  streamerNote: 'It does not change what your friends see or touch the Minecraft chat: only what Venus shows on your screen.',
 };

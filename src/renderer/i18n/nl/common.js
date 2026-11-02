@@ -162,4 +162,13 @@ export default {
   net_askSave: "Opslaan",
   net_enable: "Inschakelen",
   net_saveError: "De instelling kon niet worden opgeslagen",
+  streamerIndicator: "Streamermodus",
+  streamerIndicatorTitle: "Streamermodus aan: codes, adressen, vriendennamen en berichten zijn verborgen. Klik voor Instellingen > Privacy.",
+  streamerCmd: "Streamermodus",
+  streamerCmdSub: "Codes, adressen, vriendennamen en berichten verbergen terwijl je streamt",
+  streamerCmdKeywords: "streamer stream live opnemen twitch kick youtube verbergen privacy",
+  streamerOn: "Streamermodus ingeschakeld",
+  streamerOnText: "Codes, adressen, vriendennamen en berichten blijven verborgen tot je hem uitzet.",
+  streamerOff: "Streamermodus uitgeschakeld",
+  streamerSaveError: "De streamermodus kon niet worden gewijzigd",
 };

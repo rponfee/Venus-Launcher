@@ -938,7 +938,7 @@ export default {
                 h('h2', { class: 'hm-srv-name', title: name }, name),
                 h(
                   'button',
-                  { class: 'hm-srv-addr', dataset: { fk: 'srv-copy' }, title: t('home.copyAddress', { address }), 'aria-label': t('home.copyAddress', { address }), onclick: () => copyText(address, t('home.addressCopied')) },
+                  { class: 'hm-srv-addr priv', dataset: { fk: 'srv-copy' }, title: t('home.copyAddress', { address }), 'aria-label': t('home.copyAddress', { address }), onclick: () => copyText(address, t('home.addressCopied')) },
                   h('span', { class: 'ellipsis' }, address),
                   icon('copy'),
                 ),
@@ -1084,8 +1084,8 @@ export default {
           h(
             'span',
             { class: 'hm-friend-text' },
-            h('span', { class: 'hm-friend-name' }, f.name),
-            h('span', { class: ['hm-friend-sub', sub.playing && 'playing'], dataset: sub.ago ? { ago: String(sub.ago), agoKey: 'home.friendSeen' } : undefined }, sub.text),
+            h('span', { class: 'hm-friend-name priv' }, f.name),
+            h('span', { class: ['hm-friend-sub', 'priv', sub.playing && 'playing'], dataset: sub.ago ? { ago: String(sub.ago), agoKey: 'home.friendSeen' } : undefined }, sub.text),
           ),
         ),
         canJoin

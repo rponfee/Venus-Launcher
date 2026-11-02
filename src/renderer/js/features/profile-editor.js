@@ -604,7 +604,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
           'div',
           { class: 'pfe-group' },
           groupTitle(t('social.yourCode'), t('social.yourCodeHint')),
-          h('div', { class: 'pfe-code' }, h('span', { class: 'kbd selectable' }, code), h('button', { class: 'icon-btn sm', type: 'button', title: t('social.copyCode'), 'aria-label': t('social.copyCode'), onclick: () => copyText(code, t('social.codeCopied')) }, icon('copy'))),
+          h('div', { class: 'pfe-code' }, h('span', { class: 'kbd selectable priv' }, code), h('button', { class: 'icon-btn sm', type: 'button', title: t('social.copyCode'), 'aria-label': t('social.copyCode'), onclick: () => copyText(code, t('social.codeCopied')) }, icon('copy'))),
         )
       : null,
   );

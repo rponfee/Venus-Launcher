@@ -318,7 +318,7 @@ function featuredView(ctx) {
           'div',
           { class: 'mpf-title' },
           h('div', { class: 'mpf-name' }, h('span', { class: 'ellipsis', title: s.name }, s.name), s.partner ? h('span', { class: 'badge accent', title: t(`${NS}.partnerHint`) }, icon('star'), t(`${NS}.partner`)) : null),
-          h('button', { class: 'mpf-addr mono', title: t(`${NS}.copyIp`), 'aria-label': t(`${NS}.copyIpOf`, { address: s.address }), onclick: () => copyAddress(s.address) }, h('span', { class: 'ellipsis' }, s.address), icon('copy')),
+          h('button', { class: 'mpf-addr mono priv', title: t(`${NS}.copyIp`), 'aria-label': t(`${NS}.copyIpOf`, { address: s.address }), onclick: () => copyAddress(s.address) }, h('span', { class: 'ellipsis' }, s.address), icon('copy')),
         ),
         s.language ? h('span', { class: 'mpf-lang', title: langLabel(s.language), role: 'img', 'aria-label': langLabel(s.language) }, s.language === 'multi' ? icon('globe') : s.language.toUpperCase()) : null,
         h('button', { class: 'icon-btn sm', title: t(`${NS}.save`), 'aria-label': t(`${NS}.saveOf`, { name: s.name }), onclick: () => openSaveDialog({ name: s.name, ip: s.address }) }, icon('save')),
@@ -515,7 +515,7 @@ function savedView(ctx) {
         { class: 'mps-main' },
         h('div', { class: 'mps-name ellipsis', title: e.name }, e.name),
         motdSlot,
-        h('div', { class: 'mps-sub' }, h('button', { class: 'mps-addr mono', title: t(`${NS}.copyIp`), 'aria-label': t(`${NS}.copyIpOf`, { address: e.ip }), onclick: () => copyAddress(e.ip) }, e.ip), instChips),
+        h('div', { class: 'mps-sub' }, h('button', { class: 'mps-addr mono priv', title: t(`${NS}.copyIp`), 'aria-label': t(`${NS}.copyIpOf`, { address: e.ip }), onclick: () => copyAddress(e.ip) }, e.ip), instChips),
       ),
       h('div', { class: 'mps-stats' }, slots.players, h('div', { class: 'row' }, slots.bars, slots.version)),
       h(

@@ -162,4 +162,13 @@ export default {
   net_askSave: "Salva",
   net_enable: "Attiva",
   net_saveError: "Impossibile salvare l'impostazione",
+  streamerIndicator: "Modalità streamer",
+  streamerIndicatorTitle: "Modalità streamer attiva: codici, indirizzi, nomi degli amici e messaggi nascosti. Clicca per aprire Impostazioni > Privacy.",
+  streamerCmd: "Modalità streamer",
+  streamerCmdSub: "Nascondi codici, indirizzi, nomi degli amici e messaggi mentre trasmetti",
+  streamerCmdKeywords: "streamer stream diretta registrare twitch kick youtube nascondere privacy",
+  streamerOn: "Modalità streamer attivata",
+  streamerOnText: "Codici, indirizzi, nomi degli amici e messaggi restano nascosti finché non la spegni.",
+  streamerOff: "Modalità streamer disattivata",
+  streamerSaveError: "Impossibile cambiare la modalità streamer",
 };

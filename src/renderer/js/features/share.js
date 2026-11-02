@@ -281,7 +281,7 @@ function codeBox(code, { big = true } = {}) {
   return h(
     'div',
     { class: ['shr-code', big && 'big'] },
-    h('span', { class: 'shr-code-text selectable', 'aria-label': t('share.codeAria', { code }) }, code),
+    h('span', { class: 'shr-code-text selectable priv', 'aria-label': t('share.codeAria', { code }) }, code),
     h('button', { class: 'btn sm', type: 'button', title: t('share.copyCode'), 'aria-label': t('share.copyCode'), onclick: () => copyText(code, t('share.codeCopied')) }, icon('copy'), t('share.copy')),
   );
 }

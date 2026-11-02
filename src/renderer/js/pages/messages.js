@@ -512,7 +512,7 @@ class MessagesPage {
             'div',
             { class: 'msg-add-code' },
             h('span', {}, t('messages.yourCode')),
-            h('span', { class: 'kbd selectable' }, code),
+            h('span', { class: 'kbd selectable priv' }, code),
             h('button', { class: 'icon-btn sm', type: 'button', title: t('social.copyCode'), 'aria-label': t('social.copyCode'), onclick: () => copyText(code, t('social.codeCopied')) }, icon('copy')),
           )
         : null,
@@ -605,8 +605,8 @@ class MessagesPage {
       h(
         'div',
         { class: 'msg-item-main' },
-        h('div', { class: 'msg-item-top' }, h('span', { class: 'msg-item-name ellipsis', title: f.name }, styledName(f.profile, { size: 'sm' })), badgeChips(f.profile, { compact: true, max: 2 }), f.lastAt ? h('span', { class: 'msg-item-time' }, shortTime(f.lastAt)) : null),
-        h('div', { class: ['msg-item-sub', sub.cls] }, sub.dots ? typingDots() : null, sub.icon ? icon(sub.icon) : null, h('span', { class: 'ellipsis', title: sub.text }, sub.text)),
+        h('div', { class: 'msg-item-top' }, h('span', { class: 'msg-item-name ellipsis priv', title: f.name }, styledName(f.profile, { size: 'sm' })), badgeChips(f.profile, { compact: true, max: 2 }), f.lastAt ? h('span', { class: 'msg-item-time' }, shortTime(f.lastAt)) : null),
+        h('div', { class: ['msg-item-sub', sub.cls] }, sub.dots ? typingDots() : null, sub.icon ? icon(sub.icon) : null, h('span', { class: 'ellipsis priv', title: sub.text }, sub.text)),
       ),
       f.unread ? h('span', { class: 'msg-unread', 'aria-hidden': 'true' }, f.unread > 99 ? '99+' : String(f.unread)) : null,
     );
@@ -669,7 +669,7 @@ class MessagesPage {
         'div',
         { class: 'msg-req', role: 'button', tabindex: 0, dataset: { id: r.id }, 'aria-label': r.name, onclick: () => openProfile(r.id), onkeydown: (ev) => this.itemKey(ev, () => openProfile(r.id)) },
         headImg(r.profile, 40),
-        h('div', { class: 'msg-item-main' }, h('div', { class: 'msg-item-name ellipsis', title: r.name }, r.name), h('div', { class: 'msg-item-sub' }, h('span', { class: 'ellipsis', title: sub }, sub))),
+        h('div', { class: 'msg-item-main' }, h('div', { class: 'msg-item-name ellipsis priv', title: r.name }, r.name), h('div', { class: 'msg-item-sub' }, h('span', { class: 'ellipsis', title: sub }, sub))),
         h('div', { class: 'msg-req-actions' }, actions),
       );
     };
@@ -744,7 +744,7 @@ class MessagesPage {
             'div',
             { class: 'msg-code' },
             h('span', { class: 'msg-code-label' }, t('messages.yourCode')),
-            h('span', { class: 'msg-code-value selectable' }, code),
+            h('span', { class: 'msg-code-value selectable priv' }, code),
             h('button', { class: 'icon-btn sm', type: 'button', title: t('social.copyCode'), 'aria-label': t('social.copyCode'), onclick: () => copyText(code, t('social.codeCopied')) }, icon('copy')),
           )
         : null,
@@ -887,9 +887,9 @@ class ChatView {
       sub = h('div', { class: 'msg-chat-sub activity', title: activityLine(f.activity) }, icon('gamepad'), h('span', { class: 'ellipsis' }, activityLine(f.activity)));
     } else if (f) {
       const label = f.presence === 'offline' && f.lastSeen ? t('social.lastSeen', { ago: fmtAgo(f.lastSeen) }) : presenceLabel(f.presence);
-      sub = h('div', { class: 'msg-chat-sub' }, h('span', { class: 'msg-chat-presence' }, label), f.statusText ? h('span', { class: 'msg-chat-statustext ellipsis', title: f.statusText }, f.statusText) : null);
+      sub = h('div', { class: 'msg-chat-sub priv' }, h('span', { class: 'msg-chat-presence' }, label), f.statusText ? h('span', { class: 'msg-chat-statustext ellipsis', title: f.statusText }, f.statusText) : null);
     } else {
-      sub = h('div', { class: 'msg-chat-sub' }, profile.username ? `@${profile.username}` : '');
+      sub = h('div', { class: 'msg-chat-sub priv' }, profile.username ? `@${profile.username}` : '');
     }
     const iconBtn = (ic, label, run, extra = {}) => h('button', { class: 'icon-btn sm', type: 'button', title: extra.title || label, 'aria-label': label, 'aria-haspopup': extra.popup || null, disabled: extra.disabled, onclick: (ev) => run(ev.currentTarget) }, icon(ic));
     mount(
@@ -899,7 +899,7 @@ class ChatView {
         'button',
         { class: 'msg-chat-who', type: 'button', title: t('messages.viewProfile'), onclick: () => openProfile(this.userId) },
         headWithDot(profile, f ? f.presence : null, 42),
-        h('div', { class: 'msg-chat-titles' }, h('div', { class: 'msg-chat-name' }, h('span', { class: 'ellipsis', title: name }, displayName(profile) ? styledName(profile, { size: 'sm' }) : name), badgeChips(profile, { compact: true, max: 4 })), sub),
+        h('div', { class: 'msg-chat-titles' }, h('div', { class: 'msg-chat-name priv' }, h('span', { class: 'ellipsis', title: name }, displayName(profile) ? styledName(profile, { size: 'sm' }) : name), badgeChips(profile, { compact: true, max: 4 })), sub),
       ),
       h(
         'div',
@@ -1059,7 +1059,7 @@ class ChatView {
     else {
       const keys = local ? null : mine ? 'R E' : 'R';
       if (isJumbo(m.body)) bubble = h('div', { class: 'msg-bubble jumbo', tabindex: 0, 'aria-keyshortcuts': keys }, h('span', { class: 'msg-jumbo' }, m.body), meta);
-      else bubble = h('div', { class: 'msg-bubble', tabindex: 0, 'aria-keyshortcuts': keys }, m.reply_to ? this.quoteEl(m.reply_to) : null, h('span', { class: 'msg-text' }, renderBody(m.body)), meta);
+      else bubble = h('div', { class: 'msg-bubble', tabindex: 0, 'aria-keyshortcuts': keys }, m.reply_to ? this.quoteEl(m.reply_to) : null, h('span', { class: 'msg-text priv' }, renderBody(m.body)), meta);
     }
     bubble.addEventListener('dblclick', (ev) => {
       if (ev.target.closest('a, button') || m.deleted || local) return;
@@ -1143,8 +1143,8 @@ class ChatView {
           this.scrollToMessage(id);
         },
       },
-      who ? h('span', { class: 'msg-quote-name' }, who) : null,
-      h('span', { class: 'msg-quote-text' }, text),
+      who ? h('span', { class: 'msg-quote-name priv' }, who) : null,
+      h('span', { class: 'msg-quote-text priv' }, text),
     );
   }
 

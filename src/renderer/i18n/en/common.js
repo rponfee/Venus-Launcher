@@ -169,4 +169,14 @@ export default {
   net_askSave: "Save",
   net_enable: "Turn on",
   net_saveError: "Could not save the setting",
+  // Streamer mode (features/streamer.js): title bar indicator, Ctrl+K command and toasts
+  streamerIndicator: "Streamer mode",
+  streamerIndicatorTitle: "Streamer mode is on: codes, addresses, friend names and messages are hidden. Click to open Settings > Privacy.",
+  streamerCmd: "Streamer mode",
+  streamerCmdSub: "Hide codes, addresses, friend names and messages while you stream",
+  streamerCmdKeywords: "streamer stream live record twitch kick youtube hide privacy",
+  streamerOn: "Streamer mode on",
+  streamerOnText: "Codes, addresses, friend names and messages stay hidden until you turn it off.",
+  streamerOff: "Streamer mode off",
+  streamerSaveError: "Could not change streamer mode",
 };

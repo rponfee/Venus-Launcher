@@ -52,7 +52,7 @@ function addressDisplay(address, { placeholder, waiting = false } = {}) {
   if (!address) {
     return h('div', { class: ['np-address', 'empty', waiting && 'waiting'], role: 'status' }, waiting ? h('span', { class: 'np-pulse', 'aria-hidden': 'true' }) : icon('globe'), h('span', { class: 'np-address-text' }, placeholder || t('netplay.addressPending')));
   }
-  return h('div', { class: 'np-address', role: 'status' }, icon('globe'), h('span', { class: 'np-address-text selectable', title: address }, address), copyBtn(address, t('netplay.copyAddress')));
+  return h('div', { class: 'np-address', role: 'status' }, icon('globe'), h('span', { class: 'np-address-text selectable priv', title: address }, address), copyBtn(address, t('netplay.copyAddress')));
 }
 
 function statusPill(kind, text, iconName) {
@@ -824,7 +824,7 @@ async function buildServerPanel(root, serverId, offs, isDisposed) {
     keepFocus(cAddr, () => {
       const p = port();
       const a = md.addrs;
-      const row = (label, value, extra, cls) => h('div', { class: ['np-addr-row', cls] }, h('span', { class: 'np-addr-label' }, label), h('div', { class: 'np-addr-main' }, h('span', { class: 'np-addr-value selectable', title: value }, value), extra || null), copyBtn(value));
+      const row = (label, value, extra, cls) => h('div', { class: ['np-addr-row', cls] }, h('span', { class: 'np-addr-label' }, label), h('div', { class: 'np-addr-main' }, h('span', { class: 'np-addr-value selectable priv', title: value }, value), extra || null), copyBtn(value));
       const infoRow = (label, content) => h('div', { class: 'np-addr-row' }, h('span', { class: 'np-addr-label' }, label), h('div', { class: 'np-addr-main' }, content));
       const mapping = md.upnp?.mappings?.find((x) => x.protocol === 'TCP' && x.port === p);
       const tun = md.tunnel && (md.tunnel.status === 'online' || md.tunnel.status === 'reconnecting') ? md.tunnel : null;

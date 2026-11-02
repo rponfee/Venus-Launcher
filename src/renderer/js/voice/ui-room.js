@@ -77,7 +77,7 @@ export function roomView(container, { onTab } = {}) {
 
   // ---------- Miembros + controles ----------
   const grid = h('div', { class: 'vc-grid', role: 'list', 'aria-label': t('voice.members') });
-  const inviteTile = h('button', { class: 'vc-tile vc-invite-tile', type: 'button', title: t('voice.inviteFriends') }, h('div', { class: 'vc-invite-icon', 'aria-hidden': 'true' }, icon('userPlus')), h('div', { class: 'vc-tile-name' }, t('voice.inviteFriends')), h('div', { class: 'vc-invite-code' }));
+  const inviteTile = h('button', { class: 'vc-tile vc-invite-tile', type: 'button', title: t('voice.inviteFriends') }, h('div', { class: 'vc-invite-icon', 'aria-hidden': 'true' }, icon('userPlus')), h('div', { class: 'vc-tile-name' }, t('voice.inviteFriends')), h('div', { class: 'vc-invite-code priv' }));
   inviteTile.addEventListener('click', () => openInvite());
   // La lista solo puede tener listitems: el boton va adentro de una celda
   const inviteCell = h('div', { class: 'vc-invite-cell', role: 'listitem' }, inviteTile);
@@ -161,7 +161,7 @@ export function roomView(container, { onTab } = {}) {
   function createTile(m) {
     const ring = h('span', { class: 'vc-ring', 'aria-hidden': 'true' });
     const wrap = h('div', { class: 'vc-avatar-wrap' }, ring, personAvatar(m.avatar, m.name, 96, 'vc-avatar'));
-    const name = h('div', { class: 'vc-tile-name' });
+    const name = h('div', { class: 'vc-tile-name priv' });
     const flags = h('div', { class: 'vc-tile-flags' });
     const conn = h('span', { class: 'vc-conn', role: 'img' });
     const menu = h('button', { class: 'icon-btn sm vc-tile-menu', type: 'button', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' }, icon('more'));
@@ -308,7 +308,7 @@ export function roomView(container, { onTab } = {}) {
       closePop();
       return;
     }
-    const headEl = h('div', { class: 'vc-pop-head' }, personAvatar(m.avatar, m.name, 64, 'vc-pop-avatar'), h('div', { class: 'vc-pop-titles' }, h('div', { class: 'vc-pop-name', title: m.name }, m.name), h('div', { class: 'vc-pop-sub' }, m.self ? t('voice.youTag') : tile.conn.title || '')));
+    const headEl = h('div', { class: 'vc-pop-head' }, personAvatar(m.avatar, m.name, 64, 'vc-pop-avatar'), h('div', { class: 'vc-pop-titles' }, h('div', { class: 'vc-pop-name priv', title: m.name }, m.name), h('div', { class: 'vc-pop-sub' }, m.self ? t('voice.youTag') : tile.conn.title || '')));
     if (m.self) {
       const st = voice.settings;
       const val = h('span', { class: 'vc-pop-val' }, `${Math.round((st.inputVolume ?? 1) * 100)}%`);
@@ -862,7 +862,7 @@ function chatPanel() {
       h(
         'div',
         { class: 'vc-msg-body' },
-        grouped ? null : h('div', { class: 'vc-msg-head' }, h('span', { class: 'vc-msg-name', title: m.self ? null : m.name }, m.self ? t('voice.you') : m.name), h('time', { class: 'vc-time', datetime: isoOf(m.ts) }, fmtTime(m.ts))),
+        grouped ? null : h('div', { class: 'vc-msg-head' }, h('span', { class: 'vc-msg-name priv', title: m.self ? null : m.name }, m.self ? t('voice.you') : m.name), h('time', { class: 'vc-time', datetime: isoOf(m.ts) }, fmtTime(m.ts))),
         h('div', { class: 'vc-msg-text selectable' }, m.text),
       ),
     );

@@ -162,4 +162,13 @@ export default {
   net_askSave: "Salvar",
   net_enable: "Ativar",
   net_saveError: "Não foi possível salvar a configuração",
+  streamerIndicator: "Modo streamer",
+  streamerIndicatorTitle: "Modo streamer ativado: códigos, endereços, nomes de amigos e mensagens ocultos. Clique para ir a Configurações > Privacidade.",
+  streamerCmd: "Modo streamer",
+  streamerCmdSub: "Ocultar códigos, endereços, nomes de amigos e mensagens enquanto você transmite",
+  streamerCmdKeywords: "streamer stream live ao vivo gravar twitch kick youtube ocultar privacidade",
+  streamerOn: "Modo streamer ativado",
+  streamerOnText: "Códigos, endereços, nomes de amigos e mensagens ficam ocultos até você desligar.",
+  streamerOff: "Modo streamer desativado",
+  streamerSaveError: "Não foi possível mudar o modo streamer",
 };

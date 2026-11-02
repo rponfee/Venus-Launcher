@@ -118,7 +118,7 @@ function register({ app, handle, send, onQuit }) {
 
   // Ajustes: settings:set dispara onChange antes de cambiar el idioma; se espera un instante
   const offSettings = settings.onChange((s, patch) => {
-    if (!patch || !('discord' in patch || 'language' in patch)) return;
+    if (!patch || !('discord' in patch || 'language' in patch || 'privacy' in patch)) return;
     clearTimeout(settingsTimer);
     settingsTimer = setTimeout(() => settings.get().then(applySettings).catch((err) => console.warn('[discord]', err.message)), 60);
   });

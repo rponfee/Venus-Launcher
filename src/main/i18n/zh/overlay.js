@@ -9,4 +9,13 @@ module.exports = {
   playerJoinBody: "你的服务器 {name}。",
   taskDoneTitle: "任务已完成",
   taskFailedTitle: "有一项任务未能完成",
+  streamerFriend: "一位好友",
+  streamerFriendN: "好友 {n}",
+  streamerYou: "你",
+  streamerMessage: "给你发了一条消息",
+  streamerRoom: "语音房间",
+  streamerFriendAlert: "来自好友的通知",
+  streamerOnTitle: "主播模式已开启",
+  streamerOnBody: "屏幕上不显示名字、消息、代码和地址。",
+  streamerOffTitle: "主播模式已关闭",
 };

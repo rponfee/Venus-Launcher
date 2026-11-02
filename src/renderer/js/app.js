@@ -100,6 +100,7 @@ const STARTUP = [
   () => import('./features/party.js'), // grupos: señales party-*, líder caído, mundo del líder
   () => import('./features/notify.js'), // avisos de amigos y servidores favoritos
   () => import('./features/whatsnew.js'), // recorrido de novedades la primera vez que se abre la 2.0.0 (y Ctrl+K)
+  () => import('./features/streamer.js'), // modo streamer: difumina codigos, direcciones, nombres y mensajes (y Ctrl+K)
 ];
 
 let cleanup = null;

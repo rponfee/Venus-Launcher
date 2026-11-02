@@ -225,7 +225,7 @@ export async function openPartyPanel(ctrl) {
             'div',
             { class: 'list-item pt-member', role: 'listitem' },
             avatarOf(inv.leader, inv.name),
-            h('div', { class: 'li-main' }, h('div', { class: 'li-title ellipsis', title: inv.name }, t('party.inviteFrom', { name: inv.name })), h('div', { class: 'li-sub ellipsis' }, inv.game ? (inv.where ? t('party.inviteGameWhere', { game: inv.game, where: inv.where }) : inv.game) : t('party.inviteNoPlan'))),
+            h('div', { class: 'li-main' }, h('div', { class: 'li-title ellipsis priv', title: inv.name }, t('party.inviteFrom', { name: inv.name })), h('div', { class: 'li-sub ellipsis' }, inv.game ? (inv.where ? t('party.inviteGameWhere', { game: inv.game, where: inv.where }) : inv.game) : t('party.inviteNoPlan'))),
             h('button', { class: 'btn sm ghost', type: 'button', dataset: { fk: `dec-${inv.leader}` }, onclick: (e) => busyRun(e.currentTarget, () => ctrl.declineInvite(inv.leader)) }, t('party.decline')),
             h('button', { class: 'btn sm tonal', type: 'button', dataset: { fk: `acc-${inv.leader}` }, onclick: (e) => busyRun(e.currentTarget, () => ctrl.acceptInvite(inv.leader)) }, icon('check'), t('party.accept')),
           ),
@@ -256,7 +256,7 @@ export async function openPartyPanel(ctrl) {
         'div',
         { class: ['list-item', 'pt-member', !mb.online && !mb.self && 'disabled'], role: 'listitem' },
         avatarOf(mb.id, mb.name),
-        h('div', { class: 'li-main' }, h('div', { class: 'li-title ellipsis', title: mb.name }, mb.self ? t('party.youName', { name: mb.name }) : mb.name), h('div', { class: 'pt-pills' }, memberPills(mb, snap))),
+        h('div', { class: 'li-main' }, h('div', { class: 'li-title ellipsis priv', title: mb.name }, mb.self ? t('party.youName', { name: mb.name }) : mb.name), h('div', { class: 'pt-pills' }, memberPills(mb, snap))),
         leader && !mb.leader
           ? h('button', { class: 'icon-btn sm danger', type: 'button', title: t('party.kickName', { name: mb.name }), 'aria-label': t('party.kickName', { name: mb.name }), dataset: { fk: `kick-${mb.id}` }, onclick: async () => {
               if (await confirmDialog(t('party.kickTitle'), t('party.kickConfirm', { name: mb.name }), { okText: t('party.kick'), danger: true })) ctrl.kickMember(mb.id);

@@ -417,7 +417,7 @@ function startTest(list) {
 
 // La voz y la musica de ejemplo no se guardan: al terminar la prueba vuelve lo real (o nada).
 function restoreAfterTest() {
-  deliver(st.cache.voice || { kind: 'voice', room: null, self: { muted: false, deafened: false }, members: [] });
+  deliver(masked(st.cache.voice || { kind: 'voice', room: null, self: { muted: false, deafened: false }, members: [] }));
   deliver(st.cache.music || { kind: 'music', state: null });
 }
 
@@ -460,8 +460,24 @@ function dispatch(ev, opts = {}) {
   }
   // Durante una prueba la voz y la musica reales solo se guardan (se muestran al terminar).
   if ((ev.kind === 'voice' || ev.kind === 'music') && testing()) return true;
-  deliver(ev, opts);
+  deliver(masked(ev), opts);
   return true;
+}
+
+// Modo streamer (modules/streamer.js): sin nombres de amigos, mensajes, codigos ni direcciones en el juego.
+// La cache guarda el evento real: al apagar el modo vuelve a verse todo.
+function masked(ev) {
+  try {
+    const streamer = require('./streamer');
+    return streamer.isOn() ? streamer.maskEvent(ev, t) : ev;
+  } catch {
+    return ev;
+  }
+}
+
+// Cambio el modo streamer con la ventana abierta: el Voice Chat que se ve se vuelve a dibujar con o sin nombres.
+function onStreamerChange() {
+  if (st.cache.voice && !testing()) deliver(masked(st.cache.voice));
 }
 
 // Contrato 1: lo llaman otros modulos del proceso principal. Nunca lanza.
@@ -479,7 +495,7 @@ function onPageReady() {
   st.winReady = true;
   sendLayout(true);
   const replay = [st.cache.voice, st.cache.music, st.cache.recording ? { kind: 'capture', type: 'recording-start', at: st.cache.recording.at } : null];
-  for (const ev of replay) if (ev) st.win.webContents.send('overlay:event', ev);
+  for (const ev of replay) if (ev) st.win.webContents.send('overlay:event', masked(ev));
   const queued = st.queue.splice(0);
   for (const ev of queued) st.win.webContents.send('overlay:event', ev);
 }
@@ -663,4 +679,4 @@ function register({ app, handle, send, getWindow, onQuit }) {
   });
 }
 
-module.exports = { register, push, status };
+module.exports = { register, push, status, onStreamerChange };

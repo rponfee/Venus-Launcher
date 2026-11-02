@@ -1,6 +1,6 @@
 // Avisos con botones (Aceptar/Rechazar, Unirme) en la pila de toasts del launcher y alertas al overlay del juego.
 // Los usan features/party.js y features/notify.js. Estilos en styles/features/notify.css (prefijo nt-).
-import { h, icon, ensureCss, reducedMotion, setBusy } from '../../ui.js';
+import { h, icon, ensureCss, reducedMotion, setBusy, filterText } from '../../ui.js';
 import { api } from '../../store.js';
 import { t } from '../../i18n.js';
 
@@ -55,7 +55,7 @@ export function actionToast({ kind = 'info', icon: iconName, title, msg, actions
     'div',
     { class: ['toast', kind, 'nt-toast'], role: kind === 'bad' ? 'alert' : 'status' },
     icon(iconName || (kind === 'good' ? 'check' : kind === 'bad' ? 'alert' : 'info')),
-    h('div', { class: 'nt-toast-body' }, h('div', { class: 't-title' }, title), msg ? h('div', { class: 't-msg' }, msg) : null, buttons.length ? h('div', { class: 'nt-toast-actions' }, buttons) : null),
+    h('div', { class: 'nt-toast-body' }, h('div', { class: 't-title' }, filterText(title)), msg ? h('div', { class: 't-msg' }, filterText(msg)) : null, buttons.length ? h('div', { class: 'nt-toast-actions' }, buttons) : null),
     h('button', { class: 'icon-btn sm nt-toast-x', type: 'button', title: closeLabel(), 'aria-label': closeLabel(), onclick: () => close(false) }, icon('x')),
   );
   const arm = (delay) => {

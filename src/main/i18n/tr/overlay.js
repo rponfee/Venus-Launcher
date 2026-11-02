@@ -9,4 +9,13 @@ module.exports = {
   playerJoinBody: "Sunucun: {name}.",
   taskDoneTitle: "Görev tamamlandı",
   taskFailedTitle: "Bir görev tamamlanamadı",
+  streamerFriend: "Bir arkadaş",
+  streamerFriendN: "Arkadaş {n}",
+  streamerYou: "Sen",
+  streamerMessage: "Sana bir mesaj gönderdi",
+  streamerRoom: "Ses odası",
+  streamerFriendAlert: "Bir arkadaştan bildirim",
+  streamerOnTitle: "Yayıncı modu açık",
+  streamerOnBody: "Ekranda ad, mesaj, kod ve adres yok.",
+  streamerOffTitle: "Yayıncı modu kapalı",
 };

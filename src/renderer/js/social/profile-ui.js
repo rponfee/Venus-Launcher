@@ -202,7 +202,7 @@ export function profileCard(profile, { presence = 'offline', statusText = '', se
             'div',
             { class: 'pf-fact' },
             icon('hash'),
-            h('span', { class: 'kbd selectable' }, n.friendCode),
+            h('span', { class: 'kbd selectable priv' }, n.friendCode),
             h('button', { class: 'icon-btn sm', type: 'button', title: t('social.copyCode'), 'aria-label': t('social.copyCode'), onclick: () => copyText(n.friendCode, t('social.codeCopied')) }, icon('copy')),
           )
         : null,

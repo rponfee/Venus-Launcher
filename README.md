@@ -71,7 +71,7 @@ Abrilo desde el menú, con el botón **Asistente** de la barra de título o con 
 
 ### Ajustes
 
-General (idioma y qué hace el launcher al jugar), Apariencia (temas planetarios, color propio, galería de 99 fondos con 16 animados, tu propia imagen o video, la página de fondos para bajarlos, música y marca propia), Accesibilidad (daltonismo, alto contraste, escala, movimiento reducido, control), Cuenta y nube (cuentas de Minecraft y cuenta de Venus), Privacidad (con Discord Rich Presence), Inteligencia artificial (con Claude y ChatGPT por MCP, y tu Claude Code o tu Codex como motor del Asistente), Plan (planes, compra y saldo de Venus IA), Java, Descargas y almacenamiento (límite de velocidad, modo sin conexión, uso del disco, unificar archivos repetidos y limpieza), Datos (carpeta, caché y modo portable) y Acerca de.
+General (idioma y qué hace el launcher al jugar), Apariencia (temas planetarios, color propio, galería de 99 fondos con 16 animados, tu propia imagen o video, la página de fondos para bajarlos, música y marca propia), Accesibilidad (daltonismo, alto contraste, escala, movimiento reducido, control), Cuenta y nube (cuentas de Minecraft y cuenta de Venus), Privacidad (con Discord Rich Presence y el **modo streamer**, que difumina códigos, direcciones, nombres de amigos y mensajes mientras transmitís), Inteligencia artificial (con Claude y ChatGPT por MCP, y tu Claude Code o tu Codex como motor del Asistente), Plan (planes, compra y saldo de Venus IA), Java, Descargas y almacenamiento (límite de velocidad, modo sin conexión, uso del disco, unificar archivos repetidos y limpieza), Datos (carpeta, caché y modo portable) y Acerca de.
 
 ### En todo el launcher
 

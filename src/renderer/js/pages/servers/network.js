@@ -80,7 +80,7 @@ export function networkTab(container, ctx) {
   // porque ese panel ya las muestra (LAN, VPN, IP publica y tuneles).
   async function addressesCard() {
     const addrs = await api.servers.addresses().catch(() => []);
-    const row = (label, value) => h('div', { class: 'sv-friend-row' }, h('span', { class: 'sv-friend-k ellipsis', title: label }, label), h('span', { class: 'kbd selectable', title: value }, value), h('button', { class: 'icon-btn sm', title: t('common.copy'), 'aria-label': `${t('common.copy')}: ${value}`, onclick: () => copyText(value) }, icon('copy')));
+    const row = (label, value) => h('div', { class: 'sv-friend-row' }, h('span', { class: 'sv-friend-k ellipsis', title: label }, label), h('span', { class: 'kbd selectable priv', title: value }, value), h('button', { class: 'icon-btn sm', title: t('common.copy'), 'aria-label': `${t('common.copy')}: ${value}`, onclick: () => copyText(value) }, icon('copy')));
     return h(
       'div',
       { class: 'card' },

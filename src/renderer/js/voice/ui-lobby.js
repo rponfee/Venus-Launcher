@@ -203,7 +203,7 @@ function roomItem(room, kind, reload) {
     h(
       'div',
       { class: 'vc-room-main' },
-      h('div', { class: 'vc-room-title' }, h('span', { class: 'ellipsis', title: room.name }, room.name), h('span', { class: 'kbd vc-room-code', title: t('voice.roomCode') }, room.code)),
+      h('div', { class: 'vc-room-title' }, h('span', { class: 'ellipsis', title: room.name }, room.name), h('span', { class: 'kbd vc-room-code priv', title: t('voice.roomCode') }, room.code)),
       h('div', { class: 'vc-room-sub' }, h('span', { class: 'ellipsis', title: sub }, sub), roomBadges(room, kind)),
     ),
     faces,

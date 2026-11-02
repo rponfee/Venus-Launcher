@@ -161,4 +161,13 @@ export default {
   net_askSave: "保存",
   net_enable: "开启",
   net_saveError: "无法保存设置",
+  streamerIndicator: "主播模式",
+  streamerIndicatorTitle: "主播模式已开启：代码、地址、好友名字和消息已隐藏。点击打开设置 > 隐私。",
+  streamerCmd: "主播模式",
+  streamerCmdSub: "直播时隐藏代码、地址、好友名字和消息",
+  streamerCmdKeywords: "主播 直播 stream 录制 twitch kick youtube 隐藏 隐私",
+  streamerOn: "主播模式已开启",
+  streamerOnText: "代码、地址、好友名字和消息会一直隐藏，直到你关闭。",
+  streamerOff: "主播模式已关闭",
+  streamerSaveError: "无法更改主播模式",
 };

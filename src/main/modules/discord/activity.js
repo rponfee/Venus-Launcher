@@ -67,6 +67,8 @@ function config(settings) {
     showWorld: raw.showWorld !== undefined ? Boolean(raw.showWorld) : DEFAULTS.showWorld,
     showServer: raw.showServer !== undefined ? Boolean(raw.showServer) : DEFAULTS.showServer,
     buttons: normalizeButtons(raw.buttons),
+    // Modo streamer (settings.privacy.streamer, modules/streamer.js): ni mundo ni servidor mientras dura
+    streamer: settings?.privacy?.streamer === true,
   };
 }
 
@@ -126,8 +128,8 @@ function stateText(session, cfg, t) {
   const act = session.activity;
   if (!act) return t('discord.stateStarting');
   if (act.type === 'menu') return t('discord.stateMenu');
-  if (act.type === 'singleplayer') return cfg.showWorld && act.world ? t('discord.stateWorld', { world: act.world }) : t('discord.stateSingleplayer');
-  if (act.type === 'server') return cfg.showServer && act.address && !isPrivateAddress(act.address) ? t('discord.stateServer', { address: act.address }) : t('discord.stateMultiplayer');
+  if (act.type === 'singleplayer') return cfg.showWorld && !cfg.streamer && act.world ? t('discord.stateWorld', { world: act.world }) : t('discord.stateSingleplayer');
+  if (act.type === 'server') return cfg.showServer && !cfg.streamer && act.address && !isPrivateAddress(act.address) ? t('discord.stateServer', { address: act.address }) : t('discord.stateMultiplayer');
   return t('discord.stateMenu');
 }
 

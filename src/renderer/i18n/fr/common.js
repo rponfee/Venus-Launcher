@@ -162,4 +162,13 @@ export default {
   net_askSave: "Enregistrer",
   net_enable: "Activer",
   net_saveError: "Impossible d’enregistrer le paramètre",
+  streamerIndicator: "Mode streamer",
+  streamerIndicatorTitle: "Mode streamer activé : codes, adresses, noms des amis et messages masqués. Cliquez pour ouvrir Paramètres > Confidentialité.",
+  streamerCmd: "Mode streamer",
+  streamerCmdSub: "Masquer les codes, adresses, noms des amis et messages pendant le stream",
+  streamerCmdKeywords: "streamer stream direct enregistrer twitch kick youtube masquer confidentialité",
+  streamerOn: "Mode streamer activé",
+  streamerOnText: "Codes, adresses, noms des amis et messages restent masqués jusqu’à la désactivation.",
+  streamerOff: "Mode streamer désactivé",
+  streamerSaveError: "Impossible de changer le mode streamer",
 };
