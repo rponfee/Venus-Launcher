@@ -143,3 +143,12 @@ test('normalizeUuid', () => {
   assert.equal(normalizeUuid('nada'), null);
   assert.equal(normalizeUuid(42), null);
 });
+
+test('mcverify: enroll puede devolver { result, rewarded } y se agrega a la respuesta', async () => {
+  const { handler } = setup({ enroll: async () => ({ result: 'ok', rewarded: true }) });
+  const res = await handler(post(ok));
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { uuid: MC, name: 'Steve', rewarded: true });
+  const banned = setup({ enroll: async () => ({ result: 'user_banned' }) });
+  assert.equal((await banned.handler(post(ok))).status, 403);
+});

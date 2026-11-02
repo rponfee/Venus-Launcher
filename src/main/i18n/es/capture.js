@@ -1,0 +1,18 @@
+// Textos del proceso principal de clips y capturas (errores y avisos del overlay).
+module.exports = {
+  errNoGame: 'No hay un juego abierto para capturar.',
+  errNoWindow: 'No se encontró la ventana del juego. Esperá a que termine de abrir y volvé a intentarlo.',
+  errNotReady: 'La captura todavía se está preparando. Probá de nuevo en unos segundos.',
+  errReplayOff: 'La repetición instantánea está apagada. Prendela en Ajustes > En el juego.',
+  errReplayEmpty: 'Todavía no hay nada para guardar en la repetición. Esperá unos segundos.',
+  errInstance: 'No se encontró la instancia.',
+  errNoSpace: 'No hay espacio en el disco para guardar.',
+  errWrite: 'No se pudo guardar el archivo.',
+  errCapture: 'No se pudo capturar la ventana del juego.',
+  errRecordingEmpty: 'La grabación quedó vacía (no llegó ningún cuadro del juego).',
+  errExportEmpty: 'El clip exportado quedó vacío.',
+  errExportTooBig: 'El clip exportado es demasiado grande.',
+  errExportBad: 'El clip exportado está dañado y no se pudo guardar.',
+  errAiUnavailable: 'La IA no está disponible: iniciá sesión en tu cuenta de Venus y revisá que la IA esté activada.',
+  overlayErrorTitle: 'Clips y capturas',
+};

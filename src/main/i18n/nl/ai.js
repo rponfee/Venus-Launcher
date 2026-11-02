@@ -1,5 +1,6 @@
 'use strict';
 module.exports = {
+  errSupportBudget: "Het API-tegoed van je pakket {plan} is niet genoeg voor nog een antwoord met deze instellingen. Probeer een goedkoper model of koop nog een pakket via Pakketten (wat je over hebt, wordt erbij opgeteld).",
   errUnconfirmed: "Bevestig het e-mailadres van je Venus-account om de AI te gebruiken (controleer je inbox).",
   errAnonymous: "Gastaccounts kunnen de AI niet gebruiken: log in met je Venus-account via Instellingen > Account en cloud.",
   errNoPlan: "Om de AI te gebruiken heb je een Venus-abonnement nodig. Klik op “Abonnement upgraden” om er een te kiezen.",
@@ -34,4 +35,5 @@ module.exports = {
   effort_low: "Laag",
   effort_medium: "Gemiddeld",
   effort_high: "Hoog",
+  effort_xhigh: "Extra",
 };

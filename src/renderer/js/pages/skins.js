@@ -15,7 +15,7 @@ import { createCatalogView, memory as catMem, catalogKey, isCatalogKey, catalogV
 let lastPick = null; // ultima skin elegida ('account', un id de la biblioteca o 'cat:<id>'): se recuerda al volver
 
 export default {
-  ns: ['skins'],
+  ns: ['skins', 'skineditor'],
   css: ['pages/skins'],
   render(root) {
     const S = {
@@ -51,6 +51,8 @@ export default {
     // ---------- Encabezado y vista previa ----------
     const refreshBtn = h('button', { class: 'icon-btn', type: 'button', title: t('skins.refresh'), 'aria-label': t('skins.refresh'), onclick: () => refreshAll() }, icon('refresh'));
     const addBtn = h('button', { class: 'btn tonal', type: 'button', onclick: () => addSkins() }, icon('plus'), t('skins.add'));
+    // Editor de skins (pages/skins/editor.js): empieza desde la skin elegida de la biblioteca y al guardar la agrega
+    const editorBtn = h('button', { class: 'btn', type: 'button', title: t('skineditor.openTitle'), onclick: () => import('./skins/editor.js').then((m) => m.openSkinEditor({ libraryId: itemOf(S.selected) ? S.selected : null, onSaved: (r) => afterAdd(r) })).catch((err) => fail(t('skineditor.openFailed'), err)) }, icon('edit'), t('skineditor.open'));
     const viewer = createViewer({ label: t('skins.viewerLabel'), onChange: (v) => barReady && syncViewBar(v) });
     viewer.el.setAttribute('aria-describedby', 'sk-viewer-hint');
     const viewerStatus = h('div', { class: 'sk-viewer-status', role: 'status', 'aria-live': 'polite', hidden: true });
@@ -116,7 +118,7 @@ export default {
         'div',
         { class: 'page-head' },
         h('div', { class: 'ph-text' }, h('h1', { class: 'page-title' }, t('skins.title')), h('p', { class: 'page-sub' }, t('skins.subtitle'))),
-        h('div', { class: 'page-actions' }, refreshBtn, addBtn),
+        h('div', { class: 'page-actions' }, refreshBtn, editorBtn, addBtn),
       ),
       h('div', { class: 'sk-layout' }, stageCard, h('div', { class: 'sk-side' }, accountCard, detailCard, libSection, capesSection)),
     );

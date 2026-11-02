@@ -34,6 +34,16 @@ export default {
   newsTitle: "Yenilikler",
   newsSub: "Her sürümün getirdikleri.",
   newsCurrent: "Senin sürümün",
+  news2000: [
+    "Müzik: Spotify'ı ve her oynatıcıyı launcher'dan ve oyun içi kısayollarla kontrol et.",
+    "Oyun içi kaplama: Voice Chat, mesajlar, uyarılar, kayıtlar ve çalan şarkı; hepsi özelleştirilebilir.",
+    "Klipler ve ekran görüntüleri: ayrı bölüm, kayıt, anında tekrar, düzenleyici ve paylaşma.",
+    "Ayrıntılı profiller: afişler, renk geçişleri, isim yazı tipleri ve efektleri, zamirler, favoriler ve dahası.",
+    "Venus Points: günlük ödül, başarımlar, davet kodları ve kozmetik mağazası.",
+    "Venus Premium: oyunda altın rozet, 2 kat puan, hareketli afişler ve dahası.",
+    "Birlikte oynamak için gruplar ve arkadaşlar ile favori sunucular için uyarılar.",
+    "Paylaşılabilir temalar, 3D görünüm düzenleyici ve oyunda Venus rozeti.",
+  ].join('\n'),
   news1019: [
     "Oyunun içinde Venus: Venus logolu yükleme ekranı, Minecraft logosunun altında \"Venus Launcher\" ve menüde Venus sözleri.",
     "Oyun penceresinde Venus simgesi ve başlığı.",

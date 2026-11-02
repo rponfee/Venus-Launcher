@@ -1,25 +1,16 @@
-// Piezas visuales del modulo social: punto de presencia, cabeza de Minecraft, insignias, tarjeta de perfil,
-// el editor "Mi perfil" y las acciones sobre un amigo (unirse a su servidor, invitar a voz, quitar, bloquear).
+// Piezas visuales del modulo social: punto de presencia, cabeza de Minecraft, insignias, la tarjeta de perfil
+// (con banner, fade, nombre con estilo, marco, titulo, servidores favoritos, estadisticas y capturas destacadas)
+// y las acciones sobre un amigo (unirse a su servidor, invitar a voz, quitar, bloquear).
+// "Mi perfil" abre el editor de features/profile-editor.js.
 // Se pueden usar desde cualquier pagina: cargan solas su hoja de estilos y sus textos.
-import { h, icon, mount, modal, toast, ok, fail, confirmDialog, copyText, avatarImg, ensureCss, registerIcons, fmtAgo, fmtDate, fmtDuration, loaderBadge, instanceLoaderKey, switchEl, setBusy } from '../ui.js';
+import { h, icon, mount, modal, toast, ok, fail, confirmDialog, copyText, avatarImg, ensureCss, registerIcons, fmtAgo, fmtDate, fmtDuration, loaderBadge, instanceLoaderKey, LOADERS } from '../ui.js';
 import { store } from '../store.js';
-import { t, loadNs } from '../i18n.js';
+import { t, loadNs, locale } from '../i18n.js';
 import { social } from '../social.js';
-import {
-  BANNERS,
-  parseBanner,
-  encodeBanner,
-  bannerBackground,
-  bannerName,
-  badgesOf,
-  displayName,
-  headId,
-  isMcName,
-  presenceLabel,
-  activityLine,
-  isJoinable,
-  MY_STATUSES,
-} from './cosmetics.js';
+import { cloud } from '../cloud.js';
+import { badgesOf, headId, presenceLabel, activityLine, isJoinable, MY_STATUSES } from './cosmetics.js';
+import { ensureProfileStyle, normalize, styledName, applyFrame, bannerEl as profileBanner, gradientCss, premiumChip } from './profile-style.js';
+import { mergeProfiles } from '../features/profile-editor/model.js';
 
 registerIcons({
   scCheckCheck: '<path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/>',
@@ -34,7 +25,7 @@ registerIcons({
 // Hoja de estilos y textos del modulo (por si se abre una tarjeta fuera de la pagina de Mensajes).
 export async function prepareSocialUi() {
   ensureCss('pages/messages');
-  await loadNs('social');
+  await Promise.all([loadNs('social'), ensureProfileStyle()]);
 }
 
 // ---------- Piezas ----------
@@ -44,8 +35,11 @@ export function presenceDot(presence, cls = '') {
   return h('span', { class: ['sc-dot', p, cls], role: 'img', 'aria-label': label, title: label });
 }
 
+// Acepta la fila de social (mc_uuid, mc_name, username) o el perfil normalizado (mcUuid, mcName)
+const headSource = (profile) => (profile && ('mcName' in profile || 'mcUuid' in profile) ? { mc_uuid: profile.mcUuid, mc_name: profile.mcName, username: profile.username } : profile);
+
 export function headImg(profile, size = 36, cls = '') {
-  const img = avatarImg(headId(profile), size > 48 ? 128 : 64, ['sc-head', cls].filter(Boolean).join(' '));
+  const img = avatarImg(headId(headSource(profile)), size > 48 ? 128 : 64, ['sc-head', cls].filter(Boolean).join(' '));
   img.style.width = `${size}px`;
   img.style.height = `${size}px`;
   return img;
@@ -72,31 +66,163 @@ export function badgeChips(profile, { compact = false, max = 8 } = {}) {
   );
 }
 
-function bannerEl(value, cls = 'sc-banner') {
-  return h('div', { class: cls, style: { background: bannerBackground(value) } });
+// ---------- Tarjeta de perfil ----------
+const P = (k, vars) => t(`profile.${k}`, vars);
+
+function statTiles(stats) {
+  if (!stats) return null;
+  const nf = (n, max = 0) => {
+    try {
+      return new Intl.NumberFormat(locale(), { maximumFractionDigits: max }).format(n);
+    } catch {
+      return String(n);
+    }
+  };
+  const tile = (value, label) => h('div', { class: 'pf-stat' }, h('div', { class: 'pf-stat-value', title: typeof value === 'string' ? value : null }, value), h('div', { class: 'pf-stat-label' }, label));
+  const tiles = [];
+  if (Number.isFinite(stats.hours)) tiles.push(tile(P('hoursShort', { hours: nf(stats.hours, stats.hours < 10 ? 1 : 0) }), P('statHours')));
+  if (Number.isFinite(stats.sessions)) tiles.push(tile(nf(stats.sessions), P('statSessions')));
+  if (stats.topVersion) tiles.push(tile(stats.topVersion, P('statVersion')));
+  if (stats.topLoader) tiles.push(tile(LOADERS[stats.topLoader] ? loaderBadge(stats.topLoader) : stats.topLoader, P('statLoader')));
+  if (stats.since) {
+    const d = new Date(`${stats.since}T12:00:00`);
+    if (Number.isFinite(d.getTime())) tiles.push(tile(fmtDate(d.getTime(), { month: 'short', year: 'numeric' }), P('statSince')));
+  }
+  return tiles.length ? h('div', { class: 'pf-stats' }, tiles) : null;
 }
 
-// Tarjeta visual del perfil (modal de perfil y vista previa del editor).
-export function profileCard(profile, { presence = 'offline', statusText = '', self = false } = {}) {
-  const name = displayName(profile) || t('social.someone');
+async function joinFavorite(address) {
+  try {
+    const { joinServer } = await import('../features/serverlist.js');
+    await joinServer(address);
+  } catch (err) {
+    fail(t('social.joinFailed'), err);
+  }
+}
+
+function serverRows(servers, { preview, onAction }) {
+  if (!servers?.length) return null;
   return h(
     'div',
-    { class: 'sc-card' },
-    bannerEl(profile?.banner, 'sc-card-banner'),
-    h(
-      'div',
-      { class: 'sc-card-body' },
-      h('div', { class: 'sc-card-head' }, headWithDot(profile, presence, 76)),
-      h('div', { class: 'sc-card-names' }, h('div', { class: 'sc-card-name ellipsis' }, name), profile?.username ? h('div', { class: 'sc-card-user ellipsis' }, `@${profile.username}`) : null),
-      badgeChips(profile),
+    { class: 'pf-servers' },
+    servers.map((s) =>
       h(
         'div',
-        { class: 'sc-card-status' },
-        presenceDot(presence),
-        h('span', { class: 'sc-card-presence' }, self && presence === 'invisible' ? t('social.presence_invisible') : presenceLabel(presence)),
-        statusText ? h('span', { class: 'sc-card-statustext ellipsis', title: statusText }, statusText) : null,
+        { class: 'pf-server' },
+        h('span', { class: 'pf-server-icon' }, icon('server')),
+        h('div', { class: 'pf-server-main' }, h('span', { class: 'pf-server-name ellipsis', title: s.name || s.address }, s.name || s.address), s.name ? h('span', { class: 'pf-server-addr ellipsis', title: s.address }, s.address) : null),
+        h(
+          'button',
+          {
+            class: 'btn tonal sm',
+            type: 'button',
+            disabled: preview,
+            title: P('joinServerTitle', { address: s.address }),
+            'aria-label': P('joinServerTitle', { address: s.address }),
+            onclick: () => {
+              onAction?.();
+              joinFavorite(s.address);
+            },
+          },
+          icon('play'),
+          P('joinServer'),
+        ),
       ),
     ),
+  );
+}
+
+function openShot(shot) {
+  modal({
+    title: shot.title || P('featuredTitle'),
+    size: 'wide',
+    body: h('div', { class: 'pf-lightbox' }, h('img', { src: shot.url, alt: shot.title || P('featuredAlt') })),
+  });
+}
+
+function featuredGrid(list, { preview }) {
+  if (!list?.length) return null;
+  return h(
+    'div',
+    { class: 'pf-featured' },
+    list.map((f, i) =>
+      h(
+        'button',
+        { class: 'pf-shot', type: 'button', disabled: preview, title: f.title || P('featuredAlt'), 'aria-label': f.title ? P('featuredOpen', { title: f.title }) : P('featuredOpenN', { n: i + 1 }), onclick: () => openShot(f) },
+        h('img', { src: f.url, alt: '', loading: 'lazy', decoding: 'async' }),
+        f.title ? h('span', { class: 'pf-shot-title' }, f.title) : null,
+      ),
+    ),
+  );
+}
+
+const section = (iconName, label, content) => (content ? h('div', { class: 'pf-sec' }, h('div', { class: 'pf-sec-label' }, icon(iconName), h('span', {}, label)), content) : null);
+
+/**
+ * Tarjeta del perfil (modal de perfil, vista previa del editor y donde haga falta).
+ * profile: fila de profiles o perfil de profile_public. full: agrega actividad, descripcion, servidores favoritos,
+ * estadisticas, capturas destacadas y datos. preview: vista previa del editor (botones inactivos, acepta blob:).
+ */
+export function profileCard(profile, { presence = 'offline', statusText = '', self = false, full = false, compact = false, friend = null, preview = false, onJoin, onAction } = {}) {
+  ensureProfileStyle();
+  const n = normalize(profile, { allowLocalMedia: preview });
+  const fade = gradientCss(n);
+  const name = n.name || t('social.someone');
+  const head = applyFrame(
+    h('span', { class: 'sc-headwrap pf-card-head', style: { width: '76px', height: '76px' } }, headImg(n, 76), presence ? presenceDot(presence) : null),
+    n,
+  );
+  const sub = [n.pronouns ? h('span', { class: 'ellipsis', title: n.pronouns }, n.pronouns) : null, n.username ? h('span', { class: 'ellipsis', title: `@${n.username}` }, `@${n.username}`) : null].filter(Boolean);
+  const showStatus = presence || statusText;
+  const body = [
+    h('div', { class: 'pf-card-top' }, head, h('div', { class: 'pf-card-chips' }, premiumChip(n), badgeChips(n, { compact: true, max: 6 }))),
+    h(
+      'div',
+      { class: 'pf-card-names' },
+      styledName(n, { size: 'lg', title: true }),
+      sub.length ? h('div', { class: 'pf-card-sub' }, sub.flatMap((s, i) => (i ? [h('span', { class: 'pf-dot-sep', 'aria-hidden': 'true' }), s] : [s]))) : null,
+    ),
+    showStatus
+      ? h(
+          'div',
+          { class: 'pf-card-status' },
+          presenceDot(presence),
+          h('span', { class: 'pf-card-presence' }, self && presence === 'invisible' ? t('social.presence_invisible') : presenceLabel(presence)),
+          statusText ? h('span', { class: 'pf-card-statustext ellipsis', title: statusText }, statusText) : null,
+        )
+      : null,
+  ];
+  if (full) {
+    const facts = [
+      friend?.since ? h('div', { class: 'pf-fact' }, icon('heart'), t('social.friendsSince', { date: fmtDate(friend.since) })) : null,
+      n.mcName ? h('div', { class: 'pf-fact' }, icon('pickaxe'), t('social.mcName', { name: n.mcName })) : null,
+      n.createdAt ? h('div', { class: 'pf-fact' }, icon('calendar'), P('memberSince', { date: fmtDate(n.createdAt, { month: 'long', year: 'numeric' }) })) : null,
+      n.friendCode
+        ? h(
+            'div',
+            { class: 'pf-fact' },
+            icon('hash'),
+            h('span', { class: 'kbd selectable' }, n.friendCode),
+            h('button', { class: 'icon-btn sm', type: 'button', title: t('social.copyCode'), 'aria-label': t('social.copyCode'), onclick: () => copyText(n.friendCode, t('social.codeCopied')) }, icon('copy')),
+          )
+        : null,
+    ].filter(Boolean);
+    body.push(
+      friend?.presence === 'offline' && friend.lastSeen ? h('div', { class: 'pf-profile-note' }, icon('clock'), t('social.lastSeen', { ago: fmtAgo(friend.lastSeen) })) : null,
+      friend ? activityBlock(friend, { onJoin }) : null,
+      section('user', t('social.about'), n.bio ? h('div', { class: 'pf-bio selectable' }, n.bio) : null),
+      section('server', P('favoriteServers'), serverRows(n.favoriteServers, { preview, onAction })),
+      section('chart', P('publicStats'), statTiles(n.publicStats)),
+      section('camera', P('featured'), featuredGrid(n.featured, { preview })),
+      facts.length ? h('div', { class: 'pf-divider', role: 'presentation' }) : null,
+      facts.length ? h('div', { class: 'pf-facts' }, facts) : null,
+    );
+  }
+  return h(
+    'article',
+    { class: ['pf-card', fade && 'has-fade', compact && 'compact'], style: fade ? { '--pf-fade': fade, '--pf-fade-to': n.theme.to } : null, 'aria-label': P('cardAria', { name }) },
+    profileBanner(n, { cls: 'pf-card-banner' }),
+    h('div', { class: 'pf-card-body' }, body),
   );
 }
 
@@ -269,14 +395,54 @@ export async function confirmBlock(user) {
   }
 }
 
-// ---------- Perfil de otro usuario ----------
-export async function openProfile(userId) {
+// ---------- Perfil publico (profile_public, con cache corta) ----------
+const PUBLIC_TTL = 60_000;
+const publicCache = new Map(); // id -> { at, data }
+let publicWarned = false;
+
+/** Perfil completo de cualquier usuario (camelCase) o null si no se pudo (sin sesion, sin servicio o no existe). */
+export async function fetchPublicProfile(userId, { force = false } = {}) {
+  if (!userId) return null;
+  const c = publicCache.get(userId);
+  if (!force && c && Date.now() - c.at < PUBLIC_TTL) return c.data;
+  try {
+    await cloud.ready();
+    if (!cloud.isSignedIn()) return null;
+    const { data, error } = await cloud.client.rpc('profile_public', { p_user: userId });
+    if (error) throw error;
+    const out = data && typeof data === 'object' ? data : null;
+    publicCache.set(userId, { at: Date.now(), data: out });
+    return out;
+  } catch (err) {
+    if (!publicWarned) {
+      publicWarned = true;
+      console.warn('[profile] profile_public:', err?.message || err);
+    }
+    return null;
+  }
+}
+
+// Despues de guardar el perfil propio
+export function forgetPublicProfile(userId) {
+  publicCache.delete(userId);
+}
+
+// ---------- Perfil de otro usuario (o el propio) ----------
+export async function openProfile(userId, { profile: given = null } = {}) {
   await prepareSocialUi();
   const friend = social.friendById(userId);
-  const profile = social.profileOf(userId) || friend?.profile;
-  if (!profile) return;
-  const name = displayName(profile) || t('social.someone');
-  const pres = friend ? social.presenceOf(userId) : { presence: 'offline', statusText: profile.status_text || '' };
+  let base = given || social.profileOf(userId) || friend?.profile || null;
+  if (!base) {
+    base = await fetchPublicProfile(userId);
+    if (!base) {
+      fail(P('loadFailed'), P('loadFailedText'));
+      return null;
+    }
+  }
+  const myId = social.userId || cloud.user?.id || null;
+  const isMe = Boolean(myId && userId === myId);
+  const name = normalize(base).name || t('social.someone');
+  const pres = friend || isMe ? social.presenceOf(userId) : { presence: null, statusText: base.status_text || '' };
   const incoming = social.requests.incoming.find((r) => r.id === userId);
   const outgoing = social.requests.outgoing.find((r) => r.id === userId);
   const isBlocked = social.blocked.some((b) => b.id === userId);
@@ -287,7 +453,13 @@ export async function openProfile(userId) {
     await fn();
   };
   const footer = [];
-  if (friend) {
+  if (isMe) {
+    footer.push(
+      h('button', { class: 'btn ghost', type: 'button', onclick: act(() => import('../features/profile-editor.js').then((mod) => mod.openShareProfile())) }, icon('share'), P('shareProfile')),
+      h('span', { class: 'spacer' }),
+      h('button', { class: 'btn primary', type: 'button', onclick: act(() => openMyProfile()) }, icon('palette'), P('editProfile')),
+    );
+  } else if (friend) {
     footer.push(
       h('button', { class: 'icon-btn danger', type: 'button', title: t('social.block'), 'aria-label': t('social.block'), onclick: act(() => confirmBlock(user)) }, icon('ban')),
       h('button', { class: 'icon-btn danger', type: 'button', title: t('social.remove'), 'aria-label': t('social.remove'), onclick: act(() => confirmRemoveFriend(friend)) }, icon('scUserMinus')),
@@ -306,298 +478,47 @@ export async function openProfile(userId) {
     footer.push(h('button', { class: 'btn', onclick: act(() => social.unblockUser(userId).catch((e) => fail(t('social.actionFailed'), e))) }, icon('check'), t('social.unblock')));
   }
 
-  const m = modal({
-    title: t('social.profileTitle', { name }),
-    body: h(
-      'div',
-      { class: 'sc-profile' },
-      profileCard(profile, { presence: friend ? pres.presence : 'offline', statusText: pres.statusText }),
-      friend?.presence === 'offline' && friend.lastSeen ? h('div', { class: 'sc-lastseen' }, icon('clock'), t('social.lastSeen', { ago: fmtAgo(friend.lastSeen) })) : null,
-      friend ? activityBlock(friend, { onJoin: act(() => joinFriend(friend)) }) : null,
-      profile.bio ? h('div', { class: 'sc-section' }, h('div', { class: 'sc-section-label' }, t('social.about')), h('div', { class: 'sc-bio selectable' }, profile.bio)) : null,
-      h(
-        'div',
-        { class: 'sc-facts' },
-        friend?.since ? h('div', { class: 'sc-fact' }, icon('heart'), t('social.friendsSince', { date: fmtDate(friend.since) })) : null,
-        profile.mc_name ? h('div', { class: 'sc-fact' }, icon('pickaxe'), t('social.mcName', { name: profile.mc_name })) : null,
-        profile.friend_code
-          ? h(
-              'div',
-              { class: 'sc-fact' },
-              icon('hash'),
-              h('span', { class: 'kbd selectable' }, profile.friend_code),
-              h('button', { class: 'icon-btn sm', title: t('social.copyCode'), 'aria-label': t('social.copyCode'), onclick: () => copyText(profile.friend_code, t('social.codeCopied')) }, icon('copy')),
-            )
-          : null,
-      ),
-    ),
-    footer: footer.length ? footer : null,
+  const body = h('div', { class: 'pf-profile' });
+  const draw = (p) =>
+    mount(
+      body,
+      profileCard(p, {
+        full: true,
+        self: isMe,
+        friend,
+        presence: pres.presence,
+        statusText: pres.statusText,
+        onJoin: friend ? act(() => joinFriend(friend)) : undefined,
+        onAction: () => m.close(),
+      }),
+    );
+  draw(base);
+  const m = modal({ title: t('social.profileTitle', { name }), body, footer: footer.length ? footer : null });
+  // Lo personalizado llega aparte (profile_public): se vuelve a dibujar cuando esta
+  fetchPublicProfile(userId).then((pub) => {
+    if (pub && body.isConnected) draw(mergeProfiles(base, pub));
   });
   return m;
 }
 
-// ---------- Mi perfil (editor) ----------
-export async function openMyProfile() {
+// Tarjeta completa de un perfil que ya se tiene (vista previa de cosmeticos, capturas de desarrollo)
+export async function previewProfile(profile, { title, presence = null } = {}) {
   await prepareSocialUi();
-  const me = social.me;
-  if (!me) {
-    fail(t('social.profileMissing'), t('social.profileMissingHelp'));
-    return;
+  const n = normalize(profile, { allowLocalMedia: true });
+  return modal({
+    title: title || t('social.profileTitle', { name: n.name || t('social.someone') }),
+    body: h('div', { class: 'pf-profile' }, profileCard(profile, { full: true, preview: true, presence })),
+  });
+}
+
+// ---------- Mi perfil (editor) ----------
+export async function openMyProfile(opts) {
+  try {
+    const { openProfileEditor } = await import('../features/profile-editor.js');
+    return await openProfileEditor(opts);
+  } catch (err) {
+    console.error('[profile] editor', err);
+    fail(P('openFailed'), err);
+    return null;
   }
-  const prefs = social.prefs();
-  const draft = {
-    display_name: me.display_name || '',
-    status_text: me.status_text || '',
-    bio: me.bio || '',
-    mc_name: me.mc_name || '',
-    mc_uuid: me.mc_uuid || null,
-    banner: me.banner || 'venus',
-    status: prefs.status,
-    shareActivity: prefs.shareActivity,
-    autoAway: prefs.autoAway,
-    notifications: prefs.notifications,
-  };
-
-  const preview = h('div', { class: 'sc-editor-preview' });
-  const drawPreview = () =>
-    mount(
-      preview,
-      profileCard(
-        { ...me, display_name: draft.display_name.trim() || null, status_text: draft.status_text, banner: draft.banner, mc_name: draft.mc_name.trim() || null, mc_uuid: draft.mc_uuid },
-        { presence: draft.status, statusText: draft.status_text.trim(), self: true },
-      ),
-    );
-
-  // Campo con etiqueta enlazada (los controles que no son de texto usan un rotulo + aria-labelledby)
-  let seq = 0;
-  const field = (label, control, hint, extra = null) => {
-    const id = `sc-ed-${++seq}`;
-    const isText = ['INPUT', 'TEXTAREA', 'SELECT'].includes(control.tagName);
-    if (isText) control.id = id;
-    else control.setAttribute('aria-labelledby', `${id}-l`);
-    const hintId = hint ? `${id}-h` : null;
-    if (hintId) control.setAttribute('aria-describedby', hintId);
-    return h('div', { class: 'field' }, isText ? h('label', { for: id }, label) : h('span', { class: 'label', id: `${id}-l` }, label), control, extra, hint ? h('div', { class: 'field-help', id: hintId }, hint) : null);
-  };
-  const input = (key, max, placeholder) => {
-    const el = h('input', { class: 'input', value: draft[key], maxlength: max, placeholder });
-    el.addEventListener('input', () => {
-      draft[key] = el.value;
-      if (key === 'mc_name') draft.mc_uuid = null;
-      drawPreview();
-    });
-    return el;
-  };
-
-  const nameInput = input('display_name', 32, me.username);
-  const statusTextInput = input('status_text', 80, t('social.statusTextPlaceholder'));
-  const mcInput = input('mc_name', 16, 'Steve');
-  const mcError = h('div', { class: 'field-error sc-field-error', id: 'sc-mc-error', role: 'alert', hidden: true });
-  const setMcError = (text) => {
-    mcError.hidden = !text;
-    mount(mcError, text ? [icon('alert'), h('span', {}, text)] : []);
-    if (text) mcInput.setAttribute('aria-invalid', 'true');
-    else mcInput.removeAttribute('aria-invalid');
-  };
-  mcInput.addEventListener('input', () => setMcError(''));
-  // Se valida al salir del campo, no en cada tecla
-  mcInput.addEventListener('blur', () => {
-    const v = mcInput.value.trim();
-    if (v && !isMcName(v)) setMcError(t('social.mcNameInvalid'));
-  });
-  const bioInput = h('textarea', { class: 'textarea', maxlength: 200, rows: 3, placeholder: t('social.bioPlaceholder') }, draft.bio);
-  bioInput.addEventListener('input', () => (draft.bio = bioInput.value));
-
-  const acc = store.selectedAccount();
-  const useAccount = acc
-    ? h(
-        'button',
-        {
-          class: 'btn sm ghost',
-          type: 'button',
-          onclick: () => {
-            mcInput.value = acc.name;
-            draft.mc_name = acc.name;
-            draft.mc_uuid = acc.type === 'msa' && acc.uuid ? acc.uuid : null;
-            drawPreview();
-          },
-        },
-        icon('user'),
-        t('social.useAccount', { name: acc.name }),
-      )
-    : null;
-
-  // Estado
-  const statusSeg = h('div', { class: 'segmented sc-status-seg', role: 'radiogroup', 'aria-label': t('social.status') });
-  const drawStatus = () =>
-    mount(
-      statusSeg,
-      MY_STATUSES.map((s) =>
-        h(
-          'button',
-          {
-            type: 'button',
-            role: 'radio',
-            'aria-checked': String(draft.status === s),
-            class: draft.status === s ? 'active' : '',
-            onclick: () => {
-              draft.status = s;
-              drawStatus();
-              drawPreview();
-            },
-          },
-          presenceDot(s),
-          presenceLabel(s),
-        ),
-      ),
-    );
-
-  // Banner
-  const parsed = parseBanner(draft.banner);
-  const custom = { colors: parsed.kind === 'preset' ? ['#f29a2e', '#3b1450'] : [...parsed.colors] };
-  const colorA = h('input', { type: 'color', class: 'sc-color', value: custom.colors[0], 'aria-label': t('social.bannerColorA') });
-  const colorB = h('input', { type: 'color', class: 'sc-color', value: custom.colors[1], 'aria-label': t('social.bannerColorB') });
-  const applyCustom = () => {
-    custom.colors = [colorA.value, colorB.value];
-    draft.banner = encodeBanner({ kind: colorA.value === colorB.value ? 'solid' : 'gradient', colors: custom.colors });
-    drawBanners();
-    drawPreview();
-  };
-  colorA.addEventListener('input', applyCustom);
-  colorB.addEventListener('input', applyCustom);
-  const bannerGrid = h('div', { class: 'sc-swatches', role: 'radiogroup', 'aria-label': t('social.banner') });
-  const drawBanners = () => {
-    const cur = parseBanner(draft.banner);
-    mount(
-      bannerGrid,
-      BANNERS.map((b) =>
-        h('button', {
-          type: 'button',
-          role: 'radio',
-          'aria-checked': String(cur.kind === 'preset' && cur.id === b.id),
-          class: ['sc-swatch', cur.kind === 'preset' && cur.id === b.id && 'active'],
-          title: bannerName(b.id),
-          'aria-label': bannerName(b.id),
-          style: { background: bannerBackground(b.id) },
-          onclick: () => {
-            draft.banner = b.id;
-            drawBanners();
-            drawPreview();
-          },
-        }),
-      ),
-      h(
-        'div',
-        { class: ['sc-swatch-custom', cur.kind !== 'preset' && 'active'], title: t('social.bannerCustom') },
-        colorA,
-        colorB,
-      ),
-    );
-  };
-
-  const codeBox = h(
-    'div',
-    { class: 'sc-code' },
-    h('span', { class: 'sc-code-value selectable' }, me.friend_code || '—'),
-    me.friend_code ? h('button', { class: 'icon-btn sm', type: 'button', title: t('social.copyCode'), 'aria-label': t('social.copyCode'), onclick: () => copyText(me.friend_code, t('social.codeCopied')) }, icon('copy')) : null,
-  );
-
-  const toggle = (key, title, sub) =>
-    h(
-      'div',
-      { class: 'toggle-row' },
-      h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, title), h('div', { class: 'tr-sub' }, sub)),
-      switchEl(Boolean(draft[key]), (v) => (draft[key] = v), title),
-    );
-
-  drawPreview();
-  drawStatus();
-  drawBanners();
-
-  const saveBtn = h('button', { class: 'btn primary', type: 'button' }, icon('save'), t('social.save'));
-  const m = modal({
-    title: t('social.myProfile'),
-    size: 'wide',
-    body: h(
-      'div',
-      { class: 'sc-editor' },
-      h(
-        'div',
-        { class: 'sc-editor-side' },
-        preview,
-        h('div', { class: 'sc-section-label' }, t('social.yourCode')),
-        codeBox,
-        h('div', { class: 'field-help sc-code-hint' }, t('social.yourCodeHint')),
-      ),
-      h(
-        'div',
-        { class: 'sc-editor-form' },
-        field(t('social.displayName'), nameInput),
-        field(t('social.status'), statusSeg, t('social.statusHint')),
-        field(t('social.statusText'), statusTextInput),
-        mcField(),
-        field(t('social.bio'), bioInput),
-        field(t('social.banner'), bannerGrid),
-        h('div', { class: 'sc-section-label' }, t('social.privacy')),
-        h(
-          'div',
-          { class: 'sc-toggles' },
-          toggle('shareActivity', t('social.shareActivity'), t('social.shareActivityHint')),
-          toggle('autoAway', t('social.autoAway'), t('social.autoAwayHint')),
-          toggle('notifications', t('social.notifications'), t('social.notificationsHint')),
-        ),
-      ),
-    ),
-    footer: [h('button', { class: 'btn ghost', type: 'button', onclick: () => m.close() }, t('social.cancel')), saveBtn],
-  });
-
-  // Nombre de Minecraft: campo + "Usar mi cuenta" en la misma fila, ayuda y error debajo
-  function mcField() {
-    mcInput.id = 'sc-mc-name';
-    mcInput.setAttribute('aria-describedby', 'sc-mc-hint');
-    return h(
-      'div',
-      { class: 'field' },
-      h('label', { for: 'sc-mc-name' }, t('social.mcNameLabel')),
-      h('div', { class: 'sc-mc-row' }, mcInput, useAccount),
-      mcError,
-      h('div', { class: 'field-help', id: 'sc-mc-hint' }, t('social.mcNameHint')),
-    );
-  }
-
-  saveBtn.addEventListener('click', async () => {
-    const mc = draft.mc_name.trim();
-    if (mc && !isMcName(mc)) {
-      setMcError(t('social.mcNameInvalid'));
-      mcInput.focus();
-      return;
-    }
-    setMcError('');
-    const next = {
-      display_name: draft.display_name.trim() || null,
-      status_text: draft.status_text.trim() || null,
-      bio: draft.bio.trim() || null,
-      mc_name: mc || null,
-      mc_uuid: mc ? draft.mc_uuid : null,
-      banner: draft.banner,
-    };
-    const patch = {};
-    for (const [k, v] of Object.entries(next)) if ((me[k] ?? null) !== v) patch[k] = v;
-    const release = setBusy(saveBtn);
-    try {
-      if (Object.keys(patch).length) await social.updateProfile(patch);
-      const p = social.prefs();
-      if (p.status !== draft.status || p.shareActivity !== draft.shareActivity || p.autoAway !== draft.autoAway || p.notifications !== draft.notifications) {
-        await social.setPrefs({ status: draft.status, shareActivity: draft.shareActivity, autoAway: draft.autoAway, notifications: draft.notifications });
-      }
-      m.close();
-      ok(t('social.profileSaved'));
-    } catch (err) {
-      fail(t('social.saveFailed'), err);
-    } finally {
-      release();
-    }
-  });
-  setTimeout(() => nameInput.focus(), 40);
-  return m;
 }

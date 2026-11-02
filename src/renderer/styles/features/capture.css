@@ -1,0 +1,53 @@
+/* Clips y capturas: panel de Ajustes, avisos al guardar y visor de lo que manda un amigo. Prefijo .cap-. */
+
+/* ---------- Avisos ---------- */
+.cap-toast { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-1); min-width: 0; }
+.cap-toast-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.cap-toast-btn { flex-shrink: 0; }
+
+/* ---------- Lo que manda un amigo ---------- */
+.cap-share-view { display: grid; place-items: center; }
+.cap-share-media { max-width: 100%; max-height: 60vh; border-radius: var(--radius); background: var(--bg-0); border: 1px solid var(--border); }
+
+/* ---------- Panel de Ajustes ---------- */
+.cap-panel { display: flex; flex-direction: column; gap: var(--sp-4); container-type: inline-size; }
+.cap-head { display: flex; align-items: center; gap: var(--sp-3); }
+.cap-logo { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--accent-wash); border: 1px solid var(--accent-line); color: var(--accent-hi); flex-shrink: 0; }
+.cap-logo svg { width: 20px; height: 20px; }
+.cap-head-text { flex: 1; min-width: 0; }
+.cap-sub { font-size: var(--fs-sm); color: var(--muted); line-height: 1.45; max-width: 68ch; }
+.cap-status .pill { gap: var(--sp-2); }
+.cap-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.cap-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-4); }
+/* Dos columnas solo si el panel es ancho (en Ajustes queda angosto al lado del menu de secciones) */
+@container (min-width: 980px) { .cap-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cap-col { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.cap-section { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-4); border-radius: var(--radius); background: var(--well-bg); border: 1px solid var(--border); }
+.cap-section-title { display: flex; align-items: center; gap: var(--sp-2); font-weight: 600; font-size: var(--fs-md); }
+.cap-section-title svg { width: 18px; height: 18px; color: var(--accent-hi); }
+.cap-help { margin: 0; font-size: var(--fs-xs); color: var(--muted); line-height: 1.5; }
+.cap-note { margin: 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-sm); color: var(--text-2); }
+.cap-note > svg { width: 16px; height: 16px; color: var(--warn-text); flex-shrink: 0; }
+.cap-note > span { flex: 1 1 220px; min-width: 0; }
+.cap-note.good > svg { color: var(--good-text); }
+.cap-field { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.cap-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.cap-toggle { padding: 0; }
+.cap-sc-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-2) 0; border-top: 1px solid var(--border); }
+.cap-sc-row:first-of-type { border-top: 0; }
+.cap-sc-label { min-width: 0; }
+.cap-sc-row > .cap-err { grid-column: 1 / -1; }
+.cap-keys-box { min-height: 28px; display: flex; align-items: center; }
+.cap-keys { display: inline-flex; gap: 3px; flex-wrap: nowrap; white-space: nowrap; }
+.cap-none { font-size: var(--fs-xs); color: var(--muted); font-style: italic; }
+.cap-listening { font-size: var(--fs-sm); color: var(--accent-hi); font-weight: 600; }
+.cap-sc-actions { display: flex; gap: var(--sp-1); align-items: center; }
+.cap-err { display: flex; align-items: center; gap: var(--sp-1); }
+.cap-err svg { width: 14px; height: 14px; flex-shrink: 0; }
+.cap-copy { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.cap-copy-text { min-width: 0; flex: 1; }
+
+
+/* Textos de las filas de atajos y de la copia extra (fuera de .toggle-row) */
+.cap-sc-label .tr-title, .cap-copy-text .tr-title { font-size: var(--fs-md); font-weight: 600; color: var(--text); }
+.cap-sc-label .tr-sub, .cap-copy-text .tr-sub { font-size: var(--fs-xs); font-weight: 400; color: var(--muted); line-height: 1.45; margin-top: 2px; }

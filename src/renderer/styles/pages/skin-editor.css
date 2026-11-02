@@ -1,0 +1,123 @@
+/* ============================================================
+   Editor de skins (pages/skins/editor.js, prefijo .se-)
+   El lienzo se dibuja con los tokens de main.css (editor/canvas.js los lee); la vista 3D usa las clases
+   .sk- del visor de la página Skins (styles/pages/skins.css).
+   ============================================================ */
+
+/* Diálogo grande: ocupa casi toda la ventana */
+.modal.se-modal { width: min(1280px, 100%); height: calc(100vh - 64px); max-height: 960px; }
+.se-modal .modal-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding-bottom: var(--sp-3); }
+/* Lienzo | vista 3D | color, capas y modelo */
+.se-root { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) clamp(188px, 18vw, 240px) clamp(248px, 22vw, 280px); gap: var(--sp-4); }
+
+/* ---------- Zona principal ---------- */
+.se-main { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; min-height: 0; container: se-main / inline-size; }
+.se-toolbar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px; padding: var(--sp-1);
+  border-radius: var(--radius); background: var(--well-bg); border: 1px solid var(--border);
+}
+.se-group { display: flex; gap: 2px; }
+.se-toolbar .icon-btn { width: 34px; height: 34px; }
+.se-toolbar .icon-btn svg { width: 18px; height: 18px; }
+.se-sep { width: 1px; height: 22px; margin: 0 var(--sp-1); background: var(--border-2); flex: none; }
+.se-zoom { min-width: 38px; text-align: center; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+
+.se-stage {
+  flex: 1; min-height: 0; overflow: auto; display: grid; place-items: center; padding: var(--sp-3);
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: radial-gradient(70% 70% at 50% 45%, var(--accent-wash), transparent 75%), var(--well-bg);
+}
+.se-surface { display: block; line-height: 0; border-radius: 4px; outline: none; cursor: crosshair; touch-action: none; user-select: none; }
+.se-surface:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+.se-surface[data-tool="picker"] { cursor: copy; }
+.se-surface[data-tool="bucket"] { cursor: cell; }
+.se-canvas { display: block; image-rendering: pixelated; border-radius: 2px; box-shadow: var(--shadow-s); }
+
+.se-status { display: flex; align-items: center; gap: var(--sp-2); min-height: 22px; min-width: 0; font-size: var(--fs-sm); color: var(--text-2); }
+.se-status-pos { flex: none; min-width: 86px; color: var(--muted); }
+.se-status-sw { width: 14px; height: 14px; flex: none; border-radius: 3px; background: var(--se-sw); box-shadow: 0 0 0 1px var(--border-3); }
+.se-status-sw.se-clear { background: repeating-conic-gradient(var(--surface-4) 0 25%, var(--surface-2) 0 50%) 50% / 6px 6px; }
+.se-status-zone { flex: 1; min-width: 0; }
+.se-status-note { flex: none; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-weight: 600; color: var(--accent-hi); }
+.se-legend { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-xs); color: var(--muted); }
+.se-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.se-legend-item i { width: 12px; height: 12px; border-radius: 3px; border: 2px solid var(--se-c); }
+.se-legend-dash i { border: 2px dashed var(--muted); }
+.se-help { margin: 0; max-width: 96ch; font-size: var(--fs-xs); line-height: 1.5; color: var(--muted); }
+
+/* ---------- Panel lateral ---------- */
+.se-side { display: flex; flex-direction: column; gap: var(--sp-3); min-height: 0; overflow-y: auto; padding-right: 2px; }
+.se-card { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
+.se-h { margin: 0; font-size: var(--fs-sm); font-weight: 600; line-height: 1.3; color: var(--text); }
+.se-sub { margin: 0; font-size: var(--fs-xs); color: var(--muted); }
+.se-preview { min-height: 0; padding: var(--sp-2); }
+.se-preview .sk-viewer { flex: 1; height: auto; min-height: 180px; }
+.se-seg { display: flex; width: 100%; }
+.se-seg > button { flex: 1; justify-content: center; }
+
+.se-layers { display: flex; flex-direction: column; gap: var(--sp-1); }
+.se-layer { display: flex; align-items: center; gap: var(--sp-1); padding-right: 4px; border-radius: var(--radius-s); border: 1px solid transparent; }
+.se-layer.active { background: var(--accent-wash); border-color: var(--accent-line); }
+.se-layer-pick {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-2); padding: 6px 8px;
+  border: 0; border-radius: var(--radius-s); background: none; color: inherit; font: inherit; text-align: left;
+}
+.se-layer-pick:hover { background: var(--hover-bg); }
+.se-radio { width: 16px; height: 16px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--border-3); }
+.se-layer.active .se-radio { border-color: var(--accent-hi); }
+.se-layer.active .se-radio::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-hi); }
+.se-layer-text { display: flex; flex-direction: column; min-width: 0; }
+.se-layer-name { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.se-layer-sub { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.se-hidden-layer .se-layer-name { color: var(--muted); text-decoration: line-through; }
+
+.se-color-row { position: relative; display: flex; align-items: center; gap: var(--sp-2); }
+.se-current { width: 38px; height: 38px; flex: none; border-radius: var(--radius-s); background: var(--se-sw); border: 2px solid var(--border-3); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.3); }
+.se-hex-field { flex: 1; margin: 0; }
+.se-hex { font-family: var(--mono); }
+.se-native-color { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.se-palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(26px, 1fr)); gap: 4px; }
+.se-sw {
+  aspect-ratio: 1; min-width: 24px; padding: 0; border-radius: 6px; background: var(--se-sw);
+  border: 1px solid rgba(0, 0, 0, 0.4); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.se-sw:hover { transform: scale(1.08); }
+.se-sw[aria-pressed="true"] { outline: 2px solid var(--accent-hi); outline-offset: 1px; }
+.se-mini-label { margin-bottom: 4px; font-size: var(--fs-xs); color: var(--muted); }
+
+/* ---------- Pie ---------- */
+.se-foot-name { display: flex; align-items: center; gap: var(--sp-2); }
+.se-foot-name label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.se-name-wrap { position: relative; }
+.se-name { width: 220px; }
+.se-name-err { position: absolute; left: 0; bottom: calc(100% + 4px); white-space: nowrap; padding: 2px 8px; border-radius: var(--radius-s); background: var(--surface-raised); box-shadow: var(--shadow-s); }
+
+/* ---------- Empezar desde ---------- */
+.se-start { display: flex; flex-direction: column; gap: var(--sp-3); }
+.se-start-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: var(--sp-2); }
+.se-start-tile {
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); min-width: 0; padding: var(--sp-2);
+  border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font: inherit;
+  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.se-start-tile:hover { border-color: var(--border-3); background: var(--surface-3); }
+.se-start-art { height: 96px; display: grid; place-items: center; }
+.se-start-thumb { width: 48px; height: 96px; image-rendering: pixelated; }
+.se-start-name { max-width: 100%; font-size: var(--fs-sm); font-weight: 600; }
+
+/* Ventana mínima: la barra entra en una sola fila */
+@container se-main (max-width: 540px) {
+  .se-toolbar { gap: 0; }
+  .se-toolbar .icon-btn { width: 30px; height: 30px; }
+  .se-toolbar .icon-btn svg { width: 16px; height: 16px; }
+  .se-sep { margin: 0 2px; }
+  .se-zoom { min-width: 30px; }
+}
+
+/* Ventanas bajas (680 px): más lugar para el lienzo */
+@media (max-height: 760px) {
+  .se-help { display: none; }
+}
+
+html.ax-hc .se-card, html.ax-hc .se-stage, html.ax-hc .se-toolbar { border-color: var(--border-3); }

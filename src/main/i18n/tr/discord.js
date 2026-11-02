@@ -21,4 +21,5 @@ module.exports = {
   errDisabled: "Önce Rich Presence'ı etkinleştir.",
   errNoClientId: "Discord Rich Presence, başlatıcının bu sürümünde kullanılamıyor.",
   errNoDiscord: "Discord bu bilgisayarda açık değil. Discord masaüstü uygulamasını açıp tekrar dene.",
+  errClientIdFormat: "Application ID, 17 ila 21 haneli bir metin olmalı ya da dahil değeri kullanmak için boş bırakılmalı. Token yapıştırma.",
 };

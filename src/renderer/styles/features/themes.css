@@ -1,0 +1,122 @@
+/* ============================================================
+   Temas compartibles (features/themes.js, prefijo .th-)
+   La interfaz usa los tokens de main.css. Las vistas previas reciben los colores DEL TEMA que muestran
+   por variables en línea (--th-accent, --th-bg, --th-surface, --th-text, --th-dim, --th-blur), así no
+   dependen del tema que está usando el jugador.
+   ============================================================ */
+
+.th-panel { display: flex; flex-direction: column; gap: var(--sp-4); container: th / inline-size; }
+.th-head { margin-bottom: 0; }
+.th-head .card-sub { margin: var(--sp-1) 0 0; max-width: 68ch; }
+.th-section { display: flex; flex-direction: column; gap: var(--sp-3); padding-top: var(--sp-4); border-top: 1px solid var(--border); min-width: 0; }
+.th-h { display: flex; align-items: center; gap: var(--sp-2); margin: 0; font-size: var(--fs-md); font-weight: 600; line-height: 1.3; color: var(--text); }
+.th-h svg { width: 16px; height: 16px; color: var(--accent-hi); flex: none; }
+
+/* Aviso de tema aplicado con "Volver al anterior" */
+.th-undo { align-items: center; }
+.th-undo-text { flex: 1; min-width: 0; }
+.th-undo .btn { flex: none; }
+
+/* ---------- Tu tema ---------- */
+.th-mine-grid { display: grid; grid-template-columns: minmax(200px, 300px) minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+.th-mine-side { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.th-mine-summary { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.th-chip-row { display: flex; align-items: center; gap: var(--sp-2); font-weight: 600; color: var(--text); min-width: 0; }
+.th-swatch { width: 14px; height: 14px; border-radius: 50%; background: var(--th-sw); box-shadow: 0 0 0 2px var(--border-2); flex: none; }
+.th-meta { font-size: var(--fs-sm); color: var(--muted); overflow-wrap: anywhere; }
+.th-code { font-family: var(--mono); font-size: var(--fs-sm); }
+.th-code-field { margin: 0; }
+.th-stars-note { margin: 0; }
+
+/* ---------- Usar un código ---------- */
+.th-import .field { margin: 0; }
+.th-import-row { display: flex; gap: var(--sp-2); }
+.th-import-row .input { flex: 1; min-width: 0; }
+.th-import-row .btn { flex: none; }
+.th-import-result {
+  display: grid; grid-template-columns: minmax(170px, 240px) minmax(0, 1fr); gap: var(--sp-4); align-items: center;
+  padding: var(--sp-3); border-radius: var(--radius); background: var(--well-bg); border: 1px solid var(--border);
+}
+.th-import-side { display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-start; min-width: 0; }
+.th-import-side .btn { margin-top: var(--sp-1); }
+
+/* ---------- Comunidad ---------- */
+.th-community-head { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.th-community-head .th-h { flex: 1; min-width: 160px; }
+.th-seg button svg { width: 14px; height: 14px; }
+.th-gallery-host { min-height: 120px; }
+.th-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: var(--sp-3); }
+.th-card {
+  display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface-2);
+  transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.th-card:hover { border-color: var(--border-2); }
+.th-card:focus-within { border-color: var(--border-3); }
+.th-card-active { border-color: var(--accent-line); box-shadow: 0 0 0 1px var(--accent-line) inset; }
+.th-card > .th-preview { border: 0; border-bottom: 1px solid var(--border); border-radius: 0; }
+.th-card-body { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); min-width: 0; }
+.th-card-name { font-size: 15px; font-weight: 600; color: var(--text); }
+.th-card-meta { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); font-size: var(--fs-xs); color: var(--muted); min-width: 0; }
+.th-uses { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.th-uses svg { width: 12px; height: 12px; }
+.th-card-actions { display: flex; align-items: center; gap: var(--sp-2); }
+.th-card-actions .btn { flex: 1; min-width: 0; }
+.th-more { display: flex; justify-content: center; }
+
+/* ---------- Publicar ---------- */
+.th-publish { display: flex; flex-direction: column; gap: var(--sp-4); }
+.th-publish > .th-preview { width: 100%; max-width: 340px; align-self: center; }
+.th-publish .field { margin: 0; }
+.th-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
+.th-count { font-size: var(--fs-xs); color: var(--muted); }
+.th-fine { margin: 0; font-size: var(--fs-xs); line-height: 1.5; color: var(--muted); }
+
+/* ---------- Vista previa de un tema ---------- */
+.th-preview {
+  position: relative; aspect-ratio: 16 / 10; overflow: hidden; isolation: isolate;
+  border-radius: var(--radius); border: 1px solid var(--border-2); background: var(--th-bg);
+}
+.th-pv-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(var(--th-blur, 0)); transform: scale(1.06); }
+.th-pv-stars {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255, 255, 255, 0.85), transparent 70%),
+    radial-gradient(1px 1px at 34% 72%, rgba(255, 255, 255, 0.6), transparent 70%),
+    radial-gradient(1.5px 1.5px at 58% 28%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(1px 1px at 78% 64%, rgba(255, 255, 255, 0.55), transparent 70%),
+    radial-gradient(1px 1px at 88% 12%, rgba(255, 255, 255, 0.7), transparent 70%),
+    radial-gradient(1.5px 1.5px at 22% 48%, rgba(255, 255, 255, 0.5), transparent 70%),
+    radial-gradient(1px 1px at 66% 88%, rgba(255, 255, 255, 0.65), transparent 70%),
+    radial-gradient(70% 60% at 50% 40%, color-mix(in srgb, var(--th-accent) 12%, transparent), transparent 75%);
+}
+.th-pv-dim { position: absolute; inset: 0; background: var(--th-bg); opacity: var(--th-dim, 0); }
+.th-pv-ui { position: absolute; inset: 8% 7%; display: grid; grid-template-columns: 22% minmax(0, 1fr); gap: 5%; }
+.th-pv-ui i { display: block; }
+.th-pv-side {
+  display: flex; flex-direction: column; gap: 8%; padding: 10% 12%; border-radius: 6px;
+  background: color-mix(in srgb, var(--th-surface) 90%, transparent); border: 1px solid color-mix(in srgb, var(--th-text) 8%, transparent);
+}
+.th-pv-logo { width: 46%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--th-accent) 55%, white), var(--th-accent) 60%); }
+.th-pv-nav { height: 9%; border-radius: 3px; background: color-mix(in srgb, var(--th-text) 20%, transparent); }
+.th-pv-nav.on { background: color-mix(in srgb, var(--th-accent) 38%, transparent); box-shadow: inset 2px 0 0 var(--th-accent); }
+.th-pv-main { display: flex; flex-direction: column; gap: 6%; min-width: 0; }
+.th-pv-title { height: 9%; width: 46%; border-radius: 3px; background: color-mix(in srgb, var(--th-text) 70%, var(--th-accent)); }
+.th-pv-card {
+  flex: 1; display: flex; flex-direction: column; gap: 9%; padding: 7%; border-radius: 7px;
+  background: color-mix(in srgb, var(--th-surface) 92%, transparent); border: 1px solid color-mix(in srgb, var(--th-accent) 26%, transparent);
+}
+.th-pv-line { height: 10%; border-radius: 3px; background: color-mix(in srgb, var(--th-text) 32%, transparent); }
+.th-pv-line.short { width: 62%; }
+.th-pv-row { display: flex; gap: 6%; height: 24%; margin-top: auto; }
+.th-pv-btn { width: 44%; border-radius: 4px; background: linear-gradient(180deg, color-mix(in srgb, var(--th-accent) 78%, white), var(--th-accent)); }
+.th-pv-chip { width: 30%; border-radius: 99px; border: 1px solid var(--th-accent); background: color-mix(in srgb, var(--th-accent) 18%, transparent); }
+.th-pv-bar { height: 5%; border-radius: 99px; background: linear-gradient(90deg, var(--th-accent) 62%, color-mix(in srgb, var(--th-text) 14%, transparent) 62%); }
+
+/* Contenedor angosto (Ajustes con la ventana mínima o el diálogo de Apariencia) */
+@container th (max-width: 600px) {
+  .th-mine-grid, .th-import-result { grid-template-columns: minmax(0, 1fr); }
+  .th-mine-preview, .th-import-result > .th-preview { max-width: 320px; }
+}
+
+html.ax-hc .th-preview, html.ax-hc .th-card { border-color: var(--border-3); }

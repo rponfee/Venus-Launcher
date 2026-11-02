@@ -34,6 +34,16 @@ export default {
   newsTitle: "Wat is er nieuw",
   newsSub: "Wat elke versie heeft gebracht.",
   newsCurrent: "Jouw versie",
+  news2000: [
+    "Muziek: bedien Spotify en elke speler vanuit de launcher en met sneltoetsen in het spel.",
+    "Overlay in het spel: Voice Chat, berichten, meldingen, opnames en het nummer dat speelt, volledig aanpasbaar.",
+    "Clips en screenshots: eigen sectie, opnemen, directe herhaling, editor en delen.",
+    "Uitgebreide profielen: banners, kleurverlopen, lettertypen en effecten voor je naam, voornaamwoorden, favorieten en meer.",
+    "Venus Points: dagelijkse beloning, prestaties, uitnodigingscodes en een cosmeticawinkel.",
+    "Venus Premium: gouden badge in het spel, dubbele punten, geanimeerde banners en meer.",
+    "Groepen om samen te spelen en meldingen over vrienden en favoriete servers.",
+    "Deelbare thema's, een 3D-skineditor en de Venus-badge in het spel.",
+  ].join('\n'),
   news1019: [
     "Venus in het spel: laadscherm met het Venus-logo, \"Venus Launcher\" onder het Minecraft-logo en Venus-splashes in het menu.",
     "Het Venus-icoon en de titel op het spelvenster.",

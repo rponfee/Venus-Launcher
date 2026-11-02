@@ -1,0 +1,50 @@
+/* ============================================================
+   Venus Premium (features/premium.js): beneficios de tener un plan de Venus. Prefijo: .pm-
+   Solo tokens de main.css: el tema de Apariencia, el daltonismo y el alto contraste los cambian en vivo.
+   ============================================================ */
+.pm-panel {
+  position: relative; display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; padding: var(--sp-5);
+  border-radius: var(--radius-l); border: 1px solid var(--border); background: var(--card-bg);
+  container: premium / inline-size;
+}
+.pm-panel.active {
+  border-color: var(--accent-line);
+  background: radial-gradient(520px 200px at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%), var(--card-bg);
+}
+.pm-head { display: flex; align-items: flex-start; gap: var(--sp-4); min-width: 0; }
+.pm-mark {
+  width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; flex-shrink: 0; color: var(--accent-hi);
+  background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--accent-hi) 28%, transparent), color-mix(in srgb, var(--accent) 8%, transparent) 70%);
+  border: 1px solid var(--accent-line);
+}
+.pm-mark svg { width: 24px; height: 24px; }
+.pm-head-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.pm-title {
+  margin: 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
+  font-family: var(--pixel); font-size: var(--fs-xl); font-weight: 700; line-height: 1.2; color: var(--cream); text-wrap: balance;
+}
+.pm-title .pill { font-family: var(--font); letter-spacing: 0; }
+.pm-sub { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2); max-width: 68ch; text-wrap: pretty; }
+
+.pm-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-2); }
+.pm-perk {
+  display: flex; align-items: flex-start; gap: var(--sp-3); min-width: 0; padding: var(--sp-3);
+  border-radius: var(--radius); border: 1px solid var(--border); background: var(--well-bg);
+}
+.pm-perk-icon {
+  width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0;
+  color: var(--accent-hi); background: var(--accent-wash); border: 1px solid var(--accent-line);
+}
+.pm-perk-icon svg { width: 16px; height: 16px; }
+.pm-perk-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pm-perk-title { font-weight: 600; font-size: var(--fs-md); line-height: 1.3; color: var(--text); }
+.pm-perk-text { font-size: var(--fs-sm); line-height: 1.45; color: var(--muted); text-wrap: pretty; }
+
+.pm-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; padding-top: var(--sp-3); border-top: 1px solid var(--border); }
+.pm-note { margin: 0; flex: 1; min-width: 220px; font-size: var(--fs-xs); line-height: 1.5; color: var(--muted); max-width: 68ch; }
+.pm-foot .btn { flex-shrink: 0; }
+
+@container premium (max-width: 480px) {
+  .pm-head { gap: var(--sp-3); }
+  .pm-foot .btn { width: 100%; justify-content: center; }
+}

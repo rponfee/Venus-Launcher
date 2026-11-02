@@ -1,5 +1,6 @@
 'use strict';
 module.exports = {
+  errSupportBudget: "{plan} planının API bakiyesi bu ayarlarla bir yanıt daha için yetmiyor. Daha düşük maliyetli bir model dene veya Planlar bölümünden başka bir plan satın al (kalan bakiyen eklenir).",
   errUnconfirmed: "Yapay zekayı kullanmak için Venus hesabının e-postasını doğrula (gelen kutunu kontrol et).",
   errAnonymous: "Misafir hesaplar yapay zekayı kullanamaz: Ayarlar > Hesap ve bulut bölümünden Venus hesabınla giriş yap.",
   errNoPlan: "Yapay zekayı kullanmak için bir Venus planına ihtiyacın var. Birini seçmek için “Planı yükselt” düğmesine bas.",
@@ -34,4 +35,5 @@ module.exports = {
   effort_low: "Düşük",
   effort_medium: "Orta",
   effort_high: "Yüksek",
+  effort_xhigh: "Ekstra",
 };

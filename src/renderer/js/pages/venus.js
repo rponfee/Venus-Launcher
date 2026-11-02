@@ -23,6 +23,7 @@ const TABS = [
 
 // Novedades: la clave tiene una linea por cambio (la primera es la version que esta corriendo).
 const NEWS = [
+  { version: '2.0.0', key: 'news2000' },
   { version: '1.0.19', key: 'news1019' },
   { version: '1.0.18', key: 'news1018' },
   { version: '1.0.17', key: 'news1017' },

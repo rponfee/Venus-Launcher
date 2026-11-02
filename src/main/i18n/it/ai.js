@@ -1,5 +1,6 @@
 'use strict';
 module.exports = {
+  errSupportBudget: "Il saldo API del tuo piano {plan} non basta per un'altra risposta con queste impostazioni. Prova un modello meno costoso o compra un altro piano in Piani (quello che ti resta si somma).",
   errUnconfirmed: "Conferma l'email del tuo account Venus per usare l'IA (controlla la posta).",
   errAnonymous: "Gli account ospite non possono usare l'IA: accedi con il tuo account Venus in Impostazioni > Account e cloud.",
   errNoPlan: "Per usare l'IA ti serve un piano Venus. Clicca su «Potenzia il piano» per sceglierne uno.",
@@ -34,4 +35,5 @@ module.exports = {
   effort_low: "Basso",
   effort_medium: "Medio",
   effort_high: "Alto",
+  effort_xhigh: "Extra",
 };

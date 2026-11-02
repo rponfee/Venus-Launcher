@@ -63,7 +63,16 @@ Con **Ajustes → General → Venus en el juego → Insignia de Venus junto a tu
 - Pide tu **cuenta de Venus** y una **cuenta de Microsoft**: al prenderla (y al jugar, si todavía no estaba) el launcher verifica con Mojang que la cuenta de Minecraft es tuya y la anota en el servidor de Venus. Las cuentas sin conexión no pueden tener insignia. Hasta 5 cuentas de Minecraft por cuenta de Venus.
 - Debajo del interruptor se ve el estado: verificando, listo con el nombre de la cuenta o qué falta (iniciar sesión, cuenta sin multijugador, sin conexión…).
 - Al apagarla se borran tus cuentas del servidor y el mod sale de las instancias la próxima vez que jugás. Si lo desactivás a mano en la lista de mods de una instancia, el launcher lo respeta.
+- **Estilos de la insignia**: con Venus Premium se ve **dorada**; en la tienda de Venus Points se compran **Nebulosa** y **Hielo** (se equipan en Venus Points o en Mi perfil).
 - El mod no se exporta en los modpacks. Cómo funciona por dentro, qué se manda y cómo se despliega: [insignia.md](insignia.md).
+
+### Overlay en el juego
+
+Mientras jugás, Venus muestra encima del juego quién habla en el Voice Chat y quién está silenciado, los mensajes que te llegan, avisos (del launcher, de amigos, de tus servidores, logros y Venus Points), capturas, clips y grabación, y la canción que suena.
+
+- En **Ajustes → En el juego** activás cada widget, elegís su lugar en una grilla de 3×3 o lo arrastrás a donde quieras (en la vista previa o con **Editar posiciones en el juego**), y cambiás su tamaño, opacidad y tema (oscuro, claro o acento). Podés ocultar el texto de los mensajes (solo se ve quién escribió) y elegir qué avisos ver.
+- **Alt+Shift+O** (se puede cambiar) lo muestra u oculta mientras jugás. **Probar overlay** manda avisos de ejemplo.
+- Anda con cualquier versión y loader. En pantalla completa exclusiva puede no verse: jugá en ventana maximizada o sin bordes. Detalles: [overlay.md](overlay.md).
 
 ### Versiones e instancias
 
@@ -115,6 +124,40 @@ En **Skins** (menú Jugar) mirás tu skin en 3D, explorás el catálogo, guardá
 - **Capa**: elegí cuál de las capas de tu cuenta se ve, o **Sin capa**.
 - Para cambiar la skin o la capa, primero tiene que cargarse tu perfil de Minecraft; si no carga, tocá **Reintentar**. Los cambios se ven en el juego la próxima vez que entres a un mundo o a un servidor.
 - Necesita: nada para la vista previa y la biblioteca, que funcionan sin internet (también con una cuenta sin conexión o sin cuenta). Para cambiar la skin o la capa, una cuenta de Microsoft con Minecraft: Java Edition; si la sesión venció, la página te ofrece volver a iniciar sesión. Con el modo sin conexión activado (**Ajustes → Descargas y almacenamiento**) no se conecta a nada.
+
+### Editor de skins
+
+En **Skins → Editor de skins** creás una skin de 64×64 (clásica o slim) desde cero o desde una de tu biblioteca: lápiz, goma, balde, cuentagotas, espejo izquierda/derecha, capa base y capa exterior, paleta y selector de color, zoom, deshacer y rehacer (Ctrl+Z / Ctrl+Y), plantilla con las zonas marcadas y vista 3D en vivo. Al guardarla queda en tu biblioteca, lista para usar en tu cuenta. Ver [temas.md](temas.md).
+
+### Clips y capturas
+
+**Clips y capturas** (menú Jugar) junta las capturas, clips y grabaciones de todas tus instancias, con filtros por instancia y fecha, búsqueda y un visor que se maneja con el teclado (borrar va a la papelera).
+
+- Con el juego abierto: **Alt+Shift+F12** saca una captura de la ventana del juego, **Alt+Shift+F9** empieza y termina una grabación y, si prendés la **repetición instantánea** en **Ajustes → En el juego**, **Alt+Shift+F8** guarda los últimos 30 segundos (2 minutos con Venus Premium). Los atajos, la calidad (720p, 1080p o nativa), los cuadros por segundo y el audio se cambian ahí.
+- **Editor**: recortá el inicio y el final y exportá en horizontal o en vertical 9:16 para TikTok y Shorts.
+- **Compartir**: link para compartir, **A un amigo** (le llega un aviso con **Ver**) o **Destacar en mi perfil** (hasta 3 capturas).
+- **Describir con IA** (opcional, con tu plan de Venus y con confirmación): describe hasta 20 capturas por vez para encontrarlas por lo que muestran.
+- Se guardan dentro de cada instancia, en `screenshots/`, `clips/` y `recordings/`, así que también aparecen en Mundos. La repetición instantánea viene apagada (usa CPU y memoria) y solo corre con el juego abierto. Detalles: [clips.md](clips.md).
+
+### Música
+
+En **Música** (menú Jugar) ves lo que suena en Spotify (gratis o Premium), YouTube Music, Apple Music, el navegador o cualquier reproductor que use los controles multimedia de Windows: portada, canción, artista y progreso.
+
+- Pausar, pasar de tema, volver, adelantar o retroceder 10 segundos y cambiar el volumen de esa app en el mezclador de Windows sin tocar el del juego. **Abrir Spotify** lo trae al frente.
+- El **mini reproductor** de la barra lateral te deja pausar o pasar de tema desde cualquier página, y con el overlay activo la canción aparece sobre el juego cuando cambia.
+- **Atajos dentro del juego** (apagados por defecto, en **Ajustes → En el juego**): Ctrl+Alt+Espacio para pausar y Ctrl+Alt+flechas para cambiar de tema y de volumen; se pueden cambiar.
+- Por defecto se controla Spotify si está sonando; podés elegir otro reproductor. Solo Windows 10 (1809 o posterior) y 11; no pide cuenta de Spotify ni conexión. Detalles: [musica.md](musica.md).
+
+### Venus Points y Premium
+
+**Venus Points** (menú Jugar) son los puntos de tu cuenta de Venus. Tu saldo se ve abajo en la barra lateral.
+
+- **Premio diario**: 10 puntos por día y 5 más por cada día seguido (hasta 35). Se reclama con un botón.
+- **Logros**: jugar, sumar instancias, hacer amigos, sacar capturas, crear una skin, verificar tu cuenta de Minecraft y más. Los de tu PC se reclaman solos.
+- **Invitaciones**: compartí tu código `VP-XXXXXX`. Cuando un amigo nuevo lo canjea (en sus primeros 14 días) y verifica su cuenta de Minecraft, vos ganás 500 y tu amigo 200. Sin verificar con Mojang no paga: así no se puede hacer trampa con cuentas falsas.
+- **Tienda**: marcos para tu perfil, efectos para tu nombre, estilos de la insignia en el juego y títulos. Se equipan al instante.
+- **Venus Premium** (cualquier plan de Venus): puntos x2 en el premio diario y los logros, insignia dorada en el juego, banners animados, efectos de nombre premium, Marco Venus y título Supporter, repetición instantánea de 2 minutos y todo lo del plan (IA). Se ve en **Venus Points → Premium** y en **Ajustes → Plan**.
+- Necesita: cuenta de Venus. Reglas completas: [venus-points.md](venus-points.md).
 
 ## Contenido
 
@@ -181,6 +224,33 @@ Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, F
 - **Mi perfil**: banner, estado (en línea, ausente, ocupado o invisible), mensaje de estado, nombre de Minecraft y privacidad. Podés bloquear a alguien y dejar de compartir tu actividad en **Ajustes → Privacidad**.
 - Si tu cuenta está silenciada o suspendida por moderación, Mensajes te lo avisa (con la fecha hasta la que dura) y no te deja escribir.
 - Necesita: cuenta de Venus.
+
+### Perfiles
+
+**Mi perfil** (en Mensajes, tocando tu cabeza, o **Ajustes → Cuenta y nube → Editar perfil**) abre un editor con vista previa en vivo de tu tarjeta y de cómo se ve tu nombre en la lista de un amigo:
+
+- **Perfil**: pronombres y descripción.
+- **Estilo**: degradado de dos colores con ángulo, tipografía del nombre (7), efecto (brillo, degradado, destello, arcoíris o fuego), color y brillo del nombre.
+- **Banner**: 8 diseños pixel, tu propia imagen (se recorta y comprime en tu PC), un GIF animado con Premium o el color clásico.
+- **Vitrina**: hasta 5 servidores favoritos (tus amigos los ven con **Unirme**), tus estadísticas (si las querés publicar) y hasta 3 capturas destacadas.
+- **Cosméticos**: marco, título y estilo de la insignia de la tienda o de Premium. Lo premium que no tenés se ve con un candado que lleva a los planes.
+- **Compartir mi perfil** arma una imagen PNG de tu tarjeta para copiar o guardar. Ver [perfiles.md](perfiles.md).
+
+### Grupos para jugar
+
+Tocá **Grupo** en la barra de título (o la tarjeta en **Multijugador → Amigos jugando**), creá un grupo e invitá a tus amigos conectados (hasta 8 personas contándote).
+
+- Como líder elegís una de tus instancias (si está compartida, tus amigos la importan o actualizan con el código) y dónde jugar: un servidor guardado, uno de los favoritos de tu perfil, una dirección o tu propio mundo abierto a amigos.
+- Ves quién está listo, podés crear una sala de voz para todos y, con **Jugar todos**, cada uno entra con su instancia (si le falta, el launcher le ofrece importarla o crear una compatible).
+- Si el líder se desconecta, el grupo se disuelve con un aviso. Necesita: cuenta de Venus. Ver [grupos.md](grupos.md).
+
+### Avisos
+
+En **Ajustes → Privacidad → Avisos** elegís qué te avisa el launcher:
+
+- Un amigo entra a un servidor (con **Unirme**) o a un mundo: como mucho una vez cada 10 minutos por amigo, y podés silenciar a quien quieras.
+- Un servidor favorito vuelve a estar en línea, se llena o se vacía: se revisan cada 5 minutos solo con el launcher abierto. Los favoritos del perfil vienen apagados; los marcás con la campana o los prendés en el panel.
+- Mientras jugás, los avisos solo aparecen en el overlay del juego (se puede cambiar).
 
 ## Herramientas
 
@@ -309,16 +379,17 @@ Si no se sabe qué mod lo causa, **Buscar el culpable** prueba activando y desac
 El engranaje de abajo a la izquierda. Cada sección tiene su enlace directo (por ejemplo, desde otros lugares del launcher te lleva directo a "Cuenta y nube" o a "Inteligencia artificial").
 
 - **General**: idioma (14, se cambia al instante), qué hace el launcher al empezar a jugar (seguir abierto, minimizarse u ocultarse) y abrir la consola al jugar.
-- **Apariencia**: temas planetarios (Venus, Marte, Neptuno, Júpiter, Tierra y Saturno) o tu propio color, fondo de la galería (99 fondos, 16 animados), de tu propia imagen o video (con oscurecer y desenfocar) o estrellas, con un botón a la página de fondos, música de fondo que se pausa al jugar o en Voice Chat, y tu marca: logo, nombre y **Tu servidor** (el que aparece en el Inicio), con prueba de conexión.
+- **Apariencia**: temas planetarios (Venus, Marte, Neptuno, Júpiter, Tierra y Saturno) o tu propio color, fondo de la galería (99 fondos, 16 animados), de tu propia imagen o video (con oscurecer y desenfocar) o estrellas, con un botón a la página de fondos, música de fondo que se pausa al jugar o en Voice Chat, y tu marca: logo, nombre y **Tu servidor** (el que aparece en el Inicio), con prueba de conexión. **Temas**: copiá el código de tu tema (`VENUS-THEME:…`, solo colores y fondo; si tu fondo es una imagen de tu PC, el código usa las estrellas), pegá el de otro jugador y probalo antes de usarlo, o elegí uno de la galería de la comunidad (Populares y Nuevos) con tu cuenta de Venus; también podés publicar el tuyo (hasta 10). Se aplica al instante y podés volver al anterior.
+- **En el juego**: el overlay (widgets, posiciones, tamaño, opacidad, tema y atajo), la grabación y la repetición instantánea (atajos, calidad, fps y audio) y la música (reproductor elegido, mostrarla en el overlay y atajos).
 - **Accesibilidad**: modos para daltonismo con intensidad regulable, alto contraste, tamaño de la interfaz (90 a 130 %), movimiento reducido, foco siempre visible, símbolos en los estados y navegación con control (ver [Atajos y control](#atajos-y-control)). También instala **Controlify** para jugar Minecraft con control.
-- **Cuenta y nube**: tus cuentas de Minecraft y tu cuenta de Venus (crearla, iniciar sesión, código de amigo, nombre visible y contraseña).
-- **Privacidad**: compartir o no tu actividad con tus amigos, qué datos quedan en tu PC y cuáles en la nube, y **Discord Rich Presence**: muestra en tu perfil de Discord si estás en el launcher o jugando (instancia, versión, mundo o servidor, tiempo y hasta 2 botones), sin mostrar nunca direcciones IP. Solo hace falta dejar abierta la app de escritorio de Discord (la web no sirve); **Probar** muestra una actividad de prueba.
+- **Cuenta y nube**: tus cuentas de Minecraft y tu cuenta de Venus (crearla, iniciar sesión, código de amigo, nombre visible y contraseña) y **Editar perfil**.
+- **Privacidad**: compartir o no tu actividad con tus amigos, qué datos quedan en tu PC y cuáles en la nube, **Avisos** de amigos y servidores favoritos, y **Discord Rich Presence**: muestra en tu perfil de Discord si estás en el launcher o jugando (instancia, versión, mundo o servidor, tiempo y hasta 2 botones), sin mostrar nunca direcciones IP. Solo hace falta dejar abierta la app de escritorio de Discord (la web no sirve); **Probar** muestra una actividad de prueba.
 - **Inteligencia artificial**: estado de la IA, tu plan con las preguntas que te quedan por modelo y el presupuesto del mes, activar o desactivar la IA, **Probar la IA**, la conexión con **Claude y ChatGPT (MCP)**, los **servidores MCP del asistente** y qué se envía.
-- **Plan**: tu plan de Venus IA (con aviso si un pago falló o si la suscripción se cancela), las tarjetas de los 6 planes con su precio, modelos y preguntas, **Mejorar plan** (abre el pago de Stripe en tu navegador) y **Administrar suscripción** (cambiar la tarjeta, ver facturas o cancelar).
+- **Plan**: tu plan de Venus IA (con aviso si un pago falló o si la suscripción se cancela), las tarjetas de los 6 planes con su precio, modelos y preguntas, **Mejorar plan** (abre el pago de Stripe en tu navegador) y **Administrar suscripción** (cambiar la tarjeta, ver facturas o cancelar), y los beneficios de **Venus Premium**.
 - **Java**: el Java que descargó Venus, el que encuentra en tu PC, probar un ejecutable y qué Java usa cada versión de Minecraft.
 - **Descargas y almacenamiento**: medidor de descargas en vivo, pausa, límite de velocidad, descargas simultáneas y **modo sin conexión**; **estado de los servicios** (¿es tu conexión o un servicio caído?); uso del disco por categoría; **unificar archivos repetidos** (los mods y packs iguales de varias instancias pasan a ocupar lugar una sola vez, también en automático) y limpieza con vista previa (caché, versiones y Java que no usa nadie, descargas incompletas). La limpieza borra para siempre lo que se puede volver a descargar, y pide confirmación.
 - **Datos**: dónde se guarda todo (podés moverlo a otra carpeta o disco, con reinicio), cuánto ocupa cada cosa, vaciar la caché y el modo portable.
-- **Acerca de**: versión, información para copiar y créditos. Venus no se actualiza solo por ahora: las versiones nuevas se instalan a mano.
+- **Acerca de**: versión, información para copiar, **Novedades de Venus 2.0** (el recorrido de lo nuevo, también con Ctrl+K) y créditos. Venus no se actualiza solo por ahora: las versiones nuevas se instalan a mano.
 
 ## Atajos y control
 

@@ -11,19 +11,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
 
 /**
- * Quién tiene la insignia de Venus, sin Minecraft de por medio (se prueba con JUnit).
+ * Quién tiene la insignia de Venus y con qué estilo, sin Minecraft de por medio (se prueba con JUnit).
  *
- * <p>Los mixins preguntan {@link #hasBadge} en cada cuadro: la respuesta sale siempre de la memoria y, si el
+ * <p>Los mixins preguntan {@link #style} en cada cuadro: la respuesta sale siempre de la memoria y, si el
  * jugador no está o venció, queda anotado para la próxima consulta. El hilo del mod llama a {@link #tick} y
  * pregunta al servidor en lotes de hasta {@value #MAX_BATCH} jugadores, con un pedido cada
  * {@value #MIN_INTERVAL_MS} ms como mucho. Si falla la red espera cada vez más (hasta 10 minutos) y mientras
  * tanto no se dibuja ninguna insignia nueva: nunca bloquea el juego.
  */
 public final class BadgeCache {
-	/** Pregunta al servidor cuáles de estos jugadores tienen la insignia. */
+	/** Pregunta al servidor cuáles de estos jugadores tienen la insignia: UUID → estilo ("default", "gold"...). */
 	@FunctionalInterface
 	public interface Fetcher {
-		Set<UUID> fetch(List<UUID> batch) throws IOException;
+		Map<UUID, String> fetch(List<UUID> batch) throws IOException;
 	}
 
 	static final int MAX_BATCH = 100;
@@ -35,7 +35,8 @@ public final class BadgeCache {
 	static final int MAX_PENDING = 1_000;
 	static final long IDLE_MS = 1_000;
 
-	private record Entry(boolean badge, long expiresAt) {}
+	/** style null = sin insignia. */
+	private record Entry(String style, long expiresAt) {}
 
 	private final Map<UUID, Entry> known = new ConcurrentHashMap<>();
 	private final Set<UUID> pending = ConcurrentHashMap.newKeySet();
@@ -57,11 +58,16 @@ public final class BadgeCache {
 		return id != null && id.version() == 4;
 	}
 
-	public boolean hasBadge(UUID id) {
-		if (!eligible(id)) return false;
+	/** El estilo de la insignia del jugador, o null si no la tiene (o todavía no se sabe). */
+	public String style(UUID id) {
+		if (!eligible(id)) return null;
 		Entry e = known.get(id);
 		if ((e == null || e.expiresAt <= clock.getAsLong()) && pending.size() < MAX_PENDING) pending.add(id);
-		return e != null && e.badge;
+		return e == null ? null : e.style;
+	}
+
+	public boolean hasBadge(UUID id) {
+		return style(id) != null;
 	}
 
 	/** Hace como mucho un pedido y devuelve cuántos ms esperar hasta la próxima llamada. */
@@ -71,7 +77,7 @@ public final class BadgeCache {
 		if (pending.isEmpty()) return IDLE_MS;
 		List<UUID> batch = new ArrayList<>(MAX_BATCH);
 		for (Iterator<UUID> it = pending.iterator(); it.hasNext() && batch.size() < MAX_BATCH; ) batch.add(it.next());
-		Set<UUID> badges;
+		Map<UUID, String> badges;
 		try {
 			badges = fetcher.fetch(batch);
 		} catch (IOException | RuntimeException err) {
@@ -84,7 +90,7 @@ public final class BadgeCache {
 		if (known.size() + batch.size() > MAX_ENTRIES) prune(now);
 		long expiresAt = now + TTL_MS;
 		for (UUID id : batch) {
-			known.put(id, new Entry(badges.contains(id), expiresAt));
+			known.put(id, new Entry(badges.get(id), expiresAt));
 			pending.remove(id);
 		}
 		return MIN_INTERVAL_MS;

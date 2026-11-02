@@ -17,8 +17,8 @@ export interface BadgeDeps {
   takeChallenge: (userId: string, serverId: string) => Promise<boolean>;
   // El perfil si la cuenta entró con ese serverId; null si no. Lanza si Mojang no responde.
   hasJoined: (name: string, serverId: string) => Promise<MojangProfile | null>;
-  // 'ok' | 'too_many_accounts' | 'user_banned'
-  enroll: (userId: string, uuid: string) => Promise<string>;
+  // 'ok' | 'too_many_accounts' | 'user_banned', o { result, rewarded } (mcverify: si se pagó una invitación)
+  enroll: (userId: string, uuid: string) => Promise<string | { result: string; rewarded?: boolean }>;
 }
 
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
@@ -96,14 +96,17 @@ export function createBadgeHandler(deps: BadgeDeps) {
     if (!profile || normalizeUuid(profile.id) !== uuid) return fail(403, 'not_verified');
 
     let result: string;
+    let extra: Record<string, unknown> = {};
     try {
-      result = await deps.enroll(auth.userId, uuid);
+      const out = await deps.enroll(auth.userId, uuid);
+      result = typeof out === 'string' ? out : String(out?.result ?? '');
+      if (out && typeof out === 'object') extra = { rewarded: out.rewarded === true };
     } catch {
       return fail(500, 'server_error');
     }
     if (result === 'too_many_accounts') return fail(409, 'too_many_accounts');
     if (result === 'user_banned') return fail(403, 'user_banned');
     if (result !== 'ok') return fail(500, 'server_error');
-    return json(200, { uuid, name: profile.name || name });
+    return json(200, { uuid, name: profile.name || name, ...extra });
   };
 }

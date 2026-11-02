@@ -1,5 +1,6 @@
 'use strict';
 module.exports = {
+  errSupportBudget: "{plan}プランのAPI残高では、この設定でもう1回応答するのに足りません。低コストのモデルを試すか、「プラン」で別のプランを購入してください（残っている分は加算されます）。",
   errUnconfirmed: "AIを使うには、Venusアカウントのメールアドレスを確認してください（受信トレイをご確認ください）。",
   errAnonymous: "ゲストアカウントではAIを使えません。設定 > アカウントとクラウドで、Venusアカウントにログインしてください。",
   errNoPlan: "AIを使うにはVenusのプランが必要です。「プランをアップグレード」を押して選択してください。",
@@ -34,4 +35,5 @@ module.exports = {
   effort_low: "低",
   effort_medium: "中",
   effort_high: "高",
+  effort_xhigh: "最高",
 };

@@ -75,18 +75,21 @@ function createBadgeClient({ fetch, cloudConfig, accessToken }) {
   }
 
   // account: la de getLaunchAccount ({ type: 'msa', uuid, name, accessToken }). Devuelve el UUID anotado.
-  async function enroll(account) {
+  // fn: la Edge Function que recibe la verificación: 'badge' (anota la insignia) o 'mcverify' (solo verifica la cuenta,
+  // para las invitaciones de Venus Points; ver modules/rewards.js). Con mcverify devuelve { uuid, rewarded }.
+  async function enroll(account, { fn = 'badge' } = {}) {
+    if (fn !== 'badge' && fn !== 'mcverify') throw coded('server', `fn ${fn}`);
     const uuid = normalizeUuid(account?.uuid);
     if (account?.type !== 'msa' || !uuid || !account.accessToken) throw coded('offlineAccount');
     const serverId = await rpc('badge_challenge');
     if (typeof serverId !== 'string' || !/^[0-9a-f]{40}$/.test(serverId)) throw coded('server', 'challenge');
     await mojangJoin(account, serverId);
     const { cfg, headers } = await supa();
-    const res = await request(`${cfg.url}/functions/v1/badge`, { method: 'POST', headers, body: JSON.stringify({ uuid, name: account.name, serverId }) });
+    const res = await request(`${cfg.url}/functions/v1/${fn}`, { method: 'POST', headers, body: JSON.stringify({ uuid, name: account.name, serverId }) });
     const data = await res.json().catch(() => null);
-    if (res.ok && normalizeUuid(data?.uuid) === uuid) return uuid;
+    if (res.ok && normalizeUuid(data?.uuid) === uuid) return fn === 'badge' ? uuid : { uuid, rewarded: data?.rewarded === true };
     const code = data?.error?.code;
-    if (res.status === 404) throw coded('unavailable', 'badge');
+    if (res.status === 404) throw coded('unavailable', fn);
     if (res.status === 401 || code === 'unauthorized') throw coded('noSession');
     if (code === 'not_verified') throw coded('notVerified');
     if (code === 'too_many_accounts') throw coded('tooManyAccounts');

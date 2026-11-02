@@ -21,4 +21,5 @@ module.exports = {
   errDisabled: "먼저 Rich Presence를 켜 주세요.",
   errNoClientId: "이 런처 버전에서는 Discord Rich Presence를 사용할 수 없어요.",
   errNoDiscord: "이 PC에서 Discord가 실행되고 있지 않아요. Discord 데스크톱 앱을 열고 다시 시도해 주세요.",
+  errClientIdFormat: "Application ID는 17~21자리 숫자이거나, 포함된 값을 사용하려면 비어 있어야 해요. 토큰은 붙여 넣지 마세요.",
 };

@@ -1,0 +1,18 @@
+// Main-process texts for clips and captures (errors and overlay notices).
+module.exports = {
+  errNoGame: 'There is no game open to capture.',
+  errNoWindow: "Couldn't find the game window. Wait until it finishes opening and try again.",
+  errNotReady: 'Capture is still getting ready. Try again in a few seconds.',
+  errReplayOff: 'Instant replay is off. Turn it on in Settings > In game.',
+  errReplayEmpty: "There's nothing to save in the replay yet. Wait a few seconds.",
+  errInstance: "Couldn't find the instance.",
+  errNoSpace: 'There is no disk space left to save.',
+  errWrite: "Couldn't save the file.",
+  errCapture: "Couldn't capture the game window.",
+  errRecordingEmpty: 'The recording is empty (no frames arrived from the game).',
+  errExportEmpty: 'The exported clip is empty.',
+  errExportTooBig: 'The exported clip is too large.',
+  errExportBad: "The exported clip is damaged and couldn't be saved.",
+  errAiUnavailable: 'AI is not available: sign in to your Venus account and check that AI is turned on.',
+  overlayErrorTitle: 'Clips and captures',
+};

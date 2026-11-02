@@ -1,5 +1,6 @@
 'use strict';
 module.exports = {
+  errSupportBudget: "你的 {plan} 套餐 API 余额不足以在当前设置下再生成一次回答。请尝试成本更低的模型，或在“套餐”中再购买一个套餐（剩余余额会累加）。",
   errUnconfirmed: "请先确认你的 Venus 账号的邮箱，才能使用 AI（请查看你的邮件）。",
   errAnonymous: "游客账号无法使用 AI：请在 设置 > 账号与云端 中登录你的 Venus 账号。",
   errNoPlan: "使用 AI 需要 Venus 套餐。点击“升级套餐”来选择一个。",
@@ -34,4 +35,5 @@ module.exports = {
   effort_low: "低",
   effort_medium: "中",
   effort_high: "高",
+  effort_xhigh: "极高",
 };

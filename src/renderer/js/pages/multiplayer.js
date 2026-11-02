@@ -668,10 +668,20 @@ function isOnline(presence) {
 function friendsView(ctx) {
   const { panel, ping, isAlive } = ctx;
   const box = h('div', { class: 'mpa-wrap' });
-  mount(panel, box);
+  // Grupos para jugar (features/party.js): armar un grupo con amigos y entrar todos juntos
+  const partySlot = h('div', { class: 'mp-party-slot', style: { marginBottom: 'var(--sp-4)' } });
+  mount(panel, partySlot, box);
   const cards = new Map(); // direccion -> funciones de actualizacion
   let playing = [];
   const offs = [];
+  import('../features/party.js')
+    .then((m) => {
+      if (!isAlive()) return;
+      const card = m.partyCard();
+      partySlot.append(card);
+      offs.push(() => card.destroy());
+    })
+    .catch((err) => console.warn('[multiplayer] grupos', err));
 
   const friendsSkeleton = () => skeleton('grid', { items: 3, min: 300, lines: 2, label: t(`${NS}.friendsLoading`) });
 

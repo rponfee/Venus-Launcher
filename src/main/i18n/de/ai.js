@@ -1,5 +1,6 @@
 'use strict';
 module.exports = {
+  errSupportBudget: "Das API-Guthaben deines Abos {plan} reicht mit diesen Einstellungen für keine weitere Antwort. Probier ein günstigeres Modell oder kaufe unter Abo ein weiteres Abo (dein Restguthaben wird übernommen).",
   errUnconfirmed: "Bestätige die E-Mail-Adresse deines Venus-Kontos, um die KI zu nutzen (sieh in deinem Postfach nach).",
   errAnonymous: "Gastkonten können die KI nicht nutzen: Melde dich unter Einstellungen > Konto und Cloud mit deinem Venus-Konto an.",
   errNoPlan: "Um die KI zu nutzen, brauchst du ein Venus-Abo. Klicke auf „Abo upgraden“, um eines auszuwählen.",
@@ -34,4 +35,5 @@ module.exports = {
   effort_low: "Niedrig",
   effort_medium: "Mittel",
   effort_high: "Hoch",
+  effort_xhigh: "Extra",
 };

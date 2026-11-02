@@ -1,0 +1,58 @@
+/* Música: mini reproductor de la barra lateral y tarjeta de ajustes. Prefijo .np- */
+
+/* ---------- Mini reproductor ---------- */
+.np-mini {
+  position: relative; overflow: hidden; margin: 0 10px 8px; padding: 6px 6px 8px 6px;
+  display: flex; align-items: center; gap: var(--sp-1);
+  border: 1px solid var(--border); border-radius: var(--radius); background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+.np-mini[hidden] { display: none; }
+.np-mini-open {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 2px; margin-right: 2px;
+  border: 0; background: none; color: inherit; text-align: left; cursor: pointer; border-radius: var(--radius-s);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.np-mini-open:hover { background: var(--hover-bg); }
+.np-mini-open:focus-visible { outline: var(--focus-ring); outline-offset: 0; }
+.np-mini-art {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-xs); overflow: hidden; display: grid; place-items: center;
+  background: var(--surface-3);
+}
+.np-mini-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.np-mini-art svg { width: 18px; height: 18px; color: var(--accent-hi); }
+.np-mini-text { min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+.np-mini-title, .np-mini-artist { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-mini-title { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.np-mini-artist { font-size: var(--fs-xs); color: var(--muted); }
+.np-mini-btn { flex-shrink: 0; }
+.np-mini-btn svg { width: 16px; height: 16px; }
+.np-mini-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--border); }
+.np-mini-bar i { display: block; height: 100%; background: var(--accent); transform-origin: left center; transform: scaleX(0); transition: transform 1s linear; }
+
+/* ---------- Tarjeta de ajustes ---------- */
+.np-panel .card-head { margin-bottom: var(--sp-3); }
+.np-panel-body { display: flex; flex-direction: column; }
+.np-field { margin-bottom: var(--sp-3); max-width: 520px; }
+.np-toggle { gap: var(--sp-4); }
+
+.np-sc-list { display: flex; flex-direction: column; gap: 2px; margin: var(--sp-1) 0 var(--sp-2); border: 1px solid var(--border); border-radius: var(--radius); background: var(--well-bg); padding: var(--sp-1); }
+.np-sc-list.off .np-sc-label, .np-sc-list.off .np-sc-keys { opacity: 0.7; }
+.np-sc-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--sp-3);
+  min-height: 44px; padding: 6px var(--sp-3); border-radius: var(--radius-s);
+}
+.np-sc-row:hover { background: var(--hover-bg); }
+.np-sc-row.recording { background: var(--accent-wash); box-shadow: inset 0 0 0 1px var(--accent-line); }
+.np-sc-label { min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-sc-keys { display: inline-flex; justify-content: flex-end; min-width: 120px; }
+.np-keys { display: inline-flex; gap: var(--sp-1); flex-wrap: wrap; justify-content: flex-end; }
+.np-sc-recording { font-size: var(--fs-sm); color: var(--accent-hi); font-weight: 600; }
+.np-sc-pill { white-space: nowrap; }
+.np-sc-actions { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.np-sc-msg { margin: 0; }
+.np-panel-notice { margin: 0; }
+
+@media (max-width: 1180px) {
+  .np-sc-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .np-sc-pill { grid-column: 1 / -1; justify-self: start; order: 5; }
+}

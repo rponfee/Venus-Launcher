@@ -1,0 +1,200 @@
+/* ============================================================
+   Novedades de Venus 2.0 (features/whatsnew.js, prefijo .wn-)
+   Los dibujos de cada pantalla son formas con los tokens del tema (siguen al color de Apariencia).
+   Con movimiento reducido main.css apaga las animaciones.
+   ============================================================ */
+
+.modal.wn-modal { width: min(900px, 100%); }
+.wn-modal .modal-body { padding-top: var(--sp-1); }
+.wn-body { position: relative; }
+
+/* ---------- Pantalla ---------- */
+.wn-slide { display: grid; grid-template-columns: minmax(0, 46%) minmax(0, 1fr); gap: var(--sp-6); align-items: center; min-height: 340px; }
+.wn-enter-next { animation: wn-in-next var(--dur-slow) var(--ease-out); }
+.wn-enter-prev { animation: wn-in-prev var(--dur-slow) var(--ease-out); }
+@keyframes wn-in-next { from { opacity: 0; transform: translateX(18px); } }
+@keyframes wn-in-prev { from { opacity: 0; transform: translateX(-18px); } }
+
+.wn-text { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.wn-kicker {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 4px 10px;
+  border-radius: var(--radius-full); background: var(--accent-wash); border: 1px solid var(--accent-line);
+  font-size: var(--fs-xs); font-weight: 700; color: var(--accent-hi);
+}
+.wn-kicker svg { width: 14px; height: 14px; }
+.wn-title { margin: 0; font-family: var(--pixel); font-size: 28px; font-weight: 600; line-height: 1.15; color: var(--cream); text-wrap: balance; }
+.wn-desc { margin: 0; max-width: 52ch; font-size: var(--fs-md); line-height: 1.55; color: var(--text-2); }
+.wn-bullets { display: flex; flex-direction: column; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+.wn-bullets li { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--fs-sm); line-height: 1.45; color: var(--text); }
+.wn-bullets svg { width: 16px; height: 16px; margin-top: 1px; flex: none; color: var(--good); }
+.wn-cta { align-self: flex-start; margin-top: var(--sp-1); }
+
+/* ---------- Pie: puntos ---------- */
+.wn-dots { display: flex; align-items: center; gap: 0; }
+.wn-dot-btn { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; }
+.wn-dot-mark { width: 8px; height: 8px; border-radius: 50%; background: var(--border-3); transition: transform var(--dur) var(--ease-out), background var(--dur) var(--ease-out); }
+.wn-dot-btn:hover .wn-dot-mark { background: var(--text-2); }
+.wn-dot-btn.active .wn-dot-mark { background: var(--accent-hi); transform: scale(1.45); }
+
+/* ---------- Escena ---------- */
+.wn-art {
+  position: relative; height: 340px; overflow: hidden; isolation: isolate;
+  border-radius: var(--radius-l); border: 1px solid var(--border-2);
+  background: radial-gradient(80% 70% at 28% 18%, var(--accent-wash), transparent 70%), linear-gradient(160deg, var(--surface-3), var(--bg-1));
+}
+:where(.wn-art) i { display: block; }
+.wn-glow { position: absolute; left: 50%; top: 50%; width: 72%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, var(--accent-glow), transparent); opacity: 0.5; }
+.wn-mock {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  border-radius: 14px; background: color-mix(in srgb, var(--surface-raised) 94%, transparent); border: 1px solid var(--border-2); box-shadow: var(--shadow);
+}
+.wn-lines { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-width: 0; flex: 1; }
+.wn-line { height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--text) 72%, transparent); }
+.wn-dim { background: color-mix(in srgb, var(--text) 28%, transparent); }
+.wn-w45 { width: 45%; }
+.wn-w50 { width: 50%; }
+.wn-w60 { width: 60%; }
+.wn-w70 { width: 70%; }
+.wn-w80 { width: 80%; }
+.wn-av { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-4); border: 2px solid var(--border-3); }
+@keyframes wn-float { 50% { transform: translateY(-6px); } }
+
+/* Intro */
+.wn-orbit { position: absolute; left: 50%; top: 44%; width: 230px; height: 84px; border: 2px solid var(--accent-line); border-radius: 50%; transform: translate(-50%, -50%) rotate(-14deg); }
+.wn-orbit-2 { width: 300px; height: 112px; opacity: 0.45; transform: translate(-50%, -50%) rotate(9deg); }
+.wn-logo { position: absolute; left: 50%; top: 44%; width: 124px; height: 124px; transform: translate(-50%, -50%); filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5)); }
+.wn-ver { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); font-family: var(--pixel); font-size: 46px; line-height: 1; color: var(--cream); text-shadow: 0 0 24px var(--accent-glow); }
+.wn-spark { position: absolute; width: 6px; height: 6px; background: var(--accent-hi); box-shadow: 0 0 10px var(--accent-hi); animation: wn-twinkle 2.4s ease-in-out infinite; }
+.wn-s1 { left: 18%; top: 20%; }
+.wn-s2 { right: 16%; top: 30%; animation-delay: 0.8s; }
+.wn-s3 { left: 26%; bottom: 26%; animation-delay: 1.6s; }
+@keyframes wn-twinkle { 50% { opacity: 0.25; } }
+
+/* Música */
+.wn-player { width: 76%; padding: 16px; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px 14px; }
+.wn-cover { grid-row: 1 / 3; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: var(--accent-ink); }
+.wn-cover svg { width: 28px; height: 28px; }
+.wn-progress { grid-column: 2; align-self: center; height: 6px; overflow: hidden; border-radius: 99px; background: color-mix(in srgb, var(--text) 16%, transparent); }
+.wn-fill { width: 58%; height: 100%; background: var(--accent); }
+.wn-controls { grid-column: 1 / -1; display: flex; justify-content: center; gap: 14px; }
+.wn-ctl { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: var(--text-2); }
+.wn-ctl svg { width: 16px; height: 16px; }
+.wn-ctl-back svg { transform: scaleX(-1); }
+.wn-ctl-main { background: var(--accent); color: var(--accent-ink); }
+.wn-eq { position: absolute; right: 18px; bottom: 18px; display: flex; align-items: flex-end; gap: 4px; height: 40px; }
+.wn-bar { width: 6px; height: 100%; border-radius: 2px; background: var(--accent-hi); transform-origin: bottom; transform: scaleY(0.4); animation: wn-eq 1.1s ease-in-out infinite; }
+.wn-bar:nth-child(2) { animation-delay: 0.2s; }
+.wn-bar:nth-child(3) { animation-delay: 0.45s; }
+.wn-bar:nth-child(4) { animation-delay: 0.1s; }
+.wn-bar:nth-child(5) { animation-delay: 0.35s; }
+@keyframes wn-eq { 50% { transform: scaleY(1); } }
+
+/* Overlay en el juego */
+.wn-game, .wn-shot { width: 84%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 12px; background: var(--bg-0); }
+.wn-sky { position: absolute; inset: 0 0 35% 0; background: linear-gradient(180deg, color-mix(in srgb, var(--info) 55%, var(--bg-0)), color-mix(in srgb, var(--info) 22%, var(--bg-1))); }
+.wn-ground {
+  position: absolute; inset: 65% 0 0 0; border-top: 6px solid color-mix(in srgb, var(--good) 70%, var(--bg-0));
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--good) 45%, var(--bg-0)) 0 14px, color-mix(in srgb, var(--good) 35%, var(--bg-0)) 14px 28px);
+}
+.wn-hotbar { position: absolute; left: 50%; bottom: 8px; width: 50%; height: 14px; transform: translateX(-50%); border-radius: 3px; background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.25); }
+.wn-toast {
+  position: absolute; right: 10px; top: 10px; width: 50%; display: flex; align-items: center; gap: 8px; padding: 8px;
+  border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 92%, transparent); border: 1px solid var(--accent-line); box-shadow: var(--shadow-s);
+  animation: wn-float 3s ease-in-out infinite;
+}
+.wn-dot { width: 18px; height: 18px; flex: none; border-radius: 50%; background: var(--accent); }
+.wn-voice { position: absolute; left: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.wn-voice .wn-av { width: 22px; height: 22px; }
+.wn-speaking { border-color: var(--good); box-shadow: 0 0 0 3px var(--good-wash); }
+
+/* Perfiles */
+.wn-profile { width: 70%; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-bottom: 16px; }
+.wn-banner { align-self: stretch; height: 72px; background: linear-gradient(120deg, var(--accent-deep), var(--accent) 50%, var(--info)); }
+.wn-avatar {
+  width: 64px; height: 64px; margin-top: -34px; display: grid; place-items: center; border-radius: 50%; color: var(--text-2);
+  background: var(--surface-3); border: 3px solid var(--accent-hi); box-shadow: 0 0 0 4px var(--surface-raised), 0 0 18px var(--accent-glow);
+}
+.wn-avatar svg { width: 28px; height: 28px; }
+.wn-name { width: 52%; height: 12px; border-radius: 99px; background: linear-gradient(90deg, var(--accent-hi), var(--cream), var(--accent-hi)); box-shadow: 0 0 12px var(--accent-glow); }
+.wn-badges { display: flex; gap: 6px; margin-top: 2px; }
+.wn-chip { width: 34px; height: 14px; border-radius: 99px; background: var(--accent-wash); border: 1px solid var(--accent-line); }
+
+/* Clips */
+.wn-rec { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 99px; background: rgba(0, 0, 0, 0.6); font-size: var(--fs-xs); font-weight: 700; color: rgba(255, 255, 255, 0.95); }
+.wn-rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); animation: wn-twinkle 1.2s steps(2, jump-none) infinite; }
+.wn-corner { position: absolute; width: 18px; height: 18px; border: 3px solid rgba(255, 255, 255, 0.9); }
+.wn-tl { left: 12px; top: 12px; border-right: 0; border-bottom: 0; }
+.wn-tr { right: 12px; top: 12px; border-left: 0; border-bottom: 0; }
+.wn-bl { left: 12px; bottom: 12px; border-right: 0; border-top: 0; }
+.wn-br { right: 12px; bottom: 12px; border-left: 0; border-top: 0; }
+.wn-strip { position: absolute; right: 14px; bottom: 14px; display: flex; gap: 6px; }
+.wn-frame { width: 46px; height: 30px; border-radius: 5px; border: 1px solid var(--border-3); background: linear-gradient(180deg, color-mix(in srgb, var(--info) 40%, var(--bg-1)) 0 60%, color-mix(in srgb, var(--good) 40%, var(--bg-1)) 60%); }
+
+/* Venus Points y Premium */
+.wn-coins { position: absolute; left: 50%; top: 36%; width: 160px; height: 110px; transform: translate(-50%, -50%); }
+.wn-coin {
+  position: absolute; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; color: var(--accent-ink);
+  background: radial-gradient(circle at 35% 30%, var(--accent-hi), var(--accent) 55%, var(--accent-lo));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 -4px 0 var(--accent-deep);
+}
+.wn-coin svg { width: 30px; height: 30px; }
+.wn-c1 { left: 0; top: 34px; }
+.wn-c2 { left: 48px; top: 2px; z-index: 1; animation: wn-float 3s ease-in-out infinite; }
+.wn-c3 { left: 96px; top: 38px; }
+.wn-plus { position: absolute; right: 18%; top: 12%; font-family: var(--pixel); font-size: 26px; color: var(--cream); text-shadow: 0 0 14px var(--accent-glow); }
+.wn-shop { top: auto; bottom: 22px; transform: translateX(-50%); display: flex; gap: 10px; padding: 10px; }
+.wn-item { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-3); border: 1px solid var(--border-2); }
+.wn-item svg { width: 22px; height: 22px; }
+.wn-premium { background: var(--accent-wash); border-color: var(--accent-line); color: var(--accent-hi); }
+
+/* Grupos */
+.wn-party { width: 78%; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px; }
+.wn-row { display: flex; gap: 10px; }
+.wn-big { width: 46px; height: 46px; display: grid; place-items: center; color: var(--accent-hi); }
+.wn-big svg { width: 20px; height: 20px; }
+.wn-ready { border-color: var(--good); box-shadow: 0 0 0 3px var(--good-wash); }
+.wn-go { width: 128px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: linear-gradient(180deg, var(--accent-hi), var(--accent)); color: var(--accent-ink); }
+.wn-go svg { width: 16px; height: 16px; }
+.wn-bell { position: absolute; right: 18px; top: 18px; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-wash); border: 1px solid var(--accent-line); color: var(--accent-hi); animation: wn-ring 2.6s ease-in-out infinite; }
+.wn-bell svg { width: 18px; height: 18px; }
+@keyframes wn-ring { 0%, 70%, 100% { transform: rotate(0); } 76% { transform: rotate(14deg); } 84% { transform: rotate(-12deg); } 92% { transform: rotate(6deg); } }
+
+/* Temas */
+.wn-themes { position: absolute; left: 50%; top: 44%; width: 270px; height: 170px; transform: translate(-50%, -50%); }
+.wn-theme { position: absolute; width: 154px; aspect-ratio: 16 / 10; border-radius: 10px; border: 1px solid var(--border-2); box-shadow: var(--shadow); --wn-c: var(--accent); }
+.wn-theme::before { content: ''; position: absolute; left: 10px; top: 10px; bottom: 10px; width: 22%; border-radius: 5px; background: rgba(255, 255, 255, 0.07); }
+.wn-theme::after { content: ''; position: absolute; right: 12px; bottom: 12px; width: 42%; height: 14px; border-radius: 4px; background: var(--wn-c); }
+.wn-t1 { left: 0; top: 34px; transform: rotate(-8deg); background: linear-gradient(160deg, var(--surface-4), var(--bg-0)); border-color: var(--accent-line); }
+.wn-t2 { left: 58px; top: 8px; z-index: 1; --wn-c: var(--info); background: linear-gradient(160deg, color-mix(in srgb, var(--info) 30%, var(--surface-2)), var(--bg-0)); animation: wn-float 3.2s ease-in-out infinite; }
+.wn-t3 { left: 116px; top: 38px; transform: rotate(8deg); --wn-c: var(--good); background: linear-gradient(160deg, color-mix(in srgb, var(--good) 26%, var(--surface-2)), var(--bg-0)); }
+.wn-code { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); padding: 6px 12px; border-radius: 8px; background: var(--field-bg); border: 1px dashed var(--accent-line); font-family: var(--mono); font-size: var(--fs-sm); color: var(--accent-hi); white-space: nowrap; }
+
+/* Editor de skins */
+.wn-grid { display: grid; grid-template-columns: repeat(8, 18px); gap: 2px; padding: 12px; }
+.wn-px { width: 18px; height: 18px; border-radius: 2px; }
+.wn-p1 { background: color-mix(in srgb, var(--accent-deep) 80%, var(--bg-0)); }
+.wn-p2 { background: color-mix(in srgb, var(--accent-hi) 45%, var(--cream)); }
+.wn-p3 { background: var(--bg-0); }
+.wn-p4 { background: var(--accent-lo); }
+.wn-brush { position: absolute; right: 20%; top: 18%; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; background: var(--accent); color: var(--accent-ink); box-shadow: var(--shadow); animation: wn-float 3s ease-in-out infinite; }
+.wn-brush svg { width: 24px; height: 24px; }
+.wn-tools { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; }
+.wn-tool { width: 28px; height: 28px; border-radius: 8px; background: var(--surface-3); border: 1px solid var(--border-2); }
+.wn-on { background: var(--accent-wash); border-color: var(--accent-line); }
+
+/* Insignia en el juego */
+.wn-nameplate { top: 24%; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 6px; background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: none; }
+.wn-badge { width: 22px; height: 22px; display: grid; place-items: center; color: var(--accent-hi); filter: drop-shadow(0 0 6px var(--accent-glow)); }
+.wn-badge svg { width: 20px; height: 20px; }
+.wn-plate { width: 96px; background: rgba(255, 255, 255, 0.85); }
+.wn-head { position: absolute; left: 50%; top: 40%; width: 64px; height: 64px; transform: translateX(-50%); border-radius: 4px; background: color-mix(in srgb, var(--accent-hi) 40%, var(--cream)); box-shadow: inset 0 -10px 0 color-mix(in srgb, var(--accent-lo) 50%, transparent); }
+.wn-torso { position: absolute; left: 50%; top: calc(40% + 66px); width: 64px; height: 92px; transform: translateX(-50%); border-radius: 4px; background: color-mix(in srgb, var(--info) 55%, var(--bg-1)); }
+
+/* Ventanas bajas */
+@media (max-height: 740px) {
+  .wn-slide { min-height: 300px; }
+  .wn-art { height: 300px; }
+  .wn-title { font-size: 24px; }
+}
+
+html.ax-hc .wn-art { border-color: var(--border-3); }

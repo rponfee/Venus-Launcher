@@ -205,4 +205,5 @@ function register({ app, handle, send, onQuit }) {
   onQuit?.(() => helpers.clear());
 }
 
-module.exports = { register, prefs };
+// venusToken y badgeClient los usa también modules/rewards.js (verificar la cuenta de Minecraft para las invitaciones).
+module.exports = { register, prefs, venusToken, badgeClient };

@@ -21,4 +21,5 @@ module.exports = {
   errDisabled: "请先启用 Rich Presence。",
   errNoClientId: "此版本的启动器不提供 Discord Rich Presence。",
   errNoDiscord: "这台电脑上没有打开 Discord。请打开 Discord 桌面应用，然后重试。",
+  errClientIdFormat: "Application ID 必须是 17 到 21 位数字，或留空以使用内置值。不要粘贴令牌。",
 };

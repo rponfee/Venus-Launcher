@@ -1,5 +1,6 @@
 'use strict';
 module.exports = {
+  errSupportBudget: "{plan} 요금제의 API 잔액으로는 이 설정에서 답변을 하나 더 받을 수 없어요. 더 저렴한 모델을 사용하거나 요금제 메뉴에서 다른 요금제를 구매하세요 (남은 잔액은 그대로 더해져요).",
   errUnconfirmed: "AI를 사용하려면 Venus 계정의 이메일을 인증해 주세요 (메일함을 확인해 보세요).",
   errAnonymous: "게스트 계정은 AI를 사용할 수 없어요. 설정 > 계정 및 클라우드에서 Venus 계정으로 로그인해 주세요.",
   errNoPlan: "AI를 사용하려면 Venus 요금제가 필요해요. '요금제 업그레이드'를 눌러 요금제를 선택해 주세요.",
@@ -34,4 +35,5 @@ module.exports = {
   effort_low: "낮음",
   effort_medium: "보통",
   effort_high: "높음",
+  effort_xhigh: "매우 높음",
 };

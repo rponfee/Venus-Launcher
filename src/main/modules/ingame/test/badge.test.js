@@ -166,3 +166,22 @@ test('normalizeUuid', () => {
   assert.equal(normalizeUuid(ACCOUNT.uuid), MC);
   assert.equal(normalizeUuid('x'), null);
 });
+
+test('enroll con mcverify llama a esa función y devuelve si se pagó la invitación', async () => {
+  const { client, calls } = fakeServer();
+  const fetchCalls = calls;
+  const res = await createBadgeClient({
+    fetch: async (url, init) => {
+      fetchCalls.push({ url });
+      if (url.endsWith('/rest/v1/rpc/badge_challenge')) return new Response(JSON.stringify(CHALLENGE), { status: 200 });
+      if (url === MOJANG_JOIN) return new Response(null, { status: 204 });
+      if (url.endsWith('/functions/v1/mcverify')) return new Response(JSON.stringify({ uuid: MC, name: 'Steve', rewarded: true }), { status: 200 });
+      throw new Error(`inesperado: ${url}`);
+    },
+    cloudConfig: async () => CFG,
+    accessToken: async () => 'token-de-venus',
+  }).enroll(ACCOUNT, { fn: 'mcverify' });
+  assert.deepEqual(res, { uuid: MC, rewarded: true });
+  assert.ok(fetchCalls.some((c) => c.url.endsWith('/functions/v1/mcverify')));
+  await assert.rejects(client.enroll(ACCOUNT, { fn: 'otra' }), { code: 'server' });
+});

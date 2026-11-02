@@ -9,7 +9,7 @@ import { t } from '../i18n.js';
 import { cloud } from '../cloud.js';
 import { errorNote, errMsg, reduceMotion } from './settings/shared.js';
 import { renderGeneral, renderPrivacy, renderAbout } from './settings/general.js';
-import { renderAppearance, renderA11y, renderStorage } from './settings/panels.js';
+import { renderAppearance, renderIngame, renderA11y, renderStorage } from './settings/panels.js';
 import { renderCloud } from './settings/account.js';
 import { renderAi, renderPlan } from './settings/services.js';
 import { renderJava, renderData } from './settings/system.js';
@@ -19,6 +19,7 @@ const SECTIONS = [
   { group: 'launcher' },
   { id: 'general', icon: 'sliders', render: renderGeneral },
   { id: 'appearance', icon: 'palette', render: renderAppearance },
+  { id: 'ingame', icon: 'gamepad', render: renderIngame },
   { id: 'a11y', icon: 'accessibility', render: renderA11y },
   { group: 'account' },
   { id: 'cloud', icon: 'cloud', render: renderCloud },
@@ -73,6 +74,20 @@ const ALIASES = {
   privacidad: 'privacy',
   actualizaciones: 'updates',
   update: 'updates',
+  overlay: 'ingame',
+  juego: 'ingame',
+  game: 'ingame',
+  music: 'ingame',
+  musica: 'ingame',
+  spotify: 'ingame',
+  capture: 'ingame',
+  clips: 'ingame',
+  capturas: 'ingame',
+  themes: 'appearance',
+  temas: 'appearance',
+  notify: 'privacy',
+  avisos: 'privacy',
+  premium: 'plan',
 };
 
 const IDS = SECTIONS.filter((s) => s.id).map((s) => s.id);

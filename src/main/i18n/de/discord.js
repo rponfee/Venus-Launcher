@@ -21,4 +21,5 @@ module.exports = {
   errDisabled: "Aktiviere zuerst Rich Presence.",
   errNoClientId: "Discord Rich Presence ist in dieser Version des Launchers nicht verfügbar.",
   errNoDiscord: "Discord ist auf diesem PC nicht geöffnet. Öffne die Desktop-App von Discord und versuche es erneut.",
+  errClientIdFormat: "Die Application ID muss aus 17 bis 21 Ziffern bestehen oder leer sein, um den enthaltenen Wert zu verwenden. Füge keine Tokens ein.",
 };

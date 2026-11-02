@@ -293,6 +293,8 @@ export function renderPrivacy(body, ctx) {
 
   // Discord Rich Presence (panel del módulo discord): qué se muestra en tu perfil de Discord
   const discordHost = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'discord' } });
+  // Avisos de amigos y servidores favoritos (features/notify.js)
+  const notifyHost = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'notify' } });
 
   mount(
     body,
@@ -304,6 +306,7 @@ export function renderPrivacy(body, ctx) {
       accountNote,
     ),
     discordHost,
+    notifyHost,
     h('div', { class: 'cfg-cols' }, local, remote),
     card(
       { title: t('settings.privAiTitle'), iconName: 'sparkles' },
@@ -312,6 +315,7 @@ export function renderPrivacy(body, ctx) {
     ),
   );
   embedPanel(discordHost, { load: () => import('../../features/discord.js'), fn: 'discordPanel', ns: ['discord'] }, ctx);
+  embedPanel(notifyHost, { load: () => import('../../features/notify.js'), fn: 'notifyPanel', ns: ['notify'] }, ctx);
 }
 
 // ---------------- Acerca de ----------------
@@ -344,6 +348,10 @@ export function renderAbout(body, ctx) {
   const osName = OS_NAMES[info.platform] || info.platform || '?';
   const summary = [`Venus Launcher ${info.version || '?'}`, `Electron ${info.electron || '?'}`, `${info.platform || '?'}-${info.arch || '?'}`, info.locale || null, info.portable ? 'portable' : null].filter(Boolean).join(' · ');
 
+  // "Novedades de Venus 2.0" (features/whatsnew.js; trae su propio texto)
+  const wnSlot = h('span', { class: 'cfg-wn-slot' });
+  import('../../features/whatsnew.js').then((m) => wnSlot.replaceWith(m.whatsNewButton({ className: 'btn sm' }))).catch(() => wnSlot.remove());
+
   const hero = card(
     { cls: 'cfg-about-hero' },
     h('img', { class: 'cfg-about-logo', src: 'assets/logo-256.png', alt: '' }),
@@ -363,6 +371,7 @@ export function renderAbout(body, ctx) {
       h(
         'div',
         { class: 'row wrap cfg-about-actions' },
+        wnSlot,
         h('button', { type: 'button', class: 'btn sm', onclick: () => copyText(summary, t('settings.aboutCopied')) }, icon('copy'), t('settings.aboutCopy')),
         LINKS.map(([key, url, ic]) => h('button', { type: 'button', class: 'btn sm ghost', title: url, onclick: () => api.app.openExternal(url).catch(() => {}) }, icon(ic), t(`settings.link_${key}`))),
       ),

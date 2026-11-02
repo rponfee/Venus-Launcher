@@ -1,0 +1,389 @@
+/* Tarjeta "Overlay en el juego" de Ajustes (features/overlay.js). Prefijo .ovp-. Los widgets de la vista previa
+   usan styles/overlay.css (.ovl-), la misma hoja de la ventana del overlay. */
+
+.ovp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.ovp-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+.ovp-logo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: var(--radius);
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-line);
+  color: var(--accent-hi);
+}
+.ovp-logo svg {
+  width: 20px;
+  height: 20px;
+}
+.ovp-head-text {
+  flex: 1;
+  min-width: 0;
+}
+.ovp-head-text .card-title {
+  margin: 0;
+}
+.ovp-head-text .card-sub {
+  margin: 2px 0 0;
+  max-width: 68ch;
+}
+
+/* Estado y acciones */
+.ovp-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--radius);
+  background: var(--well-bg);
+  border: 1px solid var(--border);
+}
+.ovp-status-main {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  flex: 1 1 260px;
+}
+.ovp-status-text {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.ovp-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.ovp-actions .btn.active {
+  background: var(--accent-wash);
+  border-color: var(--accent-line);
+  color: var(--accent-hi);
+}
+
+/* Vista previa + atajo */
+.ovp-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(240px, 2fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+@media (max-width: 1180px) {
+  .ovp-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ovp-preview-col,
+.ovp-shortcut {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.ovp-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.ovp-sec-title {
+  font-weight: 600;
+  font-size: var(--fs-md);
+  color: var(--text);
+}
+.ovp-mt {
+  margin-top: var(--sp-3);
+}
+.ovp-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  max-width: 68ch;
+}
+.ovp-tip {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+.ovp-tip svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--info);
+}
+
+.ovp-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-2);
+  background: var(--bg-0);
+}
+.ovp-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 960px;
+  height: 540px;
+  transform: scale(var(--ovp-scale, 0.5));
+  transform-origin: 0 0;
+  /* cielo y pasto de Minecraft (colores de marca del juego, solo decorativos) */
+  background: linear-gradient(180deg, #7aa7ff 0%, #a9c9ff 48%, #5d9b3a 48%, #4c8530 70%, #6b4a2b 70%, #5a3d22 100%);
+}
+.ovp-fake {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ovp-fake-cross {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(#fff, #fff) center / 2px 18px no-repeat, linear-gradient(#fff, #fff) center / 18px 2px no-repeat;
+  opacity: 0.8;
+}
+.ovp-fake-bar {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  display: flex;
+  transform: translateX(-50%);
+  border: 3px solid rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.35);
+}
+.ovp-fake-bar i {
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+}
+.ovp-fake-bar i.on {
+  border-color: #fff;
+}
+.ovp-stage-view {
+  position: absolute;
+  inset: 0;
+}
+.ovp-panel.ovp-off .ovp-preview {
+  opacity: 0.55;
+}
+/* En la vista previa (achicada) los bordes de arrastre van mas gruesos y sin la etiqueta del modo edicion. */
+.ovp-stage-view .ovl-root.ovl-editing .ovl-w {
+  outline-width: 3px;
+  outline-offset: 6px;
+}
+.ovp-stage-view .ovl-tag {
+  display: none;
+}
+.ovp-stage-view .ovl-root.ovl-editing .ovl-stage {
+  background: none;
+}
+
+.ovp-keys-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.ovp-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: var(--control-h-sm);
+}
+.ovp-keys-row .btn.active {
+  background: var(--accent-wash);
+  border-color: var(--accent-line);
+  color: var(--accent-hi);
+}
+
+/* Lista de widgets */
+.ovp-widgets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.ovp-w {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card-bg-flat);
+}
+.ovp-w.open {
+  border-color: var(--border-2);
+}
+.ovp-w-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+}
+.ovp-w-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--radius-s);
+  background: var(--accent-wash);
+  color: var(--accent-hi);
+}
+.ovp-w-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.ovp-w.disabled .ovp-w-icon {
+  background: var(--surface-3);
+  color: var(--muted);
+}
+.ovp-w-text {
+  flex: 1;
+  min-width: 0;
+}
+.ovp-w-name {
+  font-weight: 600;
+}
+.ovp-w-sub {
+  display: block;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+.ovp-expand svg {
+  transition: transform var(--dur) var(--ease-out);
+}
+.ovp-w.open .ovp-expand svg {
+  transform: rotate(180deg);
+}
+.ovp-w-body {
+  padding: var(--sp-2) var(--sp-3) var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+.ovp-w-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+.ovp-w-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--sp-3) var(--sp-4);
+}
+.ovp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.ovp-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-2);
+}
+.ovp-range {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--control-h-sm);
+}
+.ovp-range-val {
+  min-width: 48px;
+  text-align: right;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.ovp-field .segmented {
+  align-self: flex-start;
+}
+.ovp-anchor-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ovp-anchor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 32px);
+  grid-auto-rows: 24px;
+  gap: 4px;
+  padding: 6px;
+  width: max-content;
+  border-radius: var(--radius-s);
+  background: var(--well-bg);
+  border: 1px solid var(--border);
+}
+.ovp-cell {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.ovp-cell span {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--faint);
+}
+.ovp-cell:hover {
+  border-color: var(--border-3);
+}
+.ovp-cell.active {
+  background: var(--accent-wash);
+  border-color: var(--accent-line);
+}
+.ovp-cell.active span {
+  background: var(--accent-hi);
+  width: 12px;
+  height: 10px;
+}
+.ovp-cell:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}
+.ovp-free-note {
+  color: var(--accent-hi);
+  font-size: var(--fs-xs);
+  max-width: 120px;
+}
+.ovp-free-note:empty {
+  display: none;
+}
+.ovp-toggles {
+  margin-top: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+}
+.ovp-toggles > .ovp-label {
+  margin-bottom: 2px;
+}
+.ovp-toggle {
+  padding: var(--sp-2) 0;
+}
+@media (max-width: 1100px) {
+  .ovp-w-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

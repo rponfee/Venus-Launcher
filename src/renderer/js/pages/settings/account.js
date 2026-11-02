@@ -3,7 +3,7 @@
 // (core/cloud-defaults.js): no se configura desde aca.
 import { h, icon, mount, ok, fail, copyText, avatarImg, skeleton } from '../../ui.js';
 import { store, api } from '../../store.js';
-import { t } from '../../i18n.js';
+import { t, loadNs } from '../../i18n.js';
 import { cloud } from '../../cloud.js';
 import { openAccounts } from '../../app.js';
 import { sectionHead, card, field, fieldError, validateOnBlur, note, errorNote, emptyRow, msgBox, withBusy, secretField } from './shared.js';
@@ -575,6 +575,7 @@ function venusCard(ctx) {
           h('div', { class: 'cfg-v-name ellipsis', title: name }, name),
           h('div', { class: 'cfg-v-sub' }, p.username ? h('span', {}, `@${p.username}`) : null, u?.email ? h('span', { class: 'ellipsis', title: u.email }, u.email) : null),
         ),
+        editProfileButton(),
         signOutButton(),
       ),
       p.friend_code
@@ -593,6 +594,23 @@ function venusCard(ctx) {
       nameForm,
       details,
     );
+  };
+
+  // Venus 2.0: editor del perfil (features/profile-editor.js; el texto es del namespace profile)
+  const editProfileButton = () => {
+    const label = h('span', {}, '');
+    const btn = h(
+      'button',
+      { type: 'button', class: 'btn sm tonal', onclick: () => import('../../features/profile-editor.js').then((m) => m.openProfileEditor()).catch((err) => fail(t('settings.panelErrorTitle'), err)) },
+      icon('palette'),
+      label,
+    );
+    loadNs('profile')
+      .then(() => {
+        label.textContent = t('profile.editProfile');
+      })
+      .catch(() => btn.remove());
+    return btn;
   };
 
   const signOutButton = () =>

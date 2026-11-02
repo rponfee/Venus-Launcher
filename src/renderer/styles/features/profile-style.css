@@ -1,0 +1,187 @@
+/* Estilo de los perfiles de Venus (social/profile-style.js y la tarjeta de social/profile-ui.js).
+   Prefijo: .pf-  Colores literales: solo los cosmeticos (marcos, efectos e insignias), que se ven igual para todos.
+   Las animaciones de los efectos (brillo que se mueve, arcoiris, fuego) cambian solo el fondo del texto o la
+   opacidad, se apagan en las listas (.pf-static) y con movimiento reducido. */
+
+/* ---------- Nombre ---------- */
+.pf-name { --pf-c: var(--cream); --pf-from: var(--accent-hi); --pf-to: var(--accent); --pf-glow: none; display: inline-flex; align-items: baseline; min-width: 0; max-width: 100%; vertical-align: baseline; }
+.pf-name-text { position: relative; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--pf-c); filter: var(--pf-glow); padding-block: 0.06em; }
+.pf-size-md .pf-name-text { font-size: var(--fs-xl); line-height: 1.2; }
+.pf-size-lg .pf-name-text { font-size: 26px; line-height: 1.15; }
+/* En listas hereda la fuente y el tamaño de la fila y sigue el … del contenedor */
+.pf-name.pf-size-sm { display: inline; }
+.pf-size-sm .pf-name-text { display: inline; overflow: visible; padding: 0; }
+.pf-namebox { display: inline-flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; max-width: 100%; }
+.pf-namebox.pf-size-sm { display: inline-flex; flex-wrap: nowrap; }
+
+/* Tipografias */
+.pf-font-default:not(.pf-size-sm) .pf-name-text, .pf-font-pixel .pf-name-text { font-family: var(--pixel); font-weight: 600; letter-spacing: 0.01em; }
+.pf-font-outfit .pf-name-text { font-family: 'Outfit', var(--font); font-weight: 800; letter-spacing: 0.03em; }
+.pf-font-serif .pf-name-text { font-family: Georgia, Cambria, 'Times New Roman', serif; font-weight: 700; }
+.pf-font-mono .pf-name-text { font-family: var(--mono); font-weight: 700; letter-spacing: -0.01em; }
+.pf-font-rounded .pf-name-text { font-family: ui-rounded, 'Arial Rounded MT Bold', Nunito, 'Varela Round', Quicksand, Candara, 'Segoe UI', sans-serif; font-weight: 700; }
+.pf-font-condensed .pf-name-text { font-family: 'Bahnschrift Condensed', Bahnschrift, 'Arial Narrow', 'Roboto Condensed', sans-serif; font-stretch: condensed; font-weight: 700; letter-spacing: 0.02em; }
+.pf-size-sm.pf-font-default .pf-name-text { font-weight: inherit; }
+
+/* Efectos: el texto toma el fondo (degradados) */
+.pf-fx-gradient .pf-name-text, .pf-fx-shimmer .pf-name-text, .pf-fx-rainbow .pf-name-text, .pf-fx-fire .pf-name-text {
+  color: transparent; -webkit-text-fill-color: transparent; -webkit-background-clip: text; background-clip: text; background-repeat: no-repeat;
+}
+.pf-fx-gradient .pf-name-text { background-image: linear-gradient(90deg, var(--pf-from), var(--pf-to)); }
+.pf-fx-shimmer .pf-name-text {
+  background-image: linear-gradient(100deg, var(--pf-c) 0%, var(--pf-c) 38%, #ffffff 50%, var(--pf-c) 62%, var(--pf-c) 100%);
+  /* repeat-x: el texto siempre tiene fondo; 162.5% = un mosaico entero con background-size 260% (vuelta sin salto) */
+  background-size: 260% 100%; background-repeat: repeat-x; background-position: 0% 0; animation: pf-shimmer 3.2s linear infinite;
+}
+.pf-fx-rainbow .pf-name-text {
+  background-image: linear-gradient(90deg, #ff6b6b, #ffb36b, #ffe66b, #7dff8a, #6bd5ff, #9a8cff, #ff7ad9, #ff6b6b);
+  background-size: 200% 100%; background-repeat: repeat-x; animation: pf-rainbow 6s linear infinite;
+}
+.pf-fx-fire .pf-name-text {
+  background-image: linear-gradient(0deg, #ff3d00 0%, #ff7a00 30%, #ffb300 55%, #ffe36b 78%, #fff6c9 100%);
+  background-size: 100% 220%; background-position: 50% 100%; animation: pf-fire 1.6s ease-in-out infinite alternate;
+}
+.pf-fx-fire .pf-name-text { filter: var(--pf-glow) drop-shadow(0 0 0.18em rgba(255, 110, 20, 0.55)); }
+/* Resplandor: una copia borrosa del texto que late (solo cambia la opacidad) */
+.pf-fx-glow .pf-name-text::after {
+  content: attr(data-text); position: absolute; inset: 0; z-index: -1; padding: inherit; color: var(--pf-c); -webkit-text-fill-color: var(--pf-c);
+  filter: blur(0.22em); opacity: 0.55; pointer-events: none; animation: pf-pulse 2.6s ease-in-out infinite alternate;
+}
+.pf-fx-glow .pf-name-text { isolation: isolate; }
+.pf-size-sm.pf-fx-glow .pf-name-text::after { content: none; }
+
+@keyframes pf-shimmer { from { background-position: 162.5% 0; } to { background-position: 0% 0; } }
+@keyframes pf-rainbow { from { background-position: 0% 0; } to { background-position: 200% 0; } }
+@keyframes pf-fire { 0% { background-position: 50% 100%; } 60% { background-position: 50% 70%; } 100% { background-position: 50% 85%; } }
+@keyframes pf-pulse { from { opacity: 0.25; } to { opacity: 0.7; } }
+
+/* Sin animaciones: en listas, con movimiento reducido y en el lienzo de capturas */
+.pf-static .pf-name-text, .pf-static .pf-name-text::after { animation: none !important; }
+.pf-static.pf-fx-shimmer .pf-name-text { background-position: 30% 0; }
+@media (prefers-reduced-motion: reduce) {
+  .pf-name-text, .pf-name-text::after, .pf-frame::before, .pf-frame::after { animation: none !important; }
+}
+body.reduce-motion .pf-name-text, body.reduce-motion .pf-name-text::after, body.reduce-motion .pf-frame::before, body.reduce-motion .pf-frame::after { animation: none !important; }
+/* Alto contraste: nombre liso */
+html.ax-hc .pf-name-text { color: var(--text) !important; -webkit-text-fill-color: currentColor; background: none !important; filter: none !important; }
+html.ax-hc .pf-name-text::after { content: none; }
+
+/* Titulo equipado */
+.pf-title {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 var(--sp-2); flex-shrink: 0; border-radius: var(--radius-full);
+  font-family: var(--font); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.04em; line-height: 1; white-space: nowrap;
+  color: var(--accent-hi); background: var(--accent-wash); border: 1px solid var(--accent-line);
+}
+.pf-title[data-title='legend'] { color: #2b1405; background: linear-gradient(135deg, #fff1a8, #f0b429 60%, #d9761c); border-color: transparent; }
+.pf-title[data-title='supporter'] { color: #ffd1e6; background: rgba(255, 126, 179, 0.16); border-color: rgba(255, 126, 179, 0.45); }
+.pf-title[data-title='redstoner'] { color: #ffb4ad; background: rgba(229, 84, 75, 0.14); border-color: rgba(229, 84, 75, 0.45); }
+.pf-size-sm .pf-title { height: 18px; padding: 0 6px; font-size: 11px; }
+
+/* ---------- Insignia Premium ---------- */
+.pf-premium { display: inline-flex; align-items: center; gap: var(--sp-1); height: 22px; padding: 0 var(--sp-2); border-radius: var(--radius-xs); font-size: var(--fs-xs); font-weight: 800; letter-spacing: 0.02em; white-space: nowrap; }
+.pf-premium svg { flex-shrink: 0; }
+.pf-premium[data-style='gold'] { color: #2b1405; background: linear-gradient(135deg, #fff1a8, #f0b429 55%, #e08a1e); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+.pf-premium[data-style='nebula'] { color: #ffffff; background: linear-gradient(135deg, #c2457a, #5b1f73 55%, #2a3a8f); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
+.pf-premium[data-style='ice'] { color: #06283d; background: linear-gradient(135deg, #ffffff, #c4f4ff 50%, #7ad7f7); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+
+/* ---------- Marcos (en el contenedor de la cabeza) ---------- */
+.pf-frame { --pf-frame-w: 3px; --pf-frame-r: 12px; position: relative; isolation: isolate; }
+.pf-frame::before { content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -1); z-index: -1; border-radius: var(--pf-frame-r); pointer-events: none; }
+.pf-frame .sc-head { box-shadow: none !important; }
+.pf-frame-pixel::before {
+  border-radius: 0; background: repeating-conic-gradient(#ffe6b0 0 25%, #f29a2e 0 50%) 0 0 / 8px 8px;
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+}
+.pf-frame-pixel .sc-head { border-radius: 2px !important; }
+.pf-frame-neon::before { background: linear-gradient(135deg, #7df9ff, #b06bff 50%, #ff4fd8); box-shadow: 0 0 10px rgba(125, 249, 255, 0.55), 0 0 22px rgba(255, 79, 216, 0.35); }
+.pf-frame-neon::after {
+  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -2); z-index: -2; border-radius: calc(var(--pf-frame-r) + var(--pf-frame-w)); pointer-events: none;
+  box-shadow: 0 0 18px 2px rgba(125, 249, 255, 0.45); animation: pf-pulse 2.2s ease-in-out infinite alternate;
+}
+.pf-frame-gold::before { background: linear-gradient(135deg, #fff1a8, #f0b429 30%, #8a5a12 55%, #ffd27a 78%, #b07a1c); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 2px 10px rgba(240, 180, 41, 0.35); }
+@property --pf-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.pf-frame-venus::before { background: conic-gradient(from var(--pf-ang), #ffc562, #f29a2e, #c2457a, #7e5bd6, #5aa7f0, #ffc562); box-shadow: 0 0 14px rgba(242, 154, 46, 0.45); animation: pf-spin 6s linear infinite; }
+@keyframes pf-spin { to { --pf-ang: 360deg; } }
+
+/* ---------- Banner ---------- */
+.pf-banner { position: relative; overflow: hidden; background-color: var(--surface-3); background-size: cover; background-position: center; }
+.pf-banner-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.pf-banner::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: overlay; background-size: 8px 8px;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.08) 50%, transparent 50%), linear-gradient(90deg, rgba(255, 255, 255, 0.06) 50%, transparent 50%);
+}
+.pf-banner[data-kind='image']::after, .pf-banner[data-kind='animated']::after { content: none; }
+
+/* ---------- Tarjeta de perfil (profile-ui.js) ---------- */
+.pf-card {
+  --ring: var(--surface); --pf-edge: var(--border-2);
+  position: relative; display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-l); border: 1px solid var(--pf-edge); background: var(--surface);
+}
+.pf-card.has-fade { --ring: #1d1410; --pf-edge: color-mix(in srgb, var(--pf-fade-to) 45%, var(--border-2)); }
+.pf-card-banner { height: 112px; flex-shrink: 0; }
+.pf-card.compact .pf-card-banner { height: 92px; }
+.pf-card-body { position: relative; display: flex; flex-direction: column; gap: var(--sp-3); padding: 0 var(--sp-5) var(--sp-5); }
+.pf-card.has-fade .pf-card-body { background: linear-gradient(180deg, rgba(14, 9, 6, 0.55), rgba(14, 9, 6, 0.72)), var(--pf-fade); }
+.pf-card.compact .pf-card-body { padding: 0 var(--sp-4) var(--sp-4); gap: var(--sp-2); }
+.pf-card-top { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-3); margin-top: -42px; min-width: 0; }
+.pf-card-head { --pf-frame-w: 4px; --pf-frame-r: calc(var(--radius-l) + 4px); }
+.pf-card-head .sc-head { border-radius: var(--radius-l); box-shadow: 0 0 0 4px var(--ring); }
+.pf-card-head .sc-dot { right: -4px; bottom: -4px; width: 20px; height: 20px; box-shadow: 0 0 0 4px var(--ring); }
+.pf-card-head .sc-dot.busy::after { height: 3px; top: calc(50% - 1.5px); }
+.pf-card-head .sc-dot.offline, .pf-card-head .sc-dot.invisible { box-shadow: 0 0 0 4px var(--ring), inset 0 0 0 4px var(--faint); }
+.pf-card-chips { display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; justify-content: flex-end; min-width: 0; padding-bottom: var(--sp-1); }
+.pf-card-names { display: flex; flex-direction: column; gap: 2px; min-width: 0; max-width: 100%; }
+.pf-card-sub { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; font-size: var(--fs-sm); color: var(--text-2); }
+.pf-card-sub > span { min-width: 0; }
+.pf-card-sub .pf-dot-sep::before { content: '·'; color: var(--muted); }
+.pf-card-status { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; font-size: var(--fs-sm); color: var(--text-2); }
+.pf-card-status .sc-dot { width: 10px; height: 10px; box-shadow: none; }
+.pf-card-status .sc-dot.offline, .pf-card-status .sc-dot.invisible { box-shadow: inset 0 0 0 2px var(--faint); }
+.pf-card-presence { flex-shrink: 0; white-space: nowrap; }
+.pf-card-statustext { min-width: 0; color: var(--text); }
+.pf-card-statustext::before { content: '·'; margin-right: var(--sp-2); color: var(--muted); }
+
+.pf-sec { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.pf-sec-label { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-2); }
+.pf-sec-label svg { width: 14px; height: 14px; color: var(--accent-hi); }
+.pf-bio { color: var(--text); font-size: var(--fs-md); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 68ch; }
+.pf-divider { height: 1px; background: var(--border-2); margin: var(--sp-1) 0; }
+.pf-card .sc-activity { margin: 0; }
+
+/* Estadisticas publicadas */
+.pf-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: var(--sp-2); }
+.pf-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); background: rgba(12, 7, 5, 0.45); border: 1px solid var(--border); }
+.pf-stat-value { font-family: var(--pixel); font-size: var(--fs-xl); line-height: 1.2; color: var(--cream); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-stat-value .loader-badge, .pf-stat-value .badge { font-family: var(--font); }
+.pf-stat-label { font-size: var(--fs-xs); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Servidores favoritos */
+.pf-servers { display: flex; flex-direction: column; gap: var(--sp-2); }
+.pf-server { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3); border-radius: var(--radius); background: rgba(12, 7, 5, 0.45); border: 1px solid var(--border); }
+.pf-server-icon { width: 32px; height: 32px; display: grid; place-items: center; flex-shrink: 0; border-radius: var(--radius-s); background: var(--accent-wash); color: var(--accent-hi); }
+.pf-server-icon svg { width: 16px; height: 16px; }
+.pf-server-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pf-server-name { font-weight: 600; color: var(--text); }
+.pf-server-addr { font-family: var(--mono); font-size: var(--fs-xs); color: var(--text-2); }
+
+/* Capturas destacadas */
+.pf-featured { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
+.pf-shot { position: relative; display: block; padding: 0; overflow: hidden; aspect-ratio: 16 / 9; border-radius: var(--radius-s); border: 1px solid var(--border-2); background: var(--surface-3); cursor: zoom-in; }
+.pf-shot img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--dur) var(--ease-out); }
+.pf-shot:hover img { transform: scale(1.04); }
+.pf-shot-title { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--sp-3) var(--sp-2) var(--sp-1); font-size: var(--fs-xs); font-weight: 600; color: #fff; text-align: left; background: linear-gradient(transparent, rgba(0, 0, 0, 0.72)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pf-facts { display: flex; flex-direction: column; gap: var(--sp-2); }
+.pf-fact { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); min-width: 0; }
+.pf-fact > svg { width: 16px; height: 16px; color: var(--accent-hi); flex-shrink: 0; }
+.pf-fact .kbd { letter-spacing: 0.06em; }
+
+/* Visor de una captura destacada */
+.pf-lightbox { display: flex; flex-direction: column; gap: var(--sp-3); }
+.pf-lightbox img { width: 100%; max-height: 62vh; object-fit: contain; border-radius: var(--radius); background: var(--bg-0); }
+
+/* Modal de perfil */
+.pf-profile { display: flex; flex-direction: column; gap: var(--sp-3); }
+.pf-profile .pf-card-banner { height: 128px; }
+.pf-profile-note { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
+.pf-profile-note svg { width: 14px; height: 14px; }

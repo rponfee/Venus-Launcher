@@ -1,0 +1,609 @@
+/* Overlay dentro del juego: pagina renderer/overlay.html (ventana transparente sobre el juego) y la vista previa de
+   Ajustes (features/overlay.js), que usa los mismos widgets. Todas las clases llevan el prefijo .ovl-; las reglas de
+   pagina van bajo html.ovl-doc / body.ovl-page para no tocar el launcher cuando esta hoja se carga en la vista previa.
+   Movimiento: solo opacity y transform, y nada con .ovl-reduce (Ajustes > Accesibilidad o la preferencia del sistema). */
+
+@font-face { font-family: 'Outfit'; font-weight: 400; font-display: swap; src: url('../assets/fonts/outfit-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Outfit'; font-weight: 600; font-display: swap; src: url('../assets/fonts/outfit-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Outfit'; font-weight: 700; font-display: swap; src: url('../assets/fonts/outfit-latin-700-normal.woff2') format('woff2'); }
+
+/* ---------- Pagina del overlay ---------- */
+html.ovl-doc,
+body.ovl-page {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+body.ovl-page {
+  color-scheme: dark;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+body.ovl-page #overlay {
+  position: fixed;
+  inset: 0;
+}
+
+/* ---------- Escenario y grilla de 3x3 ---------- */
+.ovl-root {
+  --ovl-accent: #f29a2e;
+  --ovl-mx: 1.25%;
+  --ovl-my: 2%;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  font-family: 'Outfit', system-ui, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #fff3e3;
+  -webkit-font-smoothing: antialiased;
+}
+.ovl-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ovl-root.ovl-editing .ovl-stage {
+  pointer-events: auto;
+}
+body.ovl-page .ovl-root.ovl-editing .ovl-stage {
+  background: rgba(12, 7, 5, 0.32);
+}
+
+.ovl-cell {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ovl-at-tl { top: var(--ovl-my); left: var(--ovl-mx); align-items: flex-start; }
+.ovl-at-tc { top: var(--ovl-my); left: 50%; transform: translateX(-50%); align-items: center; }
+.ovl-at-tr { top: var(--ovl-my); right: var(--ovl-mx); align-items: flex-end; }
+.ovl-at-ml { top: 50%; left: var(--ovl-mx); transform: translateY(-50%); align-items: flex-start; }
+.ovl-at-mc { top: 50%; left: 50%; transform: translate(-50%, -50%); align-items: center; }
+.ovl-at-mr { top: 50%; right: var(--ovl-mx); transform: translateY(-50%); align-items: flex-end; }
+.ovl-at-bl { bottom: var(--ovl-my); left: var(--ovl-mx); align-items: flex-start; justify-content: flex-end; }
+.ovl-at-bc { bottom: var(--ovl-my); left: 50%; transform: translateX(-50%); align-items: center; justify-content: flex-end; }
+.ovl-at-br { bottom: var(--ovl-my); right: var(--ovl-mx); align-items: flex-end; justify-content: flex-end; }
+
+.ovl-free {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ovl-free > .ovl-w {
+  position: absolute;
+}
+
+/* Guias del modo edicion: una marca en cada posicion de la grilla; se ilumina la que va a tomar el widget. */
+.ovl-guides {
+  display: none;
+  position: absolute;
+  inset: 0;
+}
+.ovl-editing .ovl-guides {
+  display: block;
+}
+.ovl-guide {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 2px dashed rgba(255, 230, 176, 0.4);
+  border-radius: 8px;
+}
+.ovl-guide.on {
+  border-style: solid;
+  border-color: var(--ovl-accent);
+  background: rgba(242, 154, 46, 0.2);
+}
+
+/* ---------- Widgets y temas ---------- */
+.ovl-w {
+  position: relative;
+  pointer-events: none;
+}
+.ovl-w[hidden] {
+  display: none;
+}
+.ovl-in {
+  --ovl-bg: rgba(18, 11, 8, 0.9);
+  --ovl-fg: #fff3e3;
+  --ovl-sub: #d4bfa8;
+  --ovl-line: rgba(255, 196, 120, 0.2);
+  --ovl-chip: rgba(255, 196, 120, 0.12);
+  --ovl-ring: var(--ovl-accent);
+  --ovl-badc: #f07a70;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ovl-fg);
+}
+.ovl-theme-light {
+  --ovl-bg: rgba(255, 248, 238, 0.95);
+  --ovl-fg: #2b1405;
+  --ovl-sub: #5e4128;
+  --ovl-line: rgba(43, 20, 5, 0.16);
+  --ovl-chip: rgba(43, 20, 5, 0.08);
+  --ovl-ring: color-mix(in srgb, var(--ovl-accent) 62%, #000);
+  --ovl-badc: #a3241c;
+}
+.ovl-theme-accent {
+  --ovl-bg: color-mix(in srgb, var(--ovl-accent) 92%, #000);
+  --ovl-fg: #1b0d03;
+  --ovl-sub: rgba(27, 13, 3, 0.78);
+  --ovl-line: rgba(27, 13, 3, 0.2);
+  --ovl-chip: rgba(255, 255, 255, 0.26);
+  --ovl-ring: #fff;
+  --ovl-badc: #5c0f0a;
+}
+.ovl-card,
+.ovl-w-voice .ovl-in,
+.ovl-msg,
+.ovl-alert,
+.ovl-cap,
+.ovl-rec,
+.ovl-music {
+  background: var(--ovl-bg);
+  border: 1px solid var(--ovl-line);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.ovl-ic {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+.ovl-ic svg {
+  width: 14px;
+  height: 14px;
+}
+.ovl-ic.bad {
+  color: var(--ovl-badc);
+}
+.ovl-ic.talk {
+  color: var(--ovl-ring);
+}
+.ovl-av {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--ovl-chip);
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow 120ms;
+  image-rendering: pixelated;
+}
+.ovl-av-letter {
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ovl-fg);
+}
+.ovl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ovl-at-tr .ovl-list, .ovl-at-mr .ovl-list, .ovl-at-br .ovl-list,
+.ovl-at-tr .ovl-in, .ovl-at-mr .ovl-in, .ovl-at-br .ovl-in { align-items: flex-end; }
+.ovl-at-tc .ovl-list, .ovl-at-mc .ovl-list, .ovl-at-bc .ovl-list,
+.ovl-at-tc .ovl-in, .ovl-at-mc .ovl-in, .ovl-at-bc .ovl-in { align-items: center; }
+.ovl-in, .ovl-list { align-items: flex-start; }
+.ovl-w-voice .ovl-in { align-items: stretch !important; }
+.ovl-sub,
+.ovl-more {
+  color: var(--ovl-sub);
+  font-size: 12px;
+}
+.ovl-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Voice Chat */
+.ovl-w-voice .ovl-in {
+  min-width: 180px;
+  max-width: 260px;
+  padding: 8px;
+  gap: 3px;
+}
+.ovl-vhead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 5px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--ovl-line);
+  color: var(--ovl-sub);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ovl-vroom {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ovl-vrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px;
+  border-radius: 8px;
+}
+.ovl-vrow.speaking .ovl-av {
+  box-shadow: 0 0 0 2px var(--ovl-ring);
+}
+.ovl-vrow.speaking .ovl-vname {
+  font-weight: 600;
+}
+.ovl-vrow.quiet .ovl-vname {
+  color: var(--ovl-sub);
+}
+.ovl-vname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ovl-more {
+  padding-left: 34px;
+}
+
+/* Mensajes */
+.ovl-msg {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  width: 280px;
+  max-width: 100%;
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+.ovl-msg .ovl-av {
+  width: 28px;
+  height: 28px;
+}
+.ovl-msg-main {
+  min-width: 0;
+  flex: 1;
+}
+.ovl-msg-from {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ovl-msg-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* Avisos */
+.ovl-alert {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 290px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+.ovl-alert-ic {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 8px;
+  background: var(--ovl-chip);
+  color: var(--ovl-ring);
+}
+.ovl-alert-ic svg {
+  width: 18px;
+  height: 18px;
+}
+.ovl-alert-main {
+  min-width: 0;
+  flex: 1;
+}
+.ovl-alert-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.ovl-alert-body {
+  color: var(--ovl-sub);
+  font-size: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* Capturas, clips y grabacion */
+.ovl-rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-weight: 600;
+}
+.ovl-rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e5544b;
+  box-shadow: 0 0 0 2px rgba(229, 84, 75, 0.3);
+}
+.ovl-rec-time {
+  color: var(--ovl-sub);
+  font-variant-numeric: tabular-nums;
+}
+.ovl-cap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 240px;
+  padding: 6px 10px 6px 6px;
+  box-sizing: border-box;
+}
+.ovl-cap-thumb {
+  width: 64px;
+  height: 36px;
+  flex: none;
+  border-radius: 6px;
+  object-fit: cover;
+}
+.ovl-cap-ic {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 8px;
+  background: var(--ovl-chip);
+  color: var(--ovl-ring);
+}
+.ovl-cap-ic svg {
+  width: 18px;
+  height: 18px;
+}
+.ovl-cap-main {
+  min-width: 0;
+}
+.ovl-cap-title {
+  font-weight: 600;
+}
+.ovl-cap-sub {
+  color: var(--ovl-sub);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Musica */
+.ovl-music {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 280px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+.ovl-art {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.ovl-art-empty {
+  display: grid;
+  place-items: center;
+  background: var(--ovl-chip);
+  color: var(--ovl-ring);
+}
+.ovl-art-empty svg {
+  width: 20px;
+  height: 20px;
+}
+.ovl-music-main {
+  flex: 1;
+  min-width: 0;
+}
+.ovl-song,
+.ovl-artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ovl-song {
+  font-weight: 600;
+}
+.ovl-artist {
+  color: var(--ovl-sub);
+  font-size: 12px;
+}
+.ovl-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--ovl-sub);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ovl-bar {
+  flex: 1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--ovl-chip);
+}
+.ovl-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--ovl-ring);
+}
+
+/* ---------- Modo edicion ---------- */
+.ovl-editing .ovl-w {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  border-radius: 14px;
+  outline: 2px dashed color-mix(in srgb, var(--ovl-accent) 75%, #fff);
+  outline-offset: 4px;
+}
+.ovl-editing .ovl-w:focus-visible {
+  outline: 3px solid #ffc562;
+  outline-offset: 4px;
+}
+.ovl-editing .ovl-w.ovl-dragging {
+  cursor: grabbing;
+  z-index: 3;
+}
+.ovl-tag {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 4px;
+  padding: 2px 8px 2px 4px;
+  border-radius: 6px;
+  background: var(--ovl-accent);
+  color: #2b1405;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ovl-w-voice .ovl-tag {
+  align-self: flex-start;
+}
+.ovl-tag svg {
+  width: 14px;
+  height: 14px;
+}
+.ovl-toolbar {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(720px, 92%);
+  padding: 10px 12px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 196, 120, 0.32);
+  border-radius: 14px;
+  background: rgba(27, 19, 14, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  color: #fff3e3;
+  pointer-events: auto;
+}
+.ovl-tb-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 10px;
+  background: rgba(242, 154, 46, 0.14);
+  color: #ffc562;
+}
+.ovl-tb-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.ovl-tb-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.ovl-tb-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffe6b0;
+}
+.ovl-tb-text span {
+  color: #d4bfa8;
+  font-size: 12px;
+}
+.ovl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  flex: none;
+  border: 1px solid rgba(255, 196, 120, 0.18);
+  border-radius: 8px;
+  background: #2c2017;
+  color: #fff3e3;
+  font: 600 13px 'Outfit', system-ui, sans-serif;
+  cursor: pointer;
+}
+.ovl-btn:hover {
+  border-color: rgba(255, 196, 120, 0.32);
+  background: #382a1e;
+}
+.ovl-btn.primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, #ffc562, #f29a2e);
+  color: #2b1405;
+}
+.ovl-btn:focus-visible {
+  outline: 2px solid #ffc562;
+  outline-offset: 2px;
+}
+.ovl-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.ovl-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Movimiento ---------- */
+@keyframes ovl-enter {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+@keyframes ovl-exit {
+  to { opacity: 0; transform: scale(0.97); }
+}
+@keyframes ovl-pulse {
+  50% { opacity: 0.45; }
+}
+.ovl-root:not(.ovl-reduce) .ovl-enter {
+  animation: ovl-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.ovl-root:not(.ovl-reduce) .ovl-out {
+  animation: ovl-exit 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.ovl-root:not(.ovl-reduce) .ovl-vrow.speaking .ovl-ic.talk,
+.ovl-root:not(.ovl-reduce) .ovl-rec-dot {
+  animation: ovl-pulse 1.1s ease-in-out infinite;
+}
+.ovl-reduce .ovl-out {
+  display: none;
+}
+.ovl-reduce .ovl-av {
+  transition: none;
+}

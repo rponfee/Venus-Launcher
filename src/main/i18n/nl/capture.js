@@ -1,0 +1,18 @@
+// Teksten van het hoofdproces voor clips en screenshots (fouten en overlaymeldingen).
+module.exports = {
+  errNoGame: "Er is geen spel open om vast te leggen.",
+  errNoWindow: "Het spelvenster is niet gevonden. Wacht tot het helemaal geopend is en probeer het opnieuw.",
+  errNotReady: "Het vastleggen wordt nog voorbereid. Probeer het over een paar seconden opnieuw.",
+  errReplayOff: "Directe herhaling staat uit. Schakel hem in bij Instellingen > In het spel.",
+  errReplayEmpty: "Er is nog niets om op te slaan in de herhaling. Wacht een paar seconden.",
+  errInstance: "De instantie is niet gevonden.",
+  errNoSpace: "Er is geen ruimte op de schijf om op te slaan.",
+  errWrite: "Het bestand kon niet worden opgeslagen.",
+  errCapture: "Het spelvenster kon niet worden vastgelegd.",
+  errRecordingEmpty: "De opname is leeg (er kwam geen enkel beeld van het spel binnen).",
+  errExportEmpty: "De geëxporteerde clip is leeg.",
+  errExportTooBig: "De geëxporteerde clip is te groot.",
+  errExportBad: "De geëxporteerde clip is beschadigd en kon niet worden opgeslagen.",
+  errAiUnavailable: "De AI is niet beschikbaar: log in met je Venus-account en controleer of de AI is ingeschakeld.",
+  overlayErrorTitle: "Clips en screenshots",
+};

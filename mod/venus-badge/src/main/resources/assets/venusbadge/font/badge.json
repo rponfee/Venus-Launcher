@@ -5,7 +5,9 @@
       "file": "venusbadge:font/badge.png",
       "ascent": 7,
       "height": 8,
-      "chars": ["\uE000"]
+      "chars": [
+        "\ue000\ue001\ue002\ue003"
+      ]
     }
   ]
 }

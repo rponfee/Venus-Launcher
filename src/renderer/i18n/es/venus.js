@@ -34,6 +34,16 @@ export default {
   newsTitle: 'Novedades',
   newsSub: 'Lo que trajo cada versión.',
   newsCurrent: 'Tu versión',
+  news2000: [
+    "Música: controlá Spotify y cualquier reproductor desde el launcher y con atajos dentro del juego.",
+    "Overlay en el juego: Voice Chat, mensajes, alertas, capturas y la canción que suena, todo personalizable.",
+    "Clips y capturas: sección propia, grabación, repetición instantánea, editor y compartir.",
+    "Perfiles a fondo: banners, degradados, tipografías y efectos del nombre, pronombres, favoritos y más.",
+    "Venus Points: premio diario, logros, invitaciones con código y tienda de cosméticos.",
+    "Venus Premium: insignia dorada en el juego, puntos x2, banners animados y más.",
+    "Grupos para jugar todos juntos y avisos de amigos y servidores favoritos.",
+    "Temas compartibles, editor de skins 3D y la insignia de Venus en el juego.",
+  ].join('\n'),
   news1019: [
     'Venus dentro del juego: pantalla de carga con el logo de Venus, "Venus Launcher" debajo del logo de Minecraft y frases de Venus en el menú.',
     'El ícono y el título de Venus en la ventana del juego.',

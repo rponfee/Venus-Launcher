@@ -1,0 +1,18 @@
+'use strict';
+module.exports = {
+  errNoGame: "Aucun jeu ouvert à capturer.",
+  errNoWindow: "Fenêtre du jeu introuvable. Attendez la fin de son ouverture et réessayez.",
+  errNotReady: "La capture est encore en préparation. Réessayez dans quelques secondes.",
+  errReplayOff: "La relecture instantanée est désactivée. Activez-la dans Paramètres > En jeu.",
+  errReplayEmpty: "Il n’y a encore rien à enregistrer dans la relecture. Attendez quelques secondes.",
+  errInstance: "Instance introuvable.",
+  errNoSpace: "Pas assez d’espace disque pour enregistrer.",
+  errWrite: "Impossible d’enregistrer le fichier.",
+  errCapture: "Impossible de capturer la fenêtre du jeu.",
+  errRecordingEmpty: "L’enregistrement est vide (aucune image du jeu n’a été reçue).",
+  errExportEmpty: "Le clip exporté est vide.",
+  errExportTooBig: "Le clip exporté est trop volumineux.",
+  errExportBad: "Le clip exporté est endommagé et n’a pas pu être enregistré.",
+  errAiUnavailable: "L’IA n’est pas disponible : connectez-vous à votre compte Venus et vérifiez que l’IA est activée.",
+  overlayErrorTitle: "Clips et captures",
+};

@@ -19,6 +19,7 @@ import {
   confirmRemoveFriend,
   confirmBlock,
 } from '../social/profile-ui.js';
+import { styledName } from '../social/profile-style.js';
 import { renderBody, isJumbo, openEmojiPicker, closeEmojiPicker, insertAtCursor, EMOJIS, QUICK_REACTIONS } from '../social/richtext.js';
 
 const drafts = new Map(); // borradores por conversacion (sobreviven al cambiar de pagina)
@@ -387,7 +388,7 @@ class MessagesPage {
         'button',
         { class: 'msg-me-open', type: 'button', title: t('messages.editProfile'), onclick: () => openMyProfile() },
         headWithDot(me, pres.presence, 40),
-        h('span', { class: 'msg-me-main' }, h('span', { class: 'msg-me-name ellipsis' }, name), h('span', { class: 'msg-me-sub ellipsis', title: sub }, sub)),
+        h('span', { class: 'msg-me-main' }, h('span', { class: 'msg-me-name ellipsis' }, me ? styledName(me, { size: 'sm' }) : name), h('span', { class: 'msg-me-sub ellipsis', title: sub }, sub)),
       ),
       h('button', { class: 'icon-btn sm msg-me-status', type: 'button', title: t('messages.changeStatus'), 'aria-label': t('messages.changeStatus'), 'aria-haspopup': 'menu', onclick: (ev) => statusMenu(ev.currentTarget) }, icon('chevronDown')),
     );
@@ -604,7 +605,7 @@ class MessagesPage {
       h(
         'div',
         { class: 'msg-item-main' },
-        h('div', { class: 'msg-item-top' }, h('span', { class: 'msg-item-name ellipsis', title: f.name }, f.name), badgeChips(f.profile, { compact: true, max: 2 }), f.lastAt ? h('span', { class: 'msg-item-time' }, shortTime(f.lastAt)) : null),
+        h('div', { class: 'msg-item-top' }, h('span', { class: 'msg-item-name ellipsis', title: f.name }, styledName(f.profile, { size: 'sm' })), badgeChips(f.profile, { compact: true, max: 2 }), f.lastAt ? h('span', { class: 'msg-item-time' }, shortTime(f.lastAt)) : null),
         h('div', { class: ['msg-item-sub', sub.cls] }, sub.dots ? typingDots() : null, sub.icon ? icon(sub.icon) : null, h('span', { class: 'ellipsis', title: sub.text }, sub.text)),
       ),
       f.unread ? h('span', { class: 'msg-unread', 'aria-hidden': 'true' }, f.unread > 99 ? '99+' : String(f.unread)) : null,
@@ -898,7 +899,7 @@ class ChatView {
         'button',
         { class: 'msg-chat-who', type: 'button', title: t('messages.viewProfile'), onclick: () => openProfile(this.userId) },
         headWithDot(profile, f ? f.presence : null, 42),
-        h('div', { class: 'msg-chat-titles' }, h('div', { class: 'msg-chat-name' }, h('span', { class: 'ellipsis', title: name }, name), badgeChips(profile, { compact: true, max: 4 })), sub),
+        h('div', { class: 'msg-chat-titles' }, h('div', { class: 'msg-chat-name' }, h('span', { class: 'ellipsis', title: name }, displayName(profile) ? styledName(profile, { size: 'sm' }) : name), badgeChips(profile, { compact: true, max: 4 })), sub),
       ),
       h(
         'div',

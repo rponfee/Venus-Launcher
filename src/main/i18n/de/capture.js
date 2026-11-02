@@ -1,0 +1,18 @@
+// Texte des Hauptprozesses für Clips und Screenshots (Fehler und Overlay-Hinweise).
+module.exports = {
+  errNoGame: "Es ist kein Spiel zum Aufnehmen offen.",
+  errNoWindow: "Das Spielfenster wurde nicht gefunden. Warte, bis es fertig geladen ist, und versuch es noch einmal.",
+  errNotReady: "Die Aufnahme wird noch vorbereitet. Versuch es in ein paar Sekunden noch einmal.",
+  errReplayOff: "Die Sofortwiederholung ist aus. Schalte sie unter Einstellungen > Im Spiel ein.",
+  errReplayEmpty: "In der Wiederholung gibt es noch nichts zu speichern. Warte ein paar Sekunden.",
+  errInstance: "Die Instanz wurde nicht gefunden.",
+  errNoSpace: "Auf dem Datenträger ist kein Platz zum Speichern.",
+  errWrite: "Die Datei konnte nicht gespeichert werden.",
+  errCapture: "Das Spielfenster konnte nicht aufgenommen werden.",
+  errRecordingEmpty: "Die Aufnahme ist leer (es kam kein Bild vom Spiel an).",
+  errExportEmpty: "Der exportierte Clip ist leer.",
+  errExportTooBig: "Der exportierte Clip ist zu groß.",
+  errExportBad: "Der exportierte Clip ist beschädigt und konnte nicht gespeichert werden.",
+  errAiUnavailable: "Die KI ist nicht verfügbar: Melde dich mit deinem Venus-Konto an und prüfe, ob die KI aktiviert ist.",
+  overlayErrorTitle: "Clips & Screenshots",
+};

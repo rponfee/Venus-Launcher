@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -19,7 +21,9 @@ class BadgeCacheTest {
 	private BadgeCache cache(Set<UUID> withBadge) {
 		return new BadgeCache(batch -> {
 			calls.add(List.copyOf(batch));
-			return Set.copyOf(withBadge.stream().filter(batch::contains).toList());
+			Map<UUID, String> out = new HashMap<>();
+			for (UUID id : batch) if (withBadge.contains(id)) out.put(id, "default");
+			return out;
 		}, now::get);
 	}
 
@@ -77,7 +81,7 @@ class BadgeCacheTest {
 		BadgeCache c = new BadgeCache(batch -> {
 			calls.add(batch);
 			if (failures[0]-- > 0) throw new IOException("sin red");
-			return Set.of(batch.get(0));
+			return Map.of(batch.get(0), "gold");
 		}, now::get);
 		UUID a = premium(7);
 		assertFalse(c.hasBadge(a));
@@ -114,9 +118,31 @@ class BadgeCacheTest {
 	}
 
 	@Test
-	void parsesServerAnswer() throws IOException {
-		UUID a = premium(9);
-		assertEquals(Set.of(a), BadgeClient.parse("[\"" + a + "\"]"));
-		assertEquals(Set.of(), BadgeClient.parse("[]"));
+	void keepsTheStyleOfEachPlayer() {
+		UUID a = premium(4), b = premium(5);
+		BadgeCache c = new BadgeCache(batch -> Map.of(a, "gold", b, "ice"), now::get);
+		c.style(a);
+		c.style(b);
+		c.tick();
+		assertEquals("gold", c.style(a));
+		assertEquals("ice", c.style(b));
+		assertEquals(null, c.style(premium(6)));
+	}
+
+	@Test
+	void parsesServerAnswers() throws IOException {
+		UUID a = premium(9), b = premium(10);
+		assertEquals(Map.of(a, "gold", b, "default"),
+				BadgeClient.parseStyles("[{\"mc_uuid\":\"" + a + "\",\"style\":\"gold\"},{\"mc_uuid\":\"" + b + "\",\"style\":null}]"));
+		assertEquals(Map.of(a, "default"), BadgeClient.parseLookup("[\"" + a + "\"]"));
+		assertEquals(Map.of(), BadgeClient.parseStyles("[]"));
+	}
+
+	@Test
+	void unknownStylesUseTheDefaultGlyph() {
+		assertEquals(String.valueOf((char) 0xE000), VenusBadge.glyph("default"));
+		assertEquals(String.valueOf((char) 0xE001), VenusBadge.glyph("gold"));
+		assertEquals(String.valueOf((char) 0xE003), VenusBadge.glyph("ice"));
+		assertEquals(String.valueOf((char) 0xE000), VenusBadge.glyph("raro"));
 	}
 }

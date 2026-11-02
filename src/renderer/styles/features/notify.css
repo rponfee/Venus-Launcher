@@ -1,0 +1,52 @@
+/* Avisos (features/notify.js) y avisos con botones que comparten los grupos (features/party/toasts.js).
+   Prefijo nt-. Solo tokens de main.css. */
+
+/* ---------- Avisos con botones ---------- */
+.toast.nt-toast { align-items: flex-start; position: relative; padding-right: 40px; }
+.nt-toast-body { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; flex: 1; }
+.nt-toast-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }
+.nt-toast .nt-toast-btn svg { width: 16px; height: 16px; margin-top: 0; color: currentColor; }
+.nt-toast .nt-toast-x { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; }
+.nt-toast .nt-toast-x svg { width: 14px; height: 14px; margin: 0; color: var(--muted); }
+.nt-toast .nt-toast-x:hover svg { color: var(--text); }
+
+/* ---------- Campana de las tarjetas de servidores ---------- */
+.nt-watch.active { color: var(--accent-hi); border-color: var(--accent-line); background: var(--accent-wash); }
+
+/* ---------- Panel de Ajustes ---------- */
+.nt-panel { display: flex; flex-direction: column; gap: var(--sp-2); }
+.nt-panel > .card-head { margin-bottom: var(--sp-2); }
+.nt-group { display: flex; flex-direction: column; padding-top: var(--sp-3); border-top: 1px solid var(--border); }
+.nt-group:first-of-type { border-top: 0; padding-top: 0; }
+.nt-group-title { display: flex; align-items: center; gap: var(--sp-2); margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
+.nt-group-title svg { width: 16px; height: 16px; color: var(--accent-hi); }
+.nt-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.nt-note { margin: var(--sp-2) 0; }
+.nt-muted { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3) 0; }
+.nt-mute-select { max-width: 320px; }
+.nt-chips { gap: 6px; }
+.nt-chip { cursor: default; max-width: 220px; padding-right: 4px; }
+.nt-chip-x { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: pointer; flex-shrink: 0; }
+.nt-chip-x:hover { color: var(--text); background: var(--hover-bg); }
+.nt-chip-x svg { width: 12px; height: 12px; }
+.nt-servers-head { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3) 0 var(--sp-2); }
+.nt-servers { gap: 4px; margin-bottom: var(--sp-3); }
+.nt-server { background: var(--well-bg); border-color: var(--border); }
+.nt-server-icon { width: 36px; height: 36px; }
+.nt-server-sub { gap: 6px; }
+.nt-server-sub .mono { min-width: 0; max-width: 100%; }
+.nt-src { height: 20px; font-size: var(--fs-xs); }
+.nt-pill { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nt-empty { padding: var(--sp-2) 0 var(--sp-3); }
+.nt-add { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: var(--sp-2); align-items: end; }
+.nt-add .field { margin: 0; }
+.nt-add #nt-add-addr { font-family: var(--mono); }
+.nt-add-error { margin-top: var(--sp-1); }
+.nt-add-error:empty { display: none; }
+.nt-group > .small.muted:last-child { margin-top: var(--sp-2); }
+
+@media (max-width: 1100px) {
+  .nt-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .nt-add .btn { grid-column: 1 / -1; justify-self: start; }
+}
+html.ax-hc .nt-server { border-color: var(--border-3); }

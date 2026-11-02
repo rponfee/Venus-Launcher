@@ -1,5 +1,6 @@
 'use strict';
 module.exports = {
+  errSupportBudget: "Le solde API de votre forfait {plan} ne suffit pas pour une autre réponse avec ces réglages. Essayez un modèle moins coûteux ou achetez un autre forfait dans Forfaits (ce qui vous reste s’y ajoute).",
   errUnconfirmed: "Confirmez l'e-mail de votre compte Venus pour utiliser l'IA (vérifiez votre boîte mail).",
   errAnonymous: "Les comptes invités ne peuvent pas utiliser l'IA : connectez-vous avec votre compte Venus dans Paramètres > Compte et cloud.",
   errNoPlan: "Pour utiliser l'IA, il vous faut un forfait Venus. Cliquez sur « Améliorer le forfait » pour en choisir un.",
@@ -34,4 +35,5 @@ module.exports = {
   effort_low: "Faible",
   effort_medium: "Moyen",
   effort_high: "Élevé",
+  effort_xhigh: "Extra",
 };

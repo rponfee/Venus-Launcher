@@ -1,0 +1,18 @@
+'use strict';
+module.exports = {
+  errNoGame: "Não há um jogo aberto para capturar.",
+  errNoWindow: "A janela do jogo não foi encontrada. Espere ela terminar de abrir e tente de novo.",
+  errNotReady: "A captura ainda está sendo preparada. Tente de novo em alguns segundos.",
+  errReplayOff: "O replay instantâneo está desativado. Ative em Configurações > No jogo.",
+  errReplayEmpty: "Ainda não há nada para salvar no replay. Espere alguns segundos.",
+  errInstance: "A instância não foi encontrada.",
+  errNoSpace: "Não há espaço no disco para salvar.",
+  errWrite: "Não foi possível salvar o arquivo.",
+  errCapture: "Não foi possível capturar a janela do jogo.",
+  errRecordingEmpty: "A gravação ficou vazia (nenhum quadro do jogo chegou).",
+  errExportEmpty: "O clipe exportado ficou vazio.",
+  errExportTooBig: "O clipe exportado é grande demais.",
+  errExportBad: "O clipe exportado está danificado e não foi possível salvar.",
+  errAiUnavailable: "A IA não está disponível: entre na sua conta Venus e confira se a IA está ativada.",
+  overlayErrorTitle: "Clipes e capturas",
+};

@@ -189,6 +189,9 @@ export function renderAi(body, ctx) {
 // Planes de Venus IA (tarjetas, plan actual, pago y suscripción): features/plans.js
 export function renderPlan(body, ctx) {
   const host = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'plans' } });
-  body.append(sectionHead('plan', 'crown'), host);
+  // Beneficios de Venus Premium (features/premium.js): lo que suma cualquier plan además de la IA
+  const perks = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'premium' } });
+  body.append(sectionHead('plan', 'crown'), host, perks);
   embedPanel(host, { load: () => import('../../features/plans.js'), fn: 'plansPanel', ns: ['plans'] }, ctx);
+  embedPanel(perks, { load: () => import('../../features/premium.js'), fn: 'perksPanel', ns: ['premium'] }, ctx);
 }

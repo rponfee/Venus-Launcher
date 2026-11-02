@@ -16,7 +16,10 @@ const NAV = [
   { id: 'assistant', icon: 'wand' },
   { id: 'versions', icon: 'layers' },
   { id: 'worlds', icon: 'globe' },
+  { id: 'clips', icon: 'camera' },
   { id: 'skins', icon: 'user' },
+  { id: 'music', icon: 'music' },
+  { id: 'rewards', icon: 'trophy' },
   { group: 'content' },
   { id: 'modrinth', icon: 'package', cls: 'modrinth' },
   { id: 'smartsearch', icon: 'sparkles' },
@@ -44,6 +47,9 @@ const PAGES = {
   instance: () => import('./pages/instance.js'),
   worlds: () => import('./pages/worlds.js'),
   skins: () => import('./pages/skins.js'),
+  clips: () => import('./pages/clips.js'),
+  music: () => import('./pages/music.js'),
+  rewards: () => import('./pages/rewards.js'),
   modrinth: () => import('./pages/modrinth.js'),
   smartsearch: () => import('./pages/smartsearch.js'),
   performance: () => import('./pages/performance.js'),
@@ -86,6 +92,14 @@ const STARTUP = [
   () => import('./features/support-staff.js'),
   () => import('./features/mcp.js'),
   () => import('./features/svcstatus.js'), // solo registra "Estado de los servicios" en Ctrl+K (no consulta nada)
+  // Venus 2.0
+  () => import('./features/nowplaying.js'), // comandos de Música en Ctrl+K (no abre el ayudante)
+  () => import('./features/overlay.js'), // manda voz y mensajes al overlay del juego
+  () => import('./features/capture.js'), // avisos de capturas y clips guardados
+  () => import('./features/rewards.js'), // logros automáticos, saldo de Venus Points y punto del premio diario
+  () => import('./features/party.js'), // grupos: señales party-*, líder caído, mundo del líder
+  () => import('./features/notify.js'), // avisos de amigos y servidores favoritos
+  () => import('./features/whatsnew.js'), // recorrido de novedades la primera vez que se abre la 2.0.0 (y Ctrl+K)
 ];
 
 let cleanup = null;
@@ -777,11 +791,38 @@ async function init() {
 
   // Modulos que arrancan solos (sincronizacion de modpacks, asistente, invitaciones...)
   for (const load of STARTUP) runStartup(load);
+  mountShellExtras();
 
   // Atajo de recarga (desarrollo)
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'r') location.reload();
   });
+}
+
+// Venus 2.0: piezas de otras funciones en la barra lateral (mini reproductor y saldo de Venus Points, arriba del
+// boton de Discord) y en la barra de titulo (Grupo). Cada una se dibuja sola y, si su modulo falla, no aparece.
+function mountShellExtras() {
+  const before = (el) => {
+    const anchor = document.getElementById('community-link');
+    if (anchor?.parentNode) anchor.parentNode.insertBefore(el, anchor);
+  };
+  import('./features/nowplaying.js')
+    .then((m) => {
+      if (!document.querySelector('.np-mini')) before(m.miniPlayer());
+    })
+    .catch((err) => console.warn('[nowplaying]', err));
+  import('./features/rewards.js')
+    .then((m) => {
+      if (!document.querySelector('.rw-chip')) before(m.pointsChip());
+    })
+    .catch((err) => console.warn('[rewards]', err));
+  Promise.all([import('./features/party.js'), loadNs('party')])
+    .then(([m]) => {
+      const bar = document.querySelector('.titlebar');
+      const btns = bar?.querySelector('.tb-btns');
+      if (bar && btns && !bar.querySelector('.pt-btn')) bar.insertBefore(m.partyButton(), btns);
+    })
+    .catch((err) => console.warn('[party]', err));
 }
 
 // Pantalla de carga de index.html: se va con un fundido cuando ya se dibujo la primera pagina.

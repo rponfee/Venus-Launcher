@@ -1,6 +1,6 @@
 // Ajustes > secciones que muestran paneles de otros modulos (contratos de docs/arquitectura.md):
-// Apariencia y Accesibilidad (a11y) y Descargas y almacenamiento (storage). Discord Rich Presence está en
-// Privacidad (general.js).
+// Apariencia y Accesibilidad (a11y, con Temas de features/themes.js), En el juego (overlay, capture y nowplaying) y
+// Descargas y almacenamiento (storage). Discord Rich Presence y Avisos están en Privacidad (general.js).
 import { h } from '../../ui.js';
 import { t } from '../../i18n.js';
 import { sectionHead, embedPanel } from './shared.js';
@@ -13,6 +13,21 @@ function single(body, ctx, { id, iconName, load, fn, ns }) {
 
 export function renderAppearance(body, ctx) {
   single(body, ctx, { id: 'appearance', iconName: 'palette', load: () => import('../../appearance.js'), fn: 'appearancePanel', ns: ['appearance', 'a11y'] });
+  // Temas compartibles y galería de la comunidad (features/themes.js)
+  const themes = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'themes' } });
+  body.append(themes);
+  embedPanel(themes, { load: () => import('../../features/themes.js'), fn: 'themesPanel', ns: ['themes'] }, ctx);
+}
+
+// En el juego: overlay (features/overlay.js), grabación y capturas (features/capture.js) y música (features/nowplaying.js)
+export function renderIngame(body, ctx) {
+  const overlay = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'overlay' } });
+  const capture = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'capture' } });
+  const music = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'music' } });
+  body.append(sectionHead('ingame', 'gamepad'), overlay, capture, music);
+  embedPanel(overlay, { load: () => import('../../features/overlay.js'), fn: 'overlayPanel', ns: ['overlay'] }, ctx);
+  embedPanel(capture, { load: () => import('../../features/capture.js'), fn: 'capturePanel', ns: ['capture'] }, ctx);
+  embedPanel(music, { load: () => import('../../features/nowplaying.js'), fn: 'nowPlayingPanel', ns: ['nowplaying'] }, ctx);
 }
 
 export function renderA11y(body, ctx) {
