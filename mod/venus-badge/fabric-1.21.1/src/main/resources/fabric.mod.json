@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "venusbadge",
+  "version": "${version}",
+  "name": "Venus Badge",
+  "description": "Shows the Venus Launcher planet next to the names of players who also use Venus Launcher (name tag and player list). Installed and removed by Venus Launcher.",
+  "authors": ["Venus Launcher"],
+  "contact": {
+    "homepage": "https://github.com/rponfee/Venus-Launcher",
+    "sources": "https://github.com/rponfee/Venus-Launcher/tree/main/mod/venus-badge"
+  },
+  "license": "MIT",
+  "icon": "assets/venusbadge/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.venuslauncher.badge.VenusBadge"]
+  },
+  "mixins": ["venusbadge.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.15.11",
+    "fabric-resource-loader-v0": "*",
+    "minecraft": ">=1.21 <1.21.2",
+    "java": ">=21"
+  }
+}

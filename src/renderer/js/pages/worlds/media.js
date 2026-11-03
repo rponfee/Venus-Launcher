@@ -9,7 +9,7 @@ import { cloud } from '../../cloud.js';
 import { DATE_TIME, iconBtn, worldRoute, bone, skelGroup } from './common.js';
 
 const LINK_SECONDS = 365 * 24 * 3600;
-const LIMITS = { screenshot: 15 * 1024 * 1024, clip: 50 * 1024 * 1024 };
+export const LIMITS = { screenshot: 15 * 1024 * 1024, clip: 50 * 1024 * 1024 };
 const EXIT_MS = 180; // --dur de main.css
 
 // ---------- Miniaturas (pedidas en tandas al proceso principal) ----------
@@ -108,7 +108,7 @@ export function mediaLabel(item) {
 }
 
 // Tarjeta de una captura o clip
-export function mediaTile(item, { onOpen, shared, compact = false } = {}) {
+export function mediaTile(item, { onOpen, shared, compact = false, badge = null } = {}) {
   const isClip = item.kind === 'clip';
   const dur = h('span', { class: 'wo-shot-dur', hidden: true });
   const preview = isClip ? clipPreview(item, 'wo-shot-img') : shotImage(item, 'wo-shot-img');
@@ -124,12 +124,13 @@ export function mediaTile(item, { onOpen, shared, compact = false } = {}) {
   }
   return h(
     'button',
-    { class: ['wo-shot', isClip && 'clip', compact && 'compact'], type: 'button', 'aria-label': mediaLabel(item), title: mediaLabel(item), onclick: onOpen },
+    { class: ['wo-shot', isClip && 'clip', compact && 'compact'], type: 'button', 'aria-label': badge ? `${mediaLabel(item)} · ${badge.textContent}` : mediaLabel(item), title: mediaLabel(item), onclick: onOpen },
     h('span', { class: 'wo-shot-ph', 'aria-hidden': 'true' }, icon(isClip ? 'woFilm' : 'image')),
     preview,
     isClip ? h('span', { class: 'wo-shot-play', 'aria-hidden': 'true' }, icon('play')) : null,
     isClip ? dur : null,
     shared ? h('span', { class: 'wo-shot-shared', title: t('worlds.sharedBadge'), 'aria-label': t('worlds.sharedBadge'), role: 'img' }, icon('link')) : null,
+    badge,
     compact ? null : h('span', { class: 'wo-shot-cap', 'aria-hidden': 'true' }, h('b', {}, item.world || item.instanceName), h('span', {}, fmtDate(item.date, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))),
   );
 }
@@ -140,7 +141,7 @@ export function mediaSkeleton(n = 8, label) {
 }
 
 // Grilla agrupada por mes
-export function mediaGrid(items, { onOpen, sharedMap = {}, emptyIcon = 'camera', emptyTitle, emptyText, emptyAction = null, pageSize = 60 } = {}) {
+export function mediaGrid(items, { onOpen, sharedMap = {}, badgeOf = null, emptyIcon = 'camera', emptyTitle, emptyText, emptyAction = null, pageSize = 60 } = {}) {
   const host = h('div', { class: 'wo-media' });
   if (!items.length) {
     mount(host, h('div', { class: 'card flat' }, emptyState(emptyIcon, emptyTitle || t('worlds.noMedia'), emptyText || t('worlds.noMediaText'), emptyAction)));
@@ -171,7 +172,7 @@ export function mediaGrid(items, { onOpen, sharedMap = {}, emptyIcon = 'camera',
         lastGrid = h('div', { class: 'wo-shots' });
         host.insertBefore(lastGrid, more);
       }
-      const tile = mediaTile(it, { onOpen: () => onOpen(index), shared: Boolean(sharedMap[it.sharedKey]) });
+      const tile = mediaTile(it, { onOpen: () => onOpen(index), shared: Boolean(sharedMap[it.sharedKey]), badge: badgeOf ? badgeOf(it) : null });
       if (!firstNew) firstNew = tile;
       lastGrid.append(tile);
     }

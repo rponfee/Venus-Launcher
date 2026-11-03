@@ -1,0 +1,30 @@
+# Mod de la insignia de Venus (docs/insignia.md). El launcher lo instala y lo quita solo.
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+issueTrackerURL = "https://github.com/rponfee/Venus-Launcher/issues"
+
+[[mods]]
+modId = "venusbadge"
+version = "${version}"
+displayName = "Venus Badge"
+description = "Shows the Venus Launcher planet next to the names of players who also use Venus Launcher (name tag and player list). Installed and removed by Venus Launcher."
+authors = "Venus Launcher"
+displayURL = "https://github.com/rponfee/Venus-Launcher"
+logoFile = "venusbadge_logo.png"
+# Solo de cliente: no le pide nada al servidor ni cambia el tilde de compatibilidad en la lista de servidores.
+displayTest = "IGNORE_ALL_VERSION"
+
+[[dependencies.venusbadge]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.venusbadge]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "CLIENT"

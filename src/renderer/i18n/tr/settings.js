@@ -68,7 +68,7 @@ export default {
   ingameWindow: "Pencerede Venus simgesi ve başlığı",
   ingameWindowSub: "Oyun penceresi Venus simgesini ve başlığın sonunda \"· Venus Launcher\" ifadesini gösterir.",
   ingameBadge: 'Adının yanında Venus rozeti',
-  ingameBadgeSub: 'Venus kullanan diğer oyuncular adının yanında Venus gezegenini görür (başının üstünde ve Tab listesinde), sen de onlarınkinin yanında görürsün. "Venus Badge" modunu yalnızca Minecraft {versions} Fabric veya Quilt örneklerine kurar: vanilla, Forge, NeoForge ve OptiFine Fabric modlarını yükleyemez ve oldukları gibi kalır. Venus hesabın ve bir Microsoft hesabı gerekir. Mod, gördüğün oyuncuları Venus sunucusuna sorar (yalnızca UUID\'lerini).',
+  ingameBadgeSub: "Venus kullanan diğer oyuncular adının yanında Venus gezegenini görür (başının üstünde ve Tab listesinde), sen de onlarınkinin yanında görürsün. “Venus Badge” modunu yalnızca onu yükleyebilen örneklere kurar: {versions}. Vanilla, OptiFine ve diğer sürümler olduğu gibi kalır ve rozeti göstermez. Venus hesabın ve bir Microsoft hesabı gerekir. Mod, gördüğün oyuncuları Venus sunucusuna sorar (yalnızca UUID'lerini).",
   ingameBadgeIdle: 'Bir sonraki oyununda Microsoft hesabınla etkinleşir.',
   ingameBadgeWorking: 'Minecraft hesabın Mojang ile doğrulanıyor…',
   ingameBadgeOk: 'Tamam: {name} Venus rozetine sahip.',

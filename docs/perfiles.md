@@ -19,6 +19,14 @@
 - **Compartir mi perfil** arma una imagen PNG de 1200 × 630 de tu tarjeta (banner, fade, cabeza con el marco, nombre con su estilo, título, insignia, descripción, estadísticas y servidores) para **Copiar imagen** o **Guardar PNG**. Se arma en tu PC con lo que ya es público en tu perfil.
 - La **tarjeta de perfil** (ver el perfil de un amigo desde Mensajes) muestra todo lo anterior más lo que está jugando con *Unirme*, desde cuándo son amigos, el nombre de Minecraft, desde cuándo está en Venus y el código de amigo.
 
+### Novedades de la 3.0
+
+- **Rango** (`profiles.rank`: owner, admin, mod, helper): se ve en la tarjeta y en las listas. Lo cambia un admin desde su ficha en el panel (`admin_set_rank`, queda en el registro); `owner` se carga a mano y no se toca desde el panel. No da permisos: el acceso al panel sigue siendo `app_admins`.
+- **Estilo**: 35 tipografías (28 fuentes libres en `assets/fonts/names`, tabla en `features/profile-editor/fonts.js`, CSS generado por `scripts/import-name-fonts.js`), fade con color del medio, mayúsculas, cursiva y contorno. **Tarjeta** (`card_style`): dibujo de fondo, forma de la cabeza, disposición y color de acento.
+- **Banner**: 8 diseños más y **GIF de KLIPY**, para todos (`features/profile-editor/klipy.js`). Las condiciones de KLIPY piden que los pedidos salgan de la app y que las direcciones no se toquen ni se copien los archivos, así que el servidor no hace de intermediario: guarda la clave en el Vault (Administración → Integraciones) y el launcher la pide con `klipy_key`. Se muestra "Search KLIPY" en el buscador (obligatorio) y "Powered by KLIPY". Los filtros de contenido se ajustan en partner.klipy.com; el launcher pide `content_filter=high`.
+- **Vitrina** (`showcase`): hasta 6 logros (solo desbloqueados), hasta 2 clips (solo compartidos por esa cuenta; `profile_public` no devuelve los vencidos), skin en 3D (se pide a Mojang recién cuando alguien toca el botón, `skins:publicSkin`), hasta 6 capturas, redes de sitios conocidos (`links`, `private.profile_link_ok`) y más estadísticas.
+- **Cosméticos**: 9 marcos, 9 efectos y 12 títulos en `shop_items` (0023).
+
 ## Datos y reglas del servidor
 
 - Columnas nuevas de `profiles` (0020): `pronouns`, `theme { from, to, angle }`, `name_style { font, effect, color, glow }`, `banner_style { kind: 'preset' | 'image' | 'animated', preset? | url? }`, `favorite_servers [{ address, name? }]`, `public_stats` (null o `{ hours, sessions, topVersion, topLoader, since, updatedAt }`), `featured [{ url, title? }]`, `equipped { frame?, nameEffect?, badgeStyle?, title? }` (ids de `shop_items`) y `customized_at`. El banner viejo (`profiles.banner`, texto: preset o colores) sigue siendo el **color clásico** y se ve cuando `banner_style` está vacío.

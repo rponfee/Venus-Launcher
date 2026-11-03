@@ -1,7 +1,7 @@
 // Textos de la pagina de Estadisticas. Usar t('stats.<clave>').
 export default {
   title: 'Estadísticas',
-  subtitle: 'Tu tiempo de juego, tus mundos y tus logros en un solo lugar',
+  subtitle: 'Tu tiempo de juego y tus mundos en un solo lugar',
   subtitleSince: 'Tu actividad desde el {date}',
   loading: 'Calculando estadísticas...',
   loadError: 'No se pudieron cargar las estadísticas',

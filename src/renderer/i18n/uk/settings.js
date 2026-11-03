@@ -68,7 +68,7 @@ export default {
   ingameWindow: "Значок і назва Venus у вікні",
   ingameWindowSub: "Вікно гри показує значок Venus і «· Venus Launcher» наприкінці назви.",
   ingameBadge: 'Значок Venus поруч із вашим ніком',
-  ingameBadgeSub: 'Гравці, які теж користуються Venus, бачать планету Venus поруч із вашим ніком (над головою та в списку Tab), а ви — поруч із їхніми. Мод «Venus Badge» встановлюється лише в збірки Fabric або Quilt для Minecraft {versions}: vanilla, Forge, NeoForge і OptiFine не завантажують моди Fabric і залишаються без змін. Потрібні акаунт Venus і акаунт Microsoft. Мод запитує в сервера Venus про гравців, яких ви бачите (лише їхні UUID).',
+  ingameBadgeSub: "Гравці, які теж користуються Venus, бачать планету Venus поруч із вашим ніком (над головою та в списку Tab), а ви — поруч із їхніми. Мод «Venus Badge» встановлюється лише в екземпляри, які можуть його завантажити: {versions}. Vanilla, OptiFine та інші версії залишаються без змін, і значок там не показується. Потрібні обліковий запис Venus і обліковий запис Microsoft. Мод запитує в сервера Venus про гравців, яких ви бачите (лише їхні UUID).",
   ingameBadgeIdle: 'Увімкнеться з вашим акаунтом Microsoft під час наступної гри.',
   ingameBadgeWorking: 'Перевіряємо ваш акаунт Minecraft через Mojang…',
   ingameBadgeOk: 'Готово: {name} має значок Venus.',

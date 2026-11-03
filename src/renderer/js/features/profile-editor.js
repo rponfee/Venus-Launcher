@@ -7,7 +7,7 @@
 // Tambien: openShareProfile() (imagen PNG de la tarjeta) y featureCapture({ src, title }) para Capturas y clips.
 import { h, icon, mount, modal, ok, fail, toast, ensureCss, switchEl, setBusy, skeleton, emptyState, copyText, confirmDialog, fmtDate, LOADERS } from '../ui.js';
 import { api, store } from '../store.js';
-import { t, locale } from '../i18n.js';
+import { t, locale, getLanguage, loadNs } from '../i18n.js';
 import { navigate } from '../app.js';
 import { cloud } from '../cloud.js';
 import { social } from '../social.js';
@@ -15,6 +15,9 @@ import { BANNERS, bannerBackground, bannerName, encodeBanner, parseBanner, isMcN
 import { ensureProfileStyle, styledName, normalize, setStyleCache, titleLabel, premiumChip, applyFrame } from '../social/profile-style.js';
 import { profileCard, presenceDot, headImg, headWithDot, prepareSocialUi, fetchPublicProfile, forgetPublicProfile } from '../social/profile-ui.js';
 import * as M from './profile-editor/model.js';
+import { EXTRA_FONTS, FONT_GROUPS } from './profile-editor/fonts.js';
+import { searchGifs, reportShare } from './profile-editor/klipy.js';
+import { achievementName, achievementInfo } from '../pages/achievements/names.js';
 import { MediaError, readImageFile, bannerFromImage, featuredFromImage, featuredFromSource, gifBanner, uploadMedia, removeMedia, makeRoom, loadImage } from './profile-editor/media.js';
 import { drawShareCard, loadFonts } from './profile-editor/share.js';
 
@@ -27,7 +30,7 @@ const TABS = [
   { id: 'showcase', icon: 'star' },
   { id: 'items', icon: 'sparkles' },
 ];
-const FIELD_TAB = { pronouns: 'identity', bio: 'identity', theme: 'style', nameStyle: 'style', banner: 'banner', favoriteServers: 'showcase', publicStats: 'showcase', featured: 'showcase', equipped: 'items' };
+const FIELD_TAB = { pronouns: 'identity', bio: 'identity', theme: 'style', nameStyle: 'style', banner: 'banner', cardStyle: 'style', links: 'showcase', showcase: 'showcase', favoriteServers: 'showcase', publicStats: 'showcase', featured: 'showcase', equipped: 'items' };
 const SLOTS = [
   { slot: 'frame', kind: 'frame' },
   { slot: 'title', kind: 'title' },
@@ -42,7 +45,7 @@ let premiumModule; // undefined: sin probar; null: todavia no existe
 
 async function ensureUi() {
   ensureCss('features/profile-editor');
-  await Promise.all([prepareSocialUi(), ensureProfileStyle()]);
+  await Promise.all([prepareSocialUi(), ensureProfileStyle(), loadNs('achievements').catch(() => null)]);
 }
 
 const isDevshot = () => Boolean(store.info?.devshot);
@@ -104,6 +107,10 @@ function combine(row, pub, opts) {
       public_stats: pub.publicStats,
       featured: pub.featured,
       equipped: pub.equipped,
+      card_style: pub.cardStyle,
+      links: pub.links,
+      showcase: pub.showcase,
+      rank: pub.rank ?? base.rank,
       pronouns: pub.pronouns,
       bio: pub.bio ?? base.bio,
       premium: pub.premium === true,
@@ -138,7 +145,9 @@ async function loadEditorData(demoKind) {
 async function loadStats(demo) {
   if (demo) return demo.demoStats();
   try {
-    return M.publicStatsFromReport(await api.invoke('stats:report'));
+    // Los mundos son opcionales: si no se pudieron leer, se publica lo del launcher
+    const [report, ingame] = await Promise.all([api.invoke('stats:report'), api.invoke('stats:ingame', {}).catch(() => null)]);
+    return M.publicStatsFromReport(report, ingame);
   } catch (err) {
     console.warn('[profile] stats:report:', err?.message || err);
     return null;
@@ -188,7 +197,7 @@ function radioGroup({ label, options, value, onPick, onLocked, cls = '', render 
   let cur = value;
   const draw = () => {
     const hadFocus = el.contains(document.activeElement);
-    const buttons = options.map((o) => {
+    const buttons = options.filter((o) => !o.hide?.() || o.id === cur).map((o) => {
       const active = o.id === cur;
       const btn = h(
         'button',
@@ -239,6 +248,7 @@ function radioGroup({ label, options, value, onPick, onLocked, cls = '', render 
       cur = v;
       draw();
     },
+    refresh: draw,
   };
 }
 
@@ -356,6 +366,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
   };
   S.draft = { basics: clone(S.saved.basics), custom: clone(S.saved.custom), prefs: clone(S.saved.prefs) };
   S.draft.custom.nameStyle = { font: 'default', effect: 'none', color: null, glow: 0, ...S.draft.custom.nameStyle };
+  S.draft.custom.showcase = { achievements: [], clips: [], skin: false, ...S.draft.custom.showcase };
   const ctx = () => ({ userId: S.uid, premium: S.premium, owned: S.owned, items: S.items });
   const locked = !S.available;
 
@@ -385,6 +396,15 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       public_stats: S.publishStats ? S.stats || S.saved.custom.publicStats : null,
       featured: c.featured,
       equipped: c.equipped,
+      rank: S.n.rank,
+      card_style: c.cardStyle,
+      links: c.links.filter((l) => M.isProfileLink(l.kind, l.url)),
+      // En la vista previa se muestran los clips que ya se conocen (no hace falta pedirlos de nuevo al servidor)
+      showcase: {
+        skin: c.showcase.skin === true,
+        achievements: c.showcase.achievements.map((id) => ({ id })),
+        clips: c.showcase.clips.map((id) => (S.clips || []).find((x) => x.id === id) || S.n.showcase.clips.find((x) => x.id === id)).filter(Boolean),
+      },
     };
   }
   let raf = 0;
@@ -615,6 +635,12 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
   // Fade
   const fadeFrom = h('input', { type: 'color', class: 'pfe-color', value: S.fadeMemory.from });
   const fadeTo = h('input', { type: 'color', class: 'pfe-color', value: S.fadeMemory.to });
+  const fadeVia = h('input', { type: 'color', class: 'pfe-color', value: S.fadeMemory.via || '#b06bff' });
+  let viaOn = Boolean(S.fadeMemory.via);
+  const viaSwitch = switchEl(viaOn, (v) => {
+    viaOn = v;
+    applyFade();
+  }, P('fadeVia'));
   const angleInput = h('input', { type: 'range', class: 'pfe-range', min: 0, max: 360, step: 5, value: S.fadeMemory.angle ?? 135 });
   const angleOut = h('output', { class: 'pfe-range-value num' });
   const fadeOn = () => Boolean(S.draft.custom.theme?.from);
@@ -626,7 +652,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     schedule();
   }, P('fadeOn'));
   const applyFade = () => {
-    S.fadeMemory = { from: fadeFrom.value, to: fadeTo.value, angle: Number(angleInput.value) };
+    S.fadeMemory = { from: fadeFrom.value, ...(viaOn ? { via: fadeVia.value } : {}), to: fadeTo.value, angle: Number(angleInput.value) };
     if (fadeOn()) S.draft.custom.theme = { ...S.fadeMemory };
     syncFade();
     refreshSamples();
@@ -634,6 +660,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
   };
   fadeFrom.addEventListener('input', applyFade);
   fadeTo.addEventListener('input', applyFade);
+  fadeVia.addEventListener('input', applyFade);
   angleInput.addEventListener('input', applyFade);
   const fadePresets = h(
     'div',
@@ -642,14 +669,17 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       h('button', {
         type: 'button',
         class: 'pfe-fade-swatch',
-        style: { background: `linear-gradient(135deg, ${f.from}, ${f.to})` },
+        style: { background: `linear-gradient(135deg, ${[f.from, f.via, f.to].filter(Boolean).join(', ')})` },
         title: P('fadePreset', { n: i + 1 }),
         'aria-label': P('fadePreset', { n: i + 1 }),
         onclick: () => {
           fadeFrom.value = f.from;
           fadeTo.value = f.to;
+          viaOn = Boolean(f.via);
+          viaSwitch.querySelector('input').checked = viaOn;
+          if (f.via) fadeVia.value = f.via;
           if (!fadeOn()) {
-            S.draft.custom.theme = { from: f.from, to: f.to, angle: Number(angleInput.value) };
+            S.draft.custom.theme = { from: f.from, ...(f.via ? { via: f.via } : {}), to: f.to, angle: Number(angleInput.value) };
             fadeSwitch.querySelector('input').checked = true;
           }
           applyFade();
@@ -661,13 +691,16 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     const on = fadeOn();
     fadeControls.classList.toggle('off', !on);
     for (const el of [fadeFrom, fadeTo, angleInput]) el.disabled = !on || locked;
+    fadeVia.disabled = !on || locked || !viaOn;
+    viaSwitch.querySelector('input').disabled = !on || locked;
     angleOut.textContent = P('fadeAngleValue', { angle: angleInput.value });
-    fadeControls.style.setProperty('--pfe-fade', `linear-gradient(${angleInput.value}deg, ${fadeFrom.value}, ${fadeTo.value})`);
+    fadeControls.style.setProperty('--pfe-fade', `linear-gradient(${angleInput.value}deg, ${[fadeFrom.value, viaOn ? fadeVia.value : null, fadeTo.value].filter(Boolean).join(', ')})`);
   }
   mount(
     fadeControls,
     h('span', { class: 'pfe-fade-bar', 'aria-hidden': 'true' }),
     h('div', { class: 'pfe-fade-row' }, h('label', { class: 'pfe-color-field' }, fadeFrom, h('span', {}, P('fadeFrom'))), h('label', { class: 'pfe-color-field' }, fadeTo, h('span', {}, P('fadeTo')))),
+    h('div', { class: 'pfe-fade-via' }, h('label', { class: 'pfe-color-field' }, fadeVia, h('span', {}, P('fadeVia'))), viaSwitch),
     h('label', { class: 'pfe-range-field' }, h('span', {}, P('fadeAngle')), angleInput, angleOut),
     fadePresets,
   );
@@ -675,10 +708,24 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
   syncFade();
 
   // Tipografia
+  let fontFilter = 'all';
+  const fontOf = new Map(EXTRA_FONTS.map((f) => [f.id, f]));
+  const fontFilterBox = h('div', { class: 'chips pfe-font-filter', role: 'group', 'aria-label': P('fontFilter') });
+  const drawFontFilter = () =>
+    mount(
+      fontFilterBox,
+      ['all', ...FONT_GROUPS].map((g) =>
+        h('button', { type: 'button', class: ['chip', fontFilter === g && 'active'], 'aria-pressed': String(fontFilter === g), onclick: () => ((fontFilter = g), drawFontFilter(), fontGroup.refresh()) }, P(`fontGroup_${g}`)),
+      ),
+    );
   const fontGroup = radioGroup({
     label: P('font'),
     cls: 'pfe-fonts',
-    options: M.FONTS.map((f) => ({ id: f, label: P(`font_${f}`) })),
+    options: M.FONTS.map((f) => {
+      const extra = fontOf.get(f);
+      const group = extra ? extra.group : 'basic';
+      return { id: f, label: extra ? extra.label : P(`font_${f}`), hide: () => fontFilter !== 'all' && fontFilter !== group };
+    }),
     value: ns().font,
     render: (o) => [h('span', { class: 'pfe-sample' }, sample({ ...ns(), font: o.id, effect: 'none' })), h('span', { class: 'pfe-radio-label' }, o.label)],
     onPick: (id) => {
@@ -687,6 +734,20 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       schedule();
     },
   });
+  drawFontFilter();
+  // Mayusculas, cursiva y contorno
+  const styleToggle = (key) =>
+    h(
+      'div',
+      { class: 'toggle-row' },
+      h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, P(`nameOpt_${key}`))),
+      switchEl(ns()[key] === true, (v) => {
+        if (v) ns()[key] = true;
+        else delete ns()[key];
+        refreshSamples();
+        schedule();
+      }, P(`nameOpt_${key}`)),
+    );
   // Efecto
   const effectOptions = () =>
     M.EFFECTS.map((fx) => {
@@ -740,11 +801,34 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     fontGroup.set(ns().font);
     effectGroup.set(ns().effect);
   }
+  // Tarjeta: dibujo de fondo, forma de la cabeza, disposicion y acento
+  const card = () => S.draft.custom.cardStyle;
+  const cardRadio = (key, options, cls, render) =>
+    radioGroup({
+      label: P(`card_${key}`),
+      cls,
+      options: options.map((id) => ({ id, label: P(`card_${key}_${id}`) })),
+      value: card()[key] || options[0],
+      render,
+      onPick: (id) => {
+        card()[key] = id;
+        schedule();
+      },
+    });
+  const patternGroup = cardRadio('pattern', M.CARD_PATTERNS, 'pfe-patterns', (o) => [h('span', { class: ['pfe-pattern-art', `pf-pattern-${o.id}`], 'aria-hidden': 'true' }, h('span', { class: 'pf-card-body' })), h('span', { class: 'pfe-radio-label' }, o.label)]);
+  const avatarGroup = cardRadio('avatar', M.AVATAR_SHAPES, 'pfe-avatars');
+  const layoutGroup = cardRadio('layout', M.CARD_LAYOUTS, 'pfe-avatars');
+  const accentInput = h('input', { type: 'color', class: 'pfe-color', value: card().accent || '#f29a2e', 'aria-label': P('card_accent'), disabled: locked });
+  const accentClear = h('button', { class: 'btn ghost sm', type: 'button', disabled: locked, onclick: () => (delete card().accent, schedule()) }, icon('x'), P('card_accentClear'));
+  accentInput.addEventListener('input', () => {
+    card().accent = accentInput.value.toLowerCase();
+    schedule();
+  });
   panel(
     'style',
     locked ? unavailableNote() : null,
     h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('fade'), P('fadeHint')), fadeSwitch), fadeControls),
-    h('div', { class: 'pfe-group' }, groupTitle(P('font')), fontGroup.el),
+    h('div', { class: 'pfe-group' }, groupTitle(P('font'), P('fontHint', { n: M.FONTS.length })), fontFilterBox, fontGroup.el, h('div', { class: 'pfe-toggles' }, styleToggle('caps'), styleToggle('italic'), styleToggle('outline'))),
     h('div', { class: 'pfe-group' }, groupTitle(P('effect'), P('effectHint')), effectGroup.el),
     h(
       'div',
@@ -752,19 +836,22 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       h('div', {}, groupTitle(P('nameColor')), colorGroup, colorNote),
       h('div', {}, groupTitle(P('glow'), P('glowHint')), h('label', { class: 'pfe-range-field compact' }, h('span', { class: 'sr-only' }, P('glow')), glowInput, glowOut)),
     ),
+    h('div', { class: 'pfe-group' }, groupTitle(P('card_pattern'), P('card_patternHint')), patternGroup.el),
+    h('div', { class: 'pfe-group pfe-two' }, h('div', {}, groupTitle(P('card_avatar')), avatarGroup.el), h('div', {}, groupTitle(P('card_layout')), layoutGroup.el)),
+    h('div', { class: 'pfe-group' }, groupTitle(P('card_accent'), P('card_accentHint')), h('div', { class: 'row' }, accentInput, accentClear)),
   );
-  if (locked) for (const g of [fontGroup.el, effectGroup.el]) g.querySelectorAll('button').forEach((b) => (b.disabled = true));
+  if (locked) for (const g of [fontGroup.el, effectGroup.el, patternGroup.el, avatarGroup.el, layoutGroup.el]) g.querySelectorAll('button').forEach((b) => (b.disabled = true));
 
   // ===== Banner =====
   const banner = () => S.draft.custom.banner;
-  const bannerKindOf = () => (banner().kind === 'preset' ? 'preset' : banner().kind === 'image' ? 'image' : banner().kind === 'animated' ? 'animated' : 'color');
+  const bannerKindOf = () => (banner().kind === 'preset' ? 'preset' : banner().kind === 'image' ? 'image' : banner().kind === 'animated' ? 'animated' : banner().kind === 'klipy' ? 'klipy' : 'color');
   let bannerTab = bannerKindOf();
   const bannerArea = h('div', { class: 'pfe-banner-area' });
   const bannerSeg = h('div', { class: 'segmented pfe-banner-seg', role: 'group', 'aria-label': P('bannerKind') });
   function drawBannerSeg() {
     mount(
       bannerSeg,
-      ['preset', 'image', 'animated', 'color'].map((k) =>
+      ['preset', 'klipy', 'image', 'animated', 'color'].map((k) =>
         h(
           'button',
           { type: 'button', class: bannerTab === k ? 'active' : '', 'aria-pressed': String(bannerTab === k), onclick: () => ((bannerTab = k), drawBannerSeg(), drawBannerArea()) },
@@ -872,6 +959,8 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
           has ? h('div', { class: 'field-help' }, P('bannerImageHint')) : null,
         ),
       );
+    } else if (bannerTab === 'klipy') {
+      drawKlipyArea();
     } else if (bannerTab === 'animated') {
       if (!S.premium) {
         mount(
@@ -940,6 +1029,90 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         ),
       );
     }
+  }
+  // GIF de KLIPY: buscador con sus resultados en el orden en que llegan. "Search KLIPY" es obligatorio en sus condiciones.
+  const klipy = { query: '', page: 1, items: [], hasNext: false, loading: false, error: null, req: 0, started: false };
+  const klipySearch = h('input', { class: 'input', type: 'search', placeholder: 'Search KLIPY', maxlength: 100, spellcheck: 'false', 'aria-label': 'Search KLIPY', disabled: locked });
+  const klipyGrid = h('div', { class: 'pfe-klipy-grid', role: 'listbox', 'aria-label': P('bannerKind_klipy') });
+  const klipyFoot = h('div', { class: 'pfe-klipy-foot' });
+  let klipyTimer = null;
+  klipySearch.addEventListener('input', () => {
+    clearTimeout(klipyTimer);
+    klipyTimer = setTimeout(() => loadKlipy(klipySearch.value, 1), 350);
+  });
+  async function loadKlipy(query, page) {
+    const req = ++klipy.req;
+    klipy.query = query;
+    klipy.page = page;
+    klipy.loading = true;
+    klipy.error = null;
+    drawKlipy();
+    try {
+      const res = S.demo ? S.demo.demoKlipy() : await searchGifs(query, { page, lang: getLanguage() });
+      if (req !== klipy.req) return;
+      klipy.items = page > 1 ? [...klipy.items, ...res.items] : res.items;
+      klipy.hasNext = res.hasNext;
+    } catch (err) {
+      if (req !== klipy.req) return;
+      if (err?.code !== 'no_key') console.warn('[klipy]', err?.code || '', err?.message || err);
+      klipy.error = err?.code || 'server';
+    } finally {
+      if (req === klipy.req) {
+        klipy.loading = false;
+        drawKlipy();
+      }
+    }
+  }
+  function drawKlipy() {
+    const cur = banner().kind === 'klipy' ? banner().url : null;
+    mount(
+      klipyGrid,
+      klipy.items.map((g) =>
+        h(
+          'button',
+          {
+            type: 'button',
+            role: 'option',
+            class: ['pfe-klipy-item', cur === g.url && 'active'],
+            'aria-selected': String(cur === g.url),
+            title: g.title || null,
+            'aria-label': g.title || P('bannerKind_klipy'),
+            disabled: locked,
+            onclick: () => {
+              setBanner({ kind: 'klipy', url: g.url, ...(g.still ? { still: g.still } : {}), ...(g.slug ? { slug: g.slug } : {}) });
+              S.pending.banner = null;
+              drawKlipy();
+            },
+          },
+          h('img', { src: g.thumb, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' }),
+        ),
+      ),
+    );
+    const moreBtn = klipy.hasNext && !klipy.loading ? h('button', { class: 'btn ghost sm', type: 'button', onclick: () => loadKlipy(klipy.query, klipy.page + 1) }, icon('chevronDown'), P('klipyMore')) : null;
+    let status = null;
+    if (klipy.loading) status = skeleton('line', { width: 180, label: P('klipyLoading') });
+    else if (klipy.error) status = h('div', { class: 'notice warn' }, icon('alert'), h('div', {}, P(klipy.error === 'no_key' ? 'klipyNoKey' : klipy.error === 'network' ? 'klipyNetwork' : 'klipyError')));
+    else if (!klipy.items.length) status = h('div', { class: 'pfe-empty-line' }, P('klipyEmpty'));
+    mount(klipyFoot, status, moreBtn, h('div', { class: 'pfe-klipy-mark' }, 'Powered by KLIPY'));
+  }
+  function drawKlipyArea() {
+    const b = banner();
+    mount(
+      bannerArea,
+      h(
+        'div',
+        { class: 'pfe-klipy' },
+        klipySearch,
+        h('div', { class: 'field-help' }, P('klipyHint')),
+        b.kind === 'klipy' ? h('button', { class: 'btn ghost sm', type: 'button', disabled: locked, onclick: () => (setBanner({ kind: 'none' }), (bannerTab = 'color'), drawBannerSeg(), drawBannerArea()) }, icon('trash'), P('bannerRemove')) : null,
+        klipyGrid,
+        klipyFoot,
+      ),
+    );
+    if (!klipy.started) {
+      klipy.started = true;
+      loadKlipy('', 1);
+    } else drawKlipy();
   }
   drawBannerSeg();
   drawBannerArea();
@@ -1047,6 +1220,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         s.topVersion ? [P('statVersion'), s.topVersion] : null,
         s.topLoader ? [P('statLoader'), LOADERS[s.topLoader]?.name || s.topLoader] : null,
         Number.isFinite(since) ? [P('statSince'), fmtDate(since, { month: 'long', year: 'numeric' })] : null,
+        ...M.EXTRA_STATS.filter((k) => s[k] > 0).map((k) => [P(`stat_${k}`), nf(s[k], k === 'longestHours' || k === 'distanceKm' ? 1 : 0)]),
       ].filter(Boolean);
       mount(statsBox, h('dl', { class: 'pfe-stats-list' }, items.map(([k, v]) => h('div', {}, h('dt', {}, k), h('dd', { class: 'num' }, v)))));
     }
@@ -1065,6 +1239,13 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     loadSavedServers(S.demo).then((list) => {
       savedServers = list;
       drawSuggestions();
+    });
+    loadShowcaseExtras().catch((err) => {
+      console.warn('[profile] vitrina:', err?.message || err);
+      S.unlocked ||= [];
+      S.clips ||= [];
+      drawAch();
+      drawClips();
     });
     if (S.publishStats && S.stats === undefined) fetchStats();
   }
@@ -1143,6 +1324,136 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     );
   }
   drawFeatured();
+
+  // Redes (solo sitios conocidos)
+  const links = () => S.draft.custom.links;
+  const linkBox = h('div', { class: 'pfe-links' });
+  const linkKinds = Object.keys(M.LINK_KINDS);
+  const linkKind = h('select', { class: 'select', disabled: locked, 'aria-label': P('linkKind') }, linkKinds.map((k) => h('option', { value: k }, P(`link_${k}`))));
+  const linkUrl = h('input', { class: 'input', type: 'url', placeholder: 'https://', maxlength: M.LIMITS.linkUrl, spellcheck: 'false', disabled: locked, 'aria-label': P('linkUrl') });
+  const linkErr = errorLine();
+  const linkAdd = h('button', { class: 'btn', type: 'button', disabled: locked }, icon('plus'), P('linkAdd'));
+  linkAdd.addEventListener('click', () => {
+    const url = linkUrl.value.trim();
+    if (links().length >= M.LIMITS.links) return linkErr.set(P('linksFull', { max: M.LIMITS.links }), linkUrl);
+    if (!M.isProfileLink(linkKind.value, url)) return linkErr.set(P('linkInvalid', { site: P(`link_${linkKind.value}`) }), linkUrl);
+    links().push({ kind: linkKind.value, url });
+    linkUrl.value = '';
+    linkErr.set('', linkUrl);
+    drawLinks();
+    schedule();
+  });
+  function drawLinks() {
+    mount(
+      linkBox,
+      links().length
+        ? links().map((l, i) =>
+            h(
+              'div',
+              { class: 'pfe-server' },
+              h('span', { class: 'pf-server-icon' }, icon('link')),
+              h('div', { class: 'pfe-server-main' }, h('span', { class: 'pfe-server-name ellipsis' }, P(`link_${l.kind}`)), h('span', { class: 'pfe-server-addr ellipsis', title: l.url }, l.url)),
+              h('button', { class: 'icon-btn sm danger', type: 'button', disabled: locked, title: P('linkRemove'), 'aria-label': P('linkRemove'), onclick: () => (links().splice(i, 1), drawLinks(), schedule()) }, icon('trash')),
+            ),
+          )
+        : h('div', { class: 'pfe-empty-line' }, P('linksEmpty')),
+    );
+  }
+  drawLinks();
+
+  // Logros destacados (solo los desbloqueados)
+  const showcase = () => S.draft.custom.showcase;
+  const achBox = h('div', { class: 'pfe-ach-pick', role: 'group', 'aria-label': P('pinnedAch') });
+  const achSearch = h('input', { class: 'input', type: 'search', placeholder: P('pinnedAchSearch'), spellcheck: 'false', disabled: locked });
+  const achCount = h('span', { class: 'pfe-range-value num' });
+  S.unlocked = null;
+  achSearch.addEventListener('input', () => drawAch());
+  function drawAch() {
+    const pinned = showcase().achievements;
+    achCount.textContent = `${pinned.length} / ${M.LIMITS.pinnedAchievements}`;
+    if (!S.unlocked) return mount(achBox, skeleton('line', { width: 200, label: P('statsLoading') }));
+    if (!S.unlocked.length) return mount(achBox, h('div', { class: 'pfe-empty-line' }, P('pinnedAchEmpty')));
+    const q = achSearch.value.trim().toLowerCase();
+    const list = S.unlocked.filter((id) => !q || achievementName(id).toLowerCase().includes(q));
+    mount(
+      achBox,
+      list.slice(0, 120).map((id) => {
+        const on = pinned.includes(id);
+        const info = achievementInfo(id);
+        return h(
+          'button',
+          {
+            type: 'button',
+            class: ['pf-ach', 'pfe-ach-item', on && 'active'],
+            dataset: { tier: info.tier },
+            'aria-pressed': String(on),
+            disabled: locked || (!on && pinned.length >= M.LIMITS.pinnedAchievements),
+            onclick: () => {
+              if (on) pinned.splice(pinned.indexOf(id), 1);
+              else pinned.push(id);
+              drawAch();
+              schedule();
+            },
+          },
+          h('span', { class: 'pf-ach-icon' }, icon(info.icon)),
+          h('span', { class: 'pf-ach-main' }, h('span', { class: 'pf-ach-name' }, info.name), h('span', { class: 'pf-ach-tier' }, info.tierLabel)),
+          on ? icon('check') : null,
+        );
+      }),
+    );
+  }
+
+  // Clips destacados: los que ya se compartieron desde Clips y capturas
+  const clipBox = h('div', { class: 'pfe-links' });
+  S.clips = null;
+  function drawClips() {
+    const pinned = showcase().clips;
+    if (!S.clips) return mount(clipBox, skeleton('line', { width: 200, label: P('statsLoading') }));
+    if (!S.clips.length) return mount(clipBox, h('div', { class: 'pfe-empty-line' }, P('pinnedClipsEmpty')));
+    mount(
+      clipBox,
+      S.clips.map((c) => {
+        const on = pinned.includes(c.id);
+        return h(
+          'div',
+          { class: 'toggle-row' },
+          h('div', { class: 'tr-text' }, h('div', { class: 'tr-title ellipsis' }, c.title), h('div', { class: 'tr-sub' }, c.expiresAt ? P('pinnedClipExpires', { date: fmtDate(new Date(c.expiresAt).getTime()) }) : P('pinnedClipForever'))),
+          switchEl(on, (v) => {
+            if (v && pinned.length >= M.LIMITS.pinnedClips) return drawClips();
+            if (v) pinned.push(c.id);
+            else pinned.splice(pinned.indexOf(c.id), 1);
+            drawClips();
+            schedule();
+          }, c.title),
+        );
+      }),
+    );
+  }
+  const skinSwitch = switchEl(showcase().skin === true, (v) => {
+    showcase().skin = v;
+    schedule();
+  }, P('showcaseSkin'));
+  if (locked) skinSwitch.querySelector('input').disabled = true;
+  async function loadShowcaseExtras() {
+    if (S.demo) {
+      S.unlocked = S.demo.demoUnlocked();
+      S.clips = S.demo.demoClips();
+    } else {
+      const [ach, clips] = await Promise.all([
+        cloud.client.rpc('achievements_me').then((r) => r.data).catch(() => null),
+        cloud.client.from('shared_media').select('id,url,world,instance_name,file_name,expires_at').eq('owner', S.uid).eq('kind', 'clip').order('created_at', { ascending: false }).limit(30).then((r) => r.data).catch(() => null),
+      ]);
+      S.unlocked = Object.keys(ach?.unlocked || {});
+      S.clips = (clips || [])
+        .filter((c) => c.url && (!c.expires_at || new Date(c.expires_at).getTime() > Date.now()))
+        .map((c) => ({ id: c.id, url: c.url, title: c.world || c.instance_name || c.file_name, expiresAt: c.expires_at }));
+    }
+    drawAch();
+    drawClips();
+    schedule();
+  }
+  drawAch();
+  drawClips();
   panel(
     'showcase',
     locked ? unavailableNote() : null,
@@ -1155,7 +1466,11 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       suggestBox,
     ),
     h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('stats'), P('statsHint')), statsSwitch), statsBox),
+    h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('pinnedAch'), P('pinnedAchHint')), achCount), achSearch, achBox),
+    h('div', { class: 'pfe-group' }, groupTitle(P('pinnedClips'), P('pinnedClipsHint', { max: M.LIMITS.pinnedClips })), clipBox),
+    h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('showcaseSkin'), P('showcaseSkinHint')), skinSwitch)),
     h('div', { class: 'pfe-group' }, groupTitle(P('featured'), P('featuredHint')), featuredBox),
+    h('div', { class: 'pfe-group' }, groupTitle(P('links'), P('linksHint', { max: M.LIMITS.links })), linkBox, h('div', { class: 'pfe-server-add' }, fieldBox(P('linkKind'), linkKind), fieldBox(P('linkUrl'), linkUrl, { error: linkErr }), linkAdd)),
   );
 
   // ===== Cosmeticos =====
@@ -1324,6 +1639,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         const old = [S.saved.custom.banner?.url, ...S.saved.custom.featured.map((f) => f.url)].filter((u) => u && !used.has(u));
         const mine = old.map((u) => M.mediaPathFromUrl(u)).filter((p) => p && p.userId.toLowerCase() === S.uid.toLowerCase()).map((p) => p.name);
         if (mine.length) removeMedia(mine).catch((err) => console.warn('[profile] borrar imagenes viejas:', err?.message || err));
+        if (custom.banner?.kind === 'klipy' && custom.banner.url !== S.saved.custom.banner?.url) reportShare(custom.banner.slug);
         forgetPublicProfile(S.uid);
         setStyleCache(S.uid, { ...previewRaw(), banner_style: custom.banner, featured: custom.featured, hasStyle: true });
         cloud.loadProfile().catch(() => null);
@@ -1371,12 +1687,13 @@ async function loadShareImages(n) {
     return 'MHF_Steve';
   })();
   const safe = (p) => p.catch(() => null);
-  const bannerUrl = n.banner.kind === 'image' || n.banner.kind === 'animated' ? n.banner.url : null;
+  // Del GIF de KLIPY se dibuja el cuadro fijo
+  const bannerUrl = n.banner.kind === 'image' || n.banner.kind === 'animated' ? n.banner.url : n.banner.kind === 'klipy' ? n.banner.still || null : null;
   const [headImgEl, bannerImg, logo] = await Promise.all([
     safe(loadImage(avatarUrl(head, 128), { cors: true })),
     bannerUrl ? safe(loadImage(bannerUrl, { cors: !/^(blob:|data:)/.test(bannerUrl) })) : null,
     safe(loadImage('assets/logo-256.png')),
-    loadFonts(),
+    loadFonts(n.nameStyle?.font),
   ]);
   return { head: headImgEl, banner: bannerImg, logo };
 }

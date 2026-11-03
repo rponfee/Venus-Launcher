@@ -4,10 +4,10 @@
 import { h, icon, mount, ok, fail, confirmDialog, fmtBytes, fmtDate, reducedMotion, setBusy } from '../../ui.js';
 import { api } from '../../store.js';
 import { t } from '../../i18n.js';
-import { shareMedia } from '../worlds/media.js';
+import { shareMedia, LIMITS } from '../worlds/media.js';
 import { sendToFriend, featureOnProfile } from './share.js';
 import { tabOf } from './model.js';
-import { iconBtn } from './common.js';
+import { iconBtn, reasonBadge } from './common.js';
 
 const EXIT_MS = 180;
 const DATE_TIME = { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
@@ -42,8 +42,8 @@ export function openViewer(list, index, opts = {}) {
   const prev = h('button', { class: 'icon-btn cl-vw-nav prev', type: 'button', title: t('clips.prev'), 'aria-label': t('clips.prev'), onclick: () => show(i - 1) }, icon('chevronLeft'));
   const next = h('button', { class: 'icon-btn cl-vw-nav next', type: 'button', title: t('clips.next'), 'aria-label': t('clips.next'), onclick: () => show(i + 1) }, icon('chevronRight'));
 
-  const shareBtn = h('button', { class: 'btn sm', type: 'button', onclick: () => busy(shareBtn, async () => (await shareMedia(items[i])) && opts.onShared?.(items[i])) }, icon('link'), t('clips.shareLink'));
-  const friendBtn = h('button', { class: 'btn sm', type: 'button', onclick: () => busy(friendBtn, () => sendToFriend(items[i])) }, icon('send'), t('clips.sendFriend'));
+  const shareBtn = h('button', { class: 'btn sm', type: 'button', onclick: () => busy(shareBtn, async () => !clipTooBig(items[i]) && (await shareMedia(items[i])) && opts.onShared?.(items[i])) }, icon('link'), t('clips.shareLink'));
+  const friendBtn = h('button', { class: 'btn sm', type: 'button', onclick: () => busy(friendBtn, async () => !clipTooBig(items[i]) && sendToFriend(items[i])) }, icon('send'), t('clips.sendFriend'));
   const featureBtn = h('button', { class: 'btn sm', type: 'button', onclick: () => busy(featureBtn, () => featureOnProfile(items[i])) }, icon('star'), t('clips.feature'));
   const editBtn = h('button', { class: 'btn sm tonal', type: 'button', onclick: () => edit() }, icon('clScissors'), t('clips.edit'));
   const copyBtn = iconBtn('copy', t('clips.copyImage'), () => copyImage());
@@ -65,6 +65,13 @@ export function openViewer(list, index, opts = {}) {
       h('div', { class: 'cl-vw-actions', role: 'group', 'aria-label': t('clips.viewerActions') }, editBtn, shareBtn, friendBtn, featureBtn, sep(), copyBtn, openBtn, folderBtn, sep(), delBtn, sep(), closeBtn),
     ),
   );
+
+  // El Storage no acepta mas de ese tamanio (ver docs/clips.md): la repeticion ya alcanza para pasarse, asi que se avisa como seguir
+  function clipTooBig(it) {
+    if (it.kind !== 'clip' || it.size <= LIMITS.clip) return false;
+    fail(t('clips.shareTooBig', { size: fmtBytes(LIMITS.clip) }), t('clips.shareTooBigText'));
+    return true;
+  }
 
   async function busy(btn, fn) {
     const done = setBusy(btn);
@@ -116,7 +123,7 @@ export function openViewer(list, index, opts = {}) {
       img.src = it.url;
       mount(stage, img, spin);
     }
-    mount(title, it.world || it.instanceName || it.file);
+    mount(title, reasonBadge(it, 'cl-reason inline'), it.world || it.instanceName || it.file);
     title.title = it.file || '';
     mount(sub, it.world ? h('span', {}, it.instanceName) : null, h('span', {}, fmtDate(it.date, DATE_TIME)), h('span', {}, fmtBytes(it.size)), h('span', { class: 'ellipsis cl-vw-file', title: it.file }, it.file));
     const desc = typeof opts.describe === 'function' ? opts.describe(it) : '';

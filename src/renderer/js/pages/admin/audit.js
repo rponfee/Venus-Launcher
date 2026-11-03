@@ -25,6 +25,8 @@ const ACTIONS = [
   'coupons.delete',
   'plans.update',
   'plans.setPrice',
+  'rank.set',
+  'klipy.key',
 ];
 const KNOWN = new Set(ACTIONS);
 

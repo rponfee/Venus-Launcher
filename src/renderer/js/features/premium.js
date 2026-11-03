@@ -1,6 +1,6 @@
 // Venus Premium = tener un plan de Venus vigente (RPC venus_is_premium de 0020; los planes y el pago están en
 // features/plans.js). Lo usan otras partes para habilitar lo premium (puntos x2, insignia dorada, banners animados,
-// efectos de nombre, repetición instantánea de 120 s...). El servidor lo vuelve a comprobar en cada acción: esto
+// efectos de nombre, repetición instantánea de 5 minutos...). El servidor lo vuelve a comprobar en cada acción: esto
 // solo decide qué se muestra.
 //   isPremium({ force }) -> Promise<boolean>   caché de 5 minutos por cuenta; sin sesión o sin servicio, false
 //   onPremiumChange(fn) -> off                 fn(premium) cuando cambia el valor conocido (también la primera vez

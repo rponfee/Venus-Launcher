@@ -6,6 +6,8 @@ module.exports = {
   errReplayOff: 'Instant replay is off. Turn it on in Settings > In game.',
   errReplayEmpty: "There's nothing to save in the replay yet. Wait a few seconds.",
   errInstance: "Couldn't find the instance.",
+  errReplayNoRoom: 'Instant replay paused: not enough disk space.',
+  autoLimitReached: 'Reached the maximum of {count} automatic clips for this game. Instant replay still works with the shortcut.',
   errNoSpace: 'There is no disk space left to save.',
   errWrite: "Couldn't save the file.",
   errCapture: "Couldn't capture the game window.",

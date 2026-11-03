@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "Der exportierte Clip ist beschädigt und konnte nicht gespeichert werden.",
   errAiUnavailable: "Die KI ist nicht verfügbar: Melde dich mit deinem Venus-Konto an und prüfe, ob die KI aktiviert ist.",
   overlayErrorTitle: "Clips & Screenshots",
+  errReplayNoRoom: "Sofortwiederholung pausiert: nicht genug Speicherplatz.",
+  autoLimitReached: "Das Maximum von {count} automatischen Clips für dieses Spiel wurde erreicht. Die Sofortwiederholung funktioniert weiterhin mit dem Tastenkürzel.",
 };

@@ -39,6 +39,9 @@ function defaults() {
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true,
+      // noiseMode ('rnnoise' | 'browser' | 'off') no va aca a proposito: sin guardar, voice.js lo deduce de noiseSuppression.
+      levelVoices: true, // nivelar el volumen de los demas
+      voiceQuality: 'normal', // tope del bitrate de voz: 'low' | 'normal' | 'high'
       muteShortcut: 'CommandOrControl+Shift+M',
       pushToTalk: false,
       pttKey: 'KeyV',

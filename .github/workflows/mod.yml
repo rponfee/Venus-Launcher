@@ -1,5 +1,5 @@
-# Compila el mod "Venus Badge" (mod/venus-badge: Fabric + Loom), corre sus pruebas y sube los .jar como
-# artefacto "venus-badge-mod". Corre solo al cambiar algo en mod/ (push o pull request), a mano desde la pestaña
+# Compila el mod "Venus Badge" (mod/venus-badge: un .jar por loader y versión de Minecraft), corre sus pruebas y sube los
+# .jar como artefacto "venus-badge-mod". Corre solo al cambiar algo en mod/ (push o pull request), a mano desde la pestaña
 # Actions y desde build.yml, que empaqueta los .jar en el launcher (src/main/modules/ingame/mods) y los publica en la
 # release. Guía: docs/insignia.md.
 name: Mod Venus Badge
@@ -28,14 +28,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Loom 1.19 necesita Java 25 para correr Gradle; el mod se compila igual para Java 21 (options.release en
-      # build.gradle), que es lo que usa Minecraft 1.21.1.
+      # Loom 1.19 necesita Java 25 para correr Gradle (la última de la lista queda como la de siempre). ModDevGradle compila
+      # NeoForge con Java 21 y Forge con Java 17; el mod sale para la Java de cada Minecraft (java_release en cada subproyecto).
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 25
+          java-version: |
+            17
+            21
+            25
 
-      # Valida el gradle-wrapper.jar y guarda la caché de Gradle y de Loom (Minecraft remapeado).
+      # Valida el gradle-wrapper.jar y guarda la caché de Gradle, de Loom y de ModDevGradle (Minecraft ya preparado).
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Compilar y probar
@@ -43,7 +46,7 @@ jobs:
           chmod +x gradlew
           ./gradlew build --console=plain
 
-      # Nombre fijo por versión de Minecraft: es el que busca src/main/modules/ingame/badgemod.js (BUILDS).
+      # Nombre fijo por versión de Minecraft y loader: es el que busca src/main/modules/ingame/badgemod.js (BUILDS).
       - name: Preparar los .jar
         run: |
           mkdir -p out
@@ -53,7 +56,20 @@ jobs:
             cp "$f" "out/venus-badge-mc${mc}.jar"
           done
           ls -l out
-          test -n "$(ls out)"
+
+      # Sin estos archivos el juego ignora el .jar o no dibuja la insignia, sin ningún error al compilar.
+      - name: Revisar los .jar
+        run: |
+          revisar() {
+            jar="out/$1"; shift
+            for archivo in "$@" assets/venusbadge/font/badge.json assets/venusbadge/textures/font/badge.png; do
+              unzip -l "$jar" | grep -q " $archivo\$" || { echo "::error title=Mod Venus Badge::Falta $archivo en $jar"; exit 1; }
+            done
+          }
+          revisar venus-badge-mc1.21.1-fabric.jar fabric.mod.json venusbadge.mixins.json
+          revisar venus-badge-mc1.20.1-fabric.jar fabric.mod.json venusbadge.mixins.json
+          revisar venus-badge-mc1.21.1-neoforge.jar META-INF/neoforge.mods.toml venusbadge.mixins.json
+          revisar venus-badge-mc1.20.1-forge.jar META-INF/mods.toml venusbadge.mixins.json venusbadge.refmap.json pack.mcmeta
 
       - uses: actions/upload-artifact@v7
         with:

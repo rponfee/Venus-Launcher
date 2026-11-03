@@ -68,7 +68,7 @@ export default {
   ingameWindow: "ウィンドウにVenusのアイコンとタイトルを表示",
   ingameWindowSub: "ゲームウィンドウにVenusのアイコンを表示し、タイトルの末尾に「· Venus Launcher」を付けます。",
   ingameBadge: '名前の横に Venus バッジ',
-  ingameBadgeSub: 'Venus を使っている他のプレイヤーには、あなたの名前の横（頭上と Tab のプレイヤー一覧）に Venus の惑星が表示され、あなたにも相手の名前の横に表示されます。「Venus Badge」MOD は Minecraft {versions} の Fabric または Quilt インスタンスにだけインストールされます。バニラ、Forge、NeoForge、OptiFine は Fabric の MOD を読み込めないため変わりません。Venus アカウントと Microsoft アカウントが必要です。MOD は表示中のプレイヤーについて Venus のサーバーに問い合わせます（送るのは UUID だけです）。',
+  ingameBadgeSub: "Venus を使っている他のプレイヤーには、あなたの名前の横（頭上と Tab のプレイヤー一覧）に Venus の惑星が表示され、あなたにも相手の名前の横に表示されます。「Venus Badge」MOD は、読み込めるインスタンスにだけインストールされます: {versions}。バニラ、OptiFine、その他のバージョンは変わらず、バッジも表示されません。Venus アカウントと Microsoft アカウントが必要です。MOD は表示中のプレイヤーについて Venus のサーバーに問い合わせます（送るのは UUID だけです）。",
   ingameBadgeIdle: '次にプレイするときに Microsoft アカウントで有効になります。',
   ingameBadgeWorking: 'Mojang で Minecraft アカウントを確認しています…',
   ingameBadgeOk: '完了: {name} に Venus バッジが付きました。',

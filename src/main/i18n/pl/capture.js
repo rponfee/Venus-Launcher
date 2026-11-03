@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "Wyeksportowany klip jest uszkodzony i nie udało się go zapisać.",
   errAiUnavailable: "AI jest niedostępna: zaloguj się na konto Venus i sprawdź, czy AI jest włączona.",
   overlayErrorTitle: "Klipy i zrzuty",
+  errReplayNoRoom: "Natychmiastowa powtórka wstrzymana: brak miejsca na dysku.",
+  autoLimitReached: "Osiągnięto maksimum {count} automatycznych klipów w tej grze. Natychmiastowa powtórka nadal działa po naciśnięciu skrótu.",
 };

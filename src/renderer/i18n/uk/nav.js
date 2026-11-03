@@ -22,7 +22,7 @@ export default {
   messages: "Повідомлення",
   stats: "Статистика",
   performance: "Продуктивність",
-  devmode: "Режим розробника",
+  achievements: "Досягнення",
   settings: "Налаштування",
   welcome: "Вітання",
 };

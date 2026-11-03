@@ -127,4 +127,8 @@ export default {
   errInvalid: "Одно из значений недопустимо или слишком длинное.",
   errGeneric: "Что-то пошло не так: {error}",
   errTooLong: "Сообщение не может быть длиннее {max} символов.",
+  rank_owner: "Владелец",
+  rank_admin: "Админ",
+  rank_mod: "Модератор",
+  rank_helper: "Помощник",
 };

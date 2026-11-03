@@ -127,4 +127,8 @@ export default {
   errInvalid: "Sommige gegevens zijn ongeldig of te lang.",
   errGeneric: "Er is iets misgegaan: {error}",
   errTooLong: "Berichten mogen niet langer zijn dan {max} tekens.",
+  rank_owner: "Eigenaar",
+  rank_admin: "Admin",
+  rank_mod: "Mod",
+  rank_helper: "Helper",
 };

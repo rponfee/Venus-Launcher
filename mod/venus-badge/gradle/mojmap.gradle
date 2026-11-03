@@ -1,0 +1,19 @@
+// Lo que comparten NeoForge y Forge (ModDevGradle con los nombres oficiales de Mojang).
+apply from: rootProject.file('gradle/loader.gradle')
+
+sourceSets.main.java.srcDir rootProject.file('shared-mojmap/java')
+
+// ModDevGradle corre sus herramientas y compila con la versión de Java de ese Minecraft (si no está instalada, Gradle la
+// baja: settings.gradle).
+java.toolchain.languageVersion = JavaLanguageVersion.of(java_release as int)
+
+processResources {
+	// Forge y NeoForge buscan el logo de la lista de mods en la raíz del .jar.
+	from(rootProject.file('src/main/resources/assets/venusbadge/icon.png')) {
+		rename { 'venusbadge_logo.png' }
+	}
+}
+
+jar {
+	manifest.attributes('Automatic-Module-Name': 'com.venuslauncher.badge')
+}

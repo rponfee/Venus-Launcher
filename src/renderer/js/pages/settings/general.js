@@ -16,8 +16,12 @@ const AFTER_LAUNCH = [
   ['hide', 'eyeOff'],
 ];
 
-// Versiones de Minecraft con el mod de la insignia (modules/ingame/badgemod.js, BUILDS)
-const BADGE_VERSIONS = ['1.21', '1.21.1'];
+// Loaders y versiones de Minecraft con el mod de la insignia (modules/ingame/badgemod.js, BUILDS)
+const BADGE_BUILDS = [
+  ['Fabric/Quilt', ['1.20.1', '1.21', '1.21.1']],
+  ['NeoForge', ['1.21', '1.21.1']],
+  ['Forge', ['1.20.1']],
+];
 
 // "1.21 y 1.21.1" en el idioma de la interfaz
 function listFormat(items) {
@@ -200,7 +204,7 @@ export function renderGeneral(body, ctx) {
       }),
       toggleRow({
         title: t('settings.ingameBadge'),
-        sub: t('settings.ingameBadgeSub', { versions: listFormat(BADGE_VERSIONS) }),
+        sub: t('settings.ingameBadgeSub', { versions: listFormat(BADGE_BUILDS.map(([loader, mc]) => `${loader} (${listFormat(mc)})`)) }),
         checked: store.settings?.ingame?.badge === true,
         onChange: async (v) => {
           if (await saveSettings({ ingame: { badge: v } })) readBadge();

@@ -156,6 +156,25 @@ function createMinecraftApi({ fetch: fetcher = (...a) => fetch(...a), fail, time
 
     hideCape: (token) => call(token, ACTIVE_CAPE_URL, { method: 'DELETE' }, 'cape'),
 
+    // Skin publica de un jugador por nombre (sin token): nombre -> uuid en Mojang -> texturas en su perfil de sesion.
+    async publicProfile(name) {
+      const get = async (url) => {
+        const res = await send(url, { method: 'GET', headers: { Accept: 'application/json' } });
+        if (res.status === 404 || res.status === 204) throw fail('noProfile');
+        if (!res.ok) throw statusError(res.status, 'profile');
+        return JSON.parse((await readLimited(res, maxJsonBytes)).toString('utf8'));
+      };
+      const who = await get(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(name)}`);
+      const id = String(who?.id || '').toLowerCase();
+      if (!/^[0-9a-f]{32}$/.test(id)) throw fail('noProfile');
+      const session = await get(`https://sessionserver.mojang.com/session/minecraft/profile/${id}`);
+      const prop = (Array.isArray(session?.properties) ? session.properties : []).find((p) => p?.name === 'textures');
+      const tex = JSON.parse(Buffer.from(String(prop?.value || ''), 'base64').toString('utf8') || '{}')?.textures?.SKIN;
+      const url = textureUrl(tex?.url);
+      if (!url) throw fail('noProfile');
+      return { url, variant: tex?.metadata?.model === 'slim' ? 'slim' : 'classic' };
+    },
+
     // PNG de una textura (sin token: son publicas). Solo desde textures.minecraft.net.
     async fetchTexture(url) {
       const safe = textureUrl(url);

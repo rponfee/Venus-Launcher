@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "Le clip exporté est endommagé et n’a pas pu être enregistré.",
   errAiUnavailable: "L’IA n’est pas disponible : connectez-vous à votre compte Venus et vérifiez que l’IA est activée.",
   overlayErrorTitle: "Clips et captures",
+  errReplayNoRoom: "Relecture instantanée en pause : pas assez d’espace disque.",
+  autoLimitReached: "Maximum de {count} clips automatiques atteint pour cette partie. La relecture instantanée fonctionne toujours avec le raccourci.",
 };

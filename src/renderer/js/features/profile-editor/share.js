@@ -103,7 +103,7 @@ function drawCover(g, img, x, y, w, h) {
 }
 
 function drawBanner(g, n, images, w) {
-  if ((n.banner.kind === 'image' || n.banner.kind === 'animated') && images.banner) {
+  if ((n.banner.kind === 'image' || n.banner.kind === 'animated' || n.banner.kind === 'klipy') && images.banner) {
     drawCover(g, images.banner, 0, 0, w, BANNER_H);
     return;
   }
@@ -179,6 +179,17 @@ function nameFill(g, n, fx, x, y, w, size) {
   if (fx === 'gradient') return { fill: lin([[from, 0], [to, 1]]), color };
   if (fx === 'shimmer') return { fill: lin([[color, 0], [color, 0.2], ['#ffffff', 0.32], [color, 0.44], [color, 1]]), color };
   if (fx === 'rainbow') return { fill: lin(['#ff6b6b', '#ffb36b', '#ffe66b', '#7dff8a', '#6bd5ff', '#9a8cff', '#ff7ad9'].map((c, i, a) => [c, i / (a.length - 1)])), color };
+  const STOPS = {
+    neon: ['#7df9ff', '#b06bff', '#ff4fd8'],
+    ice: ['#ffffff', '#c4f4ff', '#7ad7f7'],
+    ocean: ['#3fcfc0', '#2a7fd4', '#6fe0d0'],
+    sakura: ['#ffe3ef', '#ff9ec7', '#ff7eb3'],
+    toxic: ['#d7ff5a', '#5dff7a', '#1fd36a'],
+    vapor: ['#ff7ad9', '#ffb36b', '#6bd5ff', '#9a8cff'],
+    gold: ['#8a5a12', '#f0b429', '#fff1a8', '#f0b429'],
+    galaxy: ['#c2457a', '#7e5bd6', '#5aa7f0'],
+  };
+  if (STOPS[fx]) return { fill: lin(STOPS[fx].map((c, i, a) => [c, i / (a.length - 1)])), color: STOPS[fx][1] };
   if (fx === 'fire') {
     const grad = g.createLinearGradient(0, y, 0, y - size);
     [['#ff3d00', 0], ['#ff7a00', 0.3], ['#ffb300', 0.55], ['#ffe36b', 0.8], ['#fff6c9', 1]].forEach(([c, p]) => grad.addColorStop(p, c));
@@ -288,11 +299,12 @@ export function drawShareCard(canvas, n, { images = {}, palette = {} } = {}) {
   const fx = effectiveEffect(n);
   const fontKey = FONT_STACKS[n.nameStyle.font] ? n.nameStyle.font : 'default';
   const stack = FONT_STACKS[fontKey];
-  const nameSize = 56;
+  const nameSize = Math.round(56 * (stack.scale || 1));
   const nameY = BANNER_H + 126;
   const leftW = 640;
   g.font = `${stack.weight} ${stack.stretch === 'condensed' ? 'condensed ' : ''}${nameSize}px ${stack.family}`;
-  const name = fitText(g, n.name || P('someone'), leftW);
+  const rawName = n.name || P('someone');
+  const name = fitText(g, n.nameStyle.caps ? rawName.toUpperCase() : rawName, leftW);
   const nw = g.measureText(name).width;
   const { fill, color } = nameFill(g, n, fx, hx, nameY, nw, nameSize);
   const glow = fx === 'glow' ? Math.max(n.nameStyle.glow, 55) : n.nameStyle.glow;
@@ -412,8 +424,10 @@ export function drawShareCard(canvas, n, { images = {}, palette = {} } = {}) {
 }
 
 // Fuentes del launcher listas antes de dibujar (como mucho 3 s)
-export function loadFonts() {
+export function loadFonts(fontId) {
   if (!document.fonts) return Promise.resolve();
-  const specs = ['600 62px "Pixelify Sans"', '600 30px "Pixelify Sans"', '400 23px Outfit', '500 24px Outfit', '600 20px Outfit', '700 18px Outfit', '800 18px Outfit'];
+  const chosen = FONT_STACKS[fontId];
+  const specs = [
+    ...(chosen ? [`${chosen.weight} 56px ${chosen.family}`] : []),'600 62px "Pixelify Sans"', '600 30px "Pixelify Sans"', '400 23px Outfit', '500 24px Outfit', '600 20px Outfit', '700 18px Outfit', '800 18px Outfit'];
   return Promise.race([Promise.all(specs.map((f) => document.fonts.load(f).catch(() => null))), new Promise((r) => setTimeout(r, 3000))]);
 }

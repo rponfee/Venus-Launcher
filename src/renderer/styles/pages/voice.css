@@ -503,6 +503,7 @@
   content: ''; position: absolute; left: -1px; top: 0; bottom: 0; width: 3px; border-radius: 2px;
   background: var(--cream); box-shadow: 0 0 6px color-mix(in srgb, var(--cream) 80%, transparent);
 }
+.vc-warn-text { color: var(--warn); }
 .vc-meter-state { font-size: var(--fs-xs); color: var(--muted); }
 .vc-meter-state.on { color: var(--good-text); font-weight: 600; }
 .vc-keybtn { gap: var(--sp-2); }

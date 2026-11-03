@@ -1,7 +1,7 @@
 // Statistics page texts. Use t('stats.<key>').
 export default {
   title: 'Statistics',
-  subtitle: 'Your playtime, your worlds and your achievements in one place',
+  subtitle: 'Your playtime and your worlds in one place',
   subtitleSince: 'Your activity since {date}',
   loading: 'Crunching statistics...',
   loadError: 'Statistics could not be loaded',

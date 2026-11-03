@@ -127,4 +127,8 @@ export default {
   errInvalid: "Eine Angabe ist ungültig oder zu lang.",
   errGeneric: "Etwas ist schiefgelaufen: {error}",
   errTooLong: "Nachrichten dürfen nicht länger als {max} Zeichen sein.",
+  rank_owner: "Owner",
+  rank_admin: "Admin",
+  rank_mod: "Mod",
+  rank_helper: "Helfer",
 };

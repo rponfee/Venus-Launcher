@@ -386,3 +386,7 @@ html.ap-themed .hero-planet { filter: hue-rotate(var(--ap-hue, 0deg)) saturate(v
 .ap-music-row > .icon-btn:first-child svg { width: 16px; height: 16px; }
 .ap-music-main { flex: 1; min-width: 140px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .ap-music-state { font-size: 12px; padding: 1px 8px; }
+
+/* Apariencia > Interfaz */
+.ap-ui-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.ap-ui-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }

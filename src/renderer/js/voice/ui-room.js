@@ -116,8 +116,11 @@ export function roomView(container, { onTab } = {}) {
     const reconnecting = room.status !== 'connected';
     statusEl.className = `pill ${reconnecting ? 'warn' : 'good'}`;
     mount(statusEl, h('span', { class: ['status-dot', reconnecting ? 'starting' : 'online'], 'aria-hidden': 'true' }), t(reconnecting ? 'voice.statusReconnecting' : 'voice.statusConnected'));
+    // Con alguien de la sala se corta o se esta reconectando (la recuperacion es automatica: esto solo avisa)
+    const unstable = room.members.some((m) => !m.self && (m.quality === 'bad' || ['reconnecting', 'failed'].includes(m.connection)));
     mount(
       badgesEl,
+      unstable ? h('span', { class: 'badge warn', title: t('voice.netBadHint') }, icon('alert'), t('voice.netBadBadge')) : null,
       room.locked ? h('span', { class: 'badge warn' }, icon('lock'), t('voice.lockedBadge')) : null,
       room.hasPassword ? h('span', { class: 'badge' }, icon('key'), t('voice.passwordBadge')) : null,
       room.isPrivate ? h('span', { class: 'badge' }, icon('eyeOff'), t('voice.privateBadge')) : h('span', { class: 'badge accent' }, icon('users'), t('voice.friendsBadge')),
@@ -185,7 +188,9 @@ export function roomView(container, { onTab } = {}) {
   function updateTile(tile, m) {
     tile.member = m;
     const pingBucket = m.ping === null ? 'n' : m.ping < 90 ? 'g' : m.ping < 200 ? 'w' : 'b';
-    const key = [m.name, m.avatar, m.isOwner, m.muted, m.deafened, m.ptt, m.sharing, m.connection, pingBucket, m.relay, m.localMute, m.volume].join('|');
+    // Las barras muestran lo peor entre el ping y la calidad medida (perdida de paquetes, jitter)
+    const bucket = m.quality === 'bad' ? 'b' : m.quality === 'fair' && pingBucket !== 'b' ? 'w' : pingBucket;
+    const key = [m.name, m.avatar, m.isOwner, m.muted, m.deafened, m.ptt, m.sharing, m.connection, bucket, m.quality, m.quality === 'bad' ? m.lossPct : '', m.relay, m.localMute, m.volume].join('|');
     if (key === tile.key) return;
     tile.key = key;
     if (m.avatar !== tile.avatar) {
@@ -215,9 +220,10 @@ export function roomView(container, { onTab } = {}) {
     let connCls = 'vc-conn';
     if (m.self) connCls += ' hidden';
     else if (m.connection === 'connected') {
-      connCls += ` q-${pingBucket}`;
+      connCls += ` q-${bucket}`;
       connLabel = m.ping === null ? t('voice.connConnected') : t('voice.connPing', { ping: fmtPing(m.ping) });
       if (m.relay) connLabel = t('voice.connRelay', { status: connLabel });
+      if (m.quality === 'bad') connLabel = m.lossPct ? t('voice.connLoss', { status: connLabel, loss: m.lossPct }) : t('voice.connUnstable', { status: connLabel });
     } else if (m.connection === 'failed') {
       connCls += ' q-fail';
       connLabel = t('voice.connFailed');

@@ -20,6 +20,8 @@ import { toast } from './ui.js';
 import { createIdentity, importPublicKey, signText, verifyText, randomId } from './voice/sign.js';
 import { LocalMic, FLOOR_DB, rmsDb, dbToUnit, micErrorCode } from './voice/mic.js';
 import { Peer } from './voice/rtc.js';
+import { VOICE_QUALITIES, DEFAULT_QUALITY, qualityBitrate, bitrateCap } from './voice/net.js';
+import { VoiceLeveler, VOICE_COMPRESSOR, MIX_LIMITER, compressorMakeupDb } from './voice/leveler.js';
 import { SOUNDS, SOUND_IDS, playSound, playChime } from './voice/sfx.js';
 import { isModifierCode, isTypingTarget } from './voice/keys.js';
 
@@ -30,6 +32,9 @@ export const VOICE_DEFAULTS = {
   echoCancellation: true,
   noiseSuppression: true,
   autoGainControl: true,
+  noiseMode: 'rnnoise', // 'rnnoise' (si no carga, la del navegador) | 'browser' | 'off'. Sin guardar sale de noiseSuppression (2.x)
+  levelVoices: true, // nivelar el volumen de los demas (compresor por persona y limitador en la mezcla)
+  voiceQuality: DEFAULT_QUALITY, // tope del bitrate de voz: 'low' | 'normal' | 'high' (voice/net.js)
   inputVolume: 1,
   muteShortcut: 'CommandOrControl+Shift+M',
   pushToTalk: false,
@@ -49,7 +54,7 @@ export const SVC_PROJECT = '9eGKb6K1'; // Simple Voice Chat en Modrinth
 
 const CODE_RE = /^[A-HJ-NP-Z2-9]{6}$/;
 const HEARTBEAT_MS = 30000;
-const STATS_MS = 4000;
+const STATS_MS = 2000; // tambien marca el ritmo del bitrate adaptativo y del estado de calidad
 const TICK_MS = 40;
 const LEVELS_MS = 80;
 const AWAY_GRACE_MS = 15000;
@@ -70,6 +75,8 @@ function iceList(list) {
 }
 const ROOM_COLS = 'id,owner,name,code,is_private,has_password,max_members,is_locked,created_at,last_active';
 const SIGNAL_KINDS = new Set(['desc', 'ice', 'reset', 'bye']);
+const MAX_PEER_REBUILDS = 3;
+const NOISE_MODES = new Set(['rnnoise', 'browser', 'off']);
 
 export class VoiceError extends Error {
   constructor(code, message) {
@@ -137,6 +144,9 @@ function readCfg(v) {
   return {
     ...VOICE_DEFAULTS,
     ...s,
+    // Quien apago la supresion de ruido en 2.x la sigue teniendo apagada
+    noiseMode: NOISE_MODES.has(s.noiseMode) ? s.noiseMode : s.noiseSuppression === false ? 'off' : VOICE_DEFAULTS.noiseMode,
+    voiceQuality: VOICE_QUALITIES[s.voiceQuality] ? s.voiceQuality : DEFAULT_QUALITY,
     userVolumes: { ...(s.userVolumes || {}) },
   };
 }
@@ -178,7 +188,9 @@ function presenceText(roomId, userId, st) {
 }
 
 // Audio de otro miembro: un <audio> por pista (asi funciona la cancelacion de eco de Chromium) +
-// analizador para el indicador de "hablando" + camino WebAudio para subir el volumen por encima de 100 %.
+// analizador para el indicador de "hablando" + camino WebAudio: nivelacion (ganancia lenta y compresor) y volumen
+// por encima de 100 %. Con la nivelacion activa se escucha por WebAudio y el <audio> queda mudo, pero tiene que seguir
+// reproduciendo: sin el, Chromium no le entrega a WebAudio el audio de una pista remota.
 class RemoteAudio {
   constructor(engine, userId) {
     this.engine = engine;
@@ -188,11 +200,32 @@ class RemoteAudio {
     this.analyser = ctx.createAnalyser();
     this.analyser.fftSize = 512;
     this.analyser.smoothingTimeConstant = 0;
+    this.leveler = new VoiceLeveler();
+    this.levelGain = ctx.createGain();
+    this.lastGain = 1;
+    this.compressor = ctx.createDynamicsCompressor();
+    setCompressor(this.compressor, VOICE_COMPRESSOR);
+    this.trim = ctx.createGain();
+    this.trim.gain.value = 10 ** (-compressorMakeupDb(VOICE_COMPRESSOR) / 20);
     this.boost = ctx.createGain();
     this.boost.gain.value = 0;
-    this.boost.connect(ctx.destination);
+    this.compressor.connect(this.trim);
+    this.trim.connect(this.boost);
+    this.boost.connect(engine.voiceBus());
+    this.leveling = null;
     this.buf = new Float32Array(this.analyser.fftSize);
     this.speakingUntil = 0;
+  }
+
+  setLeveling(on) {
+    if (on === this.leveling) return;
+    this.leveling = on;
+    this.levelGain.disconnect();
+    this.levelGain.connect(on ? this.compressor : this.boost);
+    if (!on) {
+      this.lastGain = 1;
+      this.levelGain.gain.setTargetAtTime(1, this.engine.ctx.currentTime, 0.02);
+    }
   }
 
   add(track) {
@@ -204,7 +237,7 @@ class RemoteAudio {
     el.srcObject = stream;
     const src = ctx.createMediaStreamSource(stream);
     src.connect(this.analyser);
-    src.connect(this.boost);
+    src.connect(this.levelGain);
     this.items.set(track.id, { el, src });
     track.addEventListener('ended', () => this.remove(track.id));
     const sink = this.engine.sinkId();
@@ -229,13 +262,14 @@ class RemoteAudio {
   apply() {
     const { volume, muted } = this.engine.userAudio(this.userId);
     const silent = muted || this.engine.deafened;
-    const boost = volume > 1;
+    const ctx = this.engine.ctx;
+    if (ctx) this.setLeveling(this.engine.cfg.levelVoices !== false);
+    const viaWebAudio = Boolean(this.leveling) || volume > 1;
     for (const it of this.items.values()) {
-      it.el.muted = silent || boost;
+      it.el.muted = silent || viaWebAudio;
       it.el.volume = Math.max(0, Math.min(1, volume));
     }
-    const ctx = this.engine.ctx;
-    if (ctx) this.boost.gain.setTargetAtTime(!silent && boost ? volume : 0, ctx.currentTime, 0.02);
+    if (ctx) this.boost.gain.setTargetAtTime(!silent && viaWebAudio ? volume : 0, ctx.currentTime, 0.02);
   }
 
   setSink(id) {
@@ -247,6 +281,13 @@ class RemoteAudio {
     this.analyser.getFloatTimeDomainData(this.buf);
     const db = rmsDb(this.buf);
     if (db > -52) this.speakingUntil = now + 260;
+    if (this.leveling) {
+      const gain = this.leveler.update(db, TICK_MS);
+      if (Math.abs(gain - this.lastGain) > 0.01) {
+        this.lastGain = gain;
+        this.levelGain.gain.setTargetAtTime(gain, this.engine.ctx.currentTime, 0.4);
+      }
+    }
     return dbToUnit(db);
   }
 
@@ -258,11 +299,22 @@ class RemoteAudio {
     for (const id of [...this.items.keys()]) this.remove(id);
     try {
       this.analyser.disconnect();
+      this.levelGain.disconnect();
+      this.compressor.disconnect();
+      this.trim.disconnect();
       this.boost.disconnect();
     } catch {
       /* ya desconectado */
     }
   }
+}
+
+function setCompressor(node, o) {
+  node.threshold.value = o.threshold;
+  node.knee.value = o.knee;
+  node.ratio.value = o.ratio;
+  node.attack.value = o.attack;
+  node.release.value = o.release;
 }
 
 export class VoiceEngine {
@@ -389,6 +441,7 @@ export class VoiceEngine {
     window.addEventListener('mouseup', (e) => this.onMouse(e, false), true);
     window.addEventListener('blur', () => this.setPtt(false, true));
     window.addEventListener('beforeunload', () => this.teardownSync());
+    window.addEventListener('online', () => this.onNetworkBack());
     navigator.mediaDevices?.addEventListener?.('devicechange', () => this.onDeviceChange());
     if (this.backend) return;
     cloud.on('auth', (session) => {
@@ -516,6 +569,7 @@ export class VoiceEngine {
       this.updateTransmit();
     }
     if (prev.relayOnly !== this.cfg.relayOnly) this.applyRtcConfig();
+    if (prev.voiceQuality !== this.cfg.voiceQuality && this.session) this.updateAudioCaps(this.session);
     this.applyRemoteAudio();
     this.emitState();
     this.emit('settings', this.cfg);
@@ -523,7 +577,7 @@ export class VoiceEngine {
 
   micOpts() {
     const c = this.cfg;
-    return { inputDevice: c.inputDevice, echoCancellation: c.echoCancellation, noiseSuppression: c.noiseSuppression, autoGainControl: c.autoGainControl, inputVolume: c.inputVolume };
+    return { inputDevice: c.inputDevice, echoCancellation: c.echoCancellation, noiseMode: c.noiseMode, autoGainControl: c.autoGainControl, inputVolume: c.inputVolume };
   }
 
   // Hay un servidor TURN del launcher (entonces se puede ocultar la IP con relayOnly)
@@ -563,11 +617,31 @@ export class VoiceEngine {
   // ---------- Audio ----------
   audioCtx() {
     if (!this.ctx) {
-      this.ctx = new AudioContext({ latencyHint: 'interactive' });
+      // A 48 kHz, como Opus y RNNoise: asi no hay que convertir nada (Chromium adapta la salida si el equipo va a otra)
+      try {
+        this.ctx = new AudioContext({ latencyHint: 'interactive', sampleRate: 48000 });
+      } catch {
+        this.ctx = new AudioContext({ latencyHint: 'interactive' });
+      }
       this.applyOutput();
     }
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
     return this.ctx;
+  }
+
+  // Mezcla de las voces antes de la salida: un limitador evita que se sature cuando hablan varios a la vez
+  voiceBus() {
+    if (!this.bus) {
+      const ctx = this.audioCtx();
+      const limiter = ctx.createDynamicsCompressor();
+      setCompressor(limiter, MIX_LIMITER);
+      const trim = ctx.createGain();
+      trim.gain.value = 10 ** (-compressorMakeupDb(MIX_LIMITER) / 20);
+      limiter.connect(trim);
+      trim.connect(ctx.destination);
+      this.bus = limiter;
+    }
+    return this.bus;
   }
 
   sinkId() {
@@ -637,6 +711,7 @@ export class VoiceEngine {
   async startMic(s) {
     const mic = new LocalMic(this.audioCtx());
     mic.onEnded = () => this.recoverMic(mic);
+    mic.onNoiseChange = () => this.afterCapture();
     s.mic = mic;
     try {
       await mic.start(this.micOpts());
@@ -708,7 +783,8 @@ export class VoiceEngine {
         throw verr(micErrorCode(err));
       }
       mic.onEnded = () => this.recoverMic(mic);
-      this.test = { mic };
+      mic.onNoiseChange = () => this.emitState();
+      this.test = { mic, recording: false };
     }
     this.test.mic.setMonitor(monitor);
     this.startTick();
@@ -720,7 +796,54 @@ export class VoiceEngine {
     this.mic?.setMonitor(Boolean(on));
   }
 
+  // Graba unos segundos de lo que recibirian los demas. Solo con la prueba de microfono, fuera de una sala
+  // (en una llamada, lo que se reproduce despues se colaria en el microfono).
+  async recordMicTest(seconds = 5) {
+    const test = this.test;
+    if (!test || test.recording) return null;
+    test.recording = true; // la compuerta no espera la tecla de pulsar para hablar: lo que se prueba es el sonido
+    this.emitState();
+    try {
+      return await test.mic.recordClip(seconds * 1000);
+    } finally {
+      test.recording = false;
+      this.emitState();
+    }
+  }
+
+  stopMicRecording() {
+    this.test?.mic.stopRecording();
+  }
+
+  // Reproduce lo grabado por la salida elegida; termina cuando se acaba o con stopMicClip()
+  async playMicClip(blob) {
+    this.stopMicClip();
+    const url = URL.createObjectURL(blob);
+    const el = new Audio(url);
+    this.clip = el;
+    try {
+      const sink = this.sinkId();
+      if (sink && el.setSinkId) await el.setSinkId(sink).catch(() => {});
+      await el.play();
+      await new Promise((resolve) => {
+        el.onended = resolve;
+        el.onerror = resolve;
+        el.onpause = resolve;
+      });
+    } finally {
+      if (this.clip === el) this.clip = null;
+      el.onpause = null;
+      el.removeAttribute('src');
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  stopMicClip() {
+    this.clip?.pause();
+  }
+
   stopMicTest() {
+    this.stopMicClip();
     if (this.test) {
       this.test.mic.stop();
       this.test = null;
@@ -757,7 +880,7 @@ export class VoiceEngine {
     const vad = !this.cfg.pushToTalk;
     let r = { db: FLOOR_DB, threshold: this.cfg.vadThreshold, voiced: false, open: false };
     if (mic) {
-      const transmit = s ? this.transmitting : !this.cfg.pushToTalk || this.pttDown;
+      const transmit = s ? this.transmitting : !this.cfg.pushToTalk || this.pttDown || Boolean(this.test?.recording);
       r = mic.tick({ now, vad, auto: this.cfg.vadAuto, threshold: vad ? this.cfg.vadThreshold : -55, transmit });
     }
     const users = {};
@@ -899,6 +1022,9 @@ export class VoiceEngine {
       micError: s?.micError || null,
       talkingMuted: Boolean(s?.talkingMuted),
       testing: Boolean(this.test),
+      recording: Boolean(this.test?.recording),
+      noiseEngine: this.mic?.hasInput ? this.mic.noiseEngine : null,
+      noiseFallback: Boolean(this.mic?.hasInput && this.mic.noiseFallback),
     };
   }
 
@@ -952,6 +1078,8 @@ export class VoiceEngine {
         connection: s.demo ? m.demoConn || 'connected' : m.away ? 'away' : peer ? peer.state : 'connecting',
         ping: s.demo ? m.demoPing : (peer?.ping ?? null),
         relay: Boolean(peer?.relay),
+        quality: s.demo ? m.demoQuality || 'good' : peer?.quality || 'good',
+        lossPct: s.demo ? (m.demoLoss ?? null) : (peer?.lossPct ?? null),
         volume: ua.volume,
         localMute: ua.muted,
         joinedAt: m.joinedAt,
@@ -1176,6 +1304,7 @@ export class VoiceEngine {
       chatFrom: new Map(),
       histFrom: new Set(),
       byeSessions: new Set(),
+      rebuilds: new Map(),
       left: false,
     };
   }
@@ -1562,18 +1691,56 @@ export class VoiceEngine {
       audioStream: s.mic.stream,
       screen: s.screen,
       videoBitrate: this.videoBitrate(s.peers.size + 1),
+      audioBitrate: bitrateCap(this.cfg.voiceQuality, s.peers.size + 1),
+      maxAverageBitrate: qualityBitrate(this.cfg.voiceQuality),
       send: (kind, data) => this.send(s, 'sig', { k: kind, ...data }, uid, session),
+      beforeRestart: (p) => this.refreshPeerIce(p),
+      onStuck: (p) => this.rebuildPeer(s, uid, session, p),
       onTrack: (p, track) => {
         if (track.kind === 'audio' && s.peers.get(uid) === p) this.remoteAudio(s, uid).add(track);
       },
-      onChange: () => {
+      onChange: (p) => {
+        if (p.state === 'connected') s.rebuilds.delete(uid);
         this.emitMembersSoon();
         this.emitScreensSoon();
       },
     });
     s.peers.set(uid, peer);
     this.updateVideoBitrates(s);
+    this.updateAudioCaps(s);
     return peer;
+  }
+
+  // Antes de reiniciar ICE: clave TURN vigente y lista de servidores al dia (la conexion pudo armarse sin TURN)
+  async refreshPeerIce(p) {
+    await Promise.race([this.refreshTurn(), new Promise((r) => setTimeout(r, 2000))]);
+    if (!p.closed) p.pc.setConfiguration(this.rtcConfig());
+  }
+
+  // Los reinicios de ICE no alcanzaron: se rearma la conexion desde cero. Lo hace un solo lado, con un limite, y le
+  // avisa al otro con 'reset' (los clientes 2.x ya lo entienden).
+  rebuildPeer(s, uid, session, p) {
+    if (p.polite || this.session !== s || s.peers.get(uid) !== p) return;
+    const n = s.rebuilds.get(uid) || 0;
+    if (n >= MAX_PEER_REBUILDS) return;
+    s.rebuilds.set(uid, n + 1);
+    this.send(s, 'sig', { k: 'reset' }, uid, session);
+    this.dropPeer(s, uid);
+    this.ensurePeer(s, uid, session);
+    this.emitMembersSoon();
+  }
+
+  // Volvio la red: no hace falta esperar a que venzan los temporizadores de ICE
+  onNetworkBack() {
+    for (const p of this.session?.peers.values() || []) {
+      if (p.state !== 'connected') p.restartIce();
+    }
+  }
+
+  // En malla se manda una copia por persona: el tope por conexion depende de la calidad elegida y de cuantos hay
+  updateAudioCaps(s) {
+    const cap = bitrateCap(this.cfg.voiceQuality, s.peers.size);
+    for (const p of s.peers.values()) p.setAudioCap(cap);
   }
 
   dropPeer(s, uid) {
@@ -1588,6 +1755,7 @@ export class VoiceEngine {
       s.audio.delete(uid);
     }
     this.updateVideoBitrates(s);
+    this.updateAudioCaps(s);
   }
 
   videoBitrate(n) {

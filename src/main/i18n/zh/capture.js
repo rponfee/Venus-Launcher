@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "导出的剪辑已损坏，无法保存。",
   errAiUnavailable: "AI 不可用：请登录你的 Venus 账号，并确认 AI 已开启。",
   overlayErrorTitle: "剪辑与截图",
+  errReplayNoRoom: "即时回放已暂停：磁盘空间不足。",
+  autoLimitReached: "本局游戏已达到 {count} 段自动剪辑的上限。你仍可用快捷键使用即时回放。",
 };

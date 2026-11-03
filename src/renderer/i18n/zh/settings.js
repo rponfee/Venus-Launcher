@@ -68,7 +68,7 @@ export default {
   ingameWindow: "窗口上的 Venus 图标和标题",
   ingameWindowSub: "游戏窗口会显示 Venus 图标，并在标题末尾加上“· Venus Launcher”。",
   ingameBadge: '名字旁的 Venus 徽章',
-  ingameBadgeSub: '同样使用 Venus 的玩家会在你的名字旁（头顶和 Tab 玩家列表中）看到 Venus 星球，你也会在他们的名字旁看到。只会在 Minecraft {versions} 的 Fabric 或 Quilt 实例中安装“Venus Badge”模组：原版、Forge、NeoForge 和 OptiFine 无法加载 Fabric 模组，保持不变。需要你的 Venus 账号和一个 Microsoft 账号。模组会向 Venus 服务器查询你看到的玩家（只发送他们的 UUID）。',
+  ingameBadgeSub: "同样使用 Venus 的玩家会在你的名字旁（头顶和 Tab 玩家列表中）看到 Venus 星球，你也会在他们的名字旁看到。只会在能够加载它的实例中安装“Venus Badge”模组：{versions}。原版、OptiFine 和其他版本保持不变，也不会显示徽章。需要你的 Venus 账号和一个 Microsoft 账号。模组会向 Venus 服务器查询你看到的玩家（只发送他们的 UUID）。",
   ingameBadgeIdle: '下次游戏时会用你的 Microsoft 账号开启。',
   ingameBadgeWorking: '正在通过 Mojang 验证你的 Minecraft 账号…',
   ingameBadgeOk: '完成：{name} 已拥有 Venus 徽章。',

@@ -1,7 +1,7 @@
 // Acceso a datos del modulo social en Supabase (tablas y funciones de supabase/migrations/0002_social.sql).
 // social.js habla solo con esta interfaz, asi que en pruebas se puede reemplazar por otra (ver devmock.js).
 
-export const PROFILE_COLS = 'id,username,display_name,friend_code,mc_name,mc_uuid,bio,banner,badges,status_text,created_at';
+export const PROFILE_COLS = 'id,username,display_name,friend_code,mc_name,mc_uuid,bio,banner,badges,status_text,created_at,rank';
 const MSG_COLS = 'id,conversation_id,sender_id,body,reply_to,created_at,edited_at,deleted';
 const REACTION_COLS = 'id,message_id,conversation_id,user_id,emoji,created_at';
 const ACTIVITY_COLS = 'user_id,status,activity,updated_at';

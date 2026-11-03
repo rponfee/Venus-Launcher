@@ -1,5 +1,5 @@
-// Venus Points (#/rewards[/<achievements, shop, invite, history o premium>]): saldo, premio diario con racha,
-// logros, tienda de cosméticos, invitaciones con código (y la verificación de la cuenta de Minecraft que las paga),
+// Venus Points (#/rewards[/<shop, invite, history o premium>]): saldo, premio diario con racha,
+// tienda de cosméticos, invitaciones con código (y la verificación de la cuenta de Minecraft que las paga),
 // historial y Venus Premium. Reglas y RPC: supabase/migrations/0021_puntos.sql · guía: docs/venus-points.md.
 import { h, icon, mount, skeleton, emptyState, sectionTitle, setBusy, toast, ok, fail, confirmDialog, copyText, fmtDate, fmtAgo, fmtDuration, fmtTime, avatarImg } from '../ui.js';
 import { store, api } from '../store.js';
@@ -8,15 +8,14 @@ import { navigate, openAccounts } from '../app.js';
 import { social } from '../social.js';
 import { backend } from './rewards/backend.js';
 import {
-  ACHIEVEMENT_ICONS, DOWNLOAD_URL, REFERRAL_POINTS, REFERRAL_DAYS, achievementProgress, dailyInfo, equipPatch, formatDelta,
-  formatPoints, historyEntry, normalizeReferralCode, shopView, splitAchievements, utcDay,
+  DOWNLOAD_URL, REFERRAL_POINTS, REFERRAL_DAYS, dailyInfo, equipPatch, formatDelta,
+  formatPoints, historyEntry, normalizeReferralCode, shopView, utcDay,
 } from './rewards/logic.js';
-import { loadSummary, onSummary, getSummary, claimAchievement, sweepServerAchievements, achievementName, achievementDesc, itemName } from '../features/rewards.js';
+import { loadSummary, onSummary, getSummary, claimAchievement, sweepServerAchievements, achievementName, itemName } from '../features/rewards.js';
 import { perksPanel } from '../features/premium.js';
 
 const R = (key, vars) => t(`rewards.${key}`, vars);
 const TABS = [
-  { id: 'achievements', icon: 'trophy' },
   { id: 'shop', icon: 'tag' },
   { id: 'invite', icon: 'userPlus' },
   { id: 'history', icon: 'history' },
@@ -85,7 +84,7 @@ export default {
     }
 
     // ---------- Estado ----------
-    const st = { tab: TABS.some((x) => x.id === params[0]) ? params[0] : 'achievements', items: null, itemsError: null, profile: null, ps: null, stats: null, code: null, codeLoading: false };
+    const st = { tab: TABS.some((x) => x.id === params[0]) ? params[0] : 'shop', items: null, itemsError: null, profile: null, ps: null, stats: null, code: null, codeLoading: false };
     let viewCleanups = [];
     const refreshBtn = h('button', { type: 'button', class: 'icon-btn', title: t('common.refresh'), 'aria-label': t('common.refresh'), onclick: () => reload(refreshBtn) }, icon('refresh'));
     const hero = h('div', { class: 'rw-hero' });
@@ -140,6 +139,7 @@ export default {
         const res = await b.rpc('points_daily_claim');
         if (res?.already) toast('info', R('dailyAlready'));
         else ok(R('dailyClaimed', { points: pts(res?.points) }), Number(res?.streak) > 1 ? R('dailyStreakToast', { count: Number(res.streak) }) : null);
+        if (!res?.already) window.dispatchEvent(new CustomEvent('venus:mission', { detail: { metric: 'dailyRewards' } }));
         await loadSummary({ force: true });
       } catch (err) {
         fail(R('dailyFailed'), errText(err));
@@ -196,50 +196,6 @@ export default {
     }
 
     // ---------- Logros ----------
-    function achievementsView(d) {
-      const { unlocked, locked } = splitAchievements(d.achievements);
-      const ctx = { totalMs: st.stats?.totalMs, instances: store.instances?.length || 0, friends: social.friends?.length || 0, referralsRewarded: Number(d.referrals?.rewarded) || 0 };
-      const card = (a) => {
-        const done = Boolean(a.unlockedAt);
-        const prog = done ? null : achievementProgress(a.id, ctx);
-        const points = Number(a.points) || 0;
-        return h(
-          'article',
-          { class: ['rw-ach', done ? 'done' : 'locked'] },
-          h('span', { class: 'rw-ach-icon', 'aria-hidden': 'true' }, icon(ACHIEVEMENT_ICONS[a.id] || 'trophy')),
-          h(
-            'div',
-            { class: 'rw-ach-main' },
-            h('h4', { class: 'rw-ach-name' }, achievementName(a.id)),
-            achievementDesc(a.id) ? h('p', { class: 'rw-ach-desc' }, achievementDesc(a.id)) : null,
-            prog
-              ? h(
-                  'div',
-                  { class: 'rw-ach-progress' },
-                  h('div', { class: 'progress', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': prog.target, 'aria-valuenow': prog.value, 'aria-label': achievementName(a.id) }, h('i', { style: { width: `${Math.round((prog.value / prog.target) * 100)}%` } })),
-                  h('span', { class: 'rw-ach-progress-text num' }, R(prog.unit === 'hours' ? 'progressHours' : 'progressCount', { value: prog.value, target: prog.target })),
-                )
-              : null,
-            h(
-              'div',
-              { class: 'rw-ach-foot' },
-              h('span', { class: 'rw-ach-points' }, icon('vpoint'), done || !d.premium ? R('achPoints', { points: pts(points) }) : R('achPointsX2', { points: pts(points * 2) })),
-              done
-                ? h('span', { class: 'badge good', title: fmtDate(Date.parse(a.unlockedAt)) }, icon('check'), R('achDone'))
-                : h('span', { class: 'rw-ach-kind' }, R(a.kind === 'client' ? 'achKindClient' : 'achKindServer')),
-            ),
-          ),
-        );
-      };
-      if (!unlocked.length && !locked.length) return emptyState('trophy', R('achEmpty'), R('achEmptyText'));
-      return h(
-        'div',
-        { class: 'rw-ach-view' },
-        h('p', { class: 'rw-hint' }, icon('info'), R('achHint')),
-        unlocked.length ? [h('h3', { class: 'rw-sub' }, R('achUnlocked', { count: unlocked.length })), h('div', { class: 'rw-ach-grid' }, unlocked.map(card))] : null,
-        locked.length ? [h('h3', { class: 'rw-sub' }, R('achLocked', { count: locked.length })), h('div', { class: 'rw-ach-grid' }, locked.map(card))] : null,
-      );
-    }
 
     // ---------- Tienda ----------
     function me() {
@@ -547,6 +503,7 @@ export default {
       }
       if (r.reason === 'achievement') return R('hist_achievement', { name: achievementName(r.ref) });
       if (r.reason === 'shop') return R('hist_shop', { name: itemName(r.ref) });
+      if (r.reason === 'mission') return R(String(r.ref).endsWith(':bonus') ? 'hist_missionBonus' : 'hist_mission');
       return R(`hist_${r.reason}`);
     }
 
@@ -586,8 +543,7 @@ export default {
       if (st.tab === 'shop') view = shopPanel(d);
       else if (st.tab === 'invite') view = invitePanel(d);
       else if (st.tab === 'history') view = historyPanel(d);
-      else if (st.tab === 'premium') view = premiumPanel();
-      else view = achievementsView(d);
+      else view = premiumPanel();
       // Si el foco estaba adentro del campo del código, vuelve ahí después de redibujar
       const hadFocus = document.activeElement === codeInput;
       mount(body, h('div', { class: 'rw-panel', id: 'rw-panel', role: 'tabpanel', 'aria-labelledby': `rw-tab-${st.tab}` }, view));
@@ -595,7 +551,7 @@ export default {
     }
 
     function show(id, fromUser) {
-      st.tab = TABS.some((x) => x.id === id) ? id : 'achievements';
+      st.tab = TABS.some((x) => x.id === id) ? id : 'shop';
       tabButtons.forEach((btn) => {
         const on = btn.dataset.tab === st.tab;
         btn.setAttribute('aria-selected', String(on));

@@ -89,6 +89,7 @@ function register({ handle, getWindow }) {
 
   handle('skins:account', () => getService().account());
   handle('skins:profile', (id, opts) => getService().profile(accountId(id), { force: plain(opts).force === true }));
+  handle('skins:publicSkin', (name) => getService().publicSkin(name));
   handle('skins:texture', (url, kind) => getService().texture(typeof url === 'string' ? url : '', kind === 'cape' ? 'cape' : 'skin'));
   handle('skins:library', () => getService().library());
 

@@ -59,7 +59,7 @@ Con el juego abierto, la ventana lleva el ícono de Venus y "· Venus Launcher" 
 
 Con **Ajustes → General → Venus en el juego → Insignia de Venus junto a tu nombre** (apagada por defecto), los jugadores que también usan Venus ven el planeta de Venus antes de tu nombre, sobre la cabeza y en la lista de jugadores (Tab), y vos lo ves junto al de ellos. Sirve en cualquier servidor premium, sin plugins.
 
-- Antes de jugar, el launcher instala el mod **Venus Badge** en las instancias **Fabric o Quilt de Minecraft 1.21 y 1.21.1**. Vanilla, Forge, NeoForge y OptiFine no pueden cargar mods de Fabric: ahí no se instala nada y la insignia no se ve. Si cambiás la versión de la instancia, el mod se quita solo.
+- Antes de jugar, el launcher instala el mod **Venus Badge** en las instancias **Fabric o Quilt de Minecraft 1.20.1, 1.21 y 1.21.1, NeoForge 1.21 y 1.21.1 y Forge 1.20.1**. En vanilla, OptiFine y otras versiones no se instala nada y la insignia no se ve. Si cambiás el loader o la versión de la instancia, el launcher pone el mod que corresponde o lo quita solo.
 - Pide tu **cuenta de Venus** y una **cuenta de Microsoft**: al prenderla (y al jugar, si todavía no estaba) el launcher verifica con Mojang que la cuenta de Minecraft es tuya y la anota en el servidor de Venus. Las cuentas sin conexión no pueden tener insignia. Hasta 5 cuentas de Minecraft por cuenta de Venus.
 - Debajo del interruptor se ve el estado: verificando, listo con el nombre de la cuenta o qué falta (iniciar sesión, cuenta sin multijugador, sin conexión…).
 - Al apagarla se borran tus cuentas del servidor y el mod sale de las instancias la próxima vez que jugás. Si lo desactivás a mano en la lista de mods de una instancia, el launcher lo respeta.
@@ -133,7 +133,8 @@ En **Skins → Editor de skins** creás una skin de 64×64 (clásica o slim) des
 
 **Clips y capturas** (menú Jugar) junta las capturas, clips y grabaciones de todas tus instancias, con filtros por instancia y fecha, búsqueda y un visor que se maneja con el teclado (borrar va a la papelera).
 
-- Con el juego abierto: **Alt+Shift+F12** saca una captura de la ventana del juego, **Alt+Shift+F9** empieza y termina una grabación y, si prendés la **repetición instantánea** en **Ajustes → En el juego**, **Alt+Shift+F8** guarda los últimos 30 segundos (2 minutos con Venus Premium). Los atajos, la calidad (720p, 1080p o nativa), los cuadros por segundo y el audio se cambian ahí.
+- Con el juego abierto: **Alt+Shift+F12** saca una captura de la ventana del juego, **Alt+Shift+F9** empieza y termina una grabación y, si prendés la **repetición instantánea** en **Ajustes → En el juego**, **Alt+Shift+F8** guarda los últimos 60 segundos (5 minutos con Venus Premium), que mientras jugás ocupan lugar en el disco y no memoria. Los atajos, la calidad (720p, 1080p o nativa), los cuadros por segundo y el audio se cambian ahí.
+- **Clips automáticos** (apagados por defecto, en el mismo lugar): con la repetición prendida, el clip se guarda solo al morir, al conseguir un logro o al derrotar al Ender Dragon, solo lo que le pasa a tu cuenta y con una espera entre clips y un máximo por partida para no llenar el disco. La página **Clips** los muestra con su etiqueta (Muerte, Logro, Jefe) y los filtra. Se detectan leyendo los mensajes del juego en cualquier idioma; de los jefes, sin mods solo se reconoce el Ender Dragon la primera vez en cada mundo (detalle en [clips.md](clips.md#clips-automáticos)).
 - **Editor**: recortá el inicio y el final y exportá en horizontal o en vertical 9:16 para TikTok y Shorts.
 - **Compartir**: link para compartir, **A un amigo** (le llega un aviso con **Ver**) o **Destacar en mi perfil** (hasta 3 capturas).
 - **Describir con IA** (opcional, con tu plan de Venus y con confirmación): describe hasta 20 capturas por vez para encontrarlas por lo que muestran.
@@ -153,10 +154,10 @@ En **Música** (menú Jugar) ves lo que suena en Spotify (gratis o Premium), You
 **Venus Points** (menú Jugar) son los puntos de tu cuenta de Venus. Tu saldo se ve abajo en la barra lateral.
 
 - **Premio diario**: 10 puntos por día y 5 más por cada día seguido (hasta 35). Se reclama con un botón.
-- **Logros**: jugar, sumar instancias, hacer amigos, sacar capturas, crear una skin, verificar tu cuenta de Minecraft y más. Los de tu PC se reclaman solos.
+- **Logros**: tienen su propia sección (ver [Logros y misiones](#logros-y-misiones)). Los de tu PC se reclaman solos.
 - **Invitaciones**: compartí tu código `VP-XXXXXX`. Cuando un amigo nuevo lo canjea (en sus primeros 14 días) y verifica su cuenta de Minecraft, vos ganás 500 y tu amigo 200. Sin verificar con Mojang no paga: así no se puede hacer trampa con cuentas falsas.
 - **Tienda**: marcos para tu perfil, efectos para tu nombre, estilos de la insignia en el juego y títulos. Se equipan al instante.
-- **Venus Premium** (cualquier plan de Venus): puntos x2 en el premio diario y los logros, insignia dorada en el juego, banners animados, efectos de nombre premium, Marco Venus y título Supporter, repetición instantánea de 2 minutos y todo lo del plan (IA). Se ve en **Venus Points → Premium** y en **Ajustes → Plan**.
+- **Venus Premium** (cualquier plan de Venus): puntos x2 en el premio diario y los logros, insignia dorada en el juego, banners animados, efectos de nombre premium, Marco Venus y título Supporter, repetición instantánea de 5 minutos y todo lo del plan (IA). Se ve en **Venus Points → Premium** y en **Ajustes → Plan**.
 - Necesita: cuenta de Venus. Reglas completas: [venus-points.md](venus-points.md).
 
 ## Contenido
@@ -209,8 +210,14 @@ Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, F
 ### Voice Chat
 
 - **Salas**: **Crear sala** te da un código de 6 caracteres; elegí nombre, cupo (de 2 a 8), contraseña opcional y si la ven tus amigos. Para entrar a otra, usá **Unirse con código**. También ves las salas de tus amigos, las tuyas y las recientes.
-- **En la sala**: silenciarte o ensordecerte, volumen de cada persona (hasta 200 %), quién está hablando, **pantalla compartida**, un soundboard, chat de la sala y, si sos el anfitrión, moderación (pedir que alguien se silencie, sacar, bloquear o cerrar la sala).
-- **Audio**: micrófono y salida, filtros de ruido y eco, volumen de entrada, detección de voz o **pulsar para hablar** (tecla V por defecto, o los botones laterales del mouse), atajo global para silenciarte mientras jugás (**Ctrl+Shift+M** por defecto) y prueba de micrófono. Si tu versión del launcher trae servidor de voz propio, **Red y privacidad** te deja **Ocultar mi IP** (toda tu voz pasa por el servidor de Venus).
+- **En la sala**: silenciarte o ensordecerte, volumen de cada persona (hasta 200 %), quién está hablando, **pantalla compartida**, un soundboard, chat de la sala y, si sos el anfitrión, moderación (pedir que alguien se silencie, sacar, bloquear o cerrar la sala). Las barritas de cada persona muestran la calidad de la conexión; si con alguien se corta, aparece **Conexión inestable** en el encabezado y Venus baja la calidad y reconecta solo.
+- **Audio**: micrófono y salida, filtro de eco, volumen de entrada, detección de voz o **pulsar para hablar** (tecla V por defecto, o los botones laterales del mouse) y atajo global para silenciarte mientras jugás (**Ctrl+Shift+M** por defecto). Si tu versión del launcher trae servidor de voz propio, **Red y privacidad** te deja **Ocultar mi IP** (toda tu voz pasa por el servidor de Venus).
+  - **Supresión de ruido**: **Avanzada** usa RNNoise, una red neuronal que corre en tu PC y borra ventiladores, teclado y ruido de fondo (suma unos 30 ms de demora); **Básica** es la del navegador; también se puede apagar. Si la avanzada no carga, se usa la básica sin cortar nada y lo dice en los ajustes.
+  - **Umbral de voz**: lo que queda por debajo de la marca no se transmite. Lo ajusta solo o lo elegís vos, mirando el medidor al lado del control.
+  - **Prueba de micrófono**: medidor, **Escucharme** y **Grabar y escuchar**, que graba 5 segundos y te los reproduce tal como te escuchan los demás (fuera de una sala).
+  - **Nivelar voces**: compensa a quien habla muy bajo o muy fuerte y evita que se sature cuando hablan varios. Se suma al volumen de cada persona y se puede apagar.
+  - **Calidad de voz**: Ahorro (40 kbps), Normal (80 kbps) o Alta (128 kbps) por persona. En salas de más de 5 personas el tope baja para no saturar tu subida, y baja solo si la conexión pierde paquetes.
+- **Cortes y compatibilidad**: la voz usa Opus en mono con corrección de errores (FEC) y sin mandar datos en silencio (DTX). Se puede entrar a la misma sala con clientes 2.x.
 - **En el juego**: instala **Simple Voice Chat** en tus instancias o servidores para tener voz de proximidad dentro de Minecraft.
 - Invitá a un amigo desde Mensajes con **Invitar a voz**: si no estás en una sala, se crea una privada.
 - Necesita: cuenta de Venus y micrófono. Pulsar para hablar funciona con el launcher en primer plano; dentro del juego usá el atajo global.
@@ -254,9 +261,19 @@ En **Ajustes → Privacidad → Avisos** elegís qué te avisa el launcher:
 
 ## Herramientas
 
+### Logros y misiones
+
+Sección **Logros** del menú, con tres pestañas:
+
+- **Logros**: más de 400, agrupados por categoría (tiempo, minería, combate, exploración, vida, colección, capturas, social, Venus y especiales). Cada uno tiene niveles de bronce a netherita con su barra de progreso y sus puntos; se reclaman solos. Con suficientes jugadores se ve también qué tan raro es cada uno. Los que se cumplen a partir de esta PC se reclaman de a 40 por día como mucho: si ya venías jugando, los que falten entran los días siguientes.
+- **Misiones**: 3 por día y 3 por semana, distintas para cada cuenta (jugar un rato, sacar capturas, entrar a servidores...). Se reclaman con un botón, y completar las tres da un bono. Cambian a medianoche UTC y los lunes.
+- **Minecraft**: los logros (advancements) de cada mundo, por instancia, que antes estaban en Estadísticas.
+
+Podés destacar hasta 6 logros en tu perfil desde **Mi perfil → Vitrina**.
+
 ### Estadísticas
 
-Cuatro pestañas: **Launcher** (tiempo jugado, rachas, calendario, horarios, instancias, versiones y loaders, crashes), **En el juego** (bloques minados, criaturas, distancias y más, por instancia y por mundo), **Mundos y servidores** (dónde jugaste más, con **Jugar** o **Entrar** directo) y **Logros** (hitos del launcher y logros del juego con su progreso). Podés exportar tus sesiones en CSV o todo en JSON. Se actualiza solo mientras jugás.
+Tres pestañas: **Launcher** (tiempo jugado, rachas, calendario, horarios, instancias, versiones y loaders, crashes), **En el juego** (bloques minados, criaturas, distancias y más, por instancia y por mundo), **Mundos y servidores** (dónde jugaste más, con **Jugar** o **Entrar** directo) y **Logros** (hitos del launcher y logros del juego con su progreso). Podés exportar tus sesiones en CSV o todo en JSON. Se actualiza solo mientras jugás.
 
 ### Tu resumen de Venus
 
@@ -276,12 +293,6 @@ La memoria de Minecraft en una sola tarjeta:
 - **Manual**: un deslizador con zonas (poco, ideal, demasiado) y la marca de lo recomendado.
 
 En **Opciones avanzadas** están el recolector de Java (explicado en criollo), argumentos extra, prioridad del proceso, tamaño de ventana y qué hace el launcher al iniciar el juego. A la derecha ves **Tu PC** (con una prueba de rendimiento de la CPU) y un monitor en vivo de la RAM y la CPU del juego. **Optimizar una instancia** abre la herramienta Optimizar.
-
-### Modo desarrollador
-
-Para programar plugins de Paper: elegí la carpeta de tu proyecto (Gradle o Maven) y Venus detecta cómo compilarlo, qué Java necesita y qué jar genera. **Empezar a probar** compila, crea un servidor de prueba (Paper, Purpur o Folia, mundo plano y vos como operador), copia el plugin y abre Minecraft conectado. Después, **Compilar y recargar** aplica tus cambios con un reinicio, `/reload` o recarga en caliente con PlugManX. También puede compilar solo al guardar, mostrar los errores de compilación con pistas y activar la depuración para conectar IntelliJ.
-
-- Necesita: un proyecto de plugin de Paper, un JDK instalado y cuenta de Minecraft para entrar a probar.
 
 ### Estado de los servicios
 

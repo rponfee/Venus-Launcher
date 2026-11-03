@@ -1,6 +1,6 @@
 export default {
   title: "统计数据",
-  subtitle: "你的游戏时长、世界和成就，尽在一处",
+  subtitle: "你的游戏时间和世界，尽在一处",
   subtitleSince: "自 {date} 起的活动",
   loading: "正在计算统计数据...",
   loadError: "无法加载统计数据",

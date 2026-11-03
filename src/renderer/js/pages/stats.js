@@ -1,5 +1,5 @@
 // Estadisticas completas: tiempo de juego y actividad del launcher, estadisticas dentro del juego,
-// tiempo por mundo y servidor, hitos y logros. Rutas: #/stats, #/stats/<pestana>, #/stats/world/<instancia>/<carpeta>
+// y tiempo por mundo y servidor (los logros estan en su propia pagina desde la 3.0). Rutas: #/stats, #/stats/<pestana>, #/stats/world/<instancia>/<carpeta>
 import { h, icon, mount, clear, confirmDialog, fail, ok, toast, hideTip, fmtDate, fmtDuration, debounce, setBusy } from '../ui.js';
 import { api, store } from '../store.js';
 import { t } from '../i18n.js';
@@ -9,14 +9,12 @@ import { kpi, errorBox, skeletonBox, skeletonKpi, skeletonCard, bone } from './s
 import * as launcherTab from './stats/launcher.js';
 import * as ingameTab from './stats/ingame.js';
 import * as placesTab from './stats/places.js';
-import * as achievementsTab from './stats/achievements.js';
 import { openWorldStats } from './stats/world.js';
 
 const TABS = [
   { id: 'launcher', icon: 'chart', mod: launcherTab },
   { id: 'ingame', icon: 'pickaxe', mod: ingameTab },
   { id: 'places', icon: 'globe', mod: placesTab },
-  { id: 'achievements', icon: 'trophy', mod: achievementsTab },
 ];
 
 function kpiRow(r) {
@@ -116,7 +114,6 @@ export default {
     }
     if (!root.isConnected) return null; // se cambio de pagina mientras cargaba
     // Hitos nuevos de esta visita: conservan la etiqueta "Nuevo" aunque ya se marcaron como vistos
-    state.newIds = new Set((state.report.milestones || []).filter((m) => m.isNew).map((m) => m.id));
     const modals = new Set();
     offs.push(() => modals.forEach((m) => m.close()));
 
@@ -149,14 +146,11 @@ export default {
     const panelsHost = h('div', { class: 'st-panels' });
 
     // ---------- Pestanas ----------
-    const newMilestones = () => (state.report.milestones || []).filter((m) => m.isNew).length;
     const drawTabs = () => {
       mount(
         tabBar,
         TABS.map((tab) => {
           const active = tab.id === state.tab;
-          const fresh = tab.id === 'achievements' ? newMilestones() : 0;
-          const dot = fresh ? h('span', { class: 'st-tab-dot', role: 'img', title: t('stats.newMilestones', { count: fresh }), 'aria-label': t('stats.newMilestones', { count: fresh }) }) : null;
           return h(
             'button',
             {
@@ -172,7 +166,6 @@ export default {
             },
             icon(tab.icon),
             t(`stats.tab_${tab.id}`),
-            dot,
           );
         }),
       );
@@ -250,11 +243,6 @@ export default {
       },
       goTab: select,
       invalidate,
-      onMilestonesSeen: () => {
-        // La etiqueta "Nuevo" se mantiene en esta visita; solo se apaga el punto de la pestana
-        state.report.milestones = (state.report.milestones || []).map((m) => ({ ...m, isNew: false }));
-        drawTabs();
-      },
       async loadIngame(scope = state.scope, { force = false } = {}) {
         const next = { instanceId: scope?.instanceId || null, world: scope?.instanceId ? scope?.world || null : null };
         const cur = state.ingame?.scope;
@@ -262,7 +250,7 @@ export default {
         const req = ++ingameReq;
         state.scope = next;
         state.ingameLoading = true;
-        for (const id of ['ingame', 'achievements']) panels.get(id)?.el.classList.add('st-busy');
+        panels.get('ingame')?.el.classList.add('st-busy');
         let changed = false;
         try {
           const data = await api.invoke('stats:ingame', next);
@@ -279,10 +267,10 @@ export default {
         } finally {
           if (req === ingameReq) {
             state.ingameLoading = false;
-            for (const id of ['ingame', 'achievements']) panels.get(id)?.el.classList.remove('st-busy');
+            panels.get('ingame')?.el.classList.remove('st-busy');
           }
         }
-        if (changed) invalidate('ingame', 'achievements');
+        if (changed) invalidate('ingame');
         return state.ingame;
       },
       async loadPlaces(force = false) {
@@ -411,28 +399,22 @@ export default {
       }
       if (disposed) return;
       state.report = report;
-      for (const m of report.milestones || []) if (m.isNew) state.newIds.add(m.id);
       mount(kpiBox, kpiRow(report));
       drawSub();
       drawShare();
       drawTabs();
-      invalidate('launcher', 'achievements');
+      invalidate('launcher');
       state.places = null;
       invalidate('places');
       if (kind === 'session' || kind === 'reset') {
         // Al cerrar una partida el juego guarda las estadisticas del mundo
         state.ingame = null;
         state.ingameError = null;
-        invalidate('ingame', 'achievements');
+        invalidate('ingame');
       }
     };
     const refreshSoon = debounce((kind) => refresh(kind), 900);
     offs.push(api.on('stats:updated', (info) => refreshSoon(info?.kind || 'session')));
-    offs.push(
-      api.on('stats:milestone', (list) => {
-        for (const m of (Array.isArray(list) ? list : []).slice(0, 3)) toast('good', t('stats.msUnlockedToast'), t(`stats.ms_${m.id}`), 6000);
-      }),
-    );
 
     mount(root, h('div', { class: 'st-root' }, head, runningBox, exportBox, kpiBox, tabBar, panelsHost));
     drawTabs();

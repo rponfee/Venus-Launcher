@@ -1,6 +1,6 @@
 export default {
   title: "İstatistikler",
-  subtitle: "Oynama süren, dünyaların ve başarımların tek yerde",
+  subtitle: "Oyun süren ve dünyaların tek bir yerde",
   subtitleSince: "{date} tarihinden beri etkinliğin",
   loading: "İstatistikler hesaplanıyor...",
   loadError: "İstatistikler yüklenemedi",

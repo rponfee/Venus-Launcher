@@ -1,10 +1,14 @@
 'use strict';
-// Clips y capturas del juego: repeticion instantanea (guarda los ultimos 30 s, o 120 s con Venus Premium, al apretar
-// el atajo), grabacion (empezar/parar) y capturas de pantalla de la ventana del juego, con atajos globales.
+// Clips y capturas del juego: repeticion instantanea (guarda los ultimos 60 s, o 5 minutos con Venus Premium, al
+// apretar el atajo o sola al morir, conseguir un logro o matar un jefe), grabacion (empezar/parar) y capturas de
+// pantalla de la ventana del juego, con atajos globales.
 // Graba una ventana oculta (capture/host.js + renderer/recorder.html) con desktopCapturer + MediaRecorder (WebM VP9
-// o VP8 + Opus); capture/webm.js recorta y rearma el WebM con duracion e indice. Nada se graba sin pedirlo: la
-// repeticion esta apagada por defecto y solo corre mientras hay un juego abierto; los atajos tambien se registran
-// solo con un juego abierto (asi no le quitan esas teclas a otras aplicaciones).
+// o VP8 + Opus); capture/webm.js recorta y rearma el WebM con duracion e indice. El buffer de la repeticion va al
+// disco (capture/ring.js, en cache/capture-replay: se borra al cerrar y al arrancar), no a la memoria. Nada se graba
+// sin pedirlo: la repeticion esta apagada por defecto y solo corre mientras hay un juego abierto; los atajos tambien
+// se registran solo con un juego abierto (asi no le quitan esas teclas a otras aplicaciones).
+// Clips automaticos: capture/gamelog.js lee la salida del juego (game.events 'log') y capture/autoclip.js decide;
+// apagados por defecto, solo con la repeticion prendida y solo para la cuenta con la que se lanzo el juego.
 // Donde se guarda (dentro de la carpeta de la instancia, ver capture/logic.js): screenshots/ (capturas, junto a las
 // del F2 de Minecraft), clips/ (repeticiones y lo que exporta el editor) y recordings/ (grabaciones). Asi los ven
 // la pagina de Clips, la de Mundos y la linea de tiempo de cada mundo por los canales worlds:* que ya existen.
@@ -14,13 +18,14 @@
 //   capture:saveReplay() -> { path, instanceId, duration } · capture:screenshot() -> { path, instanceId }
 //   capture:startRecording() -> { active, instanceId, startedAt } · capture:stopRecording() -> { path, instanceId, duration }
 //   capture:toggleRecording()
-//   capture:setPremium(bool)  (la interfaz avisa si la cuenta tiene Venus Premium: repeticion de 120 s)
+//   capture:setPremium(bool)  (la interfaz avisa si la cuenta tiene Venus Premium: repeticion de 5 minutos)
 //   capture:testShortcut(acelerador, accion) -> { ok, accel, reason?: 'invalid' | 'duplicate' | 'inUse' }
 //   capture:openFolder({ instanceId?, kind: 'screenshot' | 'clip' | 'recording' })
 //   capture:saveExport({ instanceId, sourceName, mode: 'vertical' | 'horizontal' }, bytes WebM) -> { path, name, duration }
 //   capture:aiStatus() -> { available } · capture:aiIndex() -> { clave: descripcion }
 //   capture:aiDescribe([{ key, path }]) -> { described, skipped, errorCode?, error? } (IA solo a pedido; capture/describe.js)
-// Eventos: capture:saved ({ type: 'screenshot' | 'clip' | 'recording', path, instanceId, duration? (segundos) }),
+// Eventos: capture:saved ({ type: 'screenshot' | 'clip' | 'recording', path, instanceId, duration? (segundos),
+//          reason? ('death' | 'advancement' | 'boss': clip automatico) }),
 //          capture:state (lo mismo que capture:status), capture:notice ({ level: 'error' | 'info', message })
 // Tambien manda worlds:updated ({ kind: 'media', instanceId }) para que Mundos refresque su galeria.
 const fsp = require('fs/promises');
@@ -30,15 +35,21 @@ const game = require('../core/game');
 const instances = require('../core/instances');
 const { t } = require('../core/i18n');
 const { exists } = require('../core/util');
+const paths = require('../core/paths');
 const logic = require('./capture/logic');
 const webm = require('./capture/webm');
-const { ReplayRing } = require('./capture/ring');
+const { ReplayRing, cleanRoot } = require('./capture/ring');
 const { RecordingFile } = require('./capture/recording');
+const { GameLogReader } = require('./capture/gamelog');
+const gamelang = require('./capture/gamelang');
+const { AutoClipGate } = require('./capture/autoclip');
 const windowFind = require('./capture/window-find');
 const describe = require('./capture/describe');
 
 const MAX_EXPORT = 1536 * 1024 * 1024;
 const SHORTCUT_DEBOUNCE_MS = 700;
+const CLIP_RESERVE = 64 * 1024; // lugar para Info, Tracks y el indice de un clip (sobra para 5 minutos)
+const LANG_RELOAD_MS = 3000; // el juego guarda options.txt un rato despues de cambiar de idioma
 
 let ctx = null;
 let cfg = logic.normalizeSettings({});
@@ -47,6 +58,13 @@ let host = null;
 let target = null; // { instanceId, pid, hwnd, finder }
 let session = null; // { id, purposes: Set, reader, header, headerWaiters, ready }
 let ring = null;
+let ringSeq = 0;
+let replayBlocked = null; // 'noRoom' | 'disk': la repeticion se paro por falta de disco
+let saveChain = Promise.resolve(); // las repeticiones se guardan de a una
+const gate = new AutoClipGate();
+let gatePid = null; // partida de la que cuenta el limite de clips automaticos
+let autoTimer = null;
+const plays = new Map(); // instancia -> { reader, dir, assetIndex, rootId, lang, langTimer } de la partida abierta
 let recording = null; // { file: RecordingFile, instanceId, path, startedAt }
 let pendingRestart = false;
 const registered = new Map(); // accion -> acelerador registrado por este modulo
@@ -96,9 +114,10 @@ function status() {
     settings: cfg,
     premium,
     replaySeconds: seconds,
-    memoryEstimate: logic.replayMemory(seconds, cfg.quality, cfg.fps),
+    diskEstimate: logic.replayDisk(seconds, cfg.quality, cfg.fps),
     game: target ? { instanceId: target.instanceId, window: target.found, searching: !target.found } : null,
-    replay: { enabled: cfg.replay, active: Boolean(session && ring), buffered: ring ? Math.round(ring.buffered) : 0, memory: ring ? ring.bytes : 0 },
+    replay: { enabled: cfg.replay, active: Boolean(session && ring), buffered: ring ? Math.round(ring.buffered) : 0, disk: ring ? ring.bytes : 0, error: replayBlocked },
+    auto: { saved: gate.count, limit: cfg.auto.maxPerSession },
     recording: recording ? { active: true, instanceId: recording.instanceId, startedAt: recording.startedAt, duration: recording.file.duration } : { active: false },
     shortcuts: shortcutsState(),
     folders: logic.KIND_DIR,
@@ -158,6 +177,12 @@ function refreshTarget() {
   if (!g) return clearTarget();
   if (target && target.pid === g.pid) return;
   clearTarget();
+  if (gatePid !== g.pid) {
+    // Otra partida (no la misma con la ventana recreada): el limite de clips automaticos vuelve a cero
+    gatePid = g.pid;
+    clearTimeout(autoTimer);
+    gate.reset();
+  }
   const cur = { instanceId: g.instanceId, pid: g.pid, hwnd: null, found: false, finder: null, poll: null };
   target = cur;
   cur.finder = windowFind.findWindow({ pid: g.pid });
@@ -182,6 +207,8 @@ async function onGameState(id, st) {
     return;
   }
   if (st.state !== 'stopped' && st.state !== 'crashed') return;
+  clearTimeout(plays.get(id)?.langTimer);
+  plays.delete(id);
   if (target && target.instanceId === id) {
     if (recording?.instanceId === id) await stopRecording().catch((err) => console.warn('[capture] grabacion al cerrar:', err?.message || err));
     await stopSession();
@@ -224,7 +251,7 @@ async function ensureSession(purpose) {
   s.ready.catch(() => {
     if (session === s) {
       session = null;
-      ring = null;
+      dropRing();
       emitState();
     }
   });
@@ -232,17 +259,62 @@ async function ensureSession(purpose) {
   return s;
 }
 
+// ---------- Buffer de la repeticion (en disco) ----------
+
+const ringRoot = () => paths.cache('capture-replay');
+
 function makeRing(header) {
-  const r = new ReplayRing({ seconds: logic.replaySeconds(premium) });
+  const r = new ReplayRing({ dir: path.join(ringRoot(), `r${Date.now().toString(36)}${++ringSeq}`), seconds: logic.replaySeconds(premium), onError: (err) => onRingError(r, err) });
   if (header) r.header = header;
+  replayBlocked = null;
+  checkDiskRoom(r);
   return r;
+}
+
+// Deja de usar el buffer: guarda el clip automatico que estaba esperando y borra su carpeta (lo que se este
+// guardando la retiene hasta terminar)
+function dropRing() {
+  const r = ring;
+  ring = null;
+  if (!r) return Promise.resolve();
+  clearTimeout(autoTimer);
+  const p = gate.take();
+  const saved = p ? saveAuto(r, p) : Promise.resolve();
+  return saved.finally(() => r.dispose());
+}
+
+// La repeticion se para por falta de disco: el juego no se entera y el atajo avisa que no esta lista
+function blockReplay(code, message) {
+  replayBlocked = code;
+  notice('error', message);
+  releaseSession('replay').catch(() => {});
+}
+
+function onRingError(r, err) {
+  if (ring !== r) return;
+  console.warn('[capture] buffer de la repeticion:', err?.message || err);
+  blockReplay('disk', t(err?.code === 'ENOSPC' ? 'capture.errNoSpace' : 'capture.errWrite'));
+}
+
+// No arranca si dejaria el disco casi lleno (el juego tambien necesita lugar para guardar el mundo)
+async function checkDiskRoom(r) {
+  let free = null;
+  try {
+    await fsp.mkdir(ringRoot(), { recursive: true });
+    const st = await fsp.statfs(ringRoot());
+    free = st.bavail * st.bsize;
+  } catch {
+    /* no se sabe: se deja pasar y, si se llena, avisa la escritura */
+  }
+  if (ring === r && !logic.hasDiskRoom(free, logic.replayDisk(r.seconds, cfg.quality, cfg.fps))) blockReplay('noRoom', t('capture.errReplayNoRoom'));
 }
 
 async function stopSession() {
   const s = session;
   session = null;
-  ring = null;
+  const dropped = dropRing();
   if (s) await host?.stop().catch(() => {});
+  await dropped;
   emitState();
 }
 
@@ -251,7 +323,7 @@ async function releaseSession(purpose) {
   const s = session;
   if (!s) return;
   s.purposes.delete(purpose);
-  if (purpose === 'replay') ring = null;
+  if (purpose === 'replay') dropRing();
   if (!s.purposes.size) await stopSession();
   else if (pendingRestart && !recording) await restartSession();
   emitState();
@@ -292,7 +364,7 @@ function onEnded({ session: id, reason }) {
   const s = session;
   if (!s || (s.id && s.id !== id)) return;
   session = null;
-  ring = null;
+  dropRing();
   if (recording) {
     stopRecording().catch((err) => console.warn('[capture] grabacion cortada:', err?.message || err));
   }
@@ -364,10 +436,11 @@ async function copyToExtra(file) {
   }
 }
 
-async function afterSave({ type, overlayType, file, instanceId, duration, thumb }) {
+async function afterSave({ type, overlayType, file, instanceId, duration, thumb, reason }) {
   await copyToExtra(file);
   const evt = { type, path: file, instanceId };
   if (duration !== undefined) evt.duration = duration;
+  if (reason) evt.reason = reason;
   send('capture:saved', evt);
   send('worlds:updated', { kind: 'media', instanceId });
   if (overlayType && cfg.notify) {
@@ -379,21 +452,144 @@ async function afterSave({ type, overlayType, file, instanceId, duration, thumb 
   emitState();
 }
 
-async function saveReplay() {
-  if (!cfg.replay) throw coded('errReplayOff', 'replayOff');
-  if (!target) throw coded('errNoGame', 'noGame');
-  if (!session || !ring) throw coded('errNotReady', 'notReady');
+// Pasa del buffer en disco al archivo final de a un segmento por vez: un clip de 5 minutos no entra entero en memoria
+async function writeReplay(instanceId, header, snap, reason) {
+  const dir = guard(logic.folderFor(await instanceDir(instanceId), 'clip'));
+  let rec = null;
+  let full = null;
+  let res;
+  try {
+    await fsp.mkdir(dir, { recursive: true });
+    const name = await logic.uniqueName(dir, logic.fileName('clip', new Date(), reason), exists);
+    full = guard(path.join(dir, name));
+    rec = new RecordingFile(full, header, { reserve: CLIP_RESERVE, frameDur: Math.round(1000 / cfg.fps) });
+    await rec.open();
+    for await (const batch of snap.batches()) {
+      for (const f of batch) rec.add(f);
+      await rec.drain();
+      if (rec.error) break;
+    }
+    res = await rec.finish();
+    if (res.error) throw res.error;
+  } catch (err) {
+    await rec?.finish().catch(() => {});
+    if (rec?.started) await fsp.rm(full, { force: true }).catch(() => {});
+    console.warn('[capture] no se pudo guardar:', err?.message || err);
+    throw coded(err?.code === 'ENOSPC' ? 'errNoSpace' : 'errWrite', 'write');
+  }
+  if (res.empty) {
+    await fsp.rm(full, { force: true }).catch(() => {});
+    throw coded('errReplayEmpty', 'empty');
+  }
+  return { file: full, duration: toSeconds(res.duration, header) };
+}
+
+async function saveFromRing(r, { instanceId, reason = null, seconds }) {
   await host.flush();
-  const r = ring;
-  const frames = r?.snapshot() || [];
-  if (!r?.header || !frames.length) throw coded('errReplayEmpty', 'empty');
-  const instanceId = target.instanceId;
-  const thumb = await host.thumb();
-  const built = webm.buildFile(r.header, frames, { frameDur: Math.round(1000 / cfg.fps) });
-  const file = await writeOut(instanceId, 'clip', built.parts);
-  const duration = toSeconds(built.duration, r.header);
-  await afterSave({ type: 'clip', overlayType: 'replay-saved', file, instanceId, duration, thumb });
-  return { path: file, instanceId, duration };
+  const snap = await r.snapshot(seconds);
+  if (!r.header || !snap) {
+    snap?.release();
+    throw coded('errReplayEmpty', 'empty');
+  }
+  try {
+    const thumb = await host.thumb();
+    const { file, duration } = await writeReplay(instanceId, r.header, snap, reason);
+    await afterSave({ type: 'clip', overlayType: 'replay-saved', file, instanceId, duration, thumb, reason });
+    return reason ? { path: file, instanceId, duration, reason } : { path: file, instanceId, duration };
+  } finally {
+    snap.release();
+  }
+}
+
+// De a una, reteniendo el buffer: aunque se cierre el juego mientras tanto, el guardado termina
+function queueSave(r, opts) {
+  const release = r.retain();
+  const run = saveChain.then(() => saveFromRing(r, opts)).finally(release);
+  saveChain = run.catch(() => {});
+  return run;
+}
+
+function saveReplay() {
+  if (!cfg.replay) return Promise.reject(coded('errReplayOff', 'replayOff'));
+  if (!target) return Promise.reject(coded('errNoGame', 'noGame'));
+  if (!session || !ring) return Promise.reject(coded('errNotReady', 'notReady'));
+  return queueSave(ring, { instanceId: target.instanceId });
+}
+
+// ---------- Clips automaticos ----------
+
+const autoWanted = () => cfg.replay && cfg.auto.enabled;
+
+function saveAuto(r, p) {
+  return queueSave(r, { instanceId: p.ctx.instanceId, reason: p.reason, seconds: logic.autoSeconds(cfg.auto, premium) }).catch((err) => {
+    console.warn('[capture] clip automatico:', err?.message || err);
+    if (err?.code === 'write') notice('error', err.message);
+  });
+}
+
+function onGameEvent(id, ev) {
+  if (!cfg.replay || !target || target.instanceId !== id || !session || !ring) return;
+  const res = gate.offer(ev.reason, cfg.auto, { instanceId: id });
+  if (res.action === 'ignore') {
+    if (res.why === 'limit' && gate.noteLimit()) notice('info', t('capture.autoLimitReached', { count: cfg.auto.maxPerSession }));
+    return;
+  }
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(() => {
+    const r = ring;
+    const p = gate.take();
+    if (p && r) saveAuto(r, p);
+  }, res.delay);
+  autoTimer.unref?.();
+  emitState();
+}
+
+// Plantillas de mensajes del juego para esta partida (en su version e idioma), solo si los clips automaticos estan prendidos
+async function loadPlayLang(play) {
+  if (!autoWanted()) return;
+  const lang = await gamelang.readLanguage(play.dir);
+  if (play.lang === lang) return;
+  play.lang = lang;
+  const rootId = play.rootId && /^[\w.+-]+$/.test(play.rootId) ? play.rootId : null;
+  const tables = await gamelang.loadTables({
+    assetsDir: paths.assets(),
+    indexId: play.assetIndex,
+    lang,
+    jarPath: rootId ? paths.versionJar(rootId) : null,
+    cacheFile: rootId ? paths.cache('capture-lang', `${rootId}.json`) : null,
+  });
+  play.reader.setTables(tables);
+  if (!tables.length) console.warn('[capture] clips automaticos: no se pudieron leer los textos del juego');
+}
+
+function reloadPlayLang(play) {
+  loadPlayLang(play).catch((err) => console.warn('[capture] idioma del juego:', err?.message || err));
+}
+
+// Antes de lanzar: la cuenta de la partida (la del log, si la dice, manda despues) y de donde sacar sus textos
+function onBeforeLaunch({ id, instance, resolved, account, quiet }) {
+  if (quiet) {
+    plays.delete(id);
+    return;
+  }
+  const play = { reader: new GameLogReader({ player: account?.name }), dir: instance?.dir || null, assetIndex: resolved?.assetIndex?.id || null, rootId: resolved?.rootId || null, lang: null, langTimer: null };
+  plays.set(id, play);
+  reloadPlayLang(play);
+}
+
+function onGameLog(id, lines) {
+  const play = plays.get(id);
+  if (!play || !Array.isArray(lines)) return;
+  for (const l of lines) {
+    const ev = play.reader.read(l?.text);
+    if (!ev) continue;
+    if (ev.reason) onGameEvent(id, ev);
+    else if (ev.setup === 'reload') {
+      clearTimeout(play.langTimer);
+      play.langTimer = setTimeout(() => reloadPlayLang(play), LANG_RELOAD_MS);
+      play.langTimer.unref?.();
+    }
+  }
 }
 
 function smallThumb(png) {
@@ -576,6 +772,11 @@ function applySettings(raw) {
   cfg = logic.normalizeSettings(raw);
   if (JSON.stringify(prev.shortcuts) !== JSON.stringify(cfg.shortcuts)) registerShortcuts();
   const streamChanged = prev.quality !== cfg.quality || prev.fps !== cfg.fps || prev.audio !== cfg.audio;
+  if (!cfg.auto.enabled) {
+    clearTimeout(autoTimer);
+    gate.take();
+  }
+  if (autoWanted()) for (const play of plays.values()) reloadPlayLang(play);
   if (prev.replay && !cfg.replay) releaseSession('replay').catch(() => {});
   else if (!prev.replay && cfg.replay) {
     if (target?.found) ensureSession('replay').catch((err) => console.warn('[capture] repeticion:', err?.message || err));
@@ -660,6 +861,8 @@ function register(c) {
   host = new RecorderHost({ getMainWindow: () => c.getWindow?.() });
   host.on('chunk', onChunk);
   host.on('ended', onEnded);
+  // Lo que haya dejado un cierre de golpe (todavia no hay ningun juego abierto)
+  cleanRoot(ringRoot());
 
   settings
     .get()
@@ -671,6 +874,8 @@ function register(c) {
   game.events.on('state', (id, st) => {
     onGameState(id, st).catch((err) => console.warn('[capture] juego:', err?.message || err));
   });
+  game.addBeforeLaunch(onBeforeLaunch);
+  game.events.on('log', onGameLog);
 
   handle('capture:status', () => status());
   handle('capture:saveReplay', () => saveReplay());
@@ -682,7 +887,10 @@ function register(c) {
     const next = value === true;
     if (next !== premium) {
       premium = next;
-      ring?.setSeconds(logic.replaySeconds(premium));
+      if (ring) {
+        ring.setSeconds(logic.replaySeconds(premium));
+        checkDiskRoom(ring);
+      }
       emitState();
     }
     return status();
@@ -709,7 +917,11 @@ function register(c) {
       await rec.file.finish().catch(() => {});
     }
     clearTarget();
+    const dropped = dropRing();
     host?.destroy();
+    await dropped;
+    await saveChain;
+    await cleanRoot(ringRoot());
   });
 }
 

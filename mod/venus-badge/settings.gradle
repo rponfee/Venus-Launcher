@@ -4,9 +4,21 @@ pluginManagement {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
+		maven {
+			name = 'NeoForged'
+			url = 'https://maven.neoforged.net/releases'
+		}
 		mavenCentral()
 		gradlePluginPortal()
 	}
 }
 
+// NeoForge y Forge compilan con su propia versión de Java (21 y 17): si no está instalada, Gradle la baja de acá.
+plugins {
+	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
 rootProject.name = 'venus-badge'
+
+// Un subproyecto por compilación del mod (un .jar por loader y versión de Minecraft). Para sumar otra: docs/insignia.md.
+include 'fabric-1.21.1', 'fabric-1.20.1', 'neoforge-1.21.1', 'forge-1.20.1'

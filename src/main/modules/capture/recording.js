@@ -53,6 +53,11 @@ class RecordingFile {
     if (closed.length) this.queue(closed);
   }
 
+  // Espera a que se escriba lo que esta en fila (para no juntar en memoria un clip entero mientras se guarda)
+  drain() {
+    return this.chain;
+  }
+
   // Segundos grabados hasta ahora
   get duration() {
     return this.mux ? this.mux.last / 1000 : 0;

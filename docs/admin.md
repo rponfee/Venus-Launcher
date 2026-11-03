@@ -32,6 +32,11 @@ pages/admin.js ── admin:me (de nuevo) ──► si no es admin: "No autoriza
 - **El servidor verifica en cada acción.** La Edge Function `admin` no confía en el launcher: en cada pedido vuelve a verificar la sesión, que la cuenta no sea anónima, que el email esté confirmado y que siga siendo admin. Un usuario común que llame a la función recibe `403` y no se toca nada.
 - **El launcher solo decide qué mostrar.** El menú y la página se ven solo si `admin:me` dice que es admin; la página vuelve a preguntar al abrirse y, si no, muestra "No autorizado".
 
+### Rangos e integraciones (3.0)
+
+- **Rango** en la ficha de cada usuario: helper, mod o admin (`admin_set_rank`, queda en el registro de acciones). Es lo que se ve en el perfil: no da acceso a este panel. `owner` se carga a mano con SQL y no se puede cambiar desde el panel.
+- **Integraciones**: clave de la app de KLIPY (`admin_set_klipy_key`, en el Vault). Sin clave, el buscador de GIF del perfil avisa que no está disponible.
+
 ### Agregar o quitar un admin
 
 En el SQL Editor de Supabase (o con la service role):

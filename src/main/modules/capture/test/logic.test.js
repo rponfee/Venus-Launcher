@@ -44,11 +44,23 @@ test('ajustes: valores por defecto y validacion', () => {
   assert.equal(logic.normalizeSettings({ copyTo: abs }).copyTo, path.normalize(abs));
 });
 
-test('repeticion: 30 s o 120 s con premium', () => {
-  assert.equal(logic.replaySeconds(false), 30);
-  assert.equal(logic.replaySeconds(true), 120);
-  assert.ok(logic.replayMemory(120, '1080p', 60) > logic.replayMemory(30, '1080p', 60));
-  assert.ok(logic.replayMemory(30, 'native', 30) > logic.replayMemory(30, '1080p', 30));
+test('repeticion: 60 s o 5 minutos con premium', () => {
+  assert.equal(logic.replaySeconds(false), 60);
+  assert.equal(logic.replaySeconds(true), 300);
+  assert.ok(logic.replayDisk(300, '1080p', 60) > logic.replayDisk(60, '1080p', 60));
+  assert.ok(logic.replayDisk(60, 'native', 30) > logic.replayDisk(60, '1080p', 30));
+  // A 1080p30, unos 60 MB gratis y unos 260 MB con premium (contando el segmento de mas)
+  const mb = (n) => Math.round(n / (1024 * 1024));
+  assert.ok(mb(logic.replayDisk(60, '1080p', 30)) > 40 && mb(logic.replayDisk(60, '1080p', 30)) < 80, `${mb(logic.replayDisk(60, '1080p', 30))} MB`);
+  assert.ok(mb(logic.replayDisk(300, '1080p', 30)) > 200 && mb(logic.replayDisk(300, '1080p', 30)) < 320, `${mb(logic.replayDisk(300, '1080p', 30))} MB`);
+});
+
+test('lugar en el disco para el buffer: deja un margen y sin saberlo no molesta', () => {
+  const need = 300 * 1024 * 1024;
+  assert.equal(logic.hasDiskRoom(need + logic.DISK_MARGIN, need), true);
+  assert.equal(logic.hasDiskRoom(need + logic.DISK_MARGIN - 1, need), false);
+  assert.equal(logic.hasDiskRoom(0, need), false);
+  assert.equal(logic.hasDiskRoom(null, need), true);
 });
 
 test('calidad: tamanio dentro de la caja, sin agrandar y con lados pares', () => {
@@ -75,6 +87,11 @@ test('nombres: fecha local como la de Minecraft y carpeta por tipo', () => {
   assert.equal(logic.fileName('screenshot', d), '2026-11-01_18.03.09_venus.png');
   assert.equal(logic.fileName('clip', d), '2026-11-01_18.03.09_replay.webm');
   assert.equal(logic.fileName('recording', d), '2026-11-01_18.03.09_rec.webm');
+  assert.equal(logic.fileName('clip', d, 'death'), '2026-11-01_18.03.09_auto-death.webm');
+  assert.equal(logic.fileName('clip', d, 'advancement'), '2026-11-01_18.03.09_auto-advancement.webm');
+  assert.equal(logic.fileName('clip', d, 'boss'), '2026-11-01_18.03.09_auto-boss.webm');
+  assert.equal(logic.fileName('clip', d, 'otro'), '2026-11-01_18.03.09_replay.webm');
+  assert.equal(logic.fileName('recording', d, 'death'), '2026-11-01_18.03.09_rec.webm', 'solo los clips llevan motivo');
   assert.throws(() => logic.fileName('otro', d));
   const inst = path.join('C:', 'datos', 'instances', 'abc');
   assert.equal(logic.folderFor(inst, 'screenshot'), path.join(inst, 'screenshots'));
@@ -84,6 +101,7 @@ test('nombres: fecha local como la de Minecraft y carpeta por tipo', () => {
   const media = require('../../worlds/media');
   assert.ok(media.CLIP_DIRS.includes('clips') && media.CLIP_DIRS.includes('recordings'));
   assert.equal(media.nameTime(logic.fileName('clip', d)), d.getTime());
+  assert.equal(media.nameTime(logic.fileName('clip', d, 'death')), d.getTime());
 });
 
 test('nombre unico y nombre de la exportacion', async () => {
@@ -94,6 +112,7 @@ test('nombre unico y nombre de la exportacion', async () => {
   assert.equal(logic.exportName('clip_vertical-2.webm', 'horizontal'), 'clip_edit.webm', 'no apila sufijos');
   assert.equal(logic.exportName('../../malo:<>.mp4', 'vertical'), 'malo__vertical.webm');
   assert.equal(logic.exportName('', 'x'), 'clip_edit.webm');
+  assert.equal(logic.exportName('2026-11-01_18.03.09_auto-boss.webm', 'vertical'), '2026-11-01_18.03.09_auto-boss_vertical.webm', 'lo exportado conserva el motivo');
 });
 
 test('juego a capturar: el abierto mas reciente que no sea de prueba', () => {

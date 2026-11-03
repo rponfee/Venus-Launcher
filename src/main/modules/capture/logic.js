@@ -12,18 +12,29 @@ const KIND_TAG = { screenshot: 'venus', clip: 'replay', recording: 'rec' };
 const QUALITIES = ['720p', '1080p', 'native'];
 const FPS = [30, 60];
 const ACTIONS = ['replay', 'record', 'screenshot'];
-const REPLAY_SECONDS = 30;
-const REPLAY_SECONDS_PREMIUM = 120;
+const REPLAY_SECONDS = 60;
+const REPLAY_SECONDS_PREMIUM = 300;
 const KEYFRAME_MS = 2000; // un cuadro clave cada 2 s: la repeticion y la grabacion arrancan en uno de ellos
+const RING_SEGMENT_SECONDS = 10; // el buffer en disco rota de a estos segundos (y guarda hasta uno de mas)
+const DISK_MARGIN = 1024 * 1024 * 1024; // sin este lugar libre ademas del buffer, la repeticion no arranca
+
+// Clips automaticos: motivos, de menor a mayor importancia (el mas importante manda si caen dos juntos)
+const AUTO_REASONS = ['advancement', 'death', 'boss'];
+const AUTO_SECONDS = [30, 60, 120, 300];
+const AUTO_COOLDOWN = { min: 5, max: 600, fallback: 30 };
+const AUTO_LIMIT = { min: 1, max: 200, fallback: 20 };
 
 const DEFAULTS = Object.freeze({
-  replay: false, // la repeticion instantanea usa CPU y memoria: apagada hasta que el usuario la prende
+  replay: false, // la repeticion instantanea usa CPU y disco: apagada hasta que el usuario la prende
   quality: '1080p',
   fps: 30,
   audio: true, // sonido del equipo (en Windows es todo el audio de la PC, no solo el del juego)
   notify: true,
   copyTo: '', // carpeta extra donde dejar una copia de lo guardado ('' = ninguna)
   shortcuts: Object.freeze({ replay: 'Alt+Shift+F8', record: 'Alt+Shift+F9', screenshot: 'Alt+Shift+F12' }), // Alt+F9/F10 los usa NVIDIA
+  // Clips automaticos: apagados hasta que el usuario los prende. seconds = largo de cada clip (5 minutos de video
+  // por cada muerte llenarian el disco); cooldown en segundos; maxPerSession por partida.
+  auto: Object.freeze({ enabled: false, death: true, advancement: true, boss: true, cooldown: AUTO_COOLDOWN.fallback, maxPerSession: AUTO_LIMIT.fallback, seconds: 60 }),
 });
 
 // ---------- Atajos (formato de acelerador de Electron) ----------
@@ -108,6 +119,25 @@ function cleanFolder(p) {
   return path.normalize(s);
 }
 
+const intBetween = (v, { min, max, fallback }) => {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) && v !== null && v !== '' ? Math.min(max, Math.max(min, n)) : fallback;
+};
+
+// settings.capture.auto completo
+function normalizeAuto(raw) {
+  const a = raw && typeof raw === 'object' ? raw : {};
+  return {
+    enabled: a.enabled === true,
+    death: a.death !== false,
+    advancement: a.advancement !== false,
+    boss: a.boss !== false,
+    cooldown: intBetween(a.cooldown, AUTO_COOLDOWN),
+    maxPerSession: intBetween(a.maxPerSession, AUTO_LIMIT),
+    seconds: AUTO_SECONDS.includes(Number(a.seconds)) ? Number(a.seconds) : DEFAULTS.auto.seconds,
+  };
+}
+
 // settings.capture completo con sus valores por defecto
 function normalizeSettings(raw) {
   const s = raw && typeof raw === 'object' ? raw : {};
@@ -119,12 +149,18 @@ function normalizeSettings(raw) {
     notify: s.notify !== false,
     copyTo: cleanFolder(s.copyTo),
     shortcuts: normalizeShortcuts(s.shortcuts),
+    auto: normalizeAuto(s.auto),
   };
 }
 
-// Largo de la repeticion instantanea: 30 s, o 120 s con Venus Premium
+// Largo de la repeticion instantanea: 60 s, o 5 minutos con Venus Premium
 function replaySeconds(premium) {
   return premium ? REPLAY_SECONDS_PREMIUM : REPLAY_SECONDS;
+}
+
+// Largo de un clip automatico: el elegido, sin pasarse de lo que guarda la repeticion en este plan
+function autoSeconds(auto, premium) {
+  return Math.min(normalizeAuto(auto).seconds, replaySeconds(premium));
 }
 
 // ---------- Calidad ----------
@@ -157,11 +193,17 @@ function bitrateFor(width, height, fps) {
   return Math.round(Math.min(MAX_BPS, Math.max(MIN_BPS, pixels * rate * BPP)));
 }
 
-// Memoria aproximada de la repeticion (para mostrarla en Ajustes): bytes
-function replayMemory(seconds, quality, fps) {
+// Disco aproximado que ocupa el buffer de la repeticion (para mostrarlo en Ajustes): bytes. Cuenta el segmento de
+// mas que guarda hasta poder descartar el mas viejo.
+function replayDisk(seconds, quality, fps) {
   const box = qualityBox(quality === 'native' ? '1080p' : quality);
   const factor = quality === 'native' ? 1.8 : 1;
-  return Math.round((seconds * (bitrateFor(box.width, box.height, fps) * factor + 128000)) / 8);
+  return Math.round(((seconds + RING_SEGMENT_SECONDS) * (bitrateFor(box.width, box.height, fps) * factor + 128000)) / 8);
+}
+
+// Hay lugar para el buffer? (free = bytes libres; null = no se sabe y se deja pasar)
+function hasDiskRoom(free, need) {
+  return free === null || free === undefined || free >= need + DISK_MARGIN;
 }
 
 // ---------- Archivos ----------
@@ -174,9 +216,12 @@ function stamp(date = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}.${pad(d.getMinutes())}.${pad(d.getSeconds())}`;
 }
 
-function fileName(kind, date = new Date()) {
+// reason = motivo de un clip automatico: queda en el nombre ("..._auto-death.webm") y de ahi lo lee la pagina de
+// Clips, asi el motivo sigue al archivo sin otra lista ni otro registro (lo mismo que la fecha)
+function fileName(kind, date = new Date(), reason = null) {
   if (!KIND_DIR[kind]) throw new Error(`kind ${kind}`);
-  return `${stamp(date)}_${KIND_TAG[kind]}.${kind === 'screenshot' ? 'png' : 'webm'}`;
+  const tag = kind === 'clip' && AUTO_REASONS.includes(reason) ? `auto-${reason}` : KIND_TAG[kind];
+  return `${stamp(date)}_${tag}.${kind === 'screenshot' ? 'png' : 'webm'}`;
 }
 
 function folderFor(instanceDir, kind) {
@@ -238,18 +283,25 @@ module.exports = {
   KEYFRAME_MS,
   REPLAY_SECONDS,
   REPLAY_SECONDS_PREMIUM,
+  RING_SEGMENT_SECONDS,
+  DISK_MARGIN,
+  AUTO_REASONS,
+  AUTO_SECONDS,
   BPP,
   MIN_BPS,
   MAX_BPS,
   normalizeAccelerator,
   normalizeShortcuts,
   normalizeSettings,
+  normalizeAuto,
   cleanFolder,
   replaySeconds,
+  autoSeconds,
   qualityBox,
   fitSize,
   bitrateFor,
-  replayMemory,
+  replayDisk,
+  hasDiskRoom,
   stamp,
   fileName,
   folderFor,

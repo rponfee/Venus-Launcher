@@ -1,6 +1,6 @@
 export default {
   title: "통계",
-  subtitle: "플레이 시간, 월드, 업적을 한곳에서 확인하세요",
+  subtitle: "플레이 시간과 월드를 한곳에서",
   subtitleSince: "{date}부터의 활동",
   loading: "통계를 계산하는 중...",
   loadError: "통계를 불러오지 못했어요",

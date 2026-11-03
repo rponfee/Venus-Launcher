@@ -1,6 +1,7 @@
 // Piezas comunes de la pagina de Clips: iconos propios, textos de atajos y ayudantes.
 import { h, icon, registerIcons } from '../../ui.js';
 import { t } from '../../i18n.js';
+import { reasonOf } from './model.js';
 
 registerIcons({
   clScissors: '<circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/>',
@@ -10,6 +11,13 @@ registerIcons({
 });
 
 export const TAB_ICON = { screenshots: 'camera', clips: 'woFilm', recordings: 'clVideo' };
+const REASON_ICON = { death: 'skull', advancement: 'trophy', boss: 'swords' };
+
+// Etiqueta con el motivo de un clip automatico (null para el resto de los archivos)
+export function reasonBadge(item, cls = 'cl-reason') {
+  const reason = reasonOf(item);
+  return reason ? h('span', { class: [cls, reason] }, icon(REASON_ICON[reason]), t(`capture.reason_${reason}`)) : null;
+}
 
 export const isMissingHandler = (err) => /No handler registered/i.test(String(err?.message || err || ''));
 

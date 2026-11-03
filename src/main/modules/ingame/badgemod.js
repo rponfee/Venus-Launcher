@@ -1,29 +1,39 @@
 'use strict';
 // Mod "Venus Badge" (mod/venus-badge): el planeta de Venus junto al nombre de los jugadores que activaron la insignia.
-// El launcher lo copia en mods/ de las instancias Fabric (o Quilt, que carga mods de Fabric) de una version de
-// Minecraft para la que hay compilacion, y lo quita al apagar la insignia o si la instancia deja de ser compatible.
-// Vanilla, Forge, NeoForge y OptiFine no pueden cargarlo: ahi no se instala nada.
+// El launcher copia en mods/ el .jar del loader y la version de Minecraft de la instancia (un .jar no carga en otro loader
+// ni en otra version), y lo quita al apagar la insignia o si la instancia deja de ser compatible. Vanilla, OptiFine y las
+// versiones sin compilacion no pueden cargarlo: ahi no se instala nada.
 // Los .jar los compila .github/workflows/build.yml (mod/venus-badge) y van empaquetados en ingame/mods; sin
 // compilarlos (desarrollo), la insignia no se instala y el resto del launcher sigue igual.
 const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
+const { compareSemver } = require('../../core/util');
 
-// Una entrada por compilacion del mod. Para sumar una version: otra compilacion en mod/ y otra fila aca.
-const BUILDS = [{ jar: 'venus-badge-mc1.21.1.jar', mc: ['1.21', '1.21.1'] }];
-const LOADERS = new Set(['fabric', 'quilt']);
+// Una entrada por compilacion del mod (Quilt carga los mods de Fabric). Para sumar una: docs/insignia.md.
+// minLoader: los .jar de Fabric traen adentro el modulo de recursos de Fabric API y, con un loader mas viejo que el que ese
+// modulo pide, el juego no arranca. Ahi no se instala: la insignia no puede romper una instancia que andaba.
+const BUILDS = [
+  { jar: 'venus-badge-mc1.21.1-fabric.jar', loaders: ['fabric', 'quilt'], minLoader: { fabric: '0.15.11', quilt: '0.26.0' }, mc: ['1.21', '1.21.1'] },
+  { jar: 'venus-badge-mc1.20.1-fabric.jar', loaders: ['fabric', 'quilt'], minLoader: { fabric: '0.14.21', quilt: '0.19.0' }, mc: ['1.20.1'] },
+  { jar: 'venus-badge-mc1.21.1-neoforge.jar', loaders: ['neoforge'], mc: ['1.21', '1.21.1'] },
+  { jar: 'venus-badge-mc1.20.1-forge.jar', loaders: ['forge'], mc: ['1.20.1'] },
+];
 const MOD_FILE = 'venus-badge.jar';
 const CONFIG_FILE = 'venus-badge.json';
 const BUNDLED_DIR = path.join(__dirname, 'mods');
 
-function buildFor(loader, mcVersion) {
-  if (!LOADERS.has(loader)) return null;
-  return BUILDS.find((b) => b.mc.includes(String(mcVersion))) || null;
+function buildFor(loader, mcVersion, loaderVersion) {
+  const build = BUILDS.find((b) => b.loaders.includes(loader) && b.mc.includes(String(mcVersion)));
+  const min = build?.minLoader?.[loader];
+  // 'latest' o sin dato: la instancia usa el mas nuevo, que sirve.
+  if (min && /^\d/.test(String(loaderVersion)) && compareSemver(loaderVersion, min) < 0) return null;
+  return build || null;
 }
 
-// Versiones de Minecraft con mod, para explicarlo en la interfaz ("1.21 y 1.21.1").
+// Versiones de Minecraft con mod en algun loader, sin repetir.
 function supportedVersions() {
-  return BUILDS.flatMap((b) => b.mc);
+  return [...new Set(BUILDS.flatMap((b) => b.mc))].sort();
 }
 
 const exists = (file) => fsp.stat(file).then(() => true, () => false);
@@ -62,14 +72,14 @@ async function removeMod(instanceDir) {
 
 /**
  * Deja el mod instalado (y su config/venus-badge.json con el servidor) o lo quita.
- * opts: { instanceDir, loader, mcVersion, enabled, server: { url, anonKey }, bundledDir? }
+ * opts: { instanceDir, loader, loaderVersion?, mcVersion, enabled, server: { url, anonKey }, bundledDir? }
  * Devuelve { state: 'installed'|'removed'|'off'|'unsupported'|'missing'|'userDisabled', written? }
  *   - unsupported: la instancia no puede cargarlo (loader o version); si estaba, se quito.
  *   - missing: este launcher no trae el jar (compilacion de desarrollo).
  *   - userDisabled: el jugador lo desactivo desde la lista de mods (venus-badge.jar.disabled): no se toca.
  */
-async function apply({ instanceDir, loader, mcVersion, enabled, server, bundledDir = BUNDLED_DIR }) {
-  const build = buildFor(loader, mcVersion);
+async function apply({ instanceDir, loader, loaderVersion, mcVersion, enabled, server, bundledDir = BUNDLED_DIR }) {
+  const build = buildFor(loader, mcVersion, loaderVersion);
   if (!enabled || !build) {
     const had = await removeMod(instanceDir);
     if (enabled) return { state: 'unsupported' };

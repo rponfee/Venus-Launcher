@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "Dışa aktarılan klip bozuk ve kaydedilemedi.",
   errAiUnavailable: "Yapay zeka kullanılamıyor: Venus hesabına giriş yap ve yapay zekanın etkin olduğunu kontrol et.",
   overlayErrorTitle: "Klipler ve ekran görüntüleri",
+  errReplayNoRoom: "Anında tekrar duraklatıldı: yeterli disk alanı yok.",
+  autoLimitReached: "Bu oyun için en fazla {count} otomatik klip sınırına ulaşıldı. Anında tekrar kısayolla çalışmaya devam eder.",
 };

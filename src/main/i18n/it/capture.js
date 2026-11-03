@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "La clip esportata è danneggiata e non è stato possibile salvarla.",
   errAiUnavailable: "L'AI non è disponibile: accedi al tuo account Venus e controlla che l'AI sia attivata.",
   overlayErrorTitle: "Clip e screenshot",
+  errReplayNoRoom: "Replay istantaneo in pausa: spazio su disco insufficiente.",
+  autoLimitReached: "Raggiunto il massimo di {count} clip automatiche in questa partita. Il replay istantaneo funziona ancora con la scorciatoia.",
 };

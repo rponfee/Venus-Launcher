@@ -50,6 +50,31 @@
 .pf-fx-glow .pf-name-text { isolation: isolate; }
 .pf-size-sm.pf-fx-glow .pf-name-text::after { content: none; }
 
+/* Nombre: mayusculas, cursiva y contorno */
+.pf-caps .pf-name-text { text-transform: uppercase; }
+.pf-italic .pf-name-text { font-style: italic; }
+.pf-outline .pf-name-text { -webkit-text-stroke: 0.035em rgba(0, 0, 0, 0.75); paint-order: stroke fill; }
+
+/* Efectos de la tienda (3.0) */
+.pf-fx-neon .pf-name-text, .pf-fx-ice .pf-name-text, .pf-fx-ocean .pf-name-text, .pf-fx-sakura .pf-name-text, .pf-fx-toxic .pf-name-text,
+.pf-fx-vapor .pf-name-text, .pf-fx-gold .pf-name-text, .pf-fx-galaxy .pf-name-text {
+  color: transparent; -webkit-text-fill-color: transparent; -webkit-background-clip: text; background-clip: text; background-size: 200% 100%; background-repeat: repeat-x; animation: pf-rainbow 7s linear infinite;
+}
+.pf-fx-neon .pf-name-text { background-image: linear-gradient(90deg, #7df9ff, #b06bff, #ff4fd8, #7df9ff); filter: drop-shadow(0 0 0.14em rgba(125, 249, 255, 0.65)); }
+.pf-fx-ice .pf-name-text { background-image: linear-gradient(90deg, #ffffff, #c4f4ff, #7ad7f7, #c4f4ff, #ffffff); filter: drop-shadow(0 0 0.12em rgba(122, 215, 247, 0.55)); }
+.pf-fx-ocean .pf-name-text { background-image: linear-gradient(90deg, #3fcfc0, #2a7fd4, #6fe0d0, #2a7fd4, #3fcfc0); }
+.pf-fx-sakura .pf-name-text { background-image: linear-gradient(90deg, #ffe3ef, #ff9ec7, #ff7eb3, #ff9ec7, #ffe3ef); }
+.pf-fx-toxic .pf-name-text { background-image: linear-gradient(90deg, #d7ff5a, #5dff7a, #1fd36a, #5dff7a, #d7ff5a); filter: drop-shadow(0 0 0.14em rgba(93, 255, 122, 0.55)); }
+.pf-fx-vapor .pf-name-text { background-image: linear-gradient(90deg, #ff7ad9, #ffb36b, #6bd5ff, #9a8cff, #ff7ad9); }
+.pf-fx-gold .pf-name-text { background-image: linear-gradient(100deg, #8a5a12, #f0b429 30%, #fff1a8 50%, #f0b429 70%, #8a5a12); animation-duration: 4s; filter: drop-shadow(0 0 0.1em rgba(240, 180, 41, 0.5)); }
+.pf-fx-galaxy .pf-name-text { background-image: linear-gradient(90deg, #5b1f73, #c2457a, #7e5bd6, #5aa7f0, #5b1f73); animation-duration: 9s; filter: drop-shadow(0 0 0.14em rgba(126, 91, 214, 0.6)); }
+.pf-fx-glitch .pf-name-text { color: var(--pf-c); text-shadow: 0.05em 0 0 rgba(255, 40, 90, 0.85), -0.05em 0 0 rgba(40, 220, 255, 0.85); animation: pf-glitch 2.4s steps(1) infinite; }
+@keyframes pf-glitch {
+  0%, 86%, 100% { text-shadow: 0.05em 0 0 rgba(255, 40, 90, 0.85), -0.05em 0 0 rgba(40, 220, 255, 0.85); transform: none; }
+  88% { text-shadow: -0.09em 0.02em 0 rgba(255, 40, 90, 0.9), 0.09em -0.02em 0 rgba(40, 220, 255, 0.9); transform: translateX(0.03em); }
+  92% { text-shadow: 0.1em -0.03em 0 rgba(255, 40, 90, 0.9), -0.1em 0.03em 0 rgba(40, 220, 255, 0.9); transform: translateX(-0.03em); }
+}
+
 @keyframes pf-shimmer { from { background-position: 162.5% 0; } to { background-position: 0% 0; } }
 @keyframes pf-rainbow { from { background-position: 0% 0; } to { background-position: 200% 0; } }
 @keyframes pf-fire { 0% { background-position: 50% 100%; } 60% { background-position: 50% 70%; } 100% { background-position: 50% 85%; } }
@@ -75,6 +100,18 @@ html.ax-hc .pf-name-text::after { content: none; }
 .pf-title[data-title='legend'] { color: #2b1405; background: linear-gradient(135deg, #fff1a8, #f0b429 60%, #d9761c); border-color: transparent; }
 .pf-title[data-title='supporter'] { color: #ffd1e6; background: rgba(255, 126, 179, 0.16); border-color: rgba(255, 126, 179, 0.45); }
 .pf-title[data-title='redstoner'] { color: #ffb4ad; background: rgba(229, 84, 75, 0.14); border-color: rgba(229, 84, 75, 0.45); }
+.pf-title[data-title='miner'] { color: #cfd8dc; background: rgba(144, 164, 174, 0.16); border-color: rgba(144, 164, 174, 0.45); }
+.pf-title[data-title='farmer'] { color: #c5e8a0; background: rgba(124, 179, 66, 0.16); border-color: rgba(124, 179, 66, 0.45); }
+.pf-title[data-title='architect'] { color: #b5d4ff; background: rgba(79, 157, 255, 0.14); border-color: rgba(79, 157, 255, 0.45); }
+.pf-title[data-title='modder'] { color: #d9c2ff; background: rgba(166, 110, 255, 0.15); border-color: rgba(166, 110, 255, 0.45); }
+.pf-title[data-title='streamer'] { color: #e3c9ff; background: rgba(145, 70, 255, 0.2); border-color: rgba(145, 70, 255, 0.55); }
+.pf-title[data-title='pvp'] { color: #ffd0a8; background: rgba(255, 112, 40, 0.16); border-color: rgba(255, 112, 40, 0.5); }
+.pf-title[data-title='nightowl'] { color: #c7d0ff; background: rgba(70, 84, 180, 0.24); border-color: rgba(110, 124, 220, 0.5); }
+.pf-title[data-title='speedrunner'] { color: #fff2a8; background: rgba(240, 200, 40, 0.14); border-color: rgba(240, 200, 40, 0.5); }
+.pf-title[data-title='collector'] { color: #a8f0e4; background: rgba(63, 207, 192, 0.14); border-color: rgba(63, 207, 192, 0.45); }
+.pf-title[data-title='hardcore'] { color: #ffffff; background: linear-gradient(135deg, #7a0d0d, #d32f2f); border-color: transparent; }
+.pf-title[data-title='veteran'] { color: #2b1405; background: linear-gradient(135deg, #e8d5b0, #b08a4e); border-color: transparent; }
+.pf-title[data-title='vip'] { color: #ffffff; background: linear-gradient(135deg, #7e5bd6, #c2457a 60%, #f29a2e); border-color: transparent; }
 .pf-size-sm .pf-title { height: 18px; padding: 0 6px; font-size: 11px; }
 
 /* ---------- Insignia Premium ---------- */
@@ -83,6 +120,15 @@ html.ax-hc .pf-name-text::after { content: none; }
 .pf-premium[data-style='gold'] { color: #2b1405; background: linear-gradient(135deg, #fff1a8, #f0b429 55%, #e08a1e); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
 .pf-premium[data-style='nebula'] { color: #ffffff; background: linear-gradient(135deg, #c2457a, #5b1f73 55%, #2a3a8f); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
 .pf-premium[data-style='ice'] { color: #06283d; background: linear-gradient(135deg, #ffffff, #c4f4ff 50%, #7ad7f7); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+
+/* ---------- Rangos ---------- */
+.pf-rank { display: inline-flex; align-items: center; gap: var(--sp-1); height: 22px; padding: 0 var(--sp-2); border-radius: var(--radius-xs); font-size: var(--fs-xs); font-weight: 800; letter-spacing: 0.03em; white-space: nowrap; }
+.pf-rank svg { width: 13px; height: 13px; flex-shrink: 0; }
+.pf-rank.compact { padding: 0 5px; }
+.pf-rank[data-rank='owner'] { color: #2b1405; background: linear-gradient(135deg, #fff1a8, #ffb300 55%, #ff7a00); box-shadow: 0 0 10px rgba(255, 179, 0, 0.45); }
+.pf-rank[data-rank='admin'] { color: #ffffff; background: linear-gradient(135deg, #ff7a6b, #d32f2f); }
+.pf-rank[data-rank='mod'] { color: #ffffff; background: linear-gradient(135deg, #6fb2ff, #2a6fd4); }
+.pf-rank[data-rank='helper'] { color: #06230f; background: linear-gradient(135deg, #a5f2bf, #3fbf6e); }
 
 /* ---------- Marcos (en el contenedor de la cabeza) ---------- */
 .pf-frame { --pf-frame-w: 3px; --pf-frame-r: 12px; position: relative; isolation: isolate; }
@@ -102,6 +148,22 @@ html.ax-hc .pf-name-text::after { content: none; }
 @property --pf-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 .pf-frame-venus::before { background: conic-gradient(from var(--pf-ang), #ffc562, #f29a2e, #c2457a, #7e5bd6, #5aa7f0, #ffc562); box-shadow: 0 0 14px rgba(242, 154, 46, 0.45); animation: pf-spin 6s linear infinite; }
 @keyframes pf-spin { to { --pf-ang: 360deg; } }
+/* Marcos de la 3.0 */
+.pf-frame-ice::before { background: linear-gradient(135deg, #ffffff, #c4f4ff 40%, #7ad7f7 70%, #ffffff); box-shadow: 0 0 12px rgba(122, 215, 247, 0.5); }
+.pf-frame-emerald::before { background: linear-gradient(135deg, #b6ffcf, #17c964 45%, #067a3a 75%, #6dffa8); box-shadow: 0 0 10px rgba(23, 201, 100, 0.45); }
+.pf-frame-amethyst::before { background: linear-gradient(135deg, #ecd6ff, #a64dd6 45%, #4d1f7a 75%, #cda2ff); box-shadow: 0 0 10px rgba(166, 77, 214, 0.45); }
+.pf-frame-redstone::before { background: repeating-linear-gradient(45deg, #ff2a1a 0 6px, #7a0d0d 6px 12px); box-shadow: 0 0 12px rgba(255, 42, 26, 0.5); }
+.pf-frame-fire::before { background: conic-gradient(from var(--pf-ang), #ff3d00, #ff9800, #ffe36b, #ff7a00, #ff3d00); box-shadow: 0 0 16px rgba(255, 110, 20, 0.65); animation: pf-spin 2.5s linear infinite; }
+.pf-frame-ender::before { background: conic-gradient(from var(--pf-ang), #0c3b34, #1fd3a6, #0b1f3a, #7e5bd6, #0c3b34); box-shadow: 0 0 14px rgba(31, 211, 166, 0.45); animation: pf-spin 7s linear infinite; }
+.pf-frame-rainbow::before { background: conic-gradient(from var(--pf-ang), #ff6b6b, #ffb36b, #ffe66b, #7dff8a, #6bd5ff, #9a8cff, #ff7ad9, #ff6b6b); box-shadow: 0 0 12px rgba(255, 255, 255, 0.25); animation: pf-spin 4s linear infinite; }
+.pf-frame-diamond::before { background: conic-gradient(from var(--pf-ang), #ffffff, #7df9ff, #c4f4ff, #5aa7f0, #ffffff, #7df9ff, #ffffff); box-shadow: 0 0 18px rgba(125, 249, 255, 0.7), 0 0 34px rgba(90, 167, 240, 0.35); animation: pf-spin 5s linear infinite; }
+.pf-frame-cosmic::before { background: conic-gradient(from var(--pf-ang), #ff4fd8, #7e5bd6, #2a3a8f, #5aa7f0, #ffc562, #ff4fd8); box-shadow: 0 0 20px rgba(255, 79, 216, 0.55), 0 0 40px rgba(126, 91, 214, 0.4); animation: pf-spin 3.5s linear infinite; }
+/* Forma de la cabeza */
+.pf-avatar-round .sc-head { border-radius: 50% !important; }
+.pf-avatar-round.pf-frame::before, .pf-avatar-round.pf-frame::after { border-radius: 50%; clip-path: none; }
+.pf-avatar-hex .sc-head { border-radius: 0 !important; clip-path: polygon(50% 0, 96% 25%, 96% 75%, 50% 100%, 4% 75%, 4% 25%); box-shadow: none !important; }
+.pf-avatar-hex.pf-frame::before { border-radius: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.pf-avatar-hex.pf-frame::after { content: none; }
 
 /* ---------- Banner ---------- */
 .pf-banner { position: relative; overflow: hidden; background-color: var(--surface-3); background-size: cover; background-position: center; }
@@ -121,6 +183,23 @@ html.ax-hc .pf-name-text::after { content: none; }
 .pf-card-banner { height: 112px; flex-shrink: 0; }
 .pf-card.compact .pf-card-banner { height: 92px; }
 .pf-card-body { position: relative; display: flex; flex-direction: column; gap: var(--sp-3); padding: 0 var(--sp-5) var(--sp-5); }
+/* Dibujo de fondo y disposicion elegidos por el usuario */
+.pf-card[class*='pf-pattern-'] .pf-card-body > * { position: relative; }
+.pf-card[class*='pf-pattern-'] .pf-card-body::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.14; color: var(--pf-accent, #ffffff); }
+.pf-pattern-dots .pf-card-body::before { background-image: radial-gradient(currentColor 1.4px, transparent 1.6px); background-size: 16px 16px; }
+.pf-pattern-grid .pf-card-body::before { background-image: linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px); background-size: 22px 22px; }
+.pf-pattern-stripes .pf-card-body::before { background-image: repeating-linear-gradient(45deg, currentColor 0 2px, transparent 2px 14px); }
+.pf-pattern-stars .pf-card-body::before { background-image: radial-gradient(currentColor 1px, transparent 1.3px), radial-gradient(currentColor 1.6px, transparent 1.9px); background-size: 46px 46px, 89px 89px; background-position: 0 0, 23px 31px; opacity: 0.3; }
+.pf-pattern-pixels .pf-card-body::before { background-image: repeating-conic-gradient(currentColor 0 25%, transparent 0 50%); background-size: 16px 16px; opacity: 0.07; }
+.pf-pattern-waves .pf-card-body::before { background-image: repeating-radial-gradient(circle at 0 100%, currentColor 0 1px, transparent 1px 14px); }
+.pf-pattern-hex .pf-card-body::before { background-image: linear-gradient(30deg, currentColor 12%, transparent 12.5%, transparent 87%, currentColor 87.5%), linear-gradient(150deg, currentColor 12%, transparent 12.5%, transparent 87%, currentColor 87.5%), linear-gradient(90deg, currentColor 2%, transparent 2.5%, transparent 97%, currentColor 97.5%); background-size: 40px 70px; opacity: 0.09; }
+.pf-pattern-circuit .pf-card-body::before { background-image: linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px), radial-gradient(currentColor 2px, transparent 2.5px); background-size: 48px 48px, 48px 48px, 48px 48px; background-position: 0 0, 0 0, 24px 24px; opacity: 0.12; }
+.pf-layout-center .pf-card-top { flex-direction: column; align-items: center; text-align: center; }
+.pf-layout-center .pf-card-chips { justify-content: center; }
+.pf-layout-center .pf-card-names, .pf-layout-center .pf-card-sub, .pf-layout-center .pf-card-status { align-items: center; justify-content: center; text-align: center; }
+.pf-card[style*='--pf-accent'] .pf-sec-label svg { color: var(--pf-accent); }
+.pf-card[style*='--pf-accent'] .pf-server-icon { color: var(--pf-accent); background: color-mix(in srgb, var(--pf-accent) 16%, transparent); }
+.pf-card[style*='--pf-accent'] .pf-stat-value { color: var(--pf-accent); }
 .pf-card.has-fade .pf-card-body { background: linear-gradient(180deg, rgba(14, 9, 6, 0.55), rgba(14, 9, 6, 0.72)), var(--pf-fade); }
 .pf-card.compact .pf-card-body { padding: 0 var(--sp-4) var(--sp-4); gap: var(--sp-2); }
 .pf-card-top { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-3); margin-top: -42px; min-width: 0; }
@@ -163,6 +242,35 @@ html.ax-hc .pf-name-text::after { content: none; }
 .pf-server-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .pf-server-name { font-weight: 600; color: var(--text); }
 .pf-server-addr { font-family: var(--mono); font-size: var(--fs-xs); color: var(--text-2); }
+
+/* Redes */
+.pf-links { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.pf-link { display: inline-flex; align-items: center; gap: var(--sp-2); height: 30px; padding: 0 var(--sp-3); border-radius: var(--radius-full); border: 1px solid var(--border-2); background: rgba(12, 7, 5, 0.45); color: var(--text); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
+.pf-link:hover:not(:disabled) { border-color: var(--pf-accent, var(--accent)); }
+.pf-link svg { width: 14px; height: 14px; color: var(--pf-accent, var(--accent-hi)); }
+
+/* Logros destacados */
+.pf-achs { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--sp-2); }
+.pf-ach { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; padding: var(--sp-2); border-radius: var(--radius); background: rgba(12, 7, 5, 0.45); border: 1px solid var(--border-2); }
+.pf-ach-icon { width: 34px; height: 34px; display: grid; place-items: center; flex-shrink: 0; border-radius: var(--radius-s); color: var(--tier-fg, var(--accent-hi)); background: var(--tier-bg, var(--accent-wash)); }
+.pf-ach-icon svg { width: 18px; height: 18px; }
+.pf-ach-main { min-width: 0; display: flex; flex-direction: column; }
+.pf-ach-name { font-weight: 700; color: var(--text); font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-ach-tier { font-size: var(--fs-xs); color: var(--text-2); }
+.pf-ach[data-tier='bronze'] { --tier-fg: #e8a97a; --tier-bg: rgba(205, 127, 50, 0.18); }
+.pf-ach[data-tier='silver'] { --tier-fg: #e3e8ee; --tier-bg: rgba(192, 202, 214, 0.18); }
+.pf-ach[data-tier='gold'] { --tier-fg: #ffd65c; --tier-bg: rgba(240, 180, 41, 0.18); }
+.pf-ach[data-tier='diamond'] { --tier-fg: #8ff3ff; --tier-bg: rgba(90, 220, 240, 0.18); }
+.pf-ach[data-tier='netherite'] { --tier-fg: #e0b0ff; --tier-bg: rgba(130, 70, 190, 0.3); }
+.pf-ach-count { font-size: var(--fs-xs); color: var(--text-2); font-variant-numeric: tabular-nums; }
+
+/* Clips destacados y skin */
+.pf-clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-2); }
+.pf-clip { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
+.pf-clip video { width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-s); background: #000; border: 1px solid var(--border-2); }
+.pf-clip-title { font-size: var(--fs-xs); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-skin-box { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
+.pf-skin-box .sk-viewer { width: 220px; height: 280px; }
 
 /* Capturas destacadas */
 .pf-featured { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }

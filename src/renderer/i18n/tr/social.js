@@ -127,4 +127,8 @@ export default {
   errInvalid: "Bazı veriler geçersiz ya da çok uzun.",
   errGeneric: "Bir şeyler ters gitti: {error}",
   errTooLong: "Mesaj en fazla {max} karakter olabilir.",
+  rank_owner: "Owner",
+  rank_admin: "Admin",
+  rank_mod: "Mod",
+  rank_helper: "Helper",
 };

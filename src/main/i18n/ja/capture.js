@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "書き出したクリップが壊れているため、保存できませんでした。",
   errAiUnavailable: "AIを利用できません。Venusアカウントにログインし、AIが有効になっているか確認してください。",
   overlayErrorTitle: "クリップとスクリーンショット",
+  errReplayNoRoom: "インスタントリプレイを一時停止しました: ディスクの空き容量が足りません。",
+  autoLimitReached: "このプレイの自動クリップが上限の{count}件に達しました。ショートカットでのインスタントリプレイは引き続き使えます。",
 };

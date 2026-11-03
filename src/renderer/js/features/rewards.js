@@ -15,8 +15,10 @@ import { t, has, loadNs, locale, onLanguageChange } from '../i18n.js';
 import { navigate, setNavBadge } from '../app.js';
 import { social } from '../social.js';
 import { backend } from '../pages/rewards/backend.js';
-import { ACHIEVEMENT_ID, PC_ACHIEVEMENTS, pcAchievementsFor, serverHints, formatPoints, humanizeId, nextUtcMidnight } from '../pages/rewards/logic.js';
+import { ACHIEVEMENT_ID, serverHints, formatPoints, humanizeId, nextUtcMidnight } from '../pages/rewards/logic.js';
 import { isPremium, onPremiumChange } from './premium.js';
+import { CLIENT_IDS } from '../pages/achievements/catalog.js';
+import { achievementName as catalogName, achievementDesc as catalogDesc } from '../pages/achievements/names.js';
 
 // Venus Point: un planeta con anillo (lo usan la página, el chip y la tienda)
 registerIcons({
@@ -28,8 +30,8 @@ const SUMMARY_TTL = 60 * 1000;
 const RETRY_NOT_MET = 60 * 1000; // un logro del servidor que no se cumplió no se vuelve a probar antes de esto
 
 /** Nombre, descripción e ítems de la tienda con respaldo si falta la traducción. */
-export const achievementName = (id) => (has(`rewards.ach_${id}`) ? R(`ach_${id}`) : humanizeId(id));
-export const achievementDesc = (id) => (has(`rewards.achDesc_${id}`) ? R(`achDesc_${id}`) : '');
+export const achievementName = (id) => catalogName(id);
+export const achievementDesc = (id) => catalogDesc(id);
 export const itemName = (id) => (has(`rewards.item_${id}`) ? R(`item_${id}`) : humanizeId(id));
 
 // ---------- Resumen compartido (points_me) ----------
@@ -116,7 +118,7 @@ function claimedSet(user) {
 function pendingSet() {
   if (!memPending) {
     const list = rewardsSettings().pending;
-    memPending = new Set(Array.isArray(list) ? list.filter((x) => PC_ACHIEVEMENTS.includes(x)) : []);
+    memPending = new Set(Array.isArray(list) ? list.filter((x) => CLIENT_IDS.includes(x)) : []);
   }
   return memPending;
 }
@@ -136,7 +138,7 @@ function rememberUnlocked(user, ids) {
 }
 
 function addPending(id) {
-  if (!PC_ACHIEVEMENTS.includes(id) || pendingSet().has(id)) return;
+  if (!CLIENT_IDS.includes(id) || pendingSet().has(id)) return;
   pendingSet().add(id);
   save({ pending: [...pendingSet()] });
 }
@@ -146,7 +148,6 @@ const inflight = new Map(); // `${user}:${id}` -> promesa
 const lastTry = new Map(); // `${user}:${id}` -> ms
 const skipped = new Set(); // ids que el servidor no conoce (bad_achievement): no se vuelven a pedir en esta sesión
 let pausedUntil = 0; // servicio caído o cuenta suspendida: no se insiste por un rato
-const swept = new Set();
 
 async function overlayAlert(event) {
   try {
@@ -157,7 +158,7 @@ async function overlayAlert(event) {
 }
 
 async function announce(id, points) {
-  await loadNs('rewards').catch(() => {});
+  await Promise.all([loadNs('rewards'), loadNs('achievements')]).catch(() => {});
   const name = achievementName(id);
   const pts = formatPoints(points, locale());
   toast('good', R('achToastTitle', { name }), points > 0 ? R('achToastText', { points: pts }) : null, 6000);
@@ -166,7 +167,7 @@ async function announce(id, points) {
 
 export async function claimAchievement(id, { force = false, silent = false } = {}) {
   if (typeof id !== 'string' || !ACHIEVEMENT_ID.test(id) || skipped.has(id)) return null;
-  const isPc = PC_ACHIEVEMENTS.includes(id);
+  const isPc = CLIENT_IDS.includes(id);
   let b;
   try {
     b = await backend();
@@ -218,15 +219,10 @@ export async function claimAchievement(id, { force = false, silent = false } = {
   return promise;
 }
 
-/** Prueba una vez por sesión cada logro del servidor que falta (lo usa la página al abrirse). */
+/** Pide al servidor que compruebe los logros suyos (lo usa la página al abrirse). */
 export async function sweepServerAchievements() {
-  const d = summary.data;
-  if (!d || !summary.user) return;
-  for (const a of d.achievements || []) {
-    if (!a || a.unlockedAt || a.kind !== 'server' || swept.has(`${summary.user}:${a.id}`)) continue;
-    swept.add(`${summary.user}:${a.id}`);
-    await claimAchievement(a.id);
-  }
+  const { checkAchievements } = await import('./achievements.js');
+  return checkAchievements();
 }
 
 // Logros de la PC con los datos del launcher + pendientes + los del servidor con pistas.
@@ -239,9 +235,6 @@ async function checkLocal() {
     const b = await backend();
     if (!b.signedIn()) return;
     for (const id of [...pendingSet()]) await claimAchievement(id);
-    const stats = await api.invoke('stats:summary').catch(() => null);
-    const ids = pcAchievementsFor({ sessions: stats?.sessions, totalMs: stats?.totalMs, instances: store.instances?.length || 0 });
-    for (const id of ids) await claimAchievement(id);
     await loadSummary().catch(() => {});
     const d = summary.data;
     const premium = await isPremium().catch(() => false);

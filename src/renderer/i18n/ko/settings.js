@@ -68,7 +68,7 @@ export default {
   ingameWindow: "창에 Venus 아이콘과 제목 표시",
   ingameWindowSub: "게임 창에 Venus 아이콘을 표시하고 제목 끝에 \"· Venus Launcher\"를 붙여요.",
   ingameBadge: '이름 옆에 Venus 배지',
-  ingameBadgeSub: 'Venus를 쓰는 다른 플레이어는 내 이름 옆(머리 위와 Tab 플레이어 목록)에 Venus 행성을 보고, 나도 그들의 이름 옆에서 볼 수 있습니다. "Venus Badge" 모드는 Minecraft {versions}의 Fabric 또는 Quilt 인스턴스에만 설치됩니다. 바닐라, Forge, NeoForge, OptiFine은 Fabric 모드를 불러올 수 없어 그대로 둡니다. Venus 계정과 Microsoft 계정이 필요합니다. 모드는 화면에 보이는 플레이어를 Venus 서버에 물어봅니다(UUID만 보냅니다).',
+  ingameBadgeSub: "Venus를 쓰는 다른 플레이어는 내 이름 옆(머리 위와 Tab 플레이어 목록)에 Venus 행성을 보고, 나도 그들의 이름 옆에서 볼 수 있습니다. “Venus Badge” 모드는 불러올 수 있는 인스턴스에만 설치됩니다: {versions}. 바닐라, OptiFine 및 그 밖의 버전은 그대로 두며 배지가 표시되지 않습니다. Venus 계정과 Microsoft 계정이 필요합니다. 모드는 화면에 보이는 플레이어를 Venus 서버에 물어봅니다(UUID만 보냅니다).",
   ingameBadgeIdle: '다음에 플레이할 때 Microsoft 계정으로 켜집니다.',
   ingameBadgeWorking: 'Mojang에서 Minecraft 계정을 확인하는 중…',
   ingameBadgeOk: '완료: {name}에 Venus 배지가 생겼습니다.',

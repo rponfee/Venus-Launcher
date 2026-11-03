@@ -1,0 +1,40 @@
+plugins {
+	id 'net.neoforged.moddev.legacyforge' version "${moddev_version}"
+}
+
+apply from: rootProject.file('gradle/mojmap.gradle')
+
+legacyForge {
+	// Sin descompilar ni recompilar Minecraft: el mod no necesita sus fuentes y la compilación es mucho más rápida.
+	enable {
+		forgeVersion = forge_version
+		disableRecompilation = true
+	}
+	mods {
+		venusbadge {
+			sourceSet sourceSets.main
+		}
+	}
+	runs {
+		client {
+			client()
+		}
+	}
+}
+
+// Forge 1.20.1 juega con los nombres SRG: el procesador de Mixin escribe el refmap que traduce los de Mojang.
+dependencies {
+	annotationProcessor "org.spongepowered:mixin:${mixin_version}:processor"
+}
+
+mixin {
+	add sourceSets.main, 'venusbadge.refmap.json'
+	config 'venusbadge.mixins.json'
+}
+
+jar {
+	manifest.attributes('MixinConfigs': 'venusbadge.mixins.json')
+}
+
+// El .jar que va al launcher es el de reobfJar (build/libs); el de `jar` queda en build/devlibs y solo sirve para desarrollar.
+ext.finalJar = tasks.named('reobfJar')

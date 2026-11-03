@@ -109,6 +109,26 @@ export function createFakeBackend(state = 'demo') {
 
   const rpcs = {
     points_me: me,
+    achievements_me: () => ({
+      unlocked: Object.fromEntries(['playtime_1', 'playtime_5', 'playtime_10h', 'sessions_5', 'first_launch', 'streak_3', 'blocks_100', 'blocks_1000', 'diamond_1', 'diamond_10', 'mobs_10', 'mobs_100', 'dragon_1', 'first_friend', 'night_owl', 'instances_1', 'instances_3'].map((id) => [id, '2026-10-30T12:00:00Z'])),
+      rarity: { playtime_1: 92, playtime_25: 41, diamond_50: 12, dragon_1: 4, dragon_5: 0.8 },
+      totalUsers: 1200,
+      metrics: { friends: 3, messages: 42, memberDays: 12, pointsEarned: 860, missions: 4, items: 2, achievements: 17, dailies: 9 },
+      clientToday: 0,
+      clientCap: 40,
+    }),
+    achievements_claim: () => ({ unlocked: [], skipped: 0, balance: balance() }),
+    achievements_sweep: () => ({ unlocked: [], balance: balance() }),
+    missions_me: () => {
+      const d = new Date();
+      const end = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)).toISOString();
+      return {
+        multiplier: s.mult,
+        daily: { key: d.toISOString().slice(0, 10), endsAt: end, bonus: 25, bonusClaimed: false, missions: [{ id: 'd_play_30', metric: 'playMinutes', target: 30, points: 25, claimed: false }, { id: 'd_shot_1', metric: 'screenshots', target: 1, points: 15, claimed: true }, { id: 'd_message_1', metric: 'messages', target: 1, points: 15, claimed: false }] },
+        weekly: { key: 'demo', endsAt: new Date(Date.now() + 3 * 86400000).toISOString(), bonus: 100, bonusClaimed: false, missions: [{ id: 'w_play_300', metric: 'playMinutes', target: 300, points: 90, claimed: false }, { id: 'w_voice_3', metric: 'voiceJoins', target: 3, points: 70, claimed: false }, { id: 'w_ach_3', metric: 'achievements', target: 3, points: 70, claimed: false }] },
+      };
+    },
+    mission_claim: () => ({ points: 25, bonus: 0, balance: balance() }),
     venus_is_premium: () => s.premium,
     points_daily_claim() {
       const today = utcDay(Date.now());

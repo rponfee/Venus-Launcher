@@ -137,4 +137,8 @@ export default {
   errInvalid: 'Algún dato no es válido o es demasiado largo.',
   errGeneric: 'Algo salió mal: {error}',
   errTooLong: 'El mensaje no puede superar los {max} caracteres.',
+  rank_owner: "Owner",
+  rank_admin: "Admin",
+  rank_mod: "Mod",
+  rank_helper: "Helper",
 };

@@ -127,4 +127,8 @@ export default {
   errInvalid: "無効なデータ、または長すぎるデータが含まれています。",
   errGeneric: "問題が発生しました: {error}",
   errTooLong: "メッセージは{max}文字以内で入力してください。",
+  rank_owner: "オーナー",
+  rank_admin: "管理者",
+  rank_mod: "モデレーター",
+  rank_helper: "ヘルパー",
 };

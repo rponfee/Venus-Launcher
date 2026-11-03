@@ -4,10 +4,11 @@
 // Acepta el perfil en camelCase (profile_public) o la fila cruda de profiles (snake_case). Si la fila no trae el
 // estilo (las de social.js), styledName lo pide aparte en un solo pedido para todos y se pinta cuando llega.
 //   import { styledName, applyFrame, bannerEl, gradientCss, titleLabel, ensureProfileStyle } from '../social/profile-style.js';
-import { h, ensureCss, reducedMotion } from '../ui.js';
+import { h, icon, ensureCss, reducedMotion } from '../ui.js';
 import { t, has, loadNs } from '../i18n.js';
 import { cloud } from '../cloud.js';
-import { bannerBackground } from './cosmetics.js';
+import { bannerBackground, rankInfo } from './cosmetics.js';
+import { EXTRA_FONTS, fontStack } from '../features/profile-editor/fonts.js';
 import {
   normalizeProfile,
   effectiveEffect,
@@ -27,6 +28,11 @@ import {
 
 const NS = 'profile';
 const CSS = 'features/profile-style';
+const FONTS_CSS = 'features/profile-fonts'; // las 28 tipografias de la 3.0 (el navegador baja solo las que se usan)
+const ensureStyles = () => {
+  ensureCss(CSS);
+  ensureCss(FONTS_CSS);
+};
 
 // Tipografias del nombre: pilas de fuentes del sistema o las que trae el launcher (sin bajar nada).
 // 'default' es el estilo de Venus: pixel en tarjetas y titulos, la fuente de la lista en las listas.
@@ -38,12 +44,13 @@ export const FONT_STACKS = {
   mono: { family: "'Cascadia Mono', Consolas, ui-monospace, monospace", weight: 700 },
   rounded: { family: "ui-rounded, 'Arial Rounded MT Bold', Nunito, 'Varela Round', Quicksand, Candara, 'Segoe UI', sans-serif", weight: 700 },
   condensed: { family: "'Bahnschrift Condensed', Bahnschrift, 'Arial Narrow', 'Roboto Condensed', sans-serif", weight: 700, stretch: 'condensed' },
+  ...Object.fromEntries(EXTRA_FONTS.map((f) => [f.id, { family: fontStack(f), weight: f.weight, scale: f.scale }])),
 };
 
 let ready = null;
 // Carga la hoja de estilos y los textos del namespace profile (se puede llamar muchas veces)
 export function ensureProfileStyle() {
-  ensureCss(CSS);
+  ensureStyles();
   if (!ready) {
     ready = loadNs(NS).catch((err) => {
       ready = null;
@@ -70,7 +77,7 @@ function cachedStyle(id) {
 export function setStyleCache(id, profile) {
   if (!id || !profile) return;
   const n = normalize(profile);
-  styleCache.set(id, { at: Date.now(), raw: { nameStyle: n.nameStyle, theme: n.theme || {}, equipped: n.equipped, banner: n.banner } });
+  styleCache.set(id, { at: Date.now(), raw: { nameStyle: n.nameStyle, theme: n.theme || {}, equipped: n.equipped, banner: n.banner, cardStyle: n.cardStyle, rank: n.rank } });
 }
 
 function requestStyle(id, fn) {
@@ -92,13 +99,13 @@ async function flushStyles() {
       offUntil = Date.now() + 30_000; // sin sesion no hay a quien preguntar: se reintenta en un rato
       return;
     }
-    const { data, error } = await cloud.client.from('profiles').select('id,name_style,theme,equipped,banner_style').in('id', ids);
+    const { data, error } = await cloud.client.from('profiles').select('id,name_style,theme,equipped,banner_style,card_style,rank').in('id', ids);
     if (error) throw error;
     const now = Date.now();
     const rows = new Map((data || []).map((r) => [r.id, r]));
     for (const id of ids) {
       const r = rows.get(id) || {};
-      styleCache.set(id, { at: now, raw: { nameStyle: r.name_style || {}, theme: r.theme || {}, equipped: r.equipped || {}, banner: r.banner_style || {} } });
+      styleCache.set(id, { at: now, raw: { nameStyle: r.name_style || {}, theme: r.theme || {}, equipped: r.equipped || {}, banner: r.banner_style || {}, cardStyle: r.card_style || {}, rank: r.rank || null } });
       for (const fn of fns.get(id) || []) {
         try {
           fn();
@@ -129,7 +136,7 @@ export function normalize(profile, opts) {
   if (n.hasStyle || !n.id) return n;
   const c = cachedStyle(n.id);
   if (!c) return n;
-  return normalizeProfile({ ...n, nameStyle: c.nameStyle, theme: c.theme, equipped: c.equipped, banner: c.banner && c.banner.kind ? c.banner : n.banner, hasStyle: true }, opts);
+  return normalizeProfile({ ...n, nameStyle: c.nameStyle, theme: c.theme, equipped: c.equipped, banner: c.banner && c.banner.kind ? c.banner : n.banner, cardStyle: c.cardStyle, rank: c.rank || n.rank, hasStyle: true }, opts);
 }
 
 // Color del nombre ya ajustado para que se lea
@@ -152,6 +159,9 @@ function paintName(el, label, n, { size, animate }) {
   for (const c of [...el.classList]) if (c.startsWith('pf-font-') || c.startsWith('pf-fx-')) el.classList.remove(c);
   el.classList.add(`pf-font-${font}`, `pf-fx-${fx}`);
   el.classList.toggle('pf-static', !animate);
+  el.classList.toggle('pf-caps', n.nameStyle.caps === true);
+  el.classList.toggle('pf-italic', n.nameStyle.italic === true);
+  el.classList.toggle('pf-outline', n.nameStyle.outline === true);
   el.style.setProperty('--pf-c', color);
   el.style.setProperty('--pf-from', readableColor(from, bg));
   el.style.setProperty('--pf-to', readableColor(to, bg));
@@ -171,7 +181,7 @@ function titleChip(n) {
  * title: true agrega el titulo equipado al lado. animate: fuerza (o apaga) las animaciones del efecto.
  */
 export function styledName(profile, { size = 'md', title = false, animate } = {}) {
-  ensureCss(CSS);
+  ensureStyles();
   const n = normalize(profile);
   const sz = ['sm', 'md', 'lg'].includes(size) ? size : 'md';
   const anim = animate ?? sz !== 'sm';
@@ -199,8 +209,10 @@ export function styledName(profile, { size = 'md', title = false, animate } = {}
 export function applyFrame(el, profile) {
   if (!el) return el;
   ensureCss(CSS);
-  const style = frameOf(normalize(profile));
-  for (const c of [...el.classList]) if (c === 'pf-frame' || c.startsWith('pf-frame-')) el.classList.remove(c);
+  const n = normalize(profile);
+  const style = frameOf(n);
+  for (const c of [...el.classList]) if (c === 'pf-frame' || c.startsWith('pf-frame-') || c.startsWith('pf-avatar-')) el.classList.remove(c);
+  if (n.cardStyle?.avatar && n.cardStyle.avatar !== 'square') el.classList.add(`pf-avatar-${n.cardStyle.avatar}`);
   if (style && FRAMES.includes(style)) {
     el.classList.add('pf-frame', `pf-frame-${style}`);
     el.dataset.frame = style;
@@ -240,6 +252,12 @@ export function bannerEl(profile, { cls = '' } = {}) {
     }
     img.addEventListener('error', () => img.remove(), { once: true });
     el.append(img);
+  } else if (n.banner.kind === 'klipy') {
+    // GIF de KLIPY: se carga directo de su dominio, como pide su integracion. Con movimiento reducido, el cuadro fijo.
+    el.style.background = bannerBackground(n.legacyBanner || 'venus');
+    const img = h('img', { class: 'pf-banner-img', src: reducedMotion() && n.banner.still ? n.banner.still : n.banner.url, alt: '', decoding: 'async', draggable: 'false', referrerpolicy: 'no-referrer' });
+    img.addEventListener('error', () => img.remove(), { once: true });
+    el.append(img);
   } else {
     el.style.background = bannerBackgroundCss(n);
   }
@@ -253,7 +271,7 @@ export function gradientCss(profile) {
 
 // ---------- Textos ----------
 // Respaldo en español si todavia no cargo el namespace (lo correcto es esperar ensureProfileStyle() antes de dibujar)
-const TITLE_FALLBACK = { explorer: 'Explorador', builder: 'Constructor', redstoner: 'Redstoner', legend: 'Leyenda', supporter: 'Colaborador' };
+const TITLE_FALLBACK = { explorer: 'Explorador', builder: 'Constructor', redstoner: 'Redstoner', legend: 'Leyenda', supporter: 'Colaborador', miner: 'Minero', farmer: 'Granjero', architect: 'Arquitecto', modder: 'Modder', streamer: 'Streamer', pvp: 'PvP', nightowl: 'Búho nocturno', speedrunner: 'Speedrunner', collector: 'Coleccionista', hardcore: 'Hardcore', veteran: 'Veterano', vip: 'VIP' };
 export function titleLabel(titleId) {
   const id = titleStyle(titleId);
   if (!id) return '';
@@ -275,4 +293,20 @@ export function premiumChip(profile) {
     h('path', { svg: true, d: n.premium ? 'M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z' : 'M12 2l2.9 6.9L22 9.3l-5.5 4.8L18.2 21 12 17.3 5.8 21l1.7-6.9L2 9.3l7.1-.4z' }),
   );
   return h('span', { class: 'pf-premium', dataset: { style: style || 'gold' }, title: label }, svg, h('span', {}, label));
+}
+
+// Rango (owner, admin, mod, helper) con su color: lo da un admin, no se compra
+export function rankChip(profile, { compact = false } = {}) {
+  const info = rankInfo(normalize(profile).rank);
+  if (!info) return null;
+  return h('span', { class: ['pf-rank', compact && 'compact'], dataset: { rank: info.id }, title: info.label, 'aria-label': info.label }, icon(info.icon), compact ? null : h('span', {}, info.label));
+}
+
+// Clases y variables de la tarjeta segun su estilo (dibujo de fondo, disposicion y color de acento)
+export function cardStyleAttrs(profile) {
+  const c = normalize(profile).cardStyle || {};
+  return {
+    classes: [c.pattern && c.pattern !== 'none' && `pf-pattern-${c.pattern}`, c.layout === 'center' && 'pf-layout-center'].filter(Boolean),
+    vars: c.accent ? { '--pf-accent': c.accent } : {},
+  };
 }

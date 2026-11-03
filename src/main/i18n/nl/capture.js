@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "De geëxporteerde clip is beschadigd en kon niet worden opgeslagen.",
   errAiUnavailable: "De AI is niet beschikbaar: log in met je Venus-account en controleer of de AI is ingeschakeld.",
   overlayErrorTitle: "Clips en screenshots",
+  errReplayNoRoom: "Directe herhaling gepauzeerd: niet genoeg schijfruimte.",
+  autoLimitReached: "Het maximum van {count} automatische clips voor dit spel is bereikt. Directe herhaling werkt nog steeds met de sneltoets.",
 };

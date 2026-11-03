@@ -8,8 +8,8 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 
-// model.js es un modulo ES sin imports: se carga desde data: (asi Node no avisa por el tipo del paquete)
-const SRC = `data:text/javascript;base64,${fs.readFileSync(path.join(__dirname, '..', 'model.js')).toString('base64')}`;
+// model.js es un modulo ES (importa la lista de tipografias de fonts.js)
+const SRC = require('url').pathToFileURL(path.join(__dirname, '..', 'model.js')).href;
 let M;
 test.before(async () => {
   M = await import(SRC);
@@ -45,7 +45,7 @@ test('normaliza el perfil camelCase de profile_public', () => {
   assert.equal(p.mcName, 'Ringo_');
   assert.deepEqual(p.badges, ['founder', 'early']);
   assert.deepEqual(p.theme, { from: '#f29a2e', to: '#3b1450', angle: 200 });
-  assert.deepEqual(p.nameStyle, { font: 'pixel', effect: 'rainbow', color: '#ffc562', glow: 40 });
+  assert.deepEqual(p.nameStyle, { font: 'pixel', effect: 'rainbow', color: '#ffc562', glow: 40, caps: false, italic: false, outline: false });
   assert.deepEqual(p.banner, { kind: 'preset', preset: 'nebula' });
   assert.equal(p.legacyBanner, null);
   assert.deepEqual(p.favoriteServers, [{ address: 'mc.hypixel.net', name: 'Hypixel' }]);
@@ -88,7 +88,7 @@ test('normaliza la fila cruda de profiles (snake_case) con el banner viejo', () 
 test('una fila vieja de social no trae estilo y queda con valores por defecto', () => {
   const p = M.normalizeProfile({ id: UID, username: 'luli', display_name: 'Luli', banner: 'cherry' });
   assert.equal(p.hasStyle, false);
-  assert.deepEqual(p.nameStyle, { font: 'default', effect: 'none', color: null, glow: 0 });
+  assert.deepEqual(p.nameStyle, { font: 'default', effect: 'none', color: null, glow: 0, caps: false, italic: false, outline: false });
   assert.deepEqual(p.banner, { kind: 'none' });
   assert.equal(p.legacyBanner, 'cherry');
 });
@@ -100,7 +100,7 @@ test('rechaza datos peligrosos o fuera de rango al normalizar', () => {
     banner: { kind: 'image', url: 'javascript:alert(1)' },
     pronouns: '<b>él</b>',
   });
-  assert.deepEqual(p.nameStyle, { font: 'default', effect: 'none', color: null, glow: 0 });
+  assert.deepEqual(p.nameStyle, { font: 'default', effect: 'none', color: null, glow: 0, caps: false, italic: false, outline: false });
   assert.equal(p.theme, null);
   assert.deepEqual(p.banner, { kind: 'none' });
   assert.equal(p.pronouns, 'bél/b');
@@ -235,7 +235,8 @@ test('valida servidores favoritos, estadisticas y destacadas', () => {
   assert.equal(M.validateField('publicStats', { updatedAt: 'x' }, ctx), 'bad_publicStats');
   assert.equal(M.validateField('publicStats', { topLoader: 'x'.repeat(17) }, ctx), 'bad_publicStats');
   assert.equal(M.validateField('featured', [{ url: media('featured-1.webp'), title: 'Hola' }], ctx), null);
-  assert.equal(M.validateField('featured', [{ url: media('f.webp') }, { url: media('g.webp') }, { url: media('h.webp') }, { url: media('i.webp') }], ctx), 'bad_featured');
+  assert.equal(M.validateField('featured', ['f', 'g', 'h', 'i', 'j', 'k', 'l'].map((n) => ({ url: media(`${n}.webp`) })), ctx), 'bad_featured');
+  assert.equal(M.validateField('featured', ['f', 'g', 'h', 'i', 'j', 'k'].map((n) => ({ url: media(`${n}.webp`) })), ctx), null);
   assert.equal(M.validateField('featured', [{ url: media('f.webp'), title: 'x'.repeat(61) }], ctx), 'bad_featured');
 });
 
@@ -316,4 +317,75 @@ test('recorte, tamaño final y nombres de archivo', () => {
   assert.deepEqual(M.orphanMedia([{ name: 'banner-1.webp' }, { name: 'featured-2.webp' }, { name: '.emptyFolderPlaceholder' }], [media('featured-2.webp')]), ['banner-1.webp', '.emptyFolderPlaceholder']);
   assert.equal(M.isServerAddress('mc.hypixel.net:25565'), true);
   assert.equal(M.isServerAddress('mc.hypixel.net:123456'), false);
+});
+
+// ---------- 3.0 ----------
+test('3.0: tipografias, efectos, banners y marcos nuevos', () => {
+  assert.ok(M.FONTS.length >= 29, 'al menos 22 tipografias nuevas');
+  assert.equal(new Set(M.FONTS).size, M.FONTS.length);
+  assert.equal(M.validateField('nameStyle', { font: 'press', caps: true, italic: true, outline: true }, {}), null);
+  assert.equal(M.validateField('nameStyle', { font: 'comic-sans' }, {}), 'bad_nameStyle');
+  assert.equal(M.validateField('nameStyle', { caps: 'si' }, {}), 'bad_nameStyle');
+  assert.equal(M.validateField('nameStyle', { effect: 'galaxy' }, { premium: false }), 'premium_required:nameStyle');
+  assert.equal(M.validateField('nameStyle', { effect: 'galaxy' }, { premium: true }), null);
+  for (const id of M.BANNER_PRESETS) assert.ok(M.presetCss(id), id);
+  assert.equal(M.frameStyle('frame_diamond'), 'diamond');
+  assert.equal(M.titleStyle('title_vip'), 'vip');
+  assert.equal(M.gradientCss({ theme: { from: '#111111', via: '#222222', to: '#333333', angle: 90 } }), 'linear-gradient(90deg, #111111, #222222, #333333)');
+  const ids = M.SHOP_CATALOG.map((i) => i.id);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(ids.length - 15 >= 22, 'al menos 22 cosmeticos nuevos');
+});
+
+test('3.0: banner de KLIPY para todos y solo con direcciones de KLIPY', () => {
+  const url = 'https://static.klipy.com/ii/935d7ab9/14/af/um0L4dFH.webp';
+  assert.equal(M.validateField('banner', { kind: 'klipy', url, still: 'https://static1.klipy.com/ii/a.jpg', slug: 'gato-1' }, { premium: false }), null);
+  assert.equal(M.validateField('banner', { kind: 'klipy', url: 'https://evil.example/a.gif' }, {}), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'klipy', url: 'http://static.klipy.com/a.gif' }, {}), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'klipy', url: 'https://static.klipy.com.evil.example/a.gif' }, {}), 'bad_banner');
+  const n = M.normalizeProfile({ banner_style: { kind: 'klipy', url, slug: 'gato-1', extra: 'x' } });
+  assert.deepEqual(n.banner, { kind: 'klipy', url, slug: 'gato-1' });
+  assert.deepEqual(M.normalizeProfile({ banner_style: { kind: 'klipy', url: 'https://evil.example/a.gif' } }).banner, { kind: 'none' });
+  assert.deepEqual(M.buildPatch({ banner: { kind: 'none' } }, { banner: n.banner }), { banner: { kind: 'klipy', url, slug: 'gato-1' } });
+});
+
+test('3.0: redes solo de sitios conocidos', () => {
+  assert.equal(M.isProfileLink('youtube', 'https://www.youtube.com/@venus'), true);
+  assert.equal(M.isProfileLink('youtube', 'https://youtu.be/abc'), true);
+  assert.equal(M.isProfileLink('twitch', 'https://twitch.tv/venus'), true);
+  assert.equal(M.isProfileLink('youtube', 'https://youtube.com.evil.example/x'), false);
+  assert.equal(M.isProfileLink('youtube', 'http://youtube.com/x'), false);
+  assert.equal(M.isProfileLink('youtube', 'https://youtube.com/'), false);
+  assert.equal(M.isProfileLink('otro', 'https://youtube.com/x'), false);
+  assert.equal(M.isProfileLink('constructor', 'https://youtube.com/x'), false);
+  assert.equal(M.validateField('links', [{ kind: 'x', url: 'https://x.com/venus' }], {}), null);
+  assert.equal(M.validateField('links', Array(6).fill({ kind: 'x', url: 'https://x.com/venus' }), {}), 'bad_links');
+  assert.deepEqual(M.normalizeProfile({ links: [{ kind: 'x', url: 'https://evil.example/a' }, { kind: 'kick', url: 'https://kick.com/venus' }] }).links, [{ kind: 'kick', url: 'https://kick.com/venus' }]);
+});
+
+test('3.0: estilo de la tarjeta, vitrina y rango', () => {
+  assert.equal(M.validateField('cardStyle', { pattern: 'hex', avatar: 'round', layout: 'center', accent: '#ff0000' }, {}), null);
+  assert.equal(M.validateField('cardStyle', { pattern: 'url(evil)' }, {}), 'bad_cardStyle');
+  assert.deepEqual(M.normalizeProfile({ card_style: { pattern: 'x', accent: 'rojo' } }).cardStyle, { pattern: 'none', avatar: 'square', layout: 'classic', accent: null });
+  assert.equal(M.validateField('showcase', { achievements: ['diamond_1'], skin: true }, {}), null);
+  assert.equal(M.validateField('showcase', { achievements: Array(7).fill('diamond_1') }, {}), 'bad_showcase');
+  assert.equal(M.validateField('showcase', { clips: ['no-es-uuid'] }, {}), 'bad_showcase');
+  const pub = { showcase: { skin: true, achievements: [{ id: 'diamond_1', at: '2026-11-02' }], clips: [{ id: '123e4567-e89b-12d3-a456-426614174000', url: 'https://x/y.webm', title: 'Clip' }] } };
+  const n = M.normalizeProfile(pub);
+  assert.equal(n.showcase.skin, true);
+  assert.equal(n.showcase.clips[0].url, 'https://x/y.webm');
+  assert.deepEqual(M.customOf(n).showcase, { achievements: ['diamond_1'], clips: ['123e4567-e89b-12d3-a456-426614174000'], skin: true });
+  assert.equal(M.normalizeProfile({ rank: 'owner' }).rank, 'owner');
+  assert.equal(M.normalizeProfile({ rank: 'dios' }).rank, null);
+});
+
+test('3.0: respuesta de KLIPY en su orden, sin lo que no es un GIF', () => {
+  const file = (n) => ({ md: { webp: { url: `https://static.klipy.com/${n}.webp` }, jpg: { url: `https://static.klipy.com/${n}.jpg` } }, sm: { webp: { url: `https://static.klipy.com/${n}-s.webp` } } });
+  const res = M.parseGifs({ result: true, data: { has_next: true, data: [{ type: 'gif', slug: 'b', title: 'B', file: file('b') }, { type: 'ad', content: '<x>' }, { type: 'gif', slug: 'a', file: file('a') }, { type: 'gif', slug: 'sin-archivo', file: {} }] } });
+  assert.deepEqual(res.items.map((g) => g.slug), ['b', 'a']);
+  assert.equal(res.items[0].url, 'https://static.klipy.com/b.webp');
+  assert.equal(res.items[0].thumb, 'https://static.klipy.com/b-s.webp');
+  assert.equal(res.items[0].still, 'https://static.klipy.com/b.jpg');
+  assert.equal(res.hasNext, true);
+  assert.deepEqual(M.parseGifs(null), { items: [], hasNext: false });
 });

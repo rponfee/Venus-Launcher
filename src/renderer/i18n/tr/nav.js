@@ -22,7 +22,7 @@ export default {
   messages: "Mesajlar",
   stats: "İstatistikler",
   performance: "Performans",
-  devmode: "Geliştirici modu",
+  achievements: "Başarımlar",
   settings: "Ayarlar",
   welcome: "Hoş geldin",
 };

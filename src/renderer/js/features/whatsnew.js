@@ -1,6 +1,6 @@
-// Novedades de Venus 2.0: un recorrido de pantallas con lo nuevo (música, overlay, perfiles, clips, Venus Points y
-// Premium, grupos y avisos, temas, editor de skins y la insignia en el juego). Cada pantalla tiene un botón que
-// lleva a esa función. Se muestra solo la primera vez que se abre la 2.0 (settings.whatsnew.seen), nunca durante
+// Novedades de Venus 3.0: un recorrido de pantallas con lo nuevo (perfiles y rangos, banners con GIF, logros, misiones,
+// audio, clips, personalización e insignia en más loaders). Cada pantalla tiene un botón que
+// lleva a esa función. Se muestra solo la primera vez que se abre la 3.0 (settings.whatsnew.seen), nunca durante
 // la bienvenida obligatoria ni en las capturas automáticas (VENUS_SKIP_ONBOARDING / VENUS_DEVSHOT).
 // Contrato: startup() (idempotente: comando "Novedades de Venus 2.0" en Ctrl+K y el aviso automático),
 //           openWhatsNew({ start? }) -> Promise (si ya está abierto le pasa el foco),
@@ -11,7 +11,7 @@ import { t, loadNs, has } from '../i18n.js';
 import { navigate } from '../app.js';
 
 const NS = 'whatsnew';
-export const TOUR_VERSION = '2.0.0';
+export const TOUR_VERSION = '3.0.0';
 
 registerIcons({
   wnBrush: '<path d="m14.622 17.897-10.68-2.913"/><path d="M18.376 2.622a1 1 0 1 1 3.002 3.002L17.36 9.643a.5.5 0 0 0 0 .707l.944.944a2.41 2.41 0 0 1 0 3.408l-.944.944a.5.5 0 0 1-.707 0L8.354 7.348a.5.5 0 0 1 0-.707l.944-.944a2.41 2.41 0 0 1 3.408 0l.944.944a.5.5 0 0 0 .707 0z"/><path d="M9 8c-1.804 2.71-3.97 3.46-6.583 3.948a.507.507 0 0 0-.302.819l7.32 8.883a1 1 0 0 0 1.185.204C12.735 20.405 16 16.792 16 15"/>',
@@ -38,15 +38,14 @@ async function tryOpen(candidates, fallback) {
 
 const SLIDES = [
   { id: 'intro', icon: 'sparkles' },
-  { id: 'music', icon: 'music', go: () => navigate('music') },
-  { id: 'overlay', icon: 'monitor', go: () => tryOpen([[() => import('./overlay.js'), ['openOverlaySettings', 'openOverlay']]], 'settings/general') },
-  { id: 'profiles', icon: 'user', go: () => tryOpen([[() => import('./profile-editor.js'), ['openProfileEditor']], [() => import('../social/profile-ui.js'), ['openMyProfile']]], 'settings/cloud') },
-  { id: 'clips', icon: 'camera', go: () => navigate('clips') },
-  { id: 'rewards', icon: 'wnPoint', go: () => navigate('rewards') },
-  { id: 'party', icon: 'users', go: () => tryOpen([[() => import('./party.js'), ['openParty']]], 'messages') },
-  { id: 'themes', icon: 'palette', go: () => navigate('settings/appearance') },
-  { id: 'skins', icon: 'wnBrush', go: () => navigate('skins') },
-  { id: 'badge', icon: 'wnBadge', go: () => navigate('settings/general/play') },
+  { id: 'v3profile', art: 'profiles', icon: 'user', go: () => tryOpen([[() => import('./profile-editor.js'), ['openProfileEditor']]], 'messages') },
+  { id: 'v3gif', art: 'themes', icon: 'image', go: () => tryOpen([[async () => { const m = await import('./profile-editor.js'); return { open: () => m.openProfileEditor({ tab: 'banner' }) }; }, ['open']]], 'messages') },
+  { id: 'v3ach', art: 'rewards', icon: 'trophy', go: () => navigate('achievements') },
+  { id: 'v3missions', art: 'rewards', icon: 'target', go: () => navigate('achievements/missions') },
+  { id: 'v3audio', art: 'music', icon: 'mic', go: () => navigate('voice') },
+  { id: 'v3clips', art: 'clips', icon: 'camera', go: () => navigate('clips') },
+  { id: 'v3ui', art: 'themes', icon: 'sliders', go: () => navigate('settings/appearance') },
+  { id: 'v3badge', art: 'badge', icon: 'wnBadge', go: () => navigate('settings/general/play') },
 ];
 
 // "2.0.0", "2.0.0-beta.1" o "v2.1" -> [2, 0, 0]
@@ -160,7 +159,7 @@ export async function openWhatsNew({ start = 0 } = {}) {
     return h(
       'section',
       { class: ['wn-slide', dir && !reducedMotion() && `wn-enter-${dir}`], role: 'group', 'aria-roledescription': t('whatsnew.slideRole'), 'aria-label': t('whatsnew.slideLabel', { n: index + 1, total, title: t(`whatsnew.${s.id}_title`) }) },
-      art(s.id),
+      art(s.art || s.id),
       h(
         'div',
         { class: 'wn-text' },

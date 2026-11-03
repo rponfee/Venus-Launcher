@@ -87,9 +87,23 @@ export function badgeInfo(id) {
   };
 }
 
-export function badgesOf(profile) {
+// Rangos (profiles.rank): los da un admin con admin_set_rank; aparecen primero, antes que las insignias
+export const RANKS = {
+  owner: { icon: 'crown', color: '#ffb300' },
+  admin: { icon: 'shieldCheck', color: '#ff5a4f' },
+  mod: { icon: 'hammer', color: '#4f9dff' },
+  helper: { icon: 'heart', color: '#5fd38a' },
+};
+export function rankInfo(rank) {
+  const meta = Object.hasOwn(RANKS, String(rank)) ? RANKS[rank] : null;
+  return meta ? { id: rank, ...meta, label: has(`social.rank_${rank}`) ? t(`social.rank_${rank}`) : rank } : null;
+}
+
+export function badgesOf(profile, { rank = true } = {}) {
   const list = Array.isArray(profile?.badges) ? profile.badges : [];
-  return list.slice(0, 8).map(badgeInfo).filter(Boolean);
+  const badges = list.slice(0, 8).map(badgeInfo).filter(Boolean);
+  const r = rank ? rankInfo(profile?.rank) : null;
+  return r ? [r, ...badges] : badges;
 }
 
 // ---------- Nombres y cabezas ----------

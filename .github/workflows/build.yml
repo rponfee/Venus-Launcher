@@ -61,6 +61,13 @@ jobs:
           node-version: 24
           cache: npm
 
+      # Cada fila de BUILDS tiene que tener su .jar: sin él, el launcher no instala la insignia en ese loader y nadie se entera.
+      - name: Revisar que estén todos los .jar de la insignia
+        shell: pwsh
+        run: |
+          node -e "const fs=require('fs'),m=require('./src/main/modules/ingame/badgemod');const f=m.BUILDS.map((b)=>b.jar).filter((j)=>!fs.existsSync('src/main/modules/ingame/mods/'+j));if(f.length){console.error('Faltan: '+f.join(', '));process.exit(1)}"
+          if ($LASTEXITCODE -ne 0) { Write-Output '::error title=Mod Venus Badge::Falta un .jar de la insignia (BUILDS en badgemod.js).'; exit 1 }
+
       - name: Instalar dependencias
         run: npm ci
 
@@ -73,7 +80,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { Write-Output '::error title=check.js::Hay errores de sintaxis (ver node scripts/check.js).'; exit 1 }
           node scripts/contracts-check.js
           if ($LASTEXITCODE -ne 0) { Write-Output '::error title=contracts-check.js::Hay canales de la interfaz sin handler.'; exit 1 }
-          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=test-results.tap supabase/functions/payments/tests/payments.test.ts supabase/functions/voice-turn/tests/voice-turn.test.ts supabase/functions/badge/tests/badge.test.ts src/main/modules/billing/test/client.test.js src/main/modules/support/test/client.test.js "src/main/modules/recap/test/*.test.js" "src/main/modules/skins/test/*.test.js" "src/main/modules/mcimport/test/*.test.js" "src/main/modules/svcstatus/test/*.test.js" "src/main/modules/ingame/test/*.test.js" "src/main/modules/nowplaying/test/" "src/main/modules/overlay/test/" "src/main/modules/streamer/test/*.test.js""src/main/modules/capture/test/" "src/main/modules/rewards/test/" "src/renderer/js/features/party/test/*.test.js" "src/renderer/js/features/streamer/test/*.test.js""src/renderer/js/features/profile-editor/test/" "src/renderer/js/features/themes/test/*.test.js" "src/renderer/js/pages/skins/editor/test/*.test.js"
+          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=test-results.tap supabase/functions/payments/tests/payments.test.ts supabase/functions/voice-turn/tests/voice-turn.test.ts supabase/functions/badge/tests/badge.test.ts src/main/modules/billing/test/client.test.js src/main/modules/support/test/client.test.js "src/main/modules/recap/test/*.test.js" "src/main/modules/skins/test/*.test.js" "src/main/modules/mcimport/test/*.test.js" "src/main/modules/svcstatus/test/*.test.js" "src/main/modules/ingame/test/*.test.js" "src/main/modules/nowplaying/test/" "src/main/modules/overlay/test/" "src/main/modules/streamer/test/*.test.js" "src/main/modules/capture/test/" "src/main/modules/rewards/test/" "src/renderer/js/features/party/test/*.test.js" "src/renderer/js/pages/achievements/test/*.test.js" "src/renderer/js/features/streamer/test/*.test.js" "src/renderer/js/features/profile-editor/test/" "src/renderer/js/features/themes/test/*.test.js" "src/renderer/js/voice/test/*.test.js" "src/renderer/js/pages/skins/editor/test/*.test.js"
           $code = $LASTEXITCODE
           if ($code -ne 0) { node scripts/ci-annotate.js test-results.tap; exit $code }
 

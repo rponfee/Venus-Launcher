@@ -1,6 +1,7 @@
 // Ficha de un usuario (panel lateral): cuenta, plan con los ids de Stripe, uso de la IA por modelo, moderación con
 // notas internas, acciones recientes de admins y las mismas acciones del lote para esta cuenta.
 import { navigate } from '../../app.js';
+import { cloud } from '../../cloud.js';
 import { h, icon, mount, modal, setBusy, ok, copyText } from '../../ui.js';
 import { T, call, fmtUsd, fmtInt, fmtDay, fmtDateTime, fmtRelative, isPermanent, planBadge, statePills, errorBox, skeletonRows, showBulkResult, failAction } from './parts.js';
 import { removePlanDialog, banDialog, muteDialog, simpleAction, resetUsageDialog, deleteDialog, cancelStripeDialog } from './dialogs.js';
@@ -124,6 +125,39 @@ function usage(d) {
       )
     : h('p', { class: 'muted small' }, T('noUsage'));
   return section('activity', T('sec_usage'), head, bar, table);
+}
+
+// Rango que se ve en el perfil (owner no se da ni se quita desde aca). No da acceso al panel: eso es app_admins.
+function rankSection(userId) {
+  const box = h('div', { class: 'row wrap' }, h('span', { class: 'muted small' }, T('rankLoading')));
+  const RANKS = ['', 'helper', 'mod', 'admin'];
+  cloud.client
+    .from('profiles')
+    .select('rank')
+    .eq('id', userId)
+    .maybeSingle()
+    .then(({ data, error }) => {
+      if (error) throw error;
+      const cur = data?.rank || '';
+      if (cur === 'owner') return mount(box, h('span', { class: 'pill good' }, icon('crown'), T('rank_owner')), h('span', { class: 'muted small' }, T('rankOwnerLocked')));
+      const select = h('select', { class: 'select', 'aria-label': T('rankLabel') }, RANKS.map((r) => h('option', { value: r, selected: r === cur }, T(r ? `rank_${r}` : 'rankNone'))));
+      const save = h('button', { class: 'btn sm', type: 'button' }, icon('save'), T('rankSave'));
+      save.addEventListener('click', async () => {
+        const done = setBusy(save);
+        try {
+          const { error: err } = await cloud.client.rpc('admin_set_rank', { p_user: userId, p_rank: select.value || null });
+          if (err) throw err;
+          ok(T('rankSaved'));
+        } catch (err) {
+          failAction(err);
+        } finally {
+          done();
+        }
+      });
+      mount(box, select, save);
+    })
+    .catch((err) => mount(box, h('span', { class: 'muted small' }, String(err?.message || err))));
+  return section('crown', T('sec_rank'), box, h('p', { class: 'tiny muted' }, T('rankHelp')));
 }
 
 function moderation(d, userId, refresh) {
@@ -269,6 +303,7 @@ export function openUserDrawer(userId, opts = {}) {
       account(detail),
       plan(detail, cancelStripe),
       usage(detail),
+      rankSection(userId),
       moderation(detail, userId, load),
       actions(detail),
     );

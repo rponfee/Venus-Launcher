@@ -3,17 +3,37 @@
 // profile_customize (supabase/migrations/0020_perfiles.sql), armar el patch con solo lo que cambio, el CSS del
 // fade y de los banners prediseñados, y cuentas chicas para las imagenes.
 // La usan social/profile-style.js, social/profile-ui.js y features/profile-editor.js.
+import { EXTRA_FONTS } from './fonts.js';
 
 // ---------- Catalogo (lo mismo que conoce el servidor) ----------
-export const FONTS = ['default', 'pixel', 'outfit', 'serif', 'mono', 'rounded', 'condensed'];
-export const EFFECTS = ['none', 'glow', 'gradient', 'shimmer', 'rainbow', 'fire'];
-export const PREMIUM_EFFECTS = ['shimmer', 'rainbow', 'fire'];
-export const BANNER_PRESETS = ['stars', 'sunset', 'nebula', 'forest', 'ocean', 'nether', 'end', 'aurora'];
-export const FRAMES = ['pixel', 'neon', 'gold', 'venus'];
-export const TITLES = ['explorer', 'builder', 'redstoner', 'legend', 'supporter'];
+export const BASIC_FONTS = ['default', 'pixel', 'outfit', 'serif', 'mono', 'rounded', 'condensed'];
+export const FONTS = [...BASIC_FONTS, ...EXTRA_FONTS.map((f) => f.id)];
+export const EFFECTS = ['none', 'glow', 'gradient', 'shimmer', 'rainbow', 'fire', 'neon', 'ice', 'ocean', 'sakura', 'toxic', 'vapor', 'gold', 'galaxy', 'glitch'];
+export const PREMIUM_EFFECTS = ['shimmer', 'rainbow', 'fire', 'neon', 'ice', 'ocean', 'sakura', 'toxic', 'vapor', 'gold', 'galaxy', 'glitch'];
+export const BANNER_PRESETS = ['stars', 'sunset', 'nebula', 'forest', 'ocean', 'nether', 'end', 'aurora', 'cherry', 'desert', 'snow', 'deepdark', 'lush', 'mesa', 'mushroom', 'void'];
+export const FRAMES = ['pixel', 'neon', 'gold', 'venus', 'ice', 'emerald', 'amethyst', 'redstone', 'fire', 'ender', 'rainbow', 'diamond', 'cosmic'];
+export const TITLES = ['explorer', 'builder', 'redstoner', 'legend', 'supporter', 'miner', 'farmer', 'architect', 'modder', 'streamer', 'pvp', 'nightowl', 'speedrunner', 'collector', 'hardcore', 'veteran', 'vip'];
 export const BADGE_STYLES = ['nebula', 'ice', 'gold'];
 export const EQUIP_SLOTS = ['frame', 'nameEffect', 'badgeStyle', 'title'];
-export const PATCH_FIELDS = ['pronouns', 'bio', 'theme', 'nameStyle', 'banner', 'favoriteServers', 'publicStats', 'featured', 'equipped'];
+export const PATCH_FIELDS = ['pronouns', 'bio', 'theme', 'nameStyle', 'banner', 'favoriteServers', 'publicStats', 'featured', 'equipped', 'cardStyle', 'links', 'showcase'];
+// Rangos (solo los da un admin, admin_set_rank) y estilo de la tarjeta
+export const RANKS = ['owner', 'admin', 'mod', 'helper'];
+export const CARD_PATTERNS = ['none', 'dots', 'grid', 'stripes', 'stars', 'pixels', 'waves', 'hex', 'circuit'];
+export const AVATAR_SHAPES = ['square', 'round', 'hex'];
+export const CARD_LAYOUTS = ['classic', 'center'];
+// Redes del perfil: solo estos sitios (igual que private.profile_link_ok)
+export const LINK_KINDS = {
+  youtube: '(youtube\\.com|youtu\\.be)',
+  twitch: 'twitch\\.tv',
+  kick: 'kick\\.com',
+  tiktok: 'tiktok\\.com',
+  x: '(x\\.com|twitter\\.com)',
+  instagram: 'instagram\\.com',
+  github: 'github\\.com',
+  discord: '(discord\\.gg|discord\\.com)',
+  modrinth: 'modrinth\\.com',
+  curseforge: 'curseforge\\.com',
+};
 // Tipo de shop_items de cada lugar de equipped
 export const SLOT_KIND = { frame: 'frame', nameEffect: 'name_effect', badgeStyle: 'badge_style', title: 'title' };
 
@@ -34,6 +54,37 @@ export const SHOP_CATALOG = [
   { id: 'title_redstoner', kind: 'title', price: 600, premiumOnly: false, style: 'redstoner' },
   { id: 'title_legend', kind: 'title', price: 3000, premiumOnly: false, style: 'legend' },
   { id: 'title_supporter', kind: 'title', price: 0, premiumOnly: true, style: 'supporter' },
+  // Cosmeticos de la 3.0 (0023)
+  { id: 'frame_ice', kind: 'frame', price: 900, premiumOnly: false, style: 'ice' },
+  { id: 'frame_emerald', kind: 'frame', price: 1000, premiumOnly: false, style: 'emerald' },
+  { id: 'frame_amethyst', kind: 'frame', price: 1000, premiumOnly: false, style: 'amethyst' },
+  { id: 'frame_redstone', kind: 'frame', price: 1100, premiumOnly: false, style: 'redstone' },
+  { id: 'frame_fire', kind: 'frame', price: 1400, premiumOnly: false, style: 'fire' },
+  { id: 'frame_ender', kind: 'frame', price: 1600, premiumOnly: false, style: 'ender' },
+  { id: 'frame_rainbow', kind: 'frame', price: 2200, premiumOnly: false, style: 'rainbow' },
+  { id: 'frame_diamond', kind: 'frame', price: 3000, premiumOnly: false, style: 'diamond' },
+  { id: 'frame_cosmic', kind: 'frame', price: 0, premiumOnly: true, style: 'cosmic' },
+  { id: 'effect_neon', kind: 'name_effect', price: 1200, premiumOnly: false, style: 'neon' },
+  { id: 'effect_ice', kind: 'name_effect', price: 1200, premiumOnly: false, style: 'ice' },
+  { id: 'effect_ocean', kind: 'name_effect', price: 1200, premiumOnly: false, style: 'ocean' },
+  { id: 'effect_sakura', kind: 'name_effect', price: 1300, premiumOnly: false, style: 'sakura' },
+  { id: 'effect_toxic', kind: 'name_effect', price: 1400, premiumOnly: false, style: 'toxic' },
+  { id: 'effect_vapor', kind: 'name_effect', price: 1500, premiumOnly: false, style: 'vapor' },
+  { id: 'effect_gold', kind: 'name_effect', price: 2200, premiumOnly: false, style: 'gold' },
+  { id: 'effect_galaxy', kind: 'name_effect', price: 2600, premiumOnly: false, style: 'galaxy' },
+  { id: 'effect_glitch', kind: 'name_effect', price: 2800, premiumOnly: false, style: 'glitch' },
+  { id: 'title_miner', kind: 'title', price: 300, premiumOnly: false, style: 'miner' },
+  { id: 'title_farmer', kind: 'title', price: 300, premiumOnly: false, style: 'farmer' },
+  { id: 'title_architect', kind: 'title', price: 400, premiumOnly: false, style: 'architect' },
+  { id: 'title_modder', kind: 'title', price: 400, premiumOnly: false, style: 'modder' },
+  { id: 'title_streamer', kind: 'title', price: 500, premiumOnly: false, style: 'streamer' },
+  { id: 'title_pvp', kind: 'title', price: 500, premiumOnly: false, style: 'pvp' },
+  { id: 'title_nightowl', kind: 'title', price: 700, premiumOnly: false, style: 'nightowl' },
+  { id: 'title_speedrunner', kind: 'title', price: 800, premiumOnly: false, style: 'speedrunner' },
+  { id: 'title_collector', kind: 'title', price: 1000, premiumOnly: false, style: 'collector' },
+  { id: 'title_hardcore', kind: 'title', price: 1200, premiumOnly: false, style: 'hardcore' },
+  { id: 'title_veteran', kind: 'title', price: 2000, premiumOnly: false, style: 'veteran' },
+  { id: 'title_vip', kind: 'title', price: 0, premiumOnly: true, style: 'vip' },
 ];
 
 export const LIMITS = {
@@ -42,8 +93,12 @@ export const LIMITS = {
   displayName: 32,
   favoriteServers: 5,
   serverName: 40,
-  featured: 3,
+  featured: 6,
   featuredTitle: 60,
+  links: 5,
+  linkUrl: 200,
+  pinnedAchievements: 6,
+  pinnedClips: 2,
   files: 12,
   fileBytes: 4 * 1024 * 1024,
   bannerW: 1200,
@@ -63,6 +118,12 @@ export const FADE_PRESETS = [
   { from: '#ff7eb3', to: '#4a1d6b' },
   { from: '#3fcfc0', to: '#173a63' },
   { from: '#d32f2f', to: '#2a0c08' },
+  { from: '#ffd27a', via: '#ff7a59', to: '#3b1450' },
+  { from: '#7df9ff', via: '#b06bff', to: '#ff4fd8' },
+  { from: '#9be36a', via: '#3fcfc0', to: '#173a63' },
+  { from: '#fff1a8', via: '#f0b429', to: '#8a5a12' },
+  { from: '#c4f4ff', via: '#5aa7f0', to: '#1a1030' },
+  { from: '#ff7eb3', via: '#c58cff', to: '#7fb2ff' },
 ];
 export const NAME_COLORS = ['#ffe6b0', '#ffc562', '#ff8a5c', '#ff7eb3', '#c58cff', '#7fb2ff', '#6fe0d0', '#9be36a', '#ffffff'];
 export const DEFAULT_NAME_COLOR = '#ffe6b0';
@@ -73,6 +134,9 @@ const CONTROL_OR_TAGS = /[\u0000-\u001f<>]/;
 const CONTROL = new RegExp(`[\u0000-\u001f\u007f${String.fromCharCode(0x2028, 0x2029)}]`, 'g');
 const SERVER_ADDRESS = /^[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?$/;
 const MEDIA_NAME = /^[A-Za-z0-9._-]{1,80}$/;
+const KLIPY_URL = /^https:\/\/static[0-9]*\.klipy\.com\/[A-Za-z0-9/._~-]+(\?[A-Za-z0-9=&._~%-]*)?$/;
+const KLIPY_SLUG = /^[A-Za-z0-9_-]{1,120}$/;
+const ACH_ID = /^[a-z0-9_]{2,40}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const isHex = (v) => typeof v === 'string' && HEX.test(v);
@@ -98,6 +162,15 @@ export function isProfileMediaUrl(url, userId = null) {
   const m = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/profile-media\/([0-9a-fA-F-]{36})\/([A-Za-z0-9._-]{1,80})$/.exec(url);
   if (!m || !UUID.test(m[1])) return false;
   return userId ? m[1].toLowerCase() === String(userId).toLowerCase() : true;
+}
+
+// Direccion de un GIF de KLIPY tal como la devuelve su API (igual que private.klipy_url)
+export const isKlipyUrl = (url) => typeof url === 'string' && url.length <= 400 && KLIPY_URL.test(url);
+
+// Red del perfil: https y uno de los sitios conocidos (igual que private.profile_link_ok)
+export function isProfileLink(kind, url) {
+  if (typeof url !== 'string' || url.length > LIMITS.linkUrl || !Object.hasOwn(LINK_KINDS, kind)) return false;
+  return new RegExp(`^https://(www\\.)?${LINK_KINDS[kind]}/[A-Za-z0-9@._~/?=&%+-]{1,160}$`).test(url);
 }
 
 // Vista previa local (imagen todavia sin subir o datos de ejemplo de las capturas)
@@ -137,7 +210,9 @@ const sanitizeTheme = (v) => {
   const to = isHex(v.to) ? v.to.toLowerCase() : null;
   const a = num(v.angle);
   if (!from && !to) return null;
-  return { from: from || to, to: to || from, angle: a !== null && a >= 0 && a <= 360 ? Math.round(a) : 135 };
+  const out = { from: from || to, to: to || from, angle: a !== null && a >= 0 && a <= 360 ? Math.round(a) : 135 };
+  if (isHex(v.via)) out.via = v.via.toLowerCase();
+  return out;
 };
 
 const sanitizeNameStyle = (v) => {
@@ -148,13 +223,52 @@ const sanitizeNameStyle = (v) => {
     effect: EFFECTS.includes(s.effect) ? s.effect : 'none',
     color: isHex(s.color) ? s.color.toLowerCase() : null,
     glow: glow !== null && glow >= 0 && glow <= 100 ? Math.round(glow) : 0,
+    caps: s.caps === true,
+    italic: s.italic === true,
+    outline: s.outline === true,
   };
+};
+
+const sanitizeCardStyle = (v) => {
+  const s = isObj(v) ? v : {};
+  return {
+    pattern: CARD_PATTERNS.includes(s.pattern) ? s.pattern : 'none',
+    avatar: AVATAR_SHAPES.includes(s.avatar) ? s.avatar : 'square',
+    layout: CARD_LAYOUTS.includes(s.layout) ? s.layout : 'classic',
+    accent: isHex(s.accent) ? s.accent.toLowerCase() : null,
+  };
+};
+
+const sanitizeLinks = (v) =>
+  (Array.isArray(v) ? v : [])
+    .filter((l) => isObj(l) && isProfileLink(l.kind, l.url))
+    .slice(0, LIMITS.links)
+    .map((l) => ({ kind: l.kind, url: l.url }));
+
+// Vitrina: en profile_public trae los logros y clips resueltos; en el editor, solo los ids
+const sanitizeShowcase = (v) => {
+  const s = isObj(v) ? v : {};
+  const achievements = (Array.isArray(s.achievements) ? s.achievements : [])
+    .map((a) => (typeof a === 'string' ? { id: a } : isObj(a) ? { id: a.id, at: str(a.at) } : null))
+    .filter((a) => a && typeof a.id === 'string' && ACH_ID.test(a.id))
+    .slice(0, LIMITS.pinnedAchievements);
+  const clips = (Array.isArray(s.clips) ? s.clips : [])
+    .map((c) => (typeof c === 'string' ? { id: c } : isObj(c) ? { id: c.id, url: str(c.url), title: cleanText(c.title, 120), expiresAt: str(c.expiresAt) } : null))
+    .filter((c) => c && typeof c.id === 'string' && UUID.test(c.id))
+    .slice(0, LIMITS.pinnedClips);
+  return { achievements, clips, skin: s.skin === true };
 };
 
 const sanitizeBanner = (v, opts) => {
   if (!isObj(v)) return { kind: 'none' };
   if (v.kind === 'preset' && BANNER_PRESETS.includes(v.preset)) return { kind: 'preset', preset: v.preset };
   if ((v.kind === 'image' || v.kind === 'animated') && (isProfileMediaUrl(v.url) || (opts.allowLocalMedia && isLocalMedia(v.url)))) return { kind: v.kind, url: v.url };
+  if (v.kind === 'klipy' && isKlipyUrl(v.url)) {
+    const out = { kind: 'klipy', url: v.url };
+    if (isKlipyUrl(v.still)) out.still = v.still;
+    if (typeof v.slug === 'string' && KLIPY_SLUG.test(v.slug)) out.slug = v.slug;
+    return out;
+  }
   return { kind: 'none' };
 };
 
@@ -167,6 +281,8 @@ const sanitizeServers = (v) =>
       return name ? { address: s.address.toLowerCase(), name } : { address: s.address.toLowerCase() };
     });
 
+// Estadisticas de mas en la vitrina (ver publicStatsFromReport)
+export const EXTRA_STATS = ['daysPlayed', 'bestStreak', 'longestHours', 'versions', 'loaders', 'instances', 'worlds', 'blocks', 'mobs', 'deaths', 'distanceKm'];
 const sanitizeStats = (v) => {
   if (!isObj(v)) return null;
   const out = {};
@@ -180,6 +296,10 @@ const sanitizeStats = (v) => {
   if (tv) out.topVersion = tv;
   if (tl) out.topLoader = tl;
   if (since) out.since = since;
+  for (const k of EXTRA_STATS) {
+    const x = num(v[k]);
+    if (x !== null && x >= 0 && x <= 1e12) out[k] = x;
+  }
   if (typeof v.updatedAt === 'string') out.updatedAt = v.updatedAt.slice(0, 40);
   return Object.keys(out).length ? out : null;
 };
@@ -213,7 +333,7 @@ export function normalizeProfile(raw, opts = {}) {
   const bannerRaw = pick(r, 'banner_style', 'bannerStyle');
   const legacy = typeof r.banner === 'string' ? r.banner : typeof r.legacyBanner === 'string' ? r.legacyBanner : null;
   const bannerObj = bannerRaw !== undefined ? bannerRaw : isObj(r.banner) ? r.banner : null;
-  const styleKeys = ['nameStyle', 'name_style', 'theme', 'equipped', 'banner_style', 'bannerStyle'];
+  const styleKeys = ['nameStyle', 'name_style', 'theme', 'equipped', 'banner_style', 'bannerStyle', 'cardStyle', 'card_style'];
   const badges = pick(r, 'badges');
   const display = cleanText(pick(r, 'displayName', 'display_name'), LIMITS.displayName);
   const username = cleanText(pick(r, 'username'), 32);
@@ -237,6 +357,12 @@ export function normalizeProfile(raw, opts = {}) {
     publicStats: sanitizeStats(pick(r, 'publicStats', 'public_stats')),
     featured: sanitizeFeatured(r.featured, opts),
     equipped: sanitizeEquipped(r.equipped),
+    cardStyle: sanitizeCardStyle(pick(r, 'cardStyle', 'card_style')),
+    links: sanitizeLinks(r.links),
+    showcase: sanitizeShowcase(r.showcase),
+    rank: RANKS.includes(r.rank) ? r.rank : null,
+    achievementCount: num(r.achievementCount),
+    achievementTotal: num(r.achievementTotal),
     premium: r.premium === true,
     createdAt: str(pick(r, 'createdAt', 'created_at')),
     // true si el dato trae el estilo (si no, profile-style lo pide aparte: filas viejas de social)
@@ -273,7 +399,7 @@ export function badgeStyleOf(p) {
 export function gradientCss(input) {
   const theme = input && isObj(input.theme) ? sanitizeTheme(input.theme) : sanitizeTheme(input);
   if (!theme) return '';
-  return `linear-gradient(${theme.angle}deg, ${theme.from}, ${theme.to})`;
+  return `linear-gradient(${theme.angle}deg, ${[theme.from, theme.via, theme.to].filter(Boolean).join(', ')})`;
 }
 
 // ---------- Color legible ----------
@@ -400,6 +526,57 @@ const PRESETS = {
     { t: 'rad', x: 0.5, y: 0.5, rx: 0.6, ry: 0.22, s: [['rgba(180,110,255,0.3)', 0], ['rgba(180,110,255,0)', 1]] },
     { t: 'poly', c: '#061018', p: steps(87, { y: 0.9, amp: 0.12, cols: 30 }) },
   ],
+  cherry: [
+    { t: 'lin', a: 180, s: [['#ffe3ef', 0], ['#ffb7d5', 0.5], ['#e77fae', 0.85], ['#7b3a66', 1]] },
+    { t: 'rad', x: 0.78, y: 0.22, rx: 0.18, ry: 0.6, s: [['rgba(255,255,255,0.8)', 0], ['rgba(255,255,255,0)', 1]] },
+    { t: 'dots', d: dots(91, 26, 'rgba(255,240,247,0.95)', [0.8, 1.8]) },
+    { t: 'poly', c: '#c65f93', p: steps(93, { y: 0.74, amp: 0.14, cols: 18 }) },
+    { t: 'poly', c: '#5b2a4d', p: steps(97, { y: 0.9, amp: 0.1, cols: 26 }) },
+  ],
+  desert: [
+    { t: 'lin', a: 180, s: [['#8fd3ff', 0], ['#ffe9b5', 0.55], ['#f2c777', 0.8], ['#c98b3e', 1]] },
+    { t: 'rad', x: 0.2, y: 0.24, rx: 0.14, ry: 0.5, s: [['rgba(255,250,210,0.95)', 0], ['rgba(255,250,210,0)', 1]] },
+    { t: 'poly', c: '#e3b263', p: steps(101, { y: 0.74, amp: 0.1, cols: 12 }) },
+    { t: 'poly', c: '#b97c33', p: steps(103, { y: 0.9, amp: 0.08, cols: 20 }) },
+  ],
+  snow: [
+    { t: 'lin', a: 180, s: [['#22375f', 0], ['#5b84b8', 0.55], ['#c7e0f4', 1]] },
+    { t: 'dots', d: dots(107, 30, 'rgba(255,255,255,0.95)', [0.7, 1.6]) },
+    { t: 'poly', c: '#dcecf8', p: steps(109, { y: 0.72, amp: 0.2, cols: 14 }) },
+    { t: 'poly', c: '#ffffff', p: steps(113, { y: 0.9, amp: 0.08, cols: 24 }) },
+  ],
+  deepdark: [
+    { t: 'lin', a: 180, s: [['#03080d', 0], ['#06161f', 0.6], ['#0a2530', 1]] },
+    { t: 'rad', x: 0.5, y: 0.82, rx: 0.5, ry: 0.5, s: [['rgba(40,220,230,0.4)', 0], ['rgba(40,220,230,0)', 1]] },
+    { t: 'dots', d: dots(127, 22, 'rgba(90,240,240,0.9)', [0.6, 1.5], [0, 0.3, 1, 1]) },
+    { t: 'poly', c: '#02060a', p: steps(131, { y: 0.14, amp: 0.26, cols: 22, top: true }) },
+    { t: 'poly', c: '#051018', p: steps(137, { y: 0.9, amp: 0.1, cols: 26 }) },
+  ],
+  lush: [
+    { t: 'lin', a: 180, s: [['#123a2c', 0], ['#2c7a4c', 0.55], ['#7bd16a', 1]] },
+    { t: 'rad', x: 0.7, y: 0.4, rx: 0.3, ry: 0.8, s: [['rgba(255,214,110,0.5)', 0], ['rgba(255,214,110,0)', 1]] },
+    { t: 'dots', d: dots(139, 16, 'rgba(255,214,110,0.95)', [0.9, 1.9]) },
+    { t: 'poly', c: '#0e2c22', p: steps(149, { y: 0.16, amp: 0.3, cols: 20, top: true }) },
+    { t: 'poly', c: '#1c5a3a', p: steps(151, { y: 0.88, amp: 0.12, cols: 24 }) },
+  ],
+  mesa: [
+    { t: 'lin', a: 180, s: [['#ffd9a6', 0], ['#ff9f66', 0.55], ['#c9562f', 1]] },
+    { t: 'poly', c: '#b9542c', p: steps(157, { y: 0.62, amp: 0.24, cols: 8 }) },
+    { t: 'poly', c: '#e08a4a', p: steps(163, { y: 0.76, amp: 0.14, cols: 10 }) },
+    { t: 'poly', c: '#7c3219', p: steps(167, { y: 0.92, amp: 0.08, cols: 18 }) },
+  ],
+  mushroom: [
+    { t: 'lin', a: 180, s: [['#3a2a5c', 0], ['#7b4a8c', 0.6], ['#c98bb0', 1]] },
+    { t: 'rad', x: 0.3, y: 0.62, rx: 0.2, ry: 0.5, s: [['rgba(255,90,90,0.6)', 0], ['rgba(255,90,90,0)', 1]] },
+    { t: 'rad', x: 0.74, y: 0.68, rx: 0.18, ry: 0.45, s: [['rgba(220,170,110,0.55)', 0], ['rgba(220,170,110,0)', 1]] },
+    { t: 'dots', d: dots(173, 18, 'rgba(255,240,255,0.85)', [0.6, 1.4], [0, 0, 1, 0.7]) },
+    { t: 'poly', c: '#5c4470', p: steps(179, { y: 0.88, amp: 0.1, cols: 22 }) },
+  ],
+  void: [
+    { t: 'lin', a: 180, s: [['#000000', 0], ['#050208', 0.7], ['#10061c', 1]] },
+    { t: 'dots', d: dots(181, 34, 'rgba(255,255,255,0.8)', [0.4, 1.1]) },
+    { t: 'rad', x: 0.5, y: 0.5, rx: 0.2, ry: 0.55, s: [['rgba(150,90,255,0.3)', 0], ['rgba(150,90,255,0)', 1]] },
+  ],
 };
 
 export function presetLayers(id) {
@@ -474,12 +651,13 @@ export function validateField(field, v, ctx = {}) {
       if (typeof v !== 'string' || v.length > LIMITS.bio) return 'bad_bio';
       return null;
     case 'theme':
-      if (!isObj(v) || !onlyKeys(v, ['from', 'to', 'angle'])) return 'bad_theme';
-      if ((v.from !== undefined && !isHex(v.from)) || (v.to !== undefined && !isHex(v.to))) return 'bad_theme';
+      if (!isObj(v) || !onlyKeys(v, ['from', 'via', 'to', 'angle'])) return 'bad_theme';
+      if ((v.from !== undefined && !isHex(v.from)) || (v.via !== undefined && !isHex(v.via)) || (v.to !== undefined && !isHex(v.to))) return 'bad_theme';
       if (v.angle !== undefined && (num(v.angle) === null || v.angle < 0 || v.angle > 360)) return 'bad_theme';
       return null;
     case 'nameStyle':
-      if (!isObj(v) || !onlyKeys(v, ['font', 'effect', 'color', 'glow'])) return 'bad_nameStyle';
+      if (!isObj(v) || !onlyKeys(v, ['font', 'effect', 'color', 'glow', 'caps', 'italic', 'outline'])) return 'bad_nameStyle';
+      for (const k of ['caps', 'italic', 'outline']) if (v[k] !== undefined && typeof v[k] !== 'boolean') return 'bad_nameStyle';
       if (v.font !== undefined && !FONTS.includes(v.font)) return 'bad_nameStyle';
       if (v.effect !== undefined && !EFFECTS.includes(v.effect)) return 'bad_nameStyle';
       if (v.color !== undefined && !isHex(v.color)) return 'bad_nameStyle';
@@ -495,6 +673,10 @@ export function validateField(field, v, ctx = {}) {
         if (v.kind === 'animated' && !ctx.premium) return 'premium_required:banner';
         return null;
       }
+      if (v.kind === 'klipy') {
+        if (!isKlipyUrl(v.url) || (v.still !== undefined && !isKlipyUrl(v.still)) || (v.slug !== undefined && !KLIPY_SLUG.test(String(v.slug)))) return 'bad_banner';
+        return null;
+      }
       return 'bad_banner';
     case 'favoriteServers':
       if (!Array.isArray(v) || v.length > LIMITS.favoriteServers) return 'bad_favoriteServers';
@@ -505,7 +687,8 @@ export function validateField(field, v, ctx = {}) {
       return null;
     case 'publicStats': {
       if (v === null) return null;
-      if (!isObj(v) || !onlyKeys(v, ['hours', 'sessions', 'topVersion', 'topLoader', 'since'])) return 'bad_publicStats';
+      if (!isObj(v) || !onlyKeys(v, ['hours', 'sessions', 'topVersion', 'topLoader', 'since', ...EXTRA_STATS])) return 'bad_publicStats';
+      for (const k of EXTRA_STATS) if (v[k] !== undefined && (num(v[k]) === null || v[k] < 0 || v[k] > 1e12)) return 'bad_publicStats';
       const range = (x, max) => x === undefined || (num(x) !== null && x >= 0 && x <= max);
       const text = (x, max) => x === undefined || (typeof x === 'string' && x.length <= max);
       if (!range(v.hours, 1_000_000) || !range(v.sessions, 10_000_000) || !text(v.topVersion, 32) || !text(v.topLoader, 16) || !text(v.since, 32)) return 'bad_publicStats';
@@ -525,6 +708,21 @@ export function validateField(field, v, ctx = {}) {
         if (id === null || id === undefined) continue;
         if (!canEquip(slot, id, ctx)) return `not_owned:${id}`;
       }
+      return null;
+    case 'cardStyle':
+      if (!isObj(v) || !onlyKeys(v, ['pattern', 'avatar', 'layout', 'accent'])) return 'bad_cardStyle';
+      if ((v.pattern !== undefined && !CARD_PATTERNS.includes(v.pattern)) || (v.avatar !== undefined && !AVATAR_SHAPES.includes(v.avatar))) return 'bad_cardStyle';
+      if ((v.layout !== undefined && !CARD_LAYOUTS.includes(v.layout)) || (v.accent !== undefined && !isHex(v.accent))) return 'bad_cardStyle';
+      return null;
+    case 'links':
+      if (!Array.isArray(v) || v.length > LIMITS.links) return 'bad_links';
+      for (const l of v) if (!isObj(l) || !onlyKeys(l, ['kind', 'url']) || !isProfileLink(l.kind, l.url)) return 'bad_links';
+      return null;
+    case 'showcase':
+      if (!isObj(v) || !onlyKeys(v, ['achievements', 'clips', 'skin'])) return 'bad_showcase';
+      if (v.skin !== undefined && typeof v.skin !== 'boolean') return 'bad_showcase';
+      if (v.achievements !== undefined && (!Array.isArray(v.achievements) || v.achievements.length > LIMITS.pinnedAchievements || !v.achievements.every((a) => typeof a === 'string' && ACH_ID.test(a)))) return 'bad_showcase';
+      if (v.clips !== undefined && (!Array.isArray(v.clips) || v.clips.length > LIMITS.pinnedClips || !v.clips.every((c) => typeof c === 'string' && UUID.test(c)))) return 'bad_showcase';
       return null;
     default:
       return `bad_field:${field}`;
@@ -559,6 +757,9 @@ export function customOf(p) {
     publicStats: n.publicStats,
     featured: n.featured.map((f) => ({ ...f })),
     equipped: { ...n.equipped },
+    cardStyle: { ...n.cardStyle },
+    links: n.links.map((l) => ({ ...l })),
+    showcase: { achievements: n.showcase.achievements.map((a) => a.id), clips: n.showcase.clips.map((c) => c.id), skin: n.showcase.skin },
   });
 }
 
@@ -569,7 +770,7 @@ export function canonical(d) {
   if ('bio' in d) out.bio = typeof d.bio === 'string' && d.bio.trim() ? d.bio.trim() : null;
   if ('theme' in d) {
     const t = isObj(d.theme) ? d.theme : {};
-    out.theme = isHex(t.from) && isHex(t.to) ? { from: t.from.toLowerCase(), to: t.to.toLowerCase(), angle: Math.round(Math.max(0, Math.min(360, Number(t.angle) || 0))) } : {};
+    out.theme = isHex(t.from) && isHex(t.to) ? { from: t.from.toLowerCase(), ...(isHex(t.via) ? { via: t.via.toLowerCase() } : {}), to: t.to.toLowerCase(), angle: Math.round(Math.max(0, Math.min(360, Number(t.angle) || 0))) } : {};
   }
   if ('nameStyle' in d) {
     const s = isObj(d.nameStyle) ? d.nameStyle : {};
@@ -579,12 +780,14 @@ export function canonical(d) {
     if (isHex(s.color)) ns.color = s.color.toLowerCase();
     const g = Math.round(Number(s.glow) || 0);
     if (g > 0) ns.glow = Math.min(100, g);
+    for (const k of ['caps', 'italic', 'outline']) if (s[k] === true) ns[k] = true;
     out.nameStyle = ns;
   }
   if ('banner' in d) {
     const b = isObj(d.banner) ? d.banner : {};
     if (b.kind === 'preset' && BANNER_PRESETS.includes(b.preset)) out.banner = { kind: 'preset', preset: b.preset };
     else if ((b.kind === 'image' || b.kind === 'animated') && typeof b.url === 'string') out.banner = { kind: b.kind, url: b.url };
+    else if (b.kind === 'klipy' && typeof b.url === 'string') out.banner = { kind: 'klipy', url: b.url, ...(b.still ? { still: b.still } : {}), ...(b.slug ? { slug: b.slug } : {}) };
     else out.banner = { kind: 'none' };
   }
   if ('favoriteServers' in d) {
@@ -598,7 +801,7 @@ export function canonical(d) {
     if (!isObj(d.publicStats)) out.publicStats = null;
     else {
       const ps = {};
-      for (const k of ['hours', 'sessions', 'topVersion', 'topLoader', 'since']) if (d.publicStats[k] !== undefined && d.publicStats[k] !== null && d.publicStats[k] !== '') ps[k] = d.publicStats[k];
+      for (const k of ['hours', 'sessions', 'topVersion', 'topLoader', 'since', ...EXTRA_STATS]) if (d.publicStats[k] !== undefined && d.publicStats[k] !== null && d.publicStats[k] !== '') ps[k] = d.publicStats[k];
       out.publicStats = ps;
     }
   }
@@ -613,6 +816,26 @@ export function canonical(d) {
     const eq = {};
     for (const slot of EQUIP_SLOTS) if (typeof e[slot] === 'string' && e[slot]) eq[slot] = e[slot];
     out.equipped = eq;
+  }
+  if ('cardStyle' in d) {
+    const c = isObj(d.cardStyle) ? d.cardStyle : {};
+    const cs = {};
+    if (CARD_PATTERNS.includes(c.pattern) && c.pattern !== 'none') cs.pattern = c.pattern;
+    if (AVATAR_SHAPES.includes(c.avatar) && c.avatar !== 'square') cs.avatar = c.avatar;
+    if (CARD_LAYOUTS.includes(c.layout) && c.layout !== 'classic') cs.layout = c.layout;
+    if (isHex(c.accent)) cs.accent = c.accent.toLowerCase();
+    out.cardStyle = cs;
+  }
+  if ('links' in d) {
+    out.links = (Array.isArray(d.links) ? d.links : []).filter((l) => isObj(l) && l.url).map((l) => ({ kind: l.kind, url: String(l.url).trim() }));
+  }
+  if ('showcase' in d) {
+    const s = isObj(d.showcase) ? d.showcase : {};
+    const sc = {};
+    if (Array.isArray(s.achievements) && s.achievements.length) sc.achievements = s.achievements.slice();
+    if (Array.isArray(s.clips) && s.clips.length) sc.clips = s.clips.slice();
+    if (s.skin === true) sc.skin = true;
+    out.showcase = sc;
   }
   return out;
 }
@@ -653,7 +876,7 @@ const dayIso = (ms) => {
   const d = new Date(ms);
   return Number.isFinite(d.getTime()) ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : null;
 };
-export function publicStatsFromReport(report) {
+export function publicStatsFromReport(report, ingame = null) {
   if (!isObj(report)) return null;
   const totals = isObj(report.totals) ? report.totals : {};
   const ms = num(totals.ms) || 0;
@@ -669,6 +892,25 @@ export function publicStatsFromReport(report) {
   const first = num(report.firstPlay) || num(report.firstUse);
   if (first && first > 0) out.since = dayIso(first);
   if (!out.since) delete out.since;
+  const put = (k, v) => {
+    const x = num(v);
+    if (x !== null && x > 0) out[k] = Math.min(1e12, Math.round(x * 10) / 10);
+  };
+  put('daysPlayed', totals.daysPlayed);
+  put('bestStreak', report.streak?.longest?.days);
+  put('longestHours', (num(report.records?.longestSession?.ms) || 0) / 3_600_000);
+  put('versions', totals.versionsPlayed);
+  put('loaders', totals.loadersPlayed);
+  put('instances', report.instancesCount);
+  // De los mundos de esta PC (opcional: si no se pudieron leer, no se publican)
+  const g = isObj(ingame?.totals) ? ingame.totals : null;
+  if (g) {
+    put('worlds', ingame.worldsCount);
+    put('blocks', g.blocksMined);
+    put('mobs', g.mobKills);
+    put('deaths', g.deaths);
+    put('distanceKm', (num(g.distanceCm) || 0) / 100000);
+  }
   return out;
 }
 
@@ -701,4 +943,30 @@ export function mediaFileName(kind, ext, now = Date.now(), rnd = Math.random()) 
 export function orphanMedia(files, keepUrls) {
   const keep = new Set((keepUrls || []).map((u) => mediaPathFromUrl(u)?.name).filter(Boolean));
   return (files || []).filter((f) => f && typeof f.name === 'string' && MEDIA_NAME.test(f.name) && !keep.has(f.name)).map((f) => f.name);
+}
+
+// ---------- KLIPY ----------
+// De la respuesta de KLIPY a lo que usa el editor. Se saltea lo que no es un GIF, sin reordenar nada.
+// Para el banner alcanza con el tamaño md; si no esta, el mas chico que haya.
+export function parseGifs(json) {
+  const box = json?.data;
+  const list = Array.isArray(box?.data) ? box.data : [];
+  const out = [];
+  for (const it of list) {
+    if (!it || (it.type && it.type !== 'gif')) continue;
+    const file = it.file || {};
+    const pick = (fmt, sizes) => {
+      for (const s of sizes) {
+        const url = file[s]?.[fmt]?.url;
+        if (typeof url === 'string') return url;
+      }
+      return null;
+    };
+    const url = pick('webp', ['md', 'hd', 'sm']) || pick('gif', ['md', 'hd', 'sm']);
+    const thumb = pick('webp', ['sm', 'xs', 'md']) || pick('gif', ['sm', 'xs', 'md']) || url;
+    const still = pick('jpg', ['md', 'sm', 'xs', 'hd']);
+    if (!url) continue;
+    out.push({ slug: typeof it.slug === 'string' ? it.slug : null, title: typeof it.title === 'string' ? it.title : '', url, thumb, still });
+  }
+  return { items: out, hasNext: box?.has_next === true };
 }

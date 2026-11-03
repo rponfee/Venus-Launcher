@@ -140,9 +140,9 @@ class BadgeCacheTest {
 
 	@Test
 	void unknownStylesUseTheDefaultGlyph() {
-		assertEquals(String.valueOf((char) 0xE000), VenusBadge.glyph("default"));
-		assertEquals(String.valueOf((char) 0xE001), VenusBadge.glyph("gold"));
-		assertEquals(String.valueOf((char) 0xE003), VenusBadge.glyph("ice"));
-		assertEquals(String.valueOf((char) 0xE000), VenusBadge.glyph("raro"));
+		assertEquals(String.valueOf((char) 0xE000), BadgeCore.glyph("default"));
+		assertEquals(String.valueOf((char) 0xE001), BadgeCore.glyph("gold"));
+		assertEquals(String.valueOf((char) 0xE003), BadgeCore.glyph("ice"));
+		assertEquals(String.valueOf((char) 0xE000), BadgeCore.glyph("raro"));
 	}
 }

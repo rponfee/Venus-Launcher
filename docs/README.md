@@ -14,7 +14,7 @@
 | [asistente-ia.md](asistente-ia.md) | Desarrolladores | Cómo funciona el Asistente IA por dentro: bucle de herramientas, permisos, restricciones, Deshacer, configuración y privacidad. |
 | [extension-ejemplo/README.md](extension-ejemplo/README.md) | Creadores de extensiones | Cómo hacer una extensión (`manifest.json`, permisos y API) con un ejemplo que funciona tal cual. |
 | [../supabase/functions/README.md](../supabase/functions/README.md) | Dueño y desarrolladores | Desplegar y probar las Edge Functions (secretos, `curl` y pruebas automáticas). |
-| [insignia.md](insignia.md) | Dueño y desarrolladores | Insignia de Venus en el juego: el mod de Fabric, cómo se verifica la cuenta con Mojang sin mandar el token, la consulta del mod, el despliegue y cómo probarla. |
+| [insignia.md](insignia.md) | Dueño y desarrolladores | Insignia de Venus en el juego: el mod (Fabric, NeoForge y Forge), cómo se verifica la cuenta con Mojang sin mandar el token, la consulta del mod, el despliegue y cómo probarla. |
 | [musica.md](musica.md) | Desarrolladores | Música: el ayudante de los controles multimedia de Windows, volumen por app, atajos, canales y errores. |
 | [overlay.md](overlay.md) | Desarrolladores | Overlay en el juego: la ventana sobre el juego, el seguimiento de su rectángulo, los eventos que acepta, los widgets y los ajustes. |
 | [clips.md](clips.md) | Desarrolladores | Clips y capturas: grabación y repetición instantánea en WebM, dónde se guarda todo, editor, compartir y la descripción con IA. |

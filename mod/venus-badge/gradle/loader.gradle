@@ -1,0 +1,32 @@
+// Lo que comparten todas las compilaciones del mod. Cada subproyecto lo aplica después de su plugin (Loom o ModDevGradle).
+// El código común y los recursos se compilan como fuentes de cada subproyecto (no como un jar aparte que después haya que
+// meter adentro): así salen para la versión de Java de ese Minecraft y el .jar final no necesita nada más.
+version = "${mod_version}+mc${minecraft_version}"
+group = maven_group
+
+base {
+	archivesName = "${archives_base_name}-${loader_name}"
+}
+
+sourceSets.main.java.srcDir rootProject.file('src/main/java')
+sourceSets.main.resources.srcDir rootProject.file('src/main/resources')
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = java_release as int
+	it.options.encoding = 'UTF-8'
+}
+
+// El mismo reemplazo en fabric.mod.json, mods.toml o neoforge.mods.toml (el que tenga el subproyecto).
+processResources {
+	def version = mod_version
+	inputs.property 'version', version
+	filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
+		expand 'version': version
+	}
+}
+
+jar {
+	from(rootProject.file('../../LICENSE')) {
+		rename { "LICENSE_${archives_base_name}" }
+	}
+}

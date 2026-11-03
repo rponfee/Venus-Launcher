@@ -1,6 +1,6 @@
 // Clips y capturas en toda la interfaz: avisos al guardar (con "Ver"), logros first_screenshot / first_clip, el
-// plan (Venus Premium = repeticion de 120 s), la señal 'media-share' de un amigo (aviso con "Ver") y el panel de
-// Ajustes: atajos, repeticion instantanea, calidad, fps, audio, avisos y carpeta.
+// plan (Venus Premium = repeticion de 5 minutos), la señal 'media-share' de un amigo (aviso con "Ver") y el panel de
+// Ajustes: atajos, repeticion instantanea, clips automaticos, calidad, fps, audio, avisos y carpeta.
 // Contrato: startup() (idempotente), capturePanel() -> Element (con .destroy()).
 // Canales: capture:status, capture:setPremium, capture:testShortcut, capture:openFolder; eventos capture:saved,
 // capture:state y capture:notice.
@@ -13,6 +13,10 @@ import { cloud } from '../cloud.js';
 const NS = 'capture';
 const ACTIONS = ['replay', 'record', 'screenshot'];
 const QUALITIES = ['720p', '1080p', 'native'];
+const AUTO_TYPES = ['death', 'advancement', 'boss'];
+const AUTO_COOLDOWNS = [15, 30, 60, 120, 300];
+const AUTO_LIMITS = [5, 10, 20, 50];
+const AUTO_LENGTHS = [30, 60, 120, 300];
 let readyPromise = null;
 let started = false;
 const achieved = new Set(); // logros ya avisados en esta sesion
@@ -47,20 +51,21 @@ function onSaved(evt) {
   if (evt.type === 'screenshot') achievement('first_screenshot');
   else if (evt.type === 'clip' || evt.type === 'recording') achievement('first_clip');
   if (store.settings?.capture?.notify === false) return;
-  const title = evt.type === 'screenshot' ? t('capture.savedShot') : evt.type === 'recording' ? t('capture.savedRecording') : t('capture.savedClip');
+  const auto = AUTO_TYPES.includes(evt.reason) ? t('capture.savedAuto', { reason: t(`capture.reason_${evt.reason}`) }) : null;
+  const title = evt.type === 'screenshot' ? t('capture.savedShot') : evt.type === 'recording' ? t('capture.savedRecording') : auto || t('capture.savedClip');
   const name = String(evt.path || '').split(/[\\/]/).pop();
   const msg = h('div', { class: 'cap-toast' }, h('span', { class: 'cap-toast-name', title: name }, name), viewButton(`clips/${tabFor(evt.type)}`));
   toast('good', title, msg, 6000);
 }
 
-// ---------- Plan (repeticion de 120 s con Venus Premium) ----------
+// ---------- Plan (repeticion de 5 minutos con Venus Premium) ----------
 
 async function syncPremium() {
   let premium = null;
   try {
     premium = await import('./premium.js');
   } catch {
-    premium = null; // todavia no existe: la repeticion queda en 30 s
+    premium = null; // todavia no existe: la repeticion queda en 60 s
   }
   const push = (v) => api.invoke('capture:setPremium', v === true).catch(() => {});
   if (typeof premium?.isPremium !== 'function') return;
@@ -307,7 +312,10 @@ async function buildPanel(root, offs, isDisposed) {
     if (st.recording?.active) {
       text = t('capture.statusRecording');
       cls = 'bad';
-    } else if (st.game) text = st.replay?.active ? t('capture.statusReplay', { seconds: st.replay.buffered, max: st.replaySeconds }) : t('capture.statusGame');
+    } else if (st.game && st.replay?.error) {
+      text = t('capture.statusReplayNoDisk');
+      cls = 'warn';
+    } else if (st.game) text = st.replay?.active ? t('capture.statusReplayDisk', { seconds: st.replay.buffered, max: st.replaySeconds, disk: fmtBytes(st.replay.disk || 0) }) : t('capture.statusGame');
     else text = t('capture.statusIdle');
     if (st.game || st.recording?.active) cls = cls || 'good';
     mount(statusLine, h('span', { class: ['pill', cls] }, h('span', { class: 'cap-dot', 'aria-hidden': 'true' }), text));
@@ -369,7 +377,7 @@ async function buildPanel(root, offs, isDisposed) {
     return h(
       'div',
       { class: 'cap-sc-row' },
-      h('div', { class: 'cap-sc-label' }, h('div', { class: 'tr-title' }, t(`capture.action_${action}`)), h('div', { class: 'tr-sub' }, t(`capture.action_${action}Sub`, { seconds: st?.replaySeconds || 30 }))),
+      h('div', { class: 'cap-sc-label' }, h('div', { class: 'tr-title' }, t(`capture.action_${action}`)), h('div', { class: 'tr-sub' }, t(`capture.action_${action}Sub`, { seconds: st?.replaySeconds || 60 }))),
       keys,
       h('div', { class: 'cap-sc-actions' }, change, clear),
       warn,
@@ -386,6 +394,27 @@ async function buildPanel(root, offs, isDisposed) {
     );
   }
 
+  // ---------- Clips automaticos ----------
+  function autoSection(c, maxSeconds) {
+    const a = c.auto || {};
+    const replayOn = Boolean(c.replay);
+    const master = toggleRow('auto', t('capture.autoEnable'), t('capture.autoEnableSub'), Boolean(a.enabled), (v) => save({ auto: { enabled: v } }));
+    if (!replayOn) master.querySelector('input')?.setAttribute('disabled', '');
+    const rows = [];
+    if (!replayOn) rows.push(h('p', { class: 'cap-help' }, t('capture.autoNeedsReplay')));
+    else if (a.enabled) {
+      for (const type of AUTO_TYPES) rows.push(toggleRow(`auto-${type}`, t(`capture.auto_${type}`), t(`capture.auto_${type}Sub`), a[type] !== false, (v) => save({ auto: { [type]: v } })));
+      const seconds = (s) => (s < 60 ? t('capture.autoSecondsValue', { seconds: s }) : t('capture.autoMinutesValue', { minutes: s / 60 }));
+      rows.push(
+        h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.autoLength')), segmented(t('capture.autoLength'), AUTO_LENGTHS.filter((s) => s <= maxSeconds).map((s) => ({ value: s, label: seconds(s) })), Math.min(a.seconds || 60, maxSeconds), (v) => save({ auto: { seconds: Number(v) } }))),
+        h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.autoCooldown')), segmented(t('capture.autoCooldown'), AUTO_COOLDOWNS.map((s) => ({ value: s, label: seconds(s) })), a.cooldown, (v) => save({ auto: { cooldown: Number(v) } }))),
+        h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.autoLimit')), segmented(t('capture.autoLimit'), AUTO_LIMITS.map((n) => ({ value: n, label: String(n) })), a.maxPerSession, (v) => save({ auto: { maxPerSession: Number(v) } }))),
+        h('p', { class: 'cap-help' }, t('capture.autoHelp')),
+      );
+    }
+    return h('div', { class: 'cap-section' }, h('div', { class: 'cap-section-title', role: 'heading', 'aria-level': '3' }, icon('sparkles'), t('capture.autoTitle')), master, rows);
+  }
+
   function draw() {
     if (isDisposed()) return;
     // El foco vuelve al mismo control despues de redibujar
@@ -393,17 +422,18 @@ async function buildPanel(root, offs, isDisposed) {
     capturing?.off();
     capturing = null;
     const c = cfg();
-    const seconds = st?.replaySeconds || 30;
+    const seconds = st?.replaySeconds || 60;
     const premiumNote = st?.premium
-      ? h('p', { class: 'cap-note good' }, icon('crown'), h('span', {}, t('capture.premiumOn')))
-      : h('p', { class: 'cap-note' }, icon('crown'), h('span', {}, t('capture.premiumOff')), h('button', { class: 'btn sm ghost', type: 'button', onclick: () => navigate('settings/plan') }, t('capture.seePlans')));
+      ? h('p', { class: 'cap-note good' }, icon('crown'), h('span', {}, t('capture.premiumOnLong')))
+      : h('p', { class: 'cap-note' }, icon('crown'), h('span', {}, t('capture.premiumOffLong')), h('button', { class: 'btn sm ghost', type: 'button', onclick: () => navigate('settings/plan') }, t('capture.seePlans')));
     const replay = h(
       'div',
       { class: 'cap-section' },
       h('div', { class: 'cap-section-title', role: 'heading', 'aria-level': '3' }, icon('history'), t('capture.replayTitle')),
-      toggleRow('replay', t('capture.replayEnable'), t('capture.replayEnableSub', { seconds, memory: fmtBytes(st?.memoryEstimate || 0) }), Boolean(c.replay), (v) => save({ replay: v })),
+      toggleRow('replay', t('capture.replayEnable'), t('capture.replayDiskSub', { seconds, disk: fmtBytes(st?.diskEstimate || 0) }), Boolean(c.replay), (v) => save({ replay: v })),
       premiumNote,
     );
+    const auto = autoSection(c, seconds);
     const quality = h(
       'div',
       { class: 'cap-section' },
@@ -446,7 +476,7 @@ async function buildPanel(root, offs, isDisposed) {
       ),
       toggleRow('notify', t('capture.notify'), t('capture.notifySub'), c.notify !== false, (v) => save({ notify: v })),
     );
-    mount(body, h('div', { class: 'cap-cols' }, h('div', { class: 'cap-col' }, replay, quality), h('div', { class: 'cap-col' }, shortcuts, folder)));
+    mount(body, h('div', { class: 'cap-cols' }, h('div', { class: 'cap-col' }, replay, auto, quality), h('div', { class: 'cap-col' }, shortcuts, folder)));
     drawStatus();
     if (focusId) [...root.querySelectorAll('[data-cap-id]')].find((el) => el.dataset.capId === focusId)?.focus();
   }

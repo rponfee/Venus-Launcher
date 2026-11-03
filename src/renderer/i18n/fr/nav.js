@@ -22,7 +22,7 @@ export default {
   messages: "Messages",
   stats: "Statistiques",
   performance: "Performances",
-  devmode: "Mode développeur",
+  achievements: "Succès",
   settings: "Paramètres",
   welcome: "Bienvenue",
 };

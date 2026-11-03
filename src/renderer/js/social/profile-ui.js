@@ -4,13 +4,14 @@
 // "Mi perfil" abre el editor de features/profile-editor.js.
 // Se pueden usar desde cualquier pagina: cargan solas su hoja de estilos y sus textos.
 import { h, icon, mount, modal, toast, ok, fail, confirmDialog, copyText, avatarImg, ensureCss, registerIcons, fmtAgo, fmtDate, fmtDuration, loaderBadge, instanceLoaderKey, LOADERS } from '../ui.js';
-import { store } from '../store.js';
+import { store, api } from '../store.js';
 import { t, loadNs, locale } from '../i18n.js';
 import { social } from '../social.js';
 import { cloud } from '../cloud.js';
 import { badgesOf, headId, presenceLabel, activityLine, isJoinable, MY_STATUSES } from './cosmetics.js';
-import { ensureProfileStyle, normalize, styledName, applyFrame, bannerEl as profileBanner, gradientCss, premiumChip } from './profile-style.js';
+import { ensureProfileStyle, normalize, styledName, applyFrame, bannerEl as profileBanner, gradientCss, premiumChip, rankChip, cardStyleAttrs } from './profile-style.js';
 import { mergeProfiles } from '../features/profile-editor/model.js';
+import { achievementInfo } from '../pages/achievements/names.js';
 
 registerIcons({
   scCheckCheck: '<path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/>',
@@ -25,7 +26,7 @@ registerIcons({
 // Hoja de estilos y textos del modulo (por si se abre una tarjeta fuera de la pagina de Mensajes).
 export async function prepareSocialUi() {
   ensureCss('pages/messages');
-  await Promise.all([loadNs('social'), ensureProfileStyle()]);
+  await Promise.all([loadNs('social'), ensureProfileStyle(), loadNs('achievements').catch(() => null)]);
 }
 
 // ---------- Piezas ----------
@@ -49,8 +50,8 @@ export function headWithDot(profile, presence, size = 36) {
   return h('span', { class: 'sc-headwrap', style: { width: `${size}px`, height: `${size}px` } }, headImg(profile, size), presence ? presenceDot(presence) : null);
 }
 
-export function badgeChips(profile, { compact = false, max = 8 } = {}) {
-  const list = badgesOf(profile).slice(0, max);
+export function badgeChips(profile, { compact = false, max = 8, rank = true } = {}) {
+  const list = badgesOf(profile, { rank }).slice(0, max);
   if (!list.length) return null;
   return h(
     'span',
@@ -87,6 +88,9 @@ function statTiles(stats) {
   if (stats.since) {
     const d = new Date(`${stats.since}T12:00:00`);
     if (Number.isFinite(d.getTime())) tiles.push(tile(fmtDate(d.getTime(), { month: 'short', year: 'numeric' }), P('statSince')));
+  }
+  for (const k of ['daysPlayed', 'bestStreak', 'longestHours', 'versions', 'loaders', 'instances', 'worlds', 'blocks', 'mobs', 'deaths', 'distanceKm']) {
+    if (stats[k] > 0) tiles.push(tile(nf(stats[k], k === 'longestHours' || k === 'distanceKm' ? 1 : 0), P(`stat_${k}`)));
   }
   return tiles.length ? h('div', { class: 'pf-stats' }, tiles) : null;
 }
@@ -156,6 +160,87 @@ function featuredGrid(list, { preview }) {
   );
 }
 
+// Redes del perfil: abren en el navegador (ya estan filtradas a sitios conocidos)
+function linkRow(links, { preview }) {
+  if (!links?.length) return null;
+  return h(
+    'div',
+    { class: 'pf-links' },
+    links.map((l) =>
+      h(
+        'button',
+        {
+          class: 'pf-link',
+          type: 'button',
+          disabled: preview,
+          title: l.url,
+          onclick: async () => {
+            const { openLink } = await import('../community.js');
+            openLink(l.url);
+          },
+        },
+        icon('link'),
+        h('span', {}, P(`link_${l.kind}`)),
+      ),
+    ),
+  );
+}
+
+// Logros destacados
+function pinnedAchievements(list) {
+  if (!list?.length) return null;
+  return h(
+    'div',
+    { class: 'pf-achs' },
+    list.map((a) => {
+      const info = achievementInfo(a.id);
+      return h(
+        'div',
+        { class: 'pf-ach', dataset: { tier: info.tier }, title: info.desc || info.name },
+        h('span', { class: 'pf-ach-icon' }, icon(info.icon)),
+        h('span', { class: 'pf-ach-main' }, h('span', { class: 'pf-ach-name' }, info.name), h('span', { class: 'pf-ach-tier' }, a.at ? `${info.tierLabel} · ${fmtDate(a.at)}` : info.tierLabel)),
+      );
+    }),
+  );
+}
+
+// Clips destacados: se reproducen al tocarlos (preload none: no baja nada hasta entonces)
+function pinnedClips(list) {
+  const clips = (list || []).filter((c) => c.url);
+  if (!clips.length) return null;
+  return h(
+    'div',
+    { class: 'pf-clips' },
+    clips.map((c) => h('div', { class: 'pf-clip' }, h('video', { src: c.url, controls: true, preload: 'none', playsinline: true, 'aria-label': c.title || P('pinnedClips') }), c.title ? h('span', { class: 'pf-clip-title', title: c.title }, c.title) : null)),
+  );
+}
+
+// Skin en 3D: se pide recien cuando el visitante toca el boton (consulta a Mojang)
+function skinBlock(n, { preview }) {
+  if (!n.showcase?.skin || !n.mcName) return null;
+  const box = h('div', { class: 'pf-skin-box' });
+  const btn = h('button', { class: 'btn tonal sm', type: 'button', disabled: preview }, icon('user'), P('skinView', { name: n.mcName }));
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      ensureCss('pages/skins');
+      await loadNs('skins').catch(() => null);
+      const [{ createViewer }, { loadImage, normalizeSkin }] = await Promise.all([import('../pages/skins/viewer.js'), import('../pages/skins/texture.js')]);
+      const res = await api.invoke('skins:publicSkin', n.mcName);
+      const norm = normalizeSkin(await loadImage(res.dataUrl));
+      const viewer = createViewer({ label: P('skinViewerLabel', { name: n.mcName }) });
+      viewer.setSkin(norm.canvas, res.variant);
+      mount(box, viewer.el);
+    } catch (err) {
+      console.warn('[perfil] skin:', err?.code || err?.message || err);
+      btn.disabled = false;
+      toast('bad', P('skinFailed'));
+    }
+  });
+  mount(box, btn);
+  return box;
+}
+
 const section = (iconName, label, content) => (content ? h('div', { class: 'pf-sec' }, h('div', { class: 'pf-sec-label' }, icon(iconName), h('span', {}, label)), content) : null);
 
 /**
@@ -175,7 +260,7 @@ export function profileCard(profile, { presence = 'offline', statusText = '', se
   const sub = [n.pronouns ? h('span', { class: 'ellipsis', title: n.pronouns }, n.pronouns) : null, n.username ? h('span', { class: 'ellipsis', title: `@${n.username}` }, `@${n.username}`) : null].filter(Boolean);
   const showStatus = presence || statusText;
   const body = [
-    h('div', { class: 'pf-card-top' }, head, h('div', { class: 'pf-card-chips' }, premiumChip(n), badgeChips(n, { compact: true, max: 6 }))),
+    h('div', { class: 'pf-card-top' }, head, h('div', { class: 'pf-card-chips' }, rankChip(n), premiumChip(n), badgeChips(n, { compact: true, max: 6, rank: false }))),
     h(
       'div',
       { class: 'pf-card-names' },
@@ -211,16 +296,21 @@ export function profileCard(profile, { presence = 'offline', statusText = '', se
       friend?.presence === 'offline' && friend.lastSeen ? h('div', { class: 'pf-profile-note' }, icon('clock'), t('social.lastSeen', { ago: fmtAgo(friend.lastSeen) })) : null,
       friend ? activityBlock(friend, { onJoin }) : null,
       section('user', t('social.about'), n.bio ? h('div', { class: 'pf-bio selectable' }, n.bio) : null),
+      section('link', P('links'), linkRow(n.links, { preview })),
+      section('trophy', Number.isFinite(n.achievementCount) ? P('pinnedAchCount', { n: n.achievementCount, total: n.achievementTotal || '?' }) : P('pinnedAch'), pinnedAchievements(n.showcase.achievements)),
       section('server', P('favoriteServers'), serverRows(n.favoriteServers, { preview, onAction })),
       section('chart', P('publicStats'), statTiles(n.publicStats)),
+      section('camera', P('pinnedClips'), pinnedClips(n.showcase.clips)),
+      section('user', P('showcaseSkin'), skinBlock(n, { preview })),
       section('camera', P('featured'), featuredGrid(n.featured, { preview })),
       facts.length ? h('div', { class: 'pf-divider', role: 'presentation' }) : null,
       facts.length ? h('div', { class: 'pf-facts' }, facts) : null,
     );
   }
+  const look = cardStyleAttrs(n);
   return h(
     'article',
-    { class: ['pf-card', fade && 'has-fade', compact && 'compact'], style: fade ? { '--pf-fade': fade, '--pf-fade-to': n.theme.to } : null, 'aria-label': P('cardAria', { name }) },
+    { class: ['pf-card', fade && 'has-fade', compact && 'compact', ...look.classes], style: { ...(fade ? { '--pf-fade': fade, '--pf-fade-to': n.theme.to } : {}), ...look.vars }, 'aria-label': P('cardAria', { name }) },
     profileBanner(n, { cls: 'pf-card-banner' }),
     h('div', { class: 'pf-card-body' }, body),
   );

@@ -1,5 +1,5 @@
 'use strict';
-// Pruebas de la insignia de Venus (sin Electron): el mod se instala solo en instancias Fabric/Quilt compatibles, se
+// Pruebas de la insignia de Venus (sin Electron): cada instancia compatible recibe el mod de su loader y version, se
 // actualiza solo si cambia, respeta si el jugador lo desactivo y se quita al apagarla; el registro pasa por el
 // desafio, Mojang y la Edge Function sin mandar el token de Minecraft a Venus.
 const test = require('node:test');
@@ -29,14 +29,58 @@ const SERVER = { url: 'https://example.supabase.co', anonKey: 'anon-publica' };
 const modFile = (inst) => path.join(inst, 'mods', badgeMod.MOD_FILE);
 const cfgFile = (inst) => path.join(inst, 'config', badgeMod.CONFIG_FILE);
 
-test('solo Fabric y Quilt de las versiones con compilacion', () => {
-  assert.ok(badgeMod.buildFor('fabric', '1.21.1'));
-  assert.ok(badgeMod.buildFor('fabric', '1.21'));
-  assert.ok(badgeMod.buildFor('quilt', '1.21.1'));
-  for (const [loader, v] of [['vanilla', '1.21.1'], ['forge', '1.21.1'], ['neoforge', '1.21.1'], ['optifine', '1.21.1'], ['fabric', '1.20.1'], ['fabric', '1.21.4']]) {
+test('cada loader y version con compilacion tiene su jar; el resto, ninguno', () => {
+  const jars = {
+    'fabric 1.21.1': 'venus-badge-mc1.21.1-fabric.jar',
+    'fabric 1.21': 'venus-badge-mc1.21.1-fabric.jar',
+    'quilt 1.21.1': 'venus-badge-mc1.21.1-fabric.jar',
+    'fabric 1.20.1': 'venus-badge-mc1.20.1-fabric.jar',
+    'quilt 1.20.1': 'venus-badge-mc1.20.1-fabric.jar',
+    'neoforge 1.21.1': 'venus-badge-mc1.21.1-neoforge.jar',
+    'neoforge 1.21': 'venus-badge-mc1.21.1-neoforge.jar',
+    'forge 1.20.1': 'venus-badge-mc1.20.1-forge.jar',
+  };
+  for (const [what, jar] of Object.entries(jars)) {
+    const [loader, v] = what.split(' ');
+    assert.equal(badgeMod.buildFor(loader, v)?.jar, jar, what);
+  }
+  for (const [loader, v] of [['vanilla', '1.21.1'], ['optifine', '1.21.1'], ['forge', '1.21.1'], ['forge', '1.20'], ['neoforge', '1.20.1'], ['fabric', '1.21.4'], ['fabric', '1.20'], ['legacyfabric', '1.20.1']]) {
     assert.equal(badgeMod.buildFor(loader, v), null, `${loader} ${v}`);
   }
-  assert.deepEqual(badgeMod.supportedVersions(), ['1.21', '1.21.1']);
+  assert.deepEqual(badgeMod.supportedVersions(), ['1.20.1', '1.21', '1.21.1']);
+});
+
+test('no instala con un loader mas viejo que el que pide el jar (el juego no arrancaria)', async () => {
+  for (const [loader, mc, old, ok] of [['fabric', '1.21.1', '0.15.10', '0.15.11'], ['quilt', '1.21.1', '0.25.0', '0.26.0'], ['fabric', '1.20.1', '0.14.20', '0.14.21'], ['quilt', '1.20.1', '0.18.10', '0.19.0']]) {
+    assert.equal(badgeMod.buildFor(loader, mc, old), null, `${loader} ${old}`);
+    assert.ok(badgeMod.buildFor(loader, mc, ok), `${loader} ${ok}`);
+    assert.ok(badgeMod.buildFor(loader, mc, 'latest'), `${loader} latest`);
+    assert.ok(badgeMod.buildFor(loader, mc, undefined), `${loader} sin version`);
+  }
+  assert.ok(badgeMod.buildFor('forge', '1.20.1', '47.1.0'));
+  assert.ok(badgeMod.buildFor('forge', '1.20.1', '1.20.1-47.1.0'));
+  assert.ok(badgeMod.buildFor('neoforge', '1.21.1', '21.1.1'));
+  const inst = tmpDir();
+  const bundledDir = bundle();
+  await badgeMod.apply({ instanceDir: inst, loader: 'fabric', loaderVersion: '0.16.14', mcVersion: '1.21.1', enabled: true, server: SERVER, bundledDir });
+  assert.deepEqual(await badgeMod.apply({ instanceDir: inst, loader: 'fabric', loaderVersion: '0.15.3', mcVersion: '1.21.1', enabled: true, server: SERVER, bundledDir }), { state: 'unsupported' });
+  assert.equal(fs.existsSync(modFile(inst)), false);
+});
+
+test('instala el jar de la instancia y lo cambia si la instancia cambia de loader o version', async () => {
+  const inst = tmpDir();
+  const bundledDir = tmpDir();
+  for (const b of badgeMod.BUILDS) fs.writeFileSync(path.join(bundledDir, b.jar), b.jar);
+  for (const [loader, mcVersion, jar] of [
+    ['forge', '1.20.1', 'venus-badge-mc1.20.1-forge.jar'],
+    ['neoforge', '1.21.1', 'venus-badge-mc1.21.1-neoforge.jar'],
+    ['quilt', '1.21', 'venus-badge-mc1.21.1-fabric.jar'],
+    ['fabric', '1.20.1', 'venus-badge-mc1.20.1-fabric.jar'],
+  ]) {
+    assert.deepEqual(await badgeMod.apply({ instanceDir: inst, loader, mcVersion, enabled: true, server: SERVER, bundledDir }), { state: 'installed', written: true });
+    assert.equal(fs.readFileSync(modFile(inst), 'utf8'), jar);
+    assert.deepEqual(fs.readdirSync(path.join(inst, 'mods')), [badgeMod.MOD_FILE]);
+  }
 });
 
 test('instala el mod y la config con el servidor, y no reescribe si no cambio', async () => {
@@ -58,8 +102,8 @@ test('apagada o en una instancia incompatible, lo quita', async () => {
   const inst = tmpDir();
   const bundledDir = bundle();
   await badgeMod.apply({ instanceDir: inst, loader: 'fabric', mcVersion: '1.21.1', enabled: true, server: SERVER, bundledDir });
-  // El jugador cambio la instancia a 1.20.1: el mod no carga ahi
-  assert.deepEqual(await badgeMod.apply({ instanceDir: inst, loader: 'fabric', mcVersion: '1.20.1', enabled: true, server: SERVER, bundledDir }), { state: 'unsupported' });
+  // El jugador cambio la instancia a 1.21.4: el mod no carga ahi
+  assert.deepEqual(await badgeMod.apply({ instanceDir: inst, loader: 'fabric', mcVersion: '1.21.4', enabled: true, server: SERVER, bundledDir }), { state: 'unsupported' });
   assert.equal(fs.existsSync(modFile(inst)), false);
   assert.equal(fs.existsSync(cfgFile(inst)), false);
   await badgeMod.apply({ instanceDir: inst, loader: 'fabric', mcVersion: '1.21.1', enabled: true, server: SERVER, bundledDir });
@@ -68,8 +112,8 @@ test('apagada o en una instancia incompatible, lo quita', async () => {
   assert.deepEqual(await badgeMod.apply({ instanceDir: inst, loader: 'fabric', mcVersion: '1.21.1', enabled: false, bundledDir }), { state: 'off' });
 });
 
-test('vanilla y Forge no reciben nada', async () => {
-  for (const loader of ['vanilla', 'forge']) {
+test('vanilla, OptiFine y Forge de una version sin compilacion no reciben nada', async () => {
+  for (const loader of ['vanilla', 'optifine', 'forge']) {
     const inst = tmpDir();
     assert.deepEqual(await badgeMod.apply({ instanceDir: inst, loader, mcVersion: '1.21.1', enabled: true, server: SERVER, bundledDir: bundle() }), { state: 'unsupported' });
     assert.equal(fs.existsSync(path.join(inst, 'mods')), false);

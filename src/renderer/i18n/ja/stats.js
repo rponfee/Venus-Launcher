@@ -1,6 +1,6 @@
 export default {
   title: "統計",
-  subtitle: "プレイ時間、ワールド、実績をひとつの画面で確認できます",
+  subtitle: "プレイ時間とワールドをひとまとめに",
   subtitleSince: "{date}からのアクティビティ",
   loading: "統計を集計しています...",
   loadError: "統計を読み込めませんでした",

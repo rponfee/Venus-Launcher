@@ -1,0 +1,26 @@
+plugins {
+	id 'net.neoforged.moddev' version "${moddev_version}"
+}
+
+apply from: rootProject.file('gradle/mojmap.gradle')
+
+neoForge {
+	// Sin descompilar ni recompilar Minecraft: el mod no necesita sus fuentes y la compilación es mucho más rápida.
+	enable {
+		version = neoforge_version
+		disableRecompilation = true
+	}
+	mods {
+		venusbadge {
+			sourceSet sourceSets.main
+		}
+	}
+	runs {
+		client {
+			client()
+		}
+	}
+}
+
+// NeoForge juega con los nombres de Mojang: el .jar de `jar` ya es el final.
+ext.finalJar = tasks.named('jar')

@@ -127,4 +127,8 @@ export default {
   errInvalid: "某些数据无效或过长。",
   errGeneric: "出了点问题：{error}",
   errTooLong: "消息不能超过 {max} 个字符。",
+  rank_owner: "所有者",
+  rank_admin: "管理员",
+  rank_mod: "协管",
+  rank_helper: "助手",
 };

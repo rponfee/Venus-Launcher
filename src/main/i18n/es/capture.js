@@ -7,6 +7,8 @@ module.exports = {
   errReplayEmpty: 'Todavía no hay nada para guardar en la repetición. Esperá unos segundos.',
   errInstance: 'No se encontró la instancia.',
   errNoSpace: 'No hay espacio en el disco para guardar.',
+  errReplayNoRoom: 'La repetición instantánea se pausó: no hay lugar suficiente en el disco.',
+  autoLimitReached: 'Se llegó al máximo de {count} clips automáticos en esta partida. La repetición sigue andando con el atajo.',
   errWrite: 'No se pudo guardar el archivo.',
   errCapture: 'No se pudo capturar la ventana del juego.',
   errRecordingEmpty: 'La grabación quedó vacía (no llegó ningún cuadro del juego).',

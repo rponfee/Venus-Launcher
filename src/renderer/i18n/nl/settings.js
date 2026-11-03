@@ -68,7 +68,7 @@ export default {
   ingameWindow: "Venus-icoon en -titel op het venster",
   ingameWindowSub: "Het spelvenster toont het Venus-icoon en \"· Venus Launcher\" aan het eind van de titel.",
   ingameBadge: 'Venus-badge naast je naam',
-  ingameBadgeSub: 'Spelers die ook Venus gebruiken zien de Venus-planeet naast je naam (boven je hoofd en in de Tab-lijst), en jij ziet hem naast die van hen. Installeert de mod "Venus Badge" alleen in Fabric- of Quilt-instanties van Minecraft {versions}: vanilla, Forge, NeoForge en OptiFine kunnen geen Fabric-mods laden en blijven zoals ze zijn. Vereist je Venus-account en een Microsoft-account. De mod vraagt de Venus-server naar de spelers die je ziet (alleen hun UUID\'s).',
+  ingameBadgeSub: "Spelers die ook Venus gebruiken zien de Venus-planeet naast je naam (boven je hoofd en in de Tab-lijst), en jij ziet hem naast die van hen. Installeert de mod “Venus Badge” alleen in instanties die hem kunnen laden: {versions}. Vanilla, OptiFine en andere versies blijven zoals ze zijn en tonen de badge niet. Vereist je Venus-account en een Microsoft-account. De mod vraagt de Venus-server naar de spelers die je ziet (alleen hun UUID's).",
   ingameBadgeIdle: 'Wordt de volgende keer dat je speelt ingeschakeld met je Microsoft-account.',
   ingameBadgeWorking: 'Je Minecraft-account wordt bij Mojang gecontroleerd…',
   ingameBadgeOk: 'Klaar: {name} heeft de Venus-badge.',

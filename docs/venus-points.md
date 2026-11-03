@@ -14,6 +14,14 @@ Puntos que se ganan con el premio diario, los logros y las invitaciones, y se ga
 | Textos | `i18n/{es,en}/rewards.js` y `premium.js` (interfaz); `src/main/i18n/{es,en}/rewards.js` (errores de la verificación) |
 | Pruebas | `node --test "src/main/modules/rewards/test/"` |
 
+## Logros y misiones de la 3.0
+
+- **Catálogo**: `src/renderer/js/pages/achievements/catalog.js`. No hay tope: se agrega una escalera o un paso, se corre `node scripts/gen-achievements-sql.js supabase/migrations/00NN_logros.sql`, se aplica la migración y se suman los textos `fam_<familia>` y `famDesc_<familia>` en `i18n/<idioma>/achievements.js`. Los ids nunca cambian y los 18 de la 2.x se conservan con sus puntos.
+- **Comprobación**: `check_kind = 'client'` lo informa la PC (`achievements_claim`, varios a la vez, tope de 40 por día; se pueden falsear, por eso valen poco: de 5 a 100 puntos) y `'server'` lo comprueba el servidor con `private.achievement_metric` (`achievements_sweep`).
+- **Lectura**: `achievements_me` devuelve los desbloqueados, el porcentaje de jugadores de cada uno (la rareza se muestra desde 20 usuarios) y las medidas del servidor. `points_me` sigue devolviendo solo los 18 de la 2.x para que esas versiones no muestren cientos sin nombre.
+- **Misiones**: tabla `missions`. `missions_me` elige 3 por período, siempre las mismas por usuario (hash de usuario, período y misión) y con medidas distintas; `mission_claim` paga una vez por período (`points_ledger` con motivo `mission`), y al cobrar las tres da el bono (25 o 100, x2 con Premium). El progreso lo cuenta el launcher (`features/missions.js`, `settings.rewards.missions`, evento `venus:mission`), así que se puede falsear; el tope queda fijo por período.
+- Las pruebas del catálogo están en `src/renderer/js/pages/achievements/test/`.
+
 ## 1. Reglas de los puntos
 
 Todo pasa por un libro de movimientos (`points_ledger`): cada premio tiene un par `(motivo, ref)` único, así que el mismo premio nunca se da dos veces aunque se pida muchas veces o desde dos PCs a la vez. El saldo es la suma del libro. La interfaz nunca escribe puntos: solo llama a las funciones del servidor.
@@ -97,7 +105,7 @@ Premium = `venus_is_premium(usuario)` (0020): tener un plan de Venus vigente, el
 | Banners animados (GIF) en el perfil | Servidor (`profile_customize`, bucket `profile-media`) |
 | Efectos de nombre premium (brillo, arcoíris, fuego) sin comprarlos | Servidor (`profile_customize`) |
 | Marco Venus y título Supporter | Tienda (`premium_only`) |
-| Repetición instantánea de 120 s en vez de 30 s | Capturas (consulta `isPremium()`) |
+| Repetición instantánea de 5 minutos en vez de 60 s | Capturas (consulta `isPremium()`) |
 | Venus IA con los modelos del plan | Asistente |
 
 `features/premium.js` exporta `isPremium({ force }) → Promise<boolean>` (caché de 5 minutos por cuenta; sin sesión o con el servicio caído, `false` o el último valor conocido de esa cuenta), `onPremiumChange(fn) → off` (avisa cuando cambia el valor conocido; se revisa al cambiar la sesión y con `billing:changed`) y `perksPanel() → Element` (beneficios con el botón a `openPlans()`; tiene `.destroy()`). El servidor vuelve a comprobar premium en cada acción: lo de la interfaz solo decide qué se muestra.

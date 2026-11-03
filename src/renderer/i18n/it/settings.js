@@ -68,7 +68,7 @@ export default {
   ingameWindow: "Icona e titolo di Venus sulla finestra",
   ingameWindowSub: "La finestra del gioco mostra l'icona di Venus e «· Venus Launcher» alla fine del titolo.",
   ingameBadge: 'Badge di Venus accanto al tuo nome',
-  ingameBadgeSub: 'Chi usa anche Venus vede il pianeta di Venus accanto al tuo nome (sopra la testa e nella lista del Tab), e tu lo vedi accanto al loro. Installa la mod "Venus Badge" solo nelle istanze Fabric o Quilt di Minecraft {versions}: vanilla, Forge, NeoForge e OptiFine non caricano le mod Fabric e restano come sono. Richiede il tuo account Venus e un account Microsoft. La mod chiede al server di Venus dei giocatori che vedi (solo i loro UUID).',
+  ingameBadgeSub: "Chi usa anche Venus vede il pianeta di Venus accanto al tuo nome (sopra la testa e nella lista del Tab), e tu lo vedi accanto al loro. Installa la mod «Venus Badge» solo nelle istanze che possono caricarla: {versions}. Vanilla, OptiFine e le altre versioni restano come sono e lì non si vede il badge. Richiede il tuo account Venus e un account Microsoft. La mod chiede al server di Venus dei giocatori che vedi (solo i loro UUID).",
   ingameBadgeIdle: 'Si attiva con il tuo account Microsoft la prossima volta che giochi.',
   ingameBadgeWorking: 'Verifica del tuo account Minecraft con Mojang…',
   ingameBadgeOk: 'Fatto: {name} ha il badge di Venus.',

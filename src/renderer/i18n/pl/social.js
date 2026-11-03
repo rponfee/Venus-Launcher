@@ -127,4 +127,8 @@ export default {
   errInvalid: "Któreś dane są nieprawidłowe lub zbyt długie.",
   errGeneric: "Coś poszło nie tak: {error}",
   errTooLong: "Wiadomość nie może przekraczać {max} znaków.",
+  rank_owner: "Właściciel",
+  rank_admin: "Admin",
+  rank_mod: "Moderator",
+  rank_helper: "Pomocnik",
 };

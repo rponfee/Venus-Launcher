@@ -1,14 +1,22 @@
 // Datos de la pagina de Clips (sin DOM, se prueban con node:test): en que pestana va cada archivo, filtros por
-// instancia, fecha y texto (nombre, mundo, instancia).
+// instancia, fecha, texto (nombre, mundo, instancia) y motivo de los clips automaticos.
 
 export const TABS = ['screenshots', 'clips', 'recordings'];
 export const RANGES = ['all', 'today', 'week', 'month', 'year'];
+export const REASONS = ['death', 'advancement', 'boss'];
 
 // Pestana de un item de worlds:media: capturas, grabaciones (carpeta recordings/) o clips (todo el resto de videos)
 export function tabOf(item) {
   if (item?.kind === 'screenshot') return 'screenshots';
   const rel = String(item?.rel || '').replace(/\\/g, '/');
   return rel.startsWith('recordings/') ? 'recordings' : 'clips';
+}
+
+// Motivo de un clip automatico ('death' | 'advancement' | 'boss') o null: esta en el nombre del archivo, que arma
+// logic.fileName ("2026-11-02_18.03.09_auto-death.webm"; lo que se exporta en el editor lo conserva)
+export function reasonOf(item) {
+  const m = /_auto-(death|advancement|boss)(?=[_.-])/.exec(String(item?.file || ''));
+  return m ? m[1] : null;
 }
 
 // Desde cuando cuenta cada rango (ms) o 0 = todo
@@ -40,13 +48,14 @@ export function matches(item, query, extra = '') {
 }
 
 /**
- * Filtra y ordena (mas nuevo primero). f = { tab, instanceId, range, query, now, extraText(item) }.
+ * Filtra y ordena (mas nuevo primero). f = { tab, instanceId, range, query, now, extraText(item), reason }.
+ * reason ('death' | 'advancement' | 'boss') solo filtra la pestana de clips: el resto no tiene motivo.
  */
 export function filterItems(items, f = {}) {
   const from = rangeStart(f.range, f.now);
   const extra = typeof f.extraText === 'function' ? f.extraText : () => '';
   return (Array.isArray(items) ? items : [])
-    .filter((it) => (!f.tab || tabOf(it) === f.tab) && (!f.instanceId || it.instanceId === f.instanceId) && (!from || (it.date || 0) >= from) && matches(it, f.query, extra(it)))
+    .filter((it) => (!f.tab || tabOf(it) === f.tab) && (!f.instanceId || it.instanceId === f.instanceId) && (!from || (it.date || 0) >= from) && (!f.reason || tabOf(it) !== 'clips' || reasonOf(it) === f.reason) && matches(it, f.query, extra(it)))
     .sort((a, b) => (b.date || 0) - (a.date || 0));
 }
 

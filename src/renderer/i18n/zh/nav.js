@@ -22,7 +22,7 @@ export default {
   messages: "消息",
   stats: "统计",
   performance: "性能",
-  devmode: "开发者模式",
+  achievements: "成就",
   settings: "设置",
   welcome: "欢迎",
 };

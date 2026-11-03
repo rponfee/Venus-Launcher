@@ -34,6 +34,12 @@ export const APPEARANCE_DEFAULTS = {
   bgFile: '',
   bgDim: 45, // 0-90 %
   bgBlur: 0, // 0-24 px
+  // Interfaz (3.0): bordes, densidad, menu lateral y tipografia de todo el launcher
+  uiRadius: 'normal', // 'sharp' | 'normal' | 'round'
+  uiDensity: 'normal', // 'compact' | 'normal' | 'spacious'
+  uiSidebar: 'full', // 'full' | 'icons'
+  uiFont: 'outfit', // 'outfit' | 'system' | 'rounded' | 'mono'
+  uiGlass: 100, // 40-100: opacidad de las tarjetas (deja ver el fondo)
   music: { enabled: false, file: '', volume: 35, pauseInGame: true },
 };
 
@@ -90,6 +96,11 @@ function normalizeAppearance(raw = {}) {
   out.bgFile = str(out.bgFile);
   out.bgDim = intIn(out.bgDim, 0, 90, 45);
   out.bgBlur = intIn(out.bgBlur, 0, 24, 0);
+  out.uiRadius = ['sharp', 'round'].includes(out.uiRadius) ? out.uiRadius : 'normal';
+  out.uiDensity = ['compact', 'spacious'].includes(out.uiDensity) ? out.uiDensity : 'normal';
+  out.uiSidebar = out.uiSidebar === 'icons' ? 'icons' : 'full';
+  out.uiFont = ['system', 'rounded', 'mono'].includes(out.uiFont) ? out.uiFont : 'outfit';
+  out.uiGlass = intIn(out.uiGlass, 40, 100, 100);
   out.music = {
     enabled: Boolean(out.music.enabled),
     file: str(out.music.file),
@@ -515,7 +526,20 @@ export function toggleMusicPause() {
 }
 
 // ---------- Aplicar todo ----------
+// Interfaz: atributos en <html> que cambian los tokens de main.css
+function applyInterface() {
+  const root = document.documentElement;
+  root.dataset.uiRadius = ap.uiRadius;
+  root.dataset.uiDensity = ap.uiDensity;
+  root.dataset.uiSidebar = ap.uiSidebar;
+  root.dataset.uiFont = ap.uiFont;
+  root.style.setProperty('--ui-glass', String(ap.uiGlass / 100));
+  root.toggleAttribute('data-ui-glassy', ap.uiGlass < 100);
+  if (ap.uiFont === 'rounded') ensureCss('features/profile-fonts'); // Fredoka viene con las tipografias del perfil
+}
+
 function applyAll() {
+  applyInterface();
   applyTheme();
   applyBackground();
   applyBranding();
@@ -1181,7 +1205,30 @@ function buildPanel(root) {
     t('appearance.reset'),
   );
 
-  mount(root, colorCard, bgCard, brandCard, musicCard, h('div', { class: 'ax-panel-foot' }, h('span', { class: 'ax-hint' }, t('appearance.liveNote')), resetBtn));
+  // Interfaz: bordes, densidad, menu lateral, tipografia y transparencia
+  const uiRow = (key, options) => {
+    const seg = h('div', { class: 'segmented', role: 'group', 'aria-label': t(`appearance.ui_${key}`) });
+    const draw = () =>
+      mount(
+        seg,
+        options.map((o) => h('button', { type: 'button', class: ap[key] === o ? 'active' : '', 'aria-pressed': String(ap[key] === o), onclick: () => (save({ appearance: { [key]: o } }), draw()) }, t(`appearance.ui_${key}_${o}`))),
+      );
+    draw();
+    return h('div', { class: 'ap-ui-row' }, h('span', { class: 'ap-ui-label' }, t(`appearance.ui_${key}`)), seg);
+  };
+  const glass = rangeField(t('appearance.ui_uiGlass'), { min: 40, max: 100, step: 5, value: ap.uiGlass, format: (v) => `${v} %`, onInput: (v) => save({ appearance: { uiGlass: v } }, 200) });
+  const uiCard = card(
+    'sliders',
+    t('appearance.panelInterface'),
+    t('appearance.panelInterfaceSub'),
+    uiRow('uiRadius', ['sharp', 'normal', 'round']),
+    uiRow('uiDensity', ['compact', 'normal', 'spacious']),
+    uiRow('uiSidebar', ['full', 'icons']),
+    uiRow('uiFont', ['outfit', 'system', 'rounded', 'mono']),
+    glass.el || glass,
+  );
+
+  mount(root, colorCard, bgCard, uiCard, brandCard, musicCard, h('div', { class: 'ax-panel-foot' }, h('span', { class: 'ax-hint' }, t('appearance.liveNote')), resetBtn));
 
   // --- Sincronizar ---
   const sync = () => {

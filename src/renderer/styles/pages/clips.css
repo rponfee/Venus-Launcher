@@ -33,6 +33,17 @@
 .cl-search .input { width: 100%; }
 .cl-toolbar .select { width: auto; min-width: 180px; max-width: 260px; }
 .cl-ranges { flex-wrap: wrap; }
+.cl-reasons { flex-wrap: wrap; }
+
+/* Motivo de un clip automatico (en la miniatura y en el visor) */
+.cl-reason {
+  position: absolute; top: var(--sp-2); left: var(--sp-2); display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 6px; border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--bg-0) 80%, transparent); border: 1px solid var(--accent-line); color: var(--accent-hi); font-size: var(--fs-xs); font-weight: 600;
+}
+.cl-reason svg { width: 13px; height: 13px; flex-shrink: 0; }
+.cl-reason.death { border-color: color-mix(in srgb, var(--bad-text, #f87171) 45%, transparent); color: var(--bad-text, #f87171); }
+.cl-reason.boss { border-color: color-mix(in srgb, var(--warn-text, #fbbf24) 45%, transparent); color: var(--warn-text, #fbbf24); }
+.cl-reason.inline { position: static; margin-right: var(--sp-2); vertical-align: middle; }
 
 /* ---------- Visor ---------- */
 .cl-vw {

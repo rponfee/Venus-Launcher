@@ -89,3 +89,14 @@ export async function openDemoCard(kind = 'premium') {
   const { previewProfile } = await import('../../social/profile-ui.js');
   return previewProfile(demoProfile(kind), { presence: 'online' });
 }
+
+// Datos de ejemplo de la 3.0: logros para destacar, clips compartidos y resultados de KLIPY (sin red)
+export function demoUnlocked() {
+  return ['playtime_1', 'playtime_5', 'playtime_10h', 'sessions_5', 'diamond_1', 'diamond_10', 'dragon_1', 'first_friend', 'night_owl', 'mobs_100', 'blocks_1000'];
+}
+export function demoClips() {
+  return [{ id: '123e4567-e89b-12d3-a456-426614174000', url: 'https://example.invalid/clip.webm', title: 'Dragón en un golpe', expiresAt: null }];
+}
+export function demoKlipy() {
+  return { items: [], hasNext: false };
+}

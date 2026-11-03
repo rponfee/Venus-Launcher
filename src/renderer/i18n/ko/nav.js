@@ -22,7 +22,7 @@ export default {
   messages: "메시지",
   stats: "통계",
   performance: "성능",
-  devmode: "개발자 모드",
+  achievements: "업적",
   settings: "설정",
   welcome: "시작하기",
 };

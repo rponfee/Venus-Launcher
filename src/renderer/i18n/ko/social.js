@@ -127,4 +127,8 @@ export default {
   errInvalid: "올바르지 않거나 너무 긴 데이터가 있어요.",
   errGeneric: "문제가 발생했어요: {error}",
   errTooLong: "메시지는 {max}자를 넘을 수 없어요.",
+  rank_owner: "오너",
+  rank_admin: "관리자",
+  rank_mod: "모더레이터",
+  rank_helper: "헬퍼",
 };

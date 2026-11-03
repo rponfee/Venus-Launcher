@@ -3,7 +3,7 @@
 // texto del menu y frases) y, con el juego abierto, pone el icono y el titulo de Venus en la ventana.
 // Ajustes (settings.ingame): pack (paquete de recursos) y window (icono y titulo), los dos prendidos por defecto, y
 // badge (insignia de Venus junto al nombre, ver ingame/badge.js e ingame/badgemod.js), apagada hasta que el jugador
-// la activa: instala el mod "Venus Badge" en las instancias Fabric compatibles y anota la cuenta de Minecraft.
+// la activa: instala el mod "Venus Badge" en las instancias compatibles y anota la cuenta de Minecraft.
 // Las partidas de prueba (busqueda del culpable de un crash) no se tocan.
 const fs = require('fs');
 const path = require('path');
@@ -156,6 +156,7 @@ function register({ app, handle, send, onQuit }) {
       await badgeMod.apply({
         instanceDir: instance.dir,
         loader: instance.loader,
+        loaderVersion: instance.loaderVersion,
         mcVersion: instance.mcVersion,
         enabled: badge,
         server: cfg.configured ? { url: cfg.url, anonKey: cfg.anonKey } : null,

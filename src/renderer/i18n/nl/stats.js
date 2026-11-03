@@ -1,6 +1,6 @@
 export default {
   title: "Statistieken",
-  subtitle: "Je speeltijd, je werelden en je prestaties op één plek",
+  subtitle: "Je speeltijd en je werelden op één plek",
   subtitleSince: "Je activiteit sinds {date}",
   loading: "Statistieken berekenen...",
   loadError: "De statistieken konden niet worden geladen",

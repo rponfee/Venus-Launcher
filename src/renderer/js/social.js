@@ -1244,6 +1244,7 @@ class Social {
 
   // ---------- Enviar, editar, borrar ----------
   async sendMessage(chatId, text, opts = {}) {
+    window.dispatchEvent(new CustomEvent('venus:mission', { detail: { metric: 'messages' } }));
     const body = String(text ?? '')
       .replace(/\r\n?/g, '\n')
       .trim();

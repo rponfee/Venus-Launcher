@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "내보낸 클립이 손상되어 저장하지 못했어요.",
   errAiUnavailable: "AI를 사용할 수 없어요. Venus 계정에 로그인하고 AI가 켜져 있는지 확인해 주세요.",
   overlayErrorTitle: "클립과 스크린샷",
+  errReplayNoRoom: "즉시 다시 보기가 일시 중지됐어요: 디스크 공간이 부족해요.",
+  autoLimitReached: "이번 게임에서 자동 클립 최대 개수({count}개)에 도달했어요. 즉시 다시 보기는 단축키로 계속 사용할 수 있어요.",
 };

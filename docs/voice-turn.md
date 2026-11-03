@@ -6,7 +6,7 @@ El Voice Chat conecta a los jugadores directo entre sí (WebRTC; Supabase Realti
 
 - **Servidor**: coturn en el VPS de Vultr (`64.176.3.21`, Ubuntu 22.04), puerto 3478 (UDP y TCP) y relays en 49152–65535/UDP. Usa `use-auth-secret`: no tiene usuarios fijos, solo acepta claves temporales firmadas con un secreto (`static-auth-secret`).
 - **Edge Function `voice-turn`** (`supabase/functions/voice-turn/`, JWT verificado): a cada sesión de Venus le entrega `{ iceServers: [{ urls, username, credential }], expiresAt }`, con `username = "<vence en segundos Unix>:<id del usuario>"` y `credential = base64(HMAC-SHA1(secreto, username))`. Sin sesión responde 401; sin secreto, una lista vacía.
-- **Launcher** (`src/renderer/js/voice.js`, `refreshTurn()`): pide la clave al iniciar sesión y, si vence en menos de una hora, otra vez antes de entrar a una sala (espera hasta 4 s; si no llega, entra solo con STUN). Al cambiar de cuenta la descarta. Los TURN fijos de `core/app-config.js` siguen sumándose si los hay.
+- **Launcher** (`src/renderer/js/voice.js`, `refreshTurn()`): pide la clave al iniciar sesión y, si vence en menos de una hora, otra vez antes de entrar a una sala (espera hasta 4 s; si no llega, entra solo con STUN). Antes de cada reinicio de ICE la renueva si hace falta y actualiza la lista de servidores de esa conexión, así una llamada que empezó sin TURN puede recuperarse por el relay. Al cambiar de cuenta la descarta. Los TURN fijos de `core/app-config.js` siguen sumándose si los hay.
 
 El secreto vive solo en el servidor y en Supabase: nunca en el código, el instalador ni el chat.
 

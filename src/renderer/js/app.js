@@ -19,7 +19,8 @@ const NAV = [
   { id: 'clips', icon: 'camera' },
   { id: 'skins', icon: 'user' },
   { id: 'music', icon: 'music' },
-  { id: 'rewards', icon: 'trophy' },
+  { id: 'achievements', icon: 'trophy' },
+  { id: 'rewards', icon: 'star' },
   { group: 'content' },
   { id: 'modrinth', icon: 'package', cls: 'modrinth' },
   { id: 'smartsearch', icon: 'sparkles' },
@@ -32,7 +33,6 @@ const NAV = [
   { id: 'updates', icon: 'download' },
   { id: 'stats', icon: 'chart' },
   { id: 'performance', icon: 'memory' },
-  { id: 'devmode', icon: 'code' },
   { id: 'support', icon: 'message' },
 ];
 
@@ -50,6 +50,7 @@ const PAGES = {
   clips: () => import('./pages/clips.js'),
   music: () => import('./pages/music.js'),
   rewards: () => import('./pages/rewards.js'),
+  achievements: () => import('./pages/achievements.js'),
   modrinth: () => import('./pages/modrinth.js'),
   smartsearch: () => import('./pages/smartsearch.js'),
   performance: () => import('./pages/performance.js'),
@@ -58,7 +59,6 @@ const PAGES = {
   server: () => import('./pages/server.js'),
   voice: () => import('./pages/voice.js'),
   messages: () => import('./pages/messages.js'),
-  devmode: () => import('./pages/devmode.js'),
   settings: () => import('./pages/settings.js'),
   updates: () => import('./pages/updates.js'),
   support: () => import('./pages/support.js'),
@@ -87,7 +87,6 @@ const STARTUP = [
   () => import('./features/assistant.js'),
   () => import('./features/netplay.js'),
   () => import('./features/crash.js'),
-  () => import('./pages/devmode.js'),
   () => import('./features/admin.js'),
   () => import('./features/support-staff.js'),
   () => import('./features/mcp.js'),
@@ -100,6 +99,8 @@ const STARTUP = [
   () => import('./features/party.js'), // grupos: señales party-*, líder caído, mundo del líder
   () => import('./features/notify.js'), // avisos de amigos y servidores favoritos
   () => import('./features/whatsnew.js'), // recorrido de novedades la primera vez que se abre la 2.0.0 (y Ctrl+K)
+  () => import('./features/achievements.js'), // logros de Venus: revisa los cumplidos cada tanto (no hay tope de cantidad)
+  () => import('./features/missions.js'), // misiones diarias y semanales: cuenta el progreso
   () => import('./features/streamer.js'), // modo streamer: difumina codigos, direcciones, nombres y mensajes (y Ctrl+K)
 ];
 
@@ -181,7 +182,6 @@ async function renderRoute() {
   const navId = page in NAV_PARENT ? NAV_PARENT[page] : page;
   document.querySelectorAll('.nav-item').forEach((n) => n.classList.toggle('active', n.dataset.route === navId));
   document.getElementById('settings-btn').classList.toggle('active', page === 'settings');
-  if (page === 'stats') setNavBadge('stats', 0);
   const main = document.getElementById('main');
   const root = h('div', { class: ['page', `page-${page}`] });
   mount(main, root);
@@ -520,20 +520,6 @@ async function showCrash(id, st) {
   }
 }
 
-// ---------- Hitos de estadisticas ----------
-// Aviso global de hitos desbloqueados (con la pagina de Estadisticas abierta, la pagina avisa sola).
-async function showMilestones(list) {
-  const items = (Array.isArray(list) ? list : []).filter((m) => m && m.id);
-  if (!items.length || currentRoute() === 'stats') return;
-  try {
-    await loadNs('stats');
-  } catch (err) {
-    console.warn('[stats]', err);
-  }
-  for (const m of items.slice(0, 3)) toast('good', t('stats.msUnlockedToast'), t(`stats.ms_${m.id}`), 6000);
-  setNavBadge('stats', 1, 'dot');
-}
-
 // ---------- Descargas en pausa / modo sin conexion (indicador en la barra de titulo) ----------
 let netState = { paused: false, offline: false };
 
@@ -740,9 +726,6 @@ async function init() {
   });
   api.on('server:state', () => refreshServerDot());
   api.on('servers:changed', () => refreshServerDot());
-  api.on('stats:milestone', (list) => {
-    showMilestones(list).catch((err) => console.warn('[stats]', err));
-  });
   api.on('downloads:stats', setNetState);
   // El modulo de almacenamiento puede no estar: sin indicador
   api.invoke('downloads:status').then(setNetState, () => {});

@@ -127,4 +127,8 @@ export default {
   errInvalid: "Деякі дані недійсні або задовгі.",
   errGeneric: "Щось пішло не так: {error}",
   errTooLong: "Повідомлення не може перевищувати {max} символів.",
+  rank_owner: "Власник",
+  rank_admin: "Адмін",
+  rank_mod: "Модер",
+  rank_helper: "Хелпер",
 };

@@ -1,6 +1,6 @@
 export default {
   title: "Statistiken",
-  subtitle: "Deine Spielzeit, deine Welten und deine Erfolge an einem Ort",
+  subtitle: "Deine Spielzeit und deine Welten an einem Ort",
   subtitleSince: "Deine Aktivität seit dem {date}",
   loading: "Statistiken werden berechnet...",
   loadError: "Die Statistiken konnten nicht geladen werden",

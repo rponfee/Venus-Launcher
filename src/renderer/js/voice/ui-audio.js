@@ -1,17 +1,24 @@
-// Ajustes de audio del Voice Chat: microfono (con prueba y medidor), modo de transmision (deteccion de
-// voz o pulsar para hablar), salida, atajo global para silenciar y red ("Ocultar mi IP", solo si el launcher trae
-// un servidor TURN en core/app-config.js: los servidores no se configuran desde aca).
+// Ajustes de audio del Voice Chat: microfono (con prueba, medidor y grabacion), supresion de ruido, modo de transmision
+// (deteccion de voz o pulsar para hablar), calidad de voz, salida (con nivelacion de voces), atajo global para silenciar
+// y red ("Ocultar mi IP", solo si el launcher trae un servidor TURN en core/app-config.js: los servidores no se
+// configuran desde aca).
 import { h, icon, mount, fail, ok, switchEl, setBusy } from '../ui.js';
 import { t } from '../i18n.js';
 import { voice } from '../voice.js';
 import { acceleratorFromEvent, acceleratorParts, keyLabel } from './keys.js';
 import { levelMeter, segmented, fieldId, tSlot, kbdKeys } from './ui-common.js';
+import { VOICE_QUALITIES } from './net.js';
+
+const RECORD_SECONDS = 5;
 
 export function audioView(container) {
   const offs = [];
   let stopTest = null;
   let recording = null; // { stop() } mientras se graba una tecla
   let disposed = false;
+  let clipState = null; // prueba de grabar y escuchar: 'rec' | 'play'
+  let clipLeft = 0;
+  let clipTimer = null;
   const cfg = () => voice.settings;
   const save = (patch) => voice.saveSettings(patch).catch((err) => fail(t('voice.saveFailed'), err));
 
@@ -42,8 +49,23 @@ export function audioView(container) {
   const monitorSwitch = switchEl(false, (v) => voice.setMonitor(v), t('voice.hearMyself'));
   const monitorRow = h('label', { class: 'vc-inline-opt' }, monitorSwitch, h('span', {}, icon('ear'), t('voice.hearMyself')));
   testBtn.addEventListener('click', () => toggleTest());
+  const clipBtn = h('button', { class: 'btn sm', type: 'button' });
+  clipBtn.addEventListener('click', () => toggleClip());
 
-  const toggles = ['noiseSuppression', 'echoCancellation', 'autoGainControl'].map((key) => ({
+  const noiseSeg = segmented(
+    [
+      { id: 'rnnoise', icon: 'sparkles', label: t('voice.noise_rnnoise') },
+      { id: 'browser', label: t('voice.noise_browser') },
+      { id: 'off', label: t('voice.noise_off') },
+    ],
+    cfg().noiseMode,
+    // noiseSuppression queda al dia por si se vuelve a una version 2.x
+    (v) => save({ noiseMode: v, noiseSuppression: v !== 'off' }),
+    t('voice.opt_noiseSuppression'),
+  );
+  const noiseHint = h('div', { class: 'field-help', role: 'status' });
+
+  const toggles = ['echoCancellation', 'autoGainControl'].map((key) => ({
     key,
     el: switchEl(cfg()[key] !== false, (v) => save({ [key]: v }), t(`voice.opt_${key}`)),
   }));
@@ -58,10 +80,11 @@ export function audioView(container) {
     h(
       'div',
       { class: 'vc-test', role: 'group', 'aria-labelledby': ids.test },
-      h('div', { class: 'vc-test-top' }, h('span', { class: 'label', id: ids.test }, t('voice.micTest')), meterState, h('span', { class: 'spacer' }), monitorRow, testBtn),
+      h('div', { class: 'vc-test-top' }, h('span', { class: 'label', id: ids.test }, t('voice.micTest')), meterState, h('span', { class: 'spacer' }), monitorRow, clipBtn, testBtn),
       meter.el,
       h('div', { class: 'field-help' }, t('voice.micTestHint')),
     ),
+    h('div', { class: 'field' }, h('span', { class: 'label' }, t('voice.opt_noiseSuppression')), noiseSeg.el, noiseHint),
     h('div', { class: 'vc-toggles' }, toggleRows),
   );
 
@@ -80,11 +103,14 @@ export function audioView(container) {
   const thr = h('input', { type: 'range', class: 'range', id: ids.thr, min: -80, max: -10, step: 1 });
   thr.addEventListener('input', () => setRangeText(thr, thrVal, t('voice.dbValue', { db: thr.value })));
   thr.addEventListener('change', () => save({ vadThreshold: Number(thr.value) }));
+  // El medidor al lado del umbral: se ve si la voz llega a la marca sin ir hasta la prueba de arriba
+  const gateMeter = levelMeter();
+  const gateIdle = h('div', { class: 'field-help' }, t('voice.vadMeterIdle'));
   const vadBox = h(
     'div',
     { class: 'vc-mode-box' },
     toggleRow(t('voice.vadAuto'), t('voice.vadAutoHint'), autoSwitch),
-    h('div', { class: 'field' }, h('div', { class: 'vc-label-row' }, h('label', { for: ids.thr }, t('voice.vadSensitivity')), thrVal), thr, h('div', { class: 'field-help' }, t('voice.vadSensitivityHint'))),
+    h('div', { class: 'field' }, h('div', { class: 'vc-label-row' }, h('label', { for: ids.thr }, t('voice.vadSensitivity')), thrVal), thr, gateMeter.el, gateIdle, h('div', { class: 'field-help' }, t('voice.vadSensitivityHint'))),
   );
   const pttBtn = h('button', { class: 'btn sm vc-keybtn', type: 'button' });
   pttBtn.addEventListener('click', () => recordPtt());
@@ -101,10 +127,21 @@ export function audioView(container) {
   );
   const modeCard = h('section', { class: 'card vc-set-card' }, cardHead('activity', t('voice.modeTitle'), t('voice.modeSub')), modeSeg.el, vadBox, pttBox);
 
+  // ---------- Calidad de voz ----------
+  const qualitySeg = segmented(
+    Object.keys(VOICE_QUALITIES).map((id) => ({ id, label: t(`voice.quality_${id}`) })),
+    cfg().voiceQuality,
+    (v) => save({ voiceQuality: v }),
+    t('voice.qualityTitle'),
+  );
+  const qualityHint = h('div', { class: 'field-help' });
+  const qualityCard = h('section', { class: 'card vc-set-card' }, cardHead('gauge', t('voice.qualityTitle'), t('voice.qualitySub')), qualitySeg.el, qualityHint);
+
   // ---------- Salida ----------
   const testSound = h('button', { class: 'btn sm', type: 'button' }, icon('volume'), t('voice.testSound'));
   testSound.addEventListener('click', () => voice.playTestSound());
   const notify = switchEl(cfg().notifySounds !== false, (v) => save({ notifySounds: v }), t('voice.notifySounds'));
+  const levelSwitch = switchEl(cfg().levelVoices !== false, (v) => save({ levelVoices: v }), t('voice.opt_levelVoices'));
   const sbEnabled = switchEl(cfg().soundboardEnabled !== false, (v) => save({ soundboardEnabled: v }), t('voice.hearOthersSounds'));
   const sbVolVal = h('span', { class: 'vc-val', 'aria-hidden': 'true' });
   const sbVol = h('input', { type: 'range', class: 'range', id: ids.sbVol, min: 0, max: 100, step: 5 });
@@ -115,7 +152,7 @@ export function audioView(container) {
     { class: 'card vc-set-card' },
     cardHead('headphones', t('voice.outputTitle'), t('voice.outputSub')),
     h('div', { class: 'field' }, h('label', { for: ids.out }, t('voice.outputDevice')), h('div', { class: 'vc-device-row' }, outSel, testSound)),
-    h('div', { class: 'vc-toggles' }, toggleRow(t('voice.notifySounds'), t('voice.notifySoundsHint'), notify), toggleRow(t('voice.hearOthersSounds'), t('voice.hearOthersSoundsHint'), sbEnabled)),
+    h('div', { class: 'vc-toggles' }, toggleRow(t('voice.opt_levelVoices'), t('voice.opt_levelVoicesHint'), levelSwitch), toggleRow(t('voice.notifySounds'), t('voice.notifySoundsHint'), notify), toggleRow(t('voice.hearOthersSounds'), t('voice.hearOthersSoundsHint'), sbEnabled)),
     h('div', { class: 'field' }, h('div', { class: 'vc-label-row' }, h('label', { for: ids.sbVol }, t('voice.soundboardVolume')), sbVolVal), sbVol),
   );
 
@@ -136,7 +173,7 @@ export function audioView(container) {
   const relayRow = toggleRow(t('voice.relayOnly'), t('voice.relayOnlyText'), relaySwitch);
   const netCard = h('section', { class: 'card vc-set-card', hidden: true }, cardHead('network', t('voice.netTitle'), t('voice.netSubText')), h('div', { class: 'vc-toggles' }, relayRow));
 
-  mount(container, h('div', { class: 'vc-settings' }, h('div', { class: 'vc-set-col' }, micCard, modeCard), h('div', { class: 'vc-set-col' }, outCard, scCard, netCard)));
+  mount(container, h('div', { class: 'vc-settings' }, h('div', { class: 'vc-set-col' }, micCard, modeCard), h('div', { class: 'vc-set-col' }, outCard, qualityCard, scCard, netCard)));
 
   // ---------- Estado ----------
   function cardHead(iconName, title, sub) {
@@ -169,8 +206,20 @@ export function audioView(container) {
     pttBox.hidden = !c.pushToTalk;
     modeSeg.set(c.pushToTalk ? 'ptt' : 'vad');
     if (!recording) mount(pttBtn, icon(/^Mouse/.test(c.pttKey) ? 'mouse' : 'keyboard'), h('span', { class: 'vc-keybtn-text' }, tSlot('voice.pttKeyIs', 'key', h('kbd', { class: 'kbd' }, keyLabel(c.pttKey)))));
+    qualitySeg.set(c.voiceQuality);
+    qualityHint.textContent = t(`voice.qualityHint_${c.voiceQuality}`, { kbps: VOICE_QUALITIES[c.voiceQuality].bitrate / 1000 });
+    drawNoise();
     drawShortcut();
     drawNet();
+  }
+
+  function drawNoise() {
+    const mode = cfg().noiseMode;
+    const fallback = voice.state.noiseFallback;
+    noiseSeg.set(mode);
+    const text = t(fallback ? 'voice.noiseFallback' : `voice.noiseHint_${mode}`);
+    if (noiseHint.textContent !== text) noiseHint.textContent = text;
+    noiseHint.classList.toggle('vc-warn-text', fallback);
   }
 
   function drawShortcut() {
@@ -193,10 +242,57 @@ export function audioView(container) {
     testBtn.classList.toggle('hidden', st.inRoom);
     monitorRow.classList.toggle('vc-disabled', !active);
     monitorSwitch.querySelector('input').disabled = !active;
+    gateIdle.hidden = active;
     if (!active) {
       monitorSwitch.querySelector('input').checked = false;
       meter.update({ level: 0, threshold: cfg().pushToTalk ? null : cfg().vadThreshold });
+      gateMeter.update({ level: 0, threshold: cfg().vadThreshold });
       meterState.textContent = '';
+    }
+    drawClip();
+  }
+
+  // Grabar unos segundos y escucharlos: suena como te escuchan los demas. Fuera de una sala (en una llamada, lo que se
+  // reproduce se colaria en el microfono).
+  function drawClip() {
+    clipBtn.classList.toggle('hidden', voice.state.inRoom);
+    if (clipState === 'rec') mount(clipBtn, icon('stop'), t('voice.recordingTest', { left: clipLeft }));
+    else if (clipState === 'play') mount(clipBtn, icon('stop'), t('voice.playingTest'));
+    else mount(clipBtn, icon('play'), t('voice.recordTest'));
+  }
+
+  async function toggleClip() {
+    if (clipState === 'rec') return voice.stopMicRecording();
+    if (clipState === 'play') return voice.stopMicClip();
+    const startedHere = !stopTest;
+    const done = setBusy(clipBtn);
+    try {
+      if (startedHere) stopTest = await voice.startMicTest({ monitor: false });
+      done();
+      clipState = 'rec';
+      clipLeft = RECORD_SECONDS;
+      drawTest();
+      clipTimer = setInterval(() => {
+        clipLeft = Math.max(1, clipLeft - 1);
+        drawClip();
+      }, 1000);
+      const blob = await voice.recordMicTest(RECORD_SECONDS);
+      clearInterval(clipTimer);
+      if (disposed || !blob || !voice.state.testing) return; // la prueba se corto (por ejemplo, al entrar a una sala)
+      clipState = 'play';
+      drawClip();
+      await voice.playMicClip(blob);
+    } catch (err) {
+      done();
+      fail(t('voice.recordFailed'), err);
+    } finally {
+      clearInterval(clipTimer);
+      clipState = null;
+      if (startedHere && stopTest && !disposed) {
+        stopTest();
+        stopTest = null;
+      }
+      if (!disposed) drawTest();
     }
   }
 
@@ -248,6 +344,7 @@ export function audioView(container) {
     const c = cfg();
     const vad = !c.pushToTalk;
     meter.update({ level: lv.self, threshold: vad ? lv.threshold : null, open: lv.open });
+    if (vad) gateMeter.update({ level: lv.self, threshold: lv.threshold, open: lv.open });
     if (!stopTest && !voice.state.inRoom) return;
     // Solo se toca el DOM cuando cambia el texto (los niveles llegan muchas veces por segundo)
     const stateText = vad ? t(lv.open ? 'voice.meterOpen' : 'voice.meterClosed') : t(lv.open ? 'voice.meterPttOn' : 'voice.meterPttOff');
@@ -356,10 +453,12 @@ export function audioView(container) {
       sbEnabled.querySelector('input').checked = cfg().soundboardEnabled !== false;
       relaySwitch.querySelector('input').checked = Boolean(cfg().relayOnly);
       autoSwitch.querySelector('input').checked = cfg().vadAuto !== false;
+      levelSwitch.querySelector('input').checked = cfg().levelVoices !== false;
       loadDevices();
     }),
     voice.on('state', () => {
       drawTest();
+      drawNoise();
       drawPttState();
     }),
     voice.on('devices', () => loadDevices()),
@@ -369,6 +468,7 @@ export function audioView(container) {
     disposed = true;
     offs.forEach((off) => off());
     recording?.stop();
+    clearInterval(clipTimer);
     if (stopTest) stopTest();
     stopTest = null;
     voice.setMonitor(false);

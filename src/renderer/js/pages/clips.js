@@ -1,20 +1,21 @@
 // Clips y capturas: capturas, clips (repeticiones instantaneas y lo que exporta el editor) y grabaciones de todas
 // las instancias, con filtros (instancia, fecha, busqueda por nombre o mundo), visor grande con teclado, editor
 // rapido (recortar y exportar en vertical 9:16 u horizontal) y compartir (link, a un amigo o destacada en el
-// perfil). Los archivos los lista worlds:media (carpetas de cada instancia) y los graba modules/capture.js.
+// perfil). Los clips automaticos llevan su motivo (muerte, logro, jefe) con etiqueta y filtro. Los archivos los lista
+// worlds:media (carpetas de cada instancia) y los graba modules/capture.js.
 // Ruta: #/clips[/<screenshots | clips | recordings>]
-import { h, icon, mount, ok, fail, toast, setBusy, selectEl, debounce, emptyState, confirmDialog } from '../ui.js';
+import { h, icon, mount, ok, fail, toast, setBusy, selectEl, debounce, emptyState, confirmDialog, fmtBytes } from '../ui.js';
 import { api } from '../store.js';
 import { t } from '../i18n.js';
 import { navigate } from '../app.js';
 import { mediaGrid, mediaSkeleton } from './worlds/media.js';
-import { TABS, RANGES, filterItems, countByTab, instancesOf } from './clips/model.js';
-import { TAB_ICON, isMissingHandler, kbd, clock } from './clips/common.js';
+import { TABS, RANGES, REASONS, filterItems, countByTab, instancesOf, reasonOf, tabOf } from './clips/model.js';
+import { TAB_ICON, isMissingHandler, kbd, clock, reasonBadge } from './clips/common.js';
 import { openViewer, closeViewer } from './clips/viewer.js';
 import { openEditor } from './clips/editor.js';
 
 // Filtros mientras dure la sesion (volver a la pagina los recuerda)
-const memo = { tab: 'screenshots', instanceId: '', range: 'all', query: '' };
+const memo = { tab: 'screenshots', instanceId: '', range: 'all', query: '', reason: '' };
 
 export default {
   ns: ['clips', 'capture', 'worlds'],
@@ -83,9 +84,17 @@ function renderClips(root) {
     const recording = cap.recording?.active;
     const replayOn = cap.replay?.enabled;
     const instName = media?.items?.find((i) => i.instanceId === cap.game.instanceId)?.instanceName || cap.game.instanceId;
+    let sub = t('clips.liveReplayOff');
+    if (!cap.game.window) sub = t('clips.liveSearching');
+    else if (replayOn && cap.replay.error) sub = t('clips.liveReplayNoDisk');
+    else if (replayOn && !cap.replay.active) sub = t('clips.liveReplayStarting');
+    else if (replayOn) {
+      sub = t('clips.liveReplayDisk', { seconds: cap.replay.buffered, max: cap.replaySeconds, disk: fmtBytes(cap.replay.disk || 0) });
+      if (cap.settings?.auto?.enabled) sub += ` · ${t('clips.liveAuto', { count: cap.auto?.saved || 0, limit: cap.auto?.limit || 0 })}`;
+    }
     return {
       title: recording ? t('clips.liveRecording', { time: clock(cap.recording.duration) }) : t('clips.livePlaying', { name: instName }),
-      sub: !cap.game.window ? t('clips.liveSearching') : replayOn ? (cap.replay.active ? t('clips.liveReplayOn', { seconds: cap.replay.buffered, max: cap.replaySeconds }) : t('clips.liveReplayStarting')) : t('clips.liveReplayOff'),
+      sub,
     };
   }
 
@@ -221,7 +230,33 @@ function renderClips(root) {
         ),
       ),
     );
-    mount(toolbar, h('div', { class: 'input-icon cl-search' }, icon('search'), search), instSel, chips, aiButton());
+    mount(toolbar, h('div', { class: 'input-icon cl-search' }, icon('search'), search), instSel, chips, reasonChips(), aiButton());
+  }
+
+  // Motivo de los clips automaticos: solo en la pestana de clips y si hay alguno (si no, no aporta nada)
+  function reasonChips() {
+    if (memo.tab !== 'clips' || !media) return null;
+    if (!media.items.some((it) => tabOf(it) === 'clips' && reasonOf(it))) {
+      if (memo.reason) memo.reason = '';
+      return null;
+    }
+    const chip = (value, label) =>
+      h(
+        'button',
+        {
+          type: 'button',
+          class: ['chip', memo.reason === value && 'active'],
+          'aria-pressed': String(memo.reason === value),
+          onclick: () => {
+            memo.reason = value;
+            drawToolbar();
+            drawTabs();
+            drawGrid();
+          },
+        },
+        label,
+      );
+    return h('div', { class: 'chips cl-reasons', role: 'group', 'aria-label': t('clips.filterReason') }, chip('', t('clips.reasonAll')), REASONS.map((r) => chip(r, t(`capture.reason_${r}`))));
   }
 
   // ---------- Busqueda con IA (solo cuando el usuario la pide) ----------
@@ -287,7 +322,7 @@ function renderClips(root) {
             class: 'btn',
             type: 'button',
             onclick: () => {
-              Object.assign(memo, { instanceId: '', range: 'all', query: '' });
+              Object.assign(memo, { instanceId: '', range: 'all', query: '', reason: '' });
               search.value = '';
               drawToolbar();
               drawTabs();
@@ -306,7 +341,7 @@ function renderClips(root) {
     return {
       icon: 'woFilm',
       title: t('clips.emptyClips'),
-      text: replayOff ? t('clips.emptyClipsOffText', { seconds: cap?.replaySeconds || 30 }) : t('clips.emptyClipsText', { key: key('replay'), seconds: cap?.replaySeconds || 30 }),
+      text: replayOff ? t('clips.emptyClipsOffText', { seconds: cap?.replaySeconds || 60 }) : t('clips.emptyClipsText', { key: key('replay'), seconds: cap?.replaySeconds || 60 }),
       action: replayOff ? h('button', { class: 'btn', type: 'button', onclick: () => navigate('settings/ingame/capture') }, icon('history'), t('clips.enableReplay')) : null,
     };
   }
@@ -328,6 +363,7 @@ function renderClips(root) {
       gridHost,
       mediaGrid(items, {
         sharedMap: shared,
+        badgeOf: reasonBadge,
         emptyIcon: empty.icon,
         emptyTitle: empty.title,
         emptyText: empty.text,

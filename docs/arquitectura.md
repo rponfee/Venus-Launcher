@@ -42,7 +42,7 @@ supabase/functions/billing/, stripe-webhook/   Pagos de Venus IA con Stripe (ver
 supabase/functions/admin/               Panel de administración (ver docs/admin.md)
 src/renderer/overlay.html     Overlay del juego (ventana transparente; preload propio de modules/overlay/)
 src/renderer/recorder.html    Grabadora oculta de clips (preload propio de modules/capture/)
-mod/venus-badge/              Mod de Fabric de la insignia de Venus (Gradle + Loom; ver docs/insignia.md)
+mod/venus-badge/              Mod de la insignia de Venus para Fabric, NeoForge y Forge (Gradle; ver docs/insignia.md)
 scripts/check.js              Chequeo de sintaxis de todo el proyecto
 scripts/i18n-check.js         Traducciones contra el español (claves y {variables})
 scripts/contracts-check.js    Canales que usa la interfaz contra los que registra el proceso principal
@@ -132,7 +132,7 @@ export default {
 - `app.js` exporta: `navigate(ruta)`, `launchInstance(id, { quickPlay: { world: '<carpeta>' } | { server: 'host', port: 25565 } })` (Quick Play en 1.20+, `--server/--port` en versiones viejas), `openAccounts()`, `playtimeLabel(inst)`, `setNavBadge(ruta, valor, 'badge'|'dot')`, `finishOnboarding()`, `registerPage(id, loader, navItem)` (`navItem = { label, icon, cls }`; `label` puede ser una función que se vuelve a evaluar al cambiar el idioma; registrar el mismo id reemplaza la página), `unregisterPage(id)` (solo páginas registradas, no las propias del launcher) y `setNavHidden(id, hidden)`.
 - `store`: `settings`, `instances`, `accounts`, `running`, `servers`, `info`, `tasks`; `on/emit`; `refreshInstances()`, `refreshSettings()`, `setSettings(patch)`, `selectedAccount()`, `selectedInstance()`, `taskFor(id)` (tarea que impide jugar esa instancia; ver 6.7).
 - `ui.js`: `h`, `mount`, `clear`, `icon`, `registerIcons`, `toast`/`ok`/`fail`, `modal({ title, subtitle?, icon?, body, footer, size: 'sm' | '' | 'wide' | 'xwide', onClose, closable })` (con `icon` o `subtitle` la cabecera lleva el ícono en un recuadro de acento y una línea de contexto debajo del título), `confirmDialog`, `promptDialog`, `loading`, `skeleton(forma, opciones)` (carga de más de 300 ms: `3` líneas, `'line'`, `'title'`, `'circle'`, `'block'`, `'list'`, `'card'`, `'grid'`; se anuncia una sola vez como "Cargando..."), `setBusy(botón)` (acción asíncrona: spinner en lugar del primer ícono, `disabled` y `aria-busy`; devuelve la función que lo libera y le devuelve el foco), `reducedMotion()`, `emptyState`, `switchEl`, `selectEl`, `sectionTitle`, `safeHtml`, `copyText`, `ensureCss`, formatos `fmtBytes`, `fmtMb`, `fmtDuration`, `fmtNumber`, `fmtAgo`, `fmtDate`, `fmtTime`, `debounce`, `LOADERS`, `loaderBadge`, `instanceIcon`, `avatarImg`, `showTip`/`hideTip`.
-- Módulos que arrancan solos al abrir el launcher (cada uno exporta un `startup()` que se puede llamar más de una vez): `appearance.js` y `a11y.js` arrancan antes de dibujar la primera página (`EARLY_STARTUP`, se esperan como mucho 1,5 s para que no se vea el tema por defecto); después, la lista `STARTUP` de `app.js` arranca `features/share.js`, `features/cloudsync.js`, `features/assistant.js`, `features/netplay.js`, `features/crash.js`, `pages/devmode.js`, `features/admin.js` (agrega `#/admin` al menú solo para los administradores), `features/mcp.js` (confirmaciones y avisos con Deshacer de lo que piden Claude o ChatGPT por MCP) y `features/svcstatus.js` (solo registra el comando "Estado de los servicios" de Ctrl+K; no consulta nada). Desde la 2.0 también `features/nowplaying.js` (comandos de Música en Ctrl+K), `features/overlay.js` (manda voz y mensajes al overlay), `features/capture.js` (avisos de capturas y la señal `media-share`), `features/rewards.js` (logros automáticos y saldo de Venus Points), `features/party.js` (señales `party-*`), `features/notify.js` (avisos de amigos y favoritos) y `features/whatsnew.js` (recorrido de la 2.0). `app.js` además monta, con `mountShellExtras()`, el mini reproductor (`miniPlayer()`) y el saldo (`pointsChip()`) arriba del botón de Discord de la barra lateral, y el botón **Grupo** (`partyButton()`) en la barra de título.
+- Módulos que arrancan solos al abrir el launcher (cada uno exporta un `startup()` que se puede llamar más de una vez): `appearance.js` y `a11y.js` arrancan antes de dibujar la primera página (`EARLY_STARTUP`, se esperan como mucho 1,5 s para que no se vea el tema por defecto); después, la lista `STARTUP` de `app.js` arranca `features/share.js`, `features/cloudsync.js`, `features/assistant.js`, `features/netplay.js`, `features/crash.js`, `features/admin.js` (agrega `#/admin` al menú solo para los administradores), `features/mcp.js` (confirmaciones y avisos con Deshacer de lo que piden Claude o ChatGPT por MCP) y `features/svcstatus.js` (solo registra el comando "Estado de los servicios" de Ctrl+K; no consulta nada). Desde la 2.0 también `features/nowplaying.js` (comandos de Música en Ctrl+K), `features/overlay.js` (manda voz y mensajes al overlay), `features/capture.js` (avisos de capturas y la señal `media-share`), `features/rewards.js` (logros automáticos y saldo de Venus Points), `features/party.js` (señales `party-*`), `features/notify.js` (avisos de amigos y favoritos) y `features/whatsnew.js` (recorrido de la 2.0). `app.js` además monta, con `mountShellExtras()`, el mini reproductor (`miniPlayer()`) y el saldo (`pointsChip()`) arriba del botón de Discord de la barra lateral, y el botón **Grupo** (`partyButton()`) en la barra de título.
 
 ### Diseño
 
@@ -201,7 +201,6 @@ Estos son los nombres que usa cada módulo hoy. Quien consume algo de otro módu
 | `../a11y.js` | `startup()`, `accessibilityPanel() → Element` | `registerCommands(provider)` y `openCommandPalette(query?)` (paleta Ctrl+K; un comando es `{ id, title, run, group?, icon?, sub?, keywords?, hint? }`), `openControlifyInstaller()`, `openAccessibilityModal()`, `setA11y(patch)`, `a11ySettings()`, `A11Y_DEFAULTS`, `motionReduced()`, `scaleInfo()` | a11y |
 | `../social.js` | `social` (6.2) | `MAX_MESSAGE` | social |
 | `../voice.js` | `voice` (6.2) | `normalizeCode`, `VOICE_DEFAULTS`, `MAX_MEMBERS`, `SVC_PROJECT`, `SOUNDS`, `VoiceError` (con `.code`), `VoiceEngine` | voice |
-| `pages/devmode.js` | página `#/devmode` | `startup()` (escucha `devmode:autoLaunch` para abrir el cliente cuando el servidor de prueba queda listo) | devmode |
 | `pages/skins.js` | página `#/skins` (sin exports para otros módulos: el visor 3D `createViewer` de `pages/skins/viewer.js` y el resto de `pages/skins/` son internos) | — | skins |
 | `nowplaying.js` | `startup()` (comandos de Ctrl+K), `miniPlayer() → Element` (con `.destroy()`; barra lateral, oculto si no suena nada), `nowPlayingPanel() → Element` (con `.destroy()`; Ajustes → En el juego, ancla `ingame/music`) | `nowPlaying` (subscribe, refresh, control, setVolume, sources, openSpotify, view), `runAction`, `fmtClock`, `positionNow`, `paintArt`, `safeArt`, `accelParts`, `prepare`, `NP_ICONS` | nowplaying |
 | `overlay.js` | `startup()` (manda la voz y los mensajes al overlay con límite de frecuencia), `overlayPanel() → Element` (con `.destroy()`; Ajustes → En el juego, ancla `ingame/overlay`) | — | overlay |
@@ -344,11 +343,6 @@ Todos se llaman con `api.invoke(canal, ...args)`; los eventos se escuchan con `a
 
 - `discord:status`, `discord:test` (con el Application ID del launcher, `discordClientId` de `core/app-config.js`; sin él, Rich Presence no está disponible y el panel lo dice). Evento `discord:statusChanged`.
 
-**devmode** (`modules/devmode.js`)
-
-- `devmode:state`, `devmode:project`, `devmode:addProject`, `devmode:removeProject`, `devmode:select`, `devmode:update`, `devmode:detect`, `devmode:jdks`, `devmode:build`, `devmode:cancelBuild`, `devmode:buildLog`, `devmode:deploy`, `devmode:events`, `devmode:clearEvents`, `devmode:serverOptions`, `devmode:linkableServers`, `devmode:createServer`, `devmode:linkServer`, `devmode:unlinkServer`, `devmode:startServer`, `devmode:stopServer`, `devmode:restartServer`, `devmode:killServer`, `devmode:command`, `devmode:serverLogs`, `devmode:setOnlineMode`, `devmode:plugman`, `devmode:installPlugman`, `devmode:startSession`, `devmode:open`, `devmode:clientLaunched` (detalle en la cabecera de `src/main/modules/devmode.js`).
-- Eventos: `devmode:changed` (projectId o null), `devmode:status`, `devmode:buildLog`, `devmode:event`, `devmode:autoLaunch` (projectId, { instanceId, port }).
-
 **assistant** (`modules/assistant.js`)
 
 - `assistant:send(conversationId o null, text, { instanceId, model?, effort? })` → { conversationId, turnId, model, effort } (`model` `'haiku'`, `'sonnet'` u `'opus'` y `effort` `'low'`, `'medium'` o `'high'`, solo los que permite el plan; sin ellos, lo último de la conversación o la última elección, `settings.ai.assistantModel`/`assistantEffort`), `assistant:confirm(requestId, approved)`, `assistant:cancel(conversationId)`, `assistant:undo(undoId)`, `assistant:conversations()`, `assistant:conversation(id)`, `assistant:deleteConversation(id)`, `assistant:status({ refresh }?)` → lo de `ai:status` + `modelOptions` (modelos del plan con sus esfuerzos y las preguntas que quedan hoy y en la semana), `selection`, `budget` (gasto del mes), `resets`, `needsPlan` (con sesión y sin plan) y `plans`.
@@ -432,7 +426,6 @@ Todos se llaman con `api.invoke(canal, ...args)`; los eventos se escuchan con `a
 | `ingame` | `prefs(settings)`, `venusToken()` (token de la sesión de Venus o null), `badgeClient()` (cliente de la insignia: `ensure`, `enroll(account, { fn: 'badge' o 'mcverify' })`, `mine`, `remove`) |
 | `crash` | `analyzeInstance(instanceId)`, `bisectStatus`, `isBisecting(instanceId)`, `assertNotBisecting(instanceId)` (error con `code: 'bisect'`: mientras se busca el mod culpable, nadie más toca la carpeta mods; lo usan compat, share, packs, snapshots e `instances:*File`) |
 | `curseforge` | `available`, `search`, `getMod`, `getMods`, `getModFiles`, `getFiles`, `getDownloadUrl`, `fingerprintMatches`, `computeFingerprint(buffer)`, `fingerprintFile(ruta)`, `installToInstance`, `installModpack`, `normalizeMod`, `normalizeFile`, `CLASS_IDS` |
-| `devmode` | `suggestVersion` |
 | `mapviewer` | `info`, `tile`, `renderAll`, `discoverDimensions`, `flushIndexes`, `getPool`, `configure`, `RENDER_VERSION` |
 | `mcimport` | `defaultDir()` (carpeta del launcher oficial; sin empaquetar la pisa `VENUS_MC_DIR`) |
 | `mcp` | `status()` (el mismo estado de `mcp:status`), `planState({ refresh?, wait? })` (el control de plan del MCP: lo usan los servidores MCP del asistente y los motores externos), `localEndpoint()` (URL local con el secreto para los motores externos del asistente; arranca el servidor solo para eso si el interruptor está apagado; `err.code 'plan'`), `activitySince(desde)` (entradas de la Actividad MCP desde ese momento), `INSTRUCTIONS` (instrucciones para el modelo de Claude o ChatGPT) |
@@ -480,7 +473,8 @@ Usan `game.addBeforeLaunch`: performance (memoria automática y Java elegido a m
 | `#/voice[/<rooms, audio o game>]` · `#/voice/join/<código>` | Voice Chat · Entrar a una sala (pide la contraseña si hace falta) |
 | `#/messages[/<userId>]` | Mensajes (chat con ese amigo) |
 | `#/stats[/<launcher, ingame, places o achievements>]` · `#/stats/world/<instanceId>/<carpeta>` | Estadísticas · Detalle de un mundo |
-| `#/performance` · `#/devmode` | Rendimiento · Modo desarrollador |
+| `#/performance` | Rendimiento |
+| `#/achievements` | Logros, misiones y logros de Minecraft |
 | `#/admin` | Panel de administración. Solo existe para los administradores: la registra `features/admin.js` después de `admin:me` (para el resto no hay ítem de menú ni ruta). Guía: [admin.md](admin.md) |
 | `#/settings[/<sección>[/<ancla>]]` | Ajustes (abajo) |
 | `#/welcome` | Bienvenida (obligatoria hasta terminarla) |
@@ -542,7 +536,7 @@ Viajan por el buzón privado `inbox:<userId>` con la RPC `social_send_signal`: s
 | modtranslate | `features/modtranslate.js`, css, `modules/modtranslate.js` (+ `modules/modtranslate/`) | modtranslate · main: modtranslate | — |
 | a11y | `js/a11y.js` (+ `js/a11y/`), `js/appearance.js`, `styles/a11y.css` | a11y, appearance | — |
 | settings | `pages/settings.js` (+ `pages/settings/`), `styles/pages/settings.css` | settings | — |
-| devmode | `pages/devmode.js` (+ `pages/devmode/`), css, `modules/devmode.js` (+ `modules/devmode/`) | devmode · main: devmode | — |
+| achievements | `pages/achievements.js` (+ `pages/achievements/`: `catalog.js`, `names.js`, `minecraft.js`), `features/achievements.js`, `features/missions.js`, css, `modules/achievements.js` | achievements | — |
 | assistant | `pages/assistant.js`, `features/assistant.js`, `features/mcpservers.js` (+ `styles/features/mcpservers.css`), css, `modules/assistant.js` (+ `modules/assistant/`, con `mcp-servers.js`), `docs/asistente-ia.md` | assistant · main: assistant | — |
 | assistant-backend | `supabase/functions/ai-assistant/`, `supabase/functions/README.md`, `docs/backend-ia.md` | — | 0007, 0008, 0011 |
 | billing | `features/plans.js`, `styles/features/plans.css`, `modules/billing.js` (+ `modules/billing/`: `client.js`, `fake.js` para capturas, pruebas en `billing/test/`), `supabase/functions/billing/`, `supabase/functions/stripe-webhook/`, `docs/pagos.md` | plans · main: billing | 0009 |
@@ -593,7 +587,7 @@ Cada módulo lee su clave con sus propios valores por defecto (no hace falta toc
 | `snapshots` | snapshots | `{ autoBeforePlay (true), keepAuto (10), keepDays (30; 0 = nunca), autoIntervalHours (6) }` |
 | `analysis` | analysis | `{ launchSecurity (true), launchMixins (true) }` |
 | `modtranslate` | modtranslate | `{ locale }` (último idioma de destino) |
-| `ingame` | ingame | `{ pack (true), window (true), badge (false), badgeEnrolled }`: paquete de recursos de Venus en el juego (pantalla de carga, texto debajo del logo y frases del menú), ícono y título de Venus en la ventana del juego y la insignia de Venus (mod en instancias Fabric/Quilt 1.21 y 1.21.1; `badgeEnrolled` = hay cuentas anotadas en el servidor para borrar al apagarla) (Ajustes → General → Al jugar) |
+| `ingame` | ingame | `{ pack (true), window (true), badge (false), badgeEnrolled }`: paquete de recursos de Venus en el juego (pantalla de carga, texto debajo del logo y frases del menú), ícono y título de Venus en la ventana del juego y la insignia de Venus (mod en instancias Fabric/Quilt 1.20.1, 1.21 y 1.21.1, NeoForge 1.21 y 1.21.1 y Forge 1.20.1; `badgeEnrolled` = hay cuentas anotadas en el servidor para borrar al apagarla) (Ajustes → General → Al jugar) |
 | `nowplaying` | nowplaying | `{ source ('auto', 'system' o id de app), overlay (true), shortcuts: { enabled (false), playPause, next, prev, volumeUp, volumeDown } }` (la clave vieja `music` no se usa) |
 | `overlay` | overlay | `{ enabled, shortcut ('Alt+Shift+O'; '' = sin atajo), widgets: { voice, messages, alerts, captures, music } }`; cada widget `{ enabled, anchor ('tl'…'br' o 'free'), x, y, scale, opacity, theme }` más lo suyo (`voice.show`, `messages.hideContent`, `duration`, `alerts.filter`, `music.show`) |
 | `capture` | capture | `{ replay (false), quality ('1080p'), fps (30), audio (true), notify (true), copyTo (''), shortcuts: { replay ('Alt+Shift+F8'), record ('Alt+Shift+F9'), screenshot ('Alt+Shift+F12') } }` |
@@ -646,7 +640,6 @@ La raíz es `%APPDATA%\.venuslauncher` (Windows), `VENUS_DATA_DIR` si está defi
 | `perf.json` | performance | Equipo detectado y resultado de la prueba de CPU |
 | `netplay.json` | netplay | Preferencias por servidor y mapeos UPnP activos (se limpian si el launcher se cerró de golpe) |
 | `serverlist.json` | multiplayer | Historial de servidores e instancia preferida por servidor |
-| `devmode.json`, `devmode-events.json` | devmode | Proyectos de plugins y registro de eventos |
 | `security-cache.json`, `mixins-cache.json` | analysis | Resultados por SHA-1 de cada `.jar` |
 | `modtranslate-cache.json` | modtranslate | Traducciones reutilizables entre instancias |
 | `storage.json`, `storage-hashes.json`, `storage-usage.json` | storage | Estado de la unificación, caché de hashes y del uso de disco |

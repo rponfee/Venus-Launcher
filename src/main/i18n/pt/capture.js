@@ -15,4 +15,6 @@ module.exports = {
   errExportBad: "O clipe exportado está danificado e não foi possível salvar.",
   errAiUnavailable: "A IA não está disponível: entre na sua conta Venus e confira se a IA está ativada.",
   overlayErrorTitle: "Clipes e capturas",
+  errReplayNoRoom: "Replay instantâneo pausado: sem espaço suficiente no disco.",
+  autoLimitReached: "Atingido o máximo de {count} clipes automáticos nesta partida. O replay instantâneo continua funcionando com o atalho.",
 };

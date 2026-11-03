@@ -1,6 +1,6 @@
 export default {
   title: "Statistiche",
-  subtitle: "Il tuo tempo di gioco, i tuoi mondi e i tuoi obiettivi in un unico posto",
+  subtitle: "Il tuo tempo di gioco e i tuoi mondi in un unico posto",
   subtitleSince: "La tua attività dal {date}",
   loading: "Calcolo delle statistiche...",
   loadError: "Impossibile caricare le statistiche",

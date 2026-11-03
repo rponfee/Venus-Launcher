@@ -176,6 +176,21 @@ function createSkinsService({ accounts, api, library, catalog = null, fail, t = 
     return { url: tex.url, kind: k, width: tex.width, height: tex.height, pixelHash: tex.pixelHash, dataUrl: `data:image/png;base64,${tex.bytes.toString('base64')}` };
   }
 
+  // Skin publica de un jugador por nombre, para la vitrina de un perfil (solo cuando alguien toca "Ver skin").
+  const publicSkins = new Map(); // nombre -> { at, view }
+  async function publicSkin(name) {
+    const key = String(name || '').toLowerCase();
+    if (!/^[a-z0-9_]{3,16}$/.test(key)) throw fail('noProfile');
+    const hit = publicSkins.get(key);
+    if (hit && now() - hit.at < 10 * 60 * 1000) return hit.view;
+    const { url, variant } = await api.publicProfile(key);
+    const tex = await texture(url, 'skin');
+    const view = { dataUrl: tex.dataUrl, variant };
+    publicSkins.set(key, { at: now(), view });
+    if (publicSkins.size > 32) publicSkins.delete(publicSkins.keys().next().value);
+    return view;
+  }
+
   async function account() {
     const sel = await selectedAccount();
     return sel ? { id: sel.id, type: sel.type === 'msa' ? 'msa' : 'offline', name: sel.name, needsLogin: Boolean(sel.needsLogin) } : null;
@@ -185,6 +200,7 @@ function createSkinsService({ accounts, api, library, catalog = null, fail, t = 
     account,
     profile,
     texture,
+    publicSkin,
 
     library: () => library.list(),
     read: (id) => library.read(id),
