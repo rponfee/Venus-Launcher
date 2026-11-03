@@ -109,4 +109,8 @@ export default {
   goSupport: "Przejdź do Pomocy",
 
   disclaimer: "Venus Launcher nie jest powiązany z Mojang Studios ani Microsoftem. Minecraft jest znakiem towarowym Mojang Synergies AB.",
+  wpLiveHint: "Pobiera się po użyciu ({size}). Do tego czasu widać tę miniaturę.",
+  wpLiveDownloading: "Pobieranie tła… {percent}%",
+  wpLiveError: "Nie udało się pobrać. Spróbuj ponownie przyciskiem „Ustaw jako tło”.",
+  wpLiveLite: "W trybie lekkim wyświetla się jako nieruchomy obraz.",
 };

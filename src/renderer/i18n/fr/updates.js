@@ -20,7 +20,6 @@ export default {
   error: "Impossible de rechercher ou de télécharger la mise à jour. Vérifiez votre connexion et réessayez.",
   disabled: "Les mises à jour automatiques sont indisponibles.",
   disabledDevelopment: "Les mises à jour automatiques sont activées dans la version installée.",
-  disabledPortable: "Pour mettre à jour l’édition portable, téléchargez la nouvelle version depuis la page des versions publiées.",
   disabledPlatform: "Les mises à jour automatiques sont disponibles pour l’installation Windows.",
   disabledUnconfigured: "Aucun canal de mise à jour n’est encore configuré dans cette compilation.",
   disabledUnavailable: "Le composant de mise à jour est indisponible dans cette compilation.",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "La réparation des raccourcis n’est pas disponible pour cette installation.",
   windowsSearchHint: "Windows peut mettre du temps à répercuter les modifications du menu Démarrer dans les résultats de recherche.",
   windowsPinnedHint: "Si l’icône épinglée affiche encore l’ancienne image, détachez-la puis épinglez à nouveau Venus depuis le menu Démarrer.",
+  available: "Une nouvelle version est disponible : {version}.",
+  download: "Télécharger la nouvelle version",
+  portableNote: "La version portable ne se met pas à jour toute seule : vous pouvez chercher les nouvelles versions ici et, si vous avez activé la recherche automatique dans Confidentialité, elle vous prévient d’elle-même. Enregistrez le nouveau .exe dans ce même dossier pour garder vos données (VenusData).",
+  noticeTitle: "Venus {version} est disponible",
+  noticeText: "La version portable ne se met pas à jour toute seule. Téléchargez le nouveau .exe et enregistrez-le dans ce même dossier pour garder vos données.",
+  noticeLater: "Plus tard",
 };

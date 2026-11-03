@@ -109,4 +109,8 @@ export default {
   goSupport: "Перейти в поддержку",
 
   disclaimer: "Venus Launcher не связан с Mojang Studios или Microsoft. Minecraft — товарный знак Mojang Synergies AB.",
+  wpLiveHint: "Загружается при использовании ({size}). До этого показывается миниатюра.",
+  wpLiveDownloading: "Загрузка фона… {percent}%",
+  wpLiveError: "Не удалось загрузить. Попробуйте ещё раз кнопкой «Сделать фоном».",
+  wpLiveLite: "В лёгком режиме отображается как статичное изображение.",
 };

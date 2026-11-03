@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "둥근 글꼴",
   ui_uiFont_mono: "고정폭",
   ui_uiGlass: "카드 불투명도",
+  liteTitle: "라이트 모드",
+  liteSub: "저사양 PC용: 움직이는 배경, 애니메이션, 흐림 효과를 끄고 오버레이도 끕니다.",
+  liveDownloading: "움직이는 배경 다운로드 중… {percent}%",
+  liveError: "움직이는 배경을 내려받지 못했습니다. 다시 클릭해 재시도하세요.",
 };

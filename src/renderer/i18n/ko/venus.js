@@ -109,4 +109,8 @@ export default {
   goSupport: "지원으로 이동",
 
   disclaimer: "Venus Launcher는 Mojang Studios 또는 Microsoft와 관련이 없어요. Minecraft는 Mojang Synergies AB의 상표예요.",
+  wpLiveHint: "사용할 때 내려받습니다({size}). 그전까지는 이 미리보기가 표시됩니다.",
+  wpLiveDownloading: "배경 다운로드 중… {percent}%",
+  wpLiveError: "내려받지 못했습니다. \"배경으로 사용\"으로 다시 시도하세요.",
+  wpLiveLite: "라이트 모드에서는 정지 이미지로 표시됩니다.",
 };

@@ -132,4 +132,11 @@ export default {
   v3badge_b2: "Installeert zichzelf op elke instantie",
   v3badge_b3: "Schakel het in bij Instellingen → Algemeen",
   v3badge_cta: "De badge inschakelen",
+  v3changes_title: "Wat er is veranderd",
+  v3changes_text: "Sommige dingen zijn verdwenen of werken anders.",
+  v3changes_b1: "De ontwikkelaarsmodus voor plug-ins is verwijderd. Je projecten staan nog in hun mappen: Venus heeft ze niet aangeraakt.",
+  v3changes_b2: "De draagbare versie werkt zichzelf niet bij, maar laat nu wel weten wanneer er een nieuwe is.",
+  v3changes_b3: "Geanimeerde achtergronden worden gedownload als je ze kiest: het installatieprogramma is bijna 100 MB kleiner.",
+  v3changes_b4: "Nieuwe lichte modus voor eenvoudige pc’s: Instellingen → Uiterlijk → Interface.",
+  v3changes_cta: "Updates bekijken",
 };

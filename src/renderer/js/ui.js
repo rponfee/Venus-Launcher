@@ -207,7 +207,7 @@ export function icon(name, cls) {
 // true si hay que evitar animaciones: Ajustes > Accesibilidad (body.reduce-motion) o la preferencia de Windows.
 const motionQuery = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 export function reducedMotion() {
-  return Boolean(document.body?.classList.contains('reduce-motion') || motionQuery?.matches);
+  return Boolean(document.body?.classList.contains('reduce-motion') || document.documentElement.hasAttribute('data-ui-lite') || motionQuery?.matches);
 }
 // Duracion de las salidas (--dur de main.css): el elemento se saca del documento al terminar
 const EXIT_MS = 180;

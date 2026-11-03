@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "Arredondada",
   ui_uiFont_mono: "Monoespaçada",
   ui_uiGlass: "Opacidade dos cartões",
+  liteTitle: "Modo leve",
+  liteSub: "Para PCs modestos: sem fundos animados, animações nem desfoque, e com o overlay desligado.",
+  liveDownloading: "Baixando o fundo animado… {percent}%",
+  liveError: "Não foi possível baixar o fundo animado. Clique nele de novo para tentar outra vez.",
 };

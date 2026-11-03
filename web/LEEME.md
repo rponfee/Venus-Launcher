@@ -2,6 +2,10 @@
 
 Esta carpeta es la página lista para subir a cualquier hosting estático: `index.html`, `fondos.html` (la galería de fondos), `assets/` (logo y capturas del launcher) y `fondos/` (los fondos, que se generan aparte: ver más abajo).
 
+## CurseForge
+
+Mientras no esté la clave de CurseForge, la página no lo promete: habla solo de Modrinth. Cuando la clave esté cargada en el build, volvé a sumarlo en `index.html`: la descripción (`meta`), el texto principal, las tarjetas "Cualquier versión, cualquier loader" y "Modrinth", y "Instala y actualiza" del asistente.
+
 ## Qué muestra
 
 - **Hasta el domingo 8 de noviembre de 2026 a las 00:00 (hora de Argentina):** solo la cuenta regresiva, con el logo y el link al Discord.

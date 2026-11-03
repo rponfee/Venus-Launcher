@@ -40,6 +40,8 @@ export const APPEARANCE_DEFAULTS = {
   uiSidebar: 'full', // 'full' | 'icons'
   uiFont: 'outfit', // 'outfit' | 'system' | 'rounded' | 'mono'
   uiGlass: 100, // 40-100: opacidad de las tarjetas (deja ver el fondo)
+  lite: false, // modo liviano: sin fondos animados, animaciones ni desenfoques, y con el overlay apagado
+  liteOverlay: false, // el overlay estaba prendido al activar el modo liviano (vuelve a prenderse al salir)
   music: { enabled: false, file: '', volume: 35, pauseInGame: true },
 };
 
@@ -101,6 +103,8 @@ function normalizeAppearance(raw = {}) {
   out.uiSidebar = out.uiSidebar === 'icons' ? 'icons' : 'full';
   out.uiFont = ['system', 'rounded', 'mono'].includes(out.uiFont) ? out.uiFont : 'outfit';
   out.uiGlass = intIn(out.uiGlass, 40, 100, 100);
+  out.lite = Boolean(out.lite);
+  out.liteOverlay = Boolean(out.liteOverlay);
   out.music = {
     enabled: Boolean(out.music.enabled),
     file: str(out.music.file),
@@ -140,8 +144,72 @@ export function currentWallpaperId() {
 
 export function useWallpaper(id) {
   if (!getWallpaper(id)) return false;
+  live.errors.delete(id);
   save({ appearance: { background: 'wallpaper', wallpaperId: id } });
+  applyBackground();
   return true;
+}
+
+export function isLite() {
+  return ap.lite;
+}
+
+// ---------- Fondos animados a demanda (modules/wallpapers.js) ----------
+// No vienen en el instalador: el elegido se baja una vez. Mientras tanto, sin internet o en el modo liviano se ve su
+// miniatura difuminada.
+const live = { files: {}, downloads: new Map(), errors: new Set(), timer: 0 };
+
+async function loadLiveFiles() {
+  try {
+    live.files = (await api.invoke('wallpapers:status')) || {};
+  } catch (err) {
+    console.warn('[appearance] fondos animados', err?.message || err);
+  }
+}
+
+// state: 'ready' (con url), 'downloading' (con percent), 'error' o 'missing'; size en bytes si se conoce.
+export function liveWallpaperState(id) {
+  const info = live.files[id];
+  const size = info?.size || 0;
+  if (info?.path) return { state: 'ready', url: fileUrl(info.path), size };
+  if (live.downloads.has(id)) return { state: 'downloading', percent: live.downloads.get(id), size };
+  return { state: live.errors.has(id) ? 'error' : 'missing', size };
+}
+
+// Espera un momento: el que pasa por varios con las flechas no baja uno por cada uno.
+function requestLiveWallpaper(id) {
+  clearTimeout(live.timer);
+  if (live.files[id]?.path || live.downloads.has(id) || live.errors.has(id)) return;
+  live.timer = setTimeout(() => {
+    if (currentWallpaperId() === id && !ap.lite) startLiveDownload(id);
+  }, 500);
+}
+
+function startLiveDownload(id) {
+  live.downloads.set(id, 0);
+  api
+    .invoke('wallpapers:ensure', id)
+    .then(({ path }) => {
+      live.files[id] = { ...live.files[id], path };
+    })
+    .catch((err) => {
+      console.warn('[appearance] no se pudo bajar el fondo', id, err?.message || err);
+      live.errors.add(id);
+    })
+    .finally(() => {
+      live.downloads.delete(id);
+      applyBackground();
+      emit();
+    });
+  emit();
+}
+
+// Lo que se muestra de un fondo de la galería.
+function wallpaperMedia(wallpaper) {
+  if (!wallpaper.video) return { url: wallpaper.src, video: false };
+  const state = ap.lite ? null : liveWallpaperState(wallpaper.id);
+  if (state?.state === 'ready') return { url: state.url, video: true };
+  return { url: wallpaper.thumb, video: false, soft: true };
 }
 
 export function useStars() {
@@ -254,7 +322,7 @@ export function accentColor(a = ap) {
 }
 
 function reducedMotion() {
-  return document.body.classList.contains('reduce-motion') || Boolean(reduceQuery?.matches);
+  return ap.lite || document.body.classList.contains('reduce-motion') || Boolean(reduceQuery?.matches);
 }
 
 function gameRunning() {
@@ -288,7 +356,7 @@ function makeMedia(url, video) {
     v.defaultMuted = true;
     v.loop = true;
     v.playsInline = true;
-    v.autoplay = true;
+    v.autoplay = !reducedMotion();
     v.setAttribute('aria-hidden', 'true');
     v.src = url;
     return v;
@@ -305,7 +373,9 @@ function applyBackground() {
   const host = document.querySelector('.space-bg');
   if (!host) return;
   const wallpaper = ap.background === 'wallpaper' ? getWallpaper(ap.wallpaperId) : null;
-  const url = wallpaper?.src || (ap.background === 'image' && ap.bgFile ? fileUrl(ap.bgFile) : '');
+  const shown = wallpaper ? wallpaperMedia(wallpaper) : null;
+  const url = shown?.url || (ap.background === 'image' && ap.bgFile ? fileUrl(ap.bgFile) : '');
+  if (wallpaper?.video && !ap.lite) requestLiveWallpaper(wallpaper.id);
   const want = Boolean(url) && !bgError;
   let layer = host.querySelector('.ap-bg');
   host.classList.toggle('ap-has-image', Boolean(want));
@@ -319,11 +389,19 @@ function applyBackground() {
   }
   if (layer.dataset.src !== url) {
     layer.dataset.src = url;
-    const media = makeMedia(url, wallpaper ? Boolean(wallpaper.video) : isVideo(ap.bgFile));
+    const media = makeMedia(url, shown ? shown.video : isVideo(ap.bgFile));
+    media.classList.toggle('ap-bg-soft', Boolean(shown?.soft));
     media.addEventListener(
       'error',
       () => {
         if (layer.dataset.src !== url) return;
+        if (shown?.video && live.files[wallpaper.id]) {
+          // El video ya no está (se limpió la caché, por ejemplo): se vuelve a bajar.
+          live.files[wallpaper.id].path = null;
+          applyBackground();
+          emit();
+          return;
+        }
         bgError = true;
         console.warn('[appearance] fondo no disponible', url);
         applyBackground();
@@ -535,6 +613,7 @@ function applyInterface() {
   root.dataset.uiFont = ap.uiFont;
   root.style.setProperty('--ui-glass', String(ap.uiGlass / 100));
   root.toggleAttribute('data-ui-glassy', ap.uiGlass < 100);
+  root.toggleAttribute('data-ui-lite', ap.lite);
   if (ap.uiFont === 'rounded') ensureCss('features/profile-fonts'); // Fredoka viene con las tipografias del perfil
 }
 
@@ -558,6 +637,12 @@ export async function startup() {
   document.querySelector('link[href="styles/a11y.css"]')?.setAttribute('data-ax-skip', '');
   captureOriginal();
   ({ a: ap, b: br } = fromStore());
+  await loadLiveFiles();
+  api.on('wallpapers:progress', ({ id, percent }) => {
+    if (!live.downloads.has(id)) return;
+    live.downloads.set(id, percent);
+    emit();
+  });
   applyAll();
   engine.applyNow();
   registerCommands(appearanceCommands);
@@ -638,6 +723,15 @@ export function openAppearanceModal() {
 }
 
 // ---------- Panel ----------
+// El overlay es una ventana aparte con su propio ajuste: se apaga al activar el modo liviano y, si estaba prendido,
+// vuelve a prenderse al salir. Mientras tanto se puede prender a mano en su página.
+function setLite(on) {
+  const overlayOn = store.settings?.overlay?.enabled !== false;
+  const restore = !on && ap.liteOverlay;
+  save({ appearance: on ? { lite: true, liteOverlay: overlayOn } : { lite: false, liteOverlay: false } });
+  if ((on && overlayOn) || restore) store.setSettings({ overlay: { enabled: restore } }).catch((err) => console.warn('[appearance] overlay', err?.message || err));
+}
+
 function toggleRow(title, sub, checked, onChangeFn) {
   const sw = switchEl(checked, onChangeFn, title);
   const input = sw.querySelector('input');
@@ -908,7 +1002,7 @@ function createAppearanceControls({ compact = false } = {}) {
     type: 'button', class: 'ap-wallpaper', role: 'radio', title: wallpaper.name,
     'aria-label': wallpaper.video ? `${wallpaper.name}, ${t('appearance.liveBadge')}` : wallpaper.name, 'aria-checked': 'false', tabindex: i === 0 ? 0 : -1,
     dataset: { id: wallpaper.id },
-    onclick: () => save({ appearance: { background: 'wallpaper', wallpaperId: wallpaper.id } }),
+    onclick: () => useWallpaper(wallpaper.id),
   },
   h('img', { src: wallpaper.thumb, alt: '', loading: 'lazy', decoding: 'async', width: 320, height: 180 }),
   wallpaper.video ? h('span', { class: 'ap-wallpaper-live', 'aria-hidden': 'true' }, icon('play'), t('appearance.liveBadge')) : null,
@@ -1004,7 +1098,14 @@ function createAppearanceControls({ compact = false } = {}) {
       btn.tabIndex = selected || (!wallpaper && i === 0) ? 0 : -1;
     });
     galleryWrap.hidden = !WALLPAPERS.length || (!compact && ap.background !== 'wallpaper');
-    const galleryText = wallpaper ? t('appearance.gallerySelected', { name: wallpaper.name }) : t('appearance.galleryChoose');
+    const liveState = wallpaper?.video && !ap.lite ? liveWallpaperState(wallpaper.id) : null;
+    const galleryText = !wallpaper
+      ? t('appearance.galleryChoose')
+      : liveState?.state === 'downloading'
+        ? t('appearance.liveDownloading', { percent: liveState.percent })
+        : liveState?.state === 'error'
+          ? t('appearance.liveError')
+          : t('appearance.gallerySelected', { name: wallpaper.name });
     if (galleryStatus.textContent !== galleryText) galleryStatus.textContent = galleryText;
     const gallerySelection = !galleryWrap.hidden ? wallpaper?.id || '' : null;
     if (gallerySelection && gallerySelection !== lastGallerySelection) {
@@ -1025,12 +1126,14 @@ function createAppearanceControls({ compact = false } = {}) {
     bgError_.hidden = !(showBg && bgError);
     fileActions.hidden = ap.background !== 'image';
     if (showBg) {
-      const url = wallpaper?.src || fileUrl(ap.bgFile);
-      const video = wallpaper ? Boolean(wallpaper.video) : isVideo(ap.bgFile);
+      const shown = wallpaper ? wallpaperMedia(wallpaper) : null;
+      const url = shown?.url || fileUrl(ap.bgFile);
+      const video = shown ? shown.video : isVideo(ap.bgFile);
       if (bgThumb.dataset.src !== url) {
         bgThumb.dataset.src = url;
         const media = makeMedia(url, video);
         if (media.tagName === 'VIDEO') media.autoplay = false;
+        media.classList.toggle('ap-bg-soft', Boolean(shown?.soft));
         mount(bgThumb, media, h('div', { class: 'ap-bg-dim' }), h('span', { class: 'ap-thumb-tag' }, t('appearance.livePreview')));
       }
       bgThumb.style.setProperty('--ap-bg-dim', String(ap.bgDim / 100));
@@ -1217,10 +1320,12 @@ function buildPanel(root) {
     return h('div', { class: 'ap-ui-row' }, h('span', { class: 'ap-ui-label' }, t(`appearance.ui_${key}`)), seg);
   };
   const glass = rangeField(t('appearance.ui_uiGlass'), { min: 40, max: 100, step: 5, value: ap.uiGlass, format: (v) => `${v} %`, onInput: (v) => save({ appearance: { uiGlass: v } }, 200) });
+  const lite = toggleRow(t('appearance.liteTitle'), t('appearance.liteSub'), ap.lite, setLite);
   const uiCard = card(
     'sliders',
     t('appearance.panelInterface'),
     t('appearance.panelInterfaceSub'),
+    lite.el,
     uiRow('uiRadius', ['sharp', 'normal', 'round']),
     uiRow('uiDensity', ['compact', 'normal', 'spacious']),
     uiRow('uiSidebar', ['full', 'icons']),

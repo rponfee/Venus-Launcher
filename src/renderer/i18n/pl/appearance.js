@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "Zaokrąglona",
   ui_uiFont_mono: "Monospace",
   ui_uiGlass: "Krycie kart",
+  liteTitle: "Tryb lekki",
+  liteSub: "Dla słabszych komputerów: bez animowanych teł, animacji i rozmyć oraz z wyłączoną nakładką.",
+  liveDownloading: "Pobieranie animowanego tła… {percent}%",
+  liveError: "Nie udało się pobrać animowanego tła. Kliknij je ponownie, aby spróbować jeszcze raz.",
 };

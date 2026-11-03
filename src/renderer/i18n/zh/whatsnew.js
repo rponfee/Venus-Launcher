@@ -131,4 +131,11 @@ export default {
   v3badge_b2: "自动安装到每个实例",
   v3badge_b3: "在“设置 → 常规”开启",
   v3badge_cta: "开启徽章",
+  v3changes_title: "有哪些变化",
+  v3changes_text: "有些功能已移除或工作方式有所不同。",
+  v3changes_b1: "插件开发者模式已移除。你的项目仍在原来的文件夹中，Venus 没有改动它们。",
+  v3changes_b2: "便携版不会自动更新，但现在有新版本时会提醒你。",
+  v3changes_b3: "动态背景在选择时才下载：安装程序小了近 100 MB。",
+  v3changes_b4: "新增适合低配电脑的轻量模式：设置 → 外观 → 界面。",
+  v3changes_cta: "查看更新",
 };

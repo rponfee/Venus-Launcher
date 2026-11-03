@@ -20,7 +20,6 @@ export default {
   error: "Não foi possível buscar ou baixar a atualização. Verifique sua conexão e tente novamente.",
   disabled: "As atualizações automáticas estão indisponíveis.",
   disabledDevelopment: "As atualizações automáticas são habilitadas na versão instalada.",
-  disabledPortable: "Para atualizar a edição portátil, baixe a nova versão na página de versões publicadas.",
   disabledPlatform: "As atualizações automáticas estão disponíveis para a instalação do Windows.",
   disabledUnconfigured: "Esta compilação ainda não tem um canal de atualizações configurado.",
   disabledUnavailable: "O componente de atualização está indisponível nesta compilação.",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "O reparo de atalhos não está disponível nesta instalação.",
   windowsSearchHint: "O Windows pode levar algum tempo para refletir as alterações do menu Iniciar nos resultados da pesquisa.",
   windowsPinnedHint: "Se o ícone fixado ainda mostrar a imagem antiga, desafixe-o e fixe o Venus novamente pelo menu Iniciar.",
+  available: "Há uma nova versão: {version}.",
+  download: "Baixar a nova versão",
+  portableNote: "A versão portátil não se atualiza sozinha: aqui você pode procurar novas versões e, se ativou a busca automática em Privacidade, ela avisa sozinha. Salve o novo .exe nesta mesma pasta para manter seus dados (VenusData).",
+  noticeTitle: "Venus {version} já está disponível",
+  noticeText: "A versão portátil não se atualiza sozinha. Baixe o novo .exe e salve-o nesta mesma pasta para manter seus dados.",
+  noticeLater: "Mais tarde",
 };

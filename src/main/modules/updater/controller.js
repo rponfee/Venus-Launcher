@@ -1,6 +1,25 @@
 'use strict';
 
 // No requiere Electron: el controlador se prueba con un proveedor y reloj simulados.
+// La edición portable no se puede reemplazar sola (electron-updater no corre ahí): se lee latest.yml de la última
+// release, el mismo archivo que usa electron-updater, y si hay una versión nueva se avisa con el link para bajarla.
+function latestYmlUrl(repository) {
+  return `https://github.com/${repository}/releases/latest/download/latest.yml`;
+}
+
+function parseLatestYml(text) {
+  return /^version:\s*['"]?v?(\d+\.\d+\.\d+)/m.exec(String(text || ''))?.[1] || null;
+}
+
+// "3.0.10" es más nueva que "3.0.9" (las releases que se publican no son prerelease).
+function isNewer(latest, current) {
+  const parts = (v) => String(v).split('-')[0].split('.').map((n) => Number(n) || 0);
+  const a = parts(latest);
+  const b = parts(current);
+  for (let i = 0; i < 3; i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0);
+  return false;
+}
+
 function normalizeRepository(value) {
   const repository = String(value || '').trim();
   if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38})\/[a-zA-Z0-9_.-]{1,100}$/.test(repository)) return null;
@@ -8,14 +27,13 @@ function normalizeRepository(value) {
   return repository;
 }
 
-function createController({ app, updater, repository, portable = false, platform = process.platform, notify = () => {}, isBusy = () => false, now = Date.now }) {
+function createController({ app, updater, repository, portable = false, fetchText = null, platform = process.platform, notify = () => {}, isBusy = () => false, now = Date.now }) {
   repository = normalizeRepository(repository);
   let disabledReason = null;
   if (!app.isPackaged) disabledReason = 'development';
-  else if (portable) disabledReason = 'portable';
   else if (platform !== 'win32') disabledReason = 'platform';
   else if (!repository) disabledReason = 'unconfigured';
-  else if (!updater) disabledReason = 'unavailable';
+  else if (portable ? !fetchText : !updater) disabledReason = 'unavailable';
 
   let state = {
     status: disabledReason ? 'disabled' : 'idle',
@@ -26,6 +44,8 @@ function createController({ app, updater, repository, portable = false, platform
     lastChecked: null,
     repository,
     releasesUrl: repository ? `https://github.com/${repository}/releases` : null,
+    portable,
+    downloadUrl: portable && repository ? `https://github.com/${repository}/releases/latest/download/VenusLauncher-Portable.exe` : null,
     error: null,
   };
   let checking = null;
@@ -46,7 +66,7 @@ function createController({ app, updater, repository, portable = false, platform
     change({ status: 'error', error: 'No se pudo buscar o descargar la actualización. Probá de nuevo más tarde.' });
   }
 
-  if (!disabledReason) {
+  if (!disabledReason && !portable) {
     updater.autoDownload = true;
     updater.autoInstallOnAppQuit = true;
     updater.autoRunAppAfterInstall = true;
@@ -61,10 +81,26 @@ function createController({ app, updater, repository, portable = false, platform
     listen('error', fail);
   }
 
+  async function checkPortable() {
+    try {
+      const version = parseLatestYml(await fetchText(latestYmlUrl(repository)));
+      if (!version) throw new Error('latest.yml sin versión');
+      if (isNewer(version, state.currentVersion)) change({ status: 'available', version, lastChecked: now(), error: null });
+      else change({ status: 'current', version: null, lastChecked: now(), error: null });
+    } catch {
+      fail();
+    }
+    return snapshot();
+  }
+
   function check() {
     if (disabledReason || disposed || ['downloading', 'ready', 'installing'].includes(state.status)) return Promise.resolve(snapshot());
     if (checking) return checking;
     change({ status: 'checking', error: null });
+    if (portable) {
+      checking = checkPortable().finally(() => { checking = null; });
+      return checking;
+    }
     checking = Promise.resolve().then(() => updater.checkForUpdates()).then((result) => {
       // La promesa de descarga se resuelve después de la búsqueda; siempre consumir sus errores.
       result?.downloadPromise?.catch(fail);
@@ -93,4 +129,4 @@ function createController({ app, updater, repository, portable = false, platform
   };
 }
 
-module.exports = { normalizeRepository, createController };
+module.exports = { normalizeRepository, createController, parseLatestYml, isNewer, latestYmlUrl };

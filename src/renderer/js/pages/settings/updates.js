@@ -6,12 +6,11 @@ import { appendWindowsIntegration } from './windows-integration.js';
 
 const DISABLED_KEYS = {
   development: 'disabledDevelopment',
-  portable: 'disabledPortable',
   platform: 'disabledPlatform',
   unconfigured: 'disabledUnconfigured',
   unavailable: 'disabledUnavailable',
 };
-const STATES = new Set(['idle', 'checking', 'current', 'downloading', 'ready', 'installing', 'error', 'disabled']);
+const STATES = new Set(['idle', 'checking', 'current', 'available', 'downloading', 'ready', 'installing', 'error', 'disabled']);
 const LOCKED = new Set(['disabled', 'checking', 'downloading', 'installing']);
 
 // Shared by the dedicated page and Settings. A mounted panel owns one IPC subscription.
@@ -35,16 +34,18 @@ export function appendUpdates(body, ctx) {
   const progress = h('progress', { class: 'updates-progress', max: 100, value: 0, 'aria-label': t('updates.progressLabel'), hidden: true });
   const error = h('p', { class: 'updates-error', role: 'alert', hidden: true });
   const hint = h('p', { class: 'cfg-text updates-install-hint', hidden: true }, t('updates.installHint'));
+  const portableNote = h('p', { class: 'cfg-text updates-install-hint', hidden: true }, t('updates.portableNote'));
   const check = h('button', { type: 'button', class: 'btn primary', dataset: { updateAction: 'check' }, hidden: true, onclick: () => run('check') }, icon('refresh'), t('updates.check'));
   const install = h('button', { type: 'button', class: 'btn primary', dataset: { updateAction: 'install' }, hidden: true, onclick: () => run('install') }, icon('download'), t('updates.install'));
+  const download = h('button', { type: 'button', class: 'btn primary', dataset: { updateAction: 'download' }, hidden: true, onclick: () => openExternal(current?.downloadUrl) }, icon('download'), t('updates.download'));
   const retry = h('button', { type: 'button', class: 'btn', dataset: { updateAction: 'retry' }, hidden: true, onclick: readStatus }, icon('refresh'), t('updates.retry'));
-  const releases = h('button', { type: 'button', class: 'btn ghost', dataset: { updateAction: 'releases' }, hidden: true, onclick: openReleases }, icon('external'), t('updates.releases'));
+  const releases = h('button', { type: 'button', class: 'btn ghost', dataset: { updateAction: 'releases' }, hidden: true, onclick: () => openExternal(current?.releasesUrl) }, icon('external'), t('updates.releases'));
   const automatic = h('div', { class: 'updates-automatic', hidden: true },
     icon('refresh'), h('div', {}, h('strong', {}, t('updates.automaticTitle')), h('p', {}, t('updates.automaticDescription'))));
   const panel = card({ title: t('updates.panelTitle'), iconName: 'download', anchor: 'updates', cls: 'updates-panel' },
     h('dl', { class: 'updates-facts' }, installed, available, lastChecked),
-    h('div', { class: 'updates-status' }, statusIcon, statusText), progress, error, hint,
-    h('div', { class: 'updates-actions' }, check, install, retry, releases), automatic);
+    h('div', { class: 'updates-status' }, statusIcon, statusText), progress, error, hint, portableNote,
+    h('div', { class: 'updates-actions' }, download, check, install, retry, releases), automatic);
   body.append(panel);
 
   function draw() {
@@ -64,7 +65,7 @@ export function appendUpdates(body, ctx) {
     const percent = Number.isFinite(state?.percent) ? Math.max(0, Math.min(100, state.percent)) : 0;
     const key = name === 'disabled' ? DISABLED_KEYS[state.disabledReason] || 'disabled' : name;
     statusText.textContent = statusFailed && !state ? t('updates.statusError') : t(`updates.${key}`, { version: state?.version || '', percent: Math.round(percent) });
-    const statusIconName = name === 'current' || name === 'ready' ? 'check' : name === 'error' ? 'alert' : name === 'disabled' ? 'info' : name === 'downloading' ? 'download' : 'refresh';
+    const statusIconName = name === 'current' || name === 'ready' ? 'check' : name === 'error' ? 'alert' : name === 'disabled' ? 'info' : name === 'downloading' || name === 'available' ? 'download' : 'refresh';
     if (statusIcon.dataset.icon !== statusIconName) {
       statusIcon.dataset.icon = statusIconName;
       mount(statusIcon, icon(statusIconName));
@@ -74,6 +75,10 @@ export function appendUpdates(body, ctx) {
     error.hidden = !actionError;
     error.textContent = actionError;
     hint.hidden = name !== 'ready';
+    portableNote.hidden = !state?.portable;
+    download.hidden = name !== 'available' || !state?.downloadUrl;
+    download.disabled = opening;
+    check.classList.toggle('primary', name !== 'available');
     check.hidden = !state || name === 'ready' || name === 'installing';
     check.disabled = busy || LOCKED.has(name);
     install.hidden = name !== 'ready' && name !== 'installing';
@@ -81,7 +86,7 @@ export function appendUpdates(body, ctx) {
     retry.hidden = !!state || !statusFailed;
     releases.hidden = !state?.releasesUrl;
     releases.disabled = opening;
-    automatic.hidden = !state || name === 'disabled';
+    automatic.hidden = !state || name === 'disabled' || Boolean(state.portable);
   }
 
   function accept(state) {
@@ -133,12 +138,12 @@ export function appendUpdates(body, ctx) {
     }
   }
 
-  async function openReleases() {
-    if (!ctx.alive() || !current?.releasesUrl || opening) return;
+  async function openExternal(url) {
+    if (!ctx.alive() || !url || opening) return;
     opening = true;
     actionError = '';
     draw();
-    try { await api.app.openExternal(current.releasesUrl); }
+    try { await api.app.openExternal(url); }
     catch { if (ctx.alive()) actionError = t('updates.openError'); }
     finally { opening = false; draw(); }
   }

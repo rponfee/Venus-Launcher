@@ -109,4 +109,8 @@ export default {
   goSupport: "Naar Ondersteuning",
 
   disclaimer: "Venus Launcher is niet verbonden aan Mojang Studios of Microsoft. Minecraft is een handelsmerk van Mojang Synergies AB.",
+  wpLiveHint: "Wordt gedownload als je hem gebruikt ({size}). Tot die tijd zie je deze miniatuur.",
+  wpLiveDownloading: "Achtergrond downloaden… {percent}%",
+  wpLiveError: "Downloaden mislukt. Probeer het opnieuw met ‘Als achtergrond gebruiken’.",
+  wpLiveLite: "In de lichte modus wordt hij als stilstaand beeld getoond.",
 };

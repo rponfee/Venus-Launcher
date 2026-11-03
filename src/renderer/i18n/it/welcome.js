@@ -313,4 +313,6 @@ export default {
   bgPacksFailed: "Impossibile installare i pacchetti di contenuti",
   bgModsFailed_one: "Impossibile installare {count} mod",
   bgModsFailed_other: "Impossibile installare {count} mod",
+  allSteps: "Configura tutto",
+  quickNote: "Il resto mantiene i valori consigliati. Puoi cambiarli quando vuoi in Impostazioni.",
 };

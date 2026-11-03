@@ -301,4 +301,6 @@ export default {
   doneReady: "모든 설정이 끝났어요.",
   bgPacksFailed: "콘텐츠 팩을 설치하지 못했어요",
   bgModsFailed_other: "모드 {count}개를 설치하지 못했어요",
+  allSteps: "모두 설정",
+  quickNote: "나머지는 권장 값으로 유지됩니다. 설정에서 언제든 바꿀 수 있습니다.",
 };

@@ -132,4 +132,11 @@ export default {
   v3badge_b2: "Installs itself on each instance",
   v3badge_b3: "Turn it on in Settings → General",
   v3badge_cta: "Turn on the badge",
+  v3changes_title: "What changed",
+  v3changes_text: "Some things are gone or work differently.",
+  v3changes_b1: "The plugin Developer Mode was removed. Your projects are still in their folders: Venus did not touch them.",
+  v3changes_b2: "The portable version does not update itself, but it now tells you when there is a new one.",
+  v3changes_b3: "Animated wallpapers download when you choose them: the installer is almost 100 MB smaller.",
+  v3changes_b4: "New light mode for modest PCs: Settings → Appearance → Interface.",
+  v3changes_cta: "See updates",
 };

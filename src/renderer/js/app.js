@@ -77,7 +77,7 @@ const EARLY_WAIT_MS = 1500;
 
 // Modulos que se inician solos despues de la primera pagina (cada uno exporta startup(), que se puede
 // llamar mas de una vez): modpacks compartidos y nube, asistente, invitaciones a mundos,
-// resultados de la busqueda del culpable de un crash, el autoarranque del modo desarrollador, la
+// resultados de la busqueda del culpable de un crash, la
 // entrada del panel de administracion (solo aparece para los administradores) y las confirmaciones y
 // avisos con Deshacer de las acciones que piden Claude o ChatGPT por MCP.
 const STARTUP = [
@@ -98,7 +98,8 @@ const STARTUP = [
   () => import('./features/rewards.js'), // logros automáticos, saldo de Venus Points y punto del premio diario
   () => import('./features/party.js'), // grupos: señales party-*, líder caído, mundo del líder
   () => import('./features/notify.js'), // avisos de amigos y servidores favoritos
-  () => import('./features/whatsnew.js'), // recorrido de novedades la primera vez que se abre la 2.0.0 (y Ctrl+K)
+  () => import('./features/whatsnew.js'), // recorrido de novedades la primera vez que se abre la 3.0 (y Ctrl+K)
+  () => import('./features/update-notice.js'), // edición portable: avisa si hay una versión nueva
   () => import('./features/achievements.js'), // logros de Venus: revisa los cumplidos cada tanto (no hay tope de cantidad)
   () => import('./features/missions.js'), // misiones diarias y semanales: cuenta el progreso
   () => import('./features/streamer.js'), // modo streamer: difumina codigos, direcciones, nombres y mensajes (y Ctrl+K)
@@ -600,15 +601,25 @@ function starfield() {
       ctx.fillRect(Math.round(s.x), Math.round(s.y), s.r, s.r);
     }
   };
+  let drawn = false;
   resize();
-  addEventListener('resize', resize);
+  addEventListener('resize', () => {
+    resize();
+    drawn = false;
+  });
+  // Sin animaciones (Accesibilidad o modo liviano) se dibujan una vez y quedan quietas.
+  const still = () => document.body.classList.contains('reduce-motion') || document.documentElement.hasAttribute('data-ui-lite');
   let last = 0;
   const loop = (time) => {
-    if (!document.hidden && !document.body.classList.contains('reduce-motion') && Object.keys(store.running).length === 0 && time - last > 80) {
+    const frozen = still();
+    if (!document.hidden && Object.keys(store.running).length === 0 && time - last > 80 && !(frozen && drawn)) {
       draw(time);
       last = time;
+      drawn = true;
     }
-    requestAnimationFrame(loop);
+    if (!frozen) drawn = false;
+    if (frozen) setTimeout(() => requestAnimationFrame(loop), 500);
+    else requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
 }

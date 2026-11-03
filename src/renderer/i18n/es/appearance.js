@@ -144,4 +144,8 @@ export default {
   ui_uiFont_rounded: "Redondeada",
   ui_uiFont_mono: "Monoespaciada",
   ui_uiGlass: "Opacidad de las tarjetas",
+  liteTitle: "Modo liviano",
+  liteSub: "Para PCs modestas: sin fondos animados, animaciones ni desenfoques, y con el overlay apagado.",
+  liveDownloading: "Bajando el fondo animado… {percent} %",
+  liveError: "No se pudo bajar el fondo animado. Tocalo de nuevo para reintentar.",
 };

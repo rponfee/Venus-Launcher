@@ -337,4 +337,6 @@ export default {
   bgModsFailed_few: "Не удалось установить {count} мода",
   bgModsFailed_many: "Не удалось установить {count} модов",
   bgModsFailed_other: "Не удалось установить {count} мода",
+  allSteps: "Настроить всё",
+  quickNote: "Остальное останется с рекомендуемыми значениями. Изменить можно в любой момент в настройках.",
 };

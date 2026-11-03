@@ -1,5 +1,5 @@
 // Editor del perfil de Venus ("Mi perfil"): datos basicos, pronombres y descripcion; fade, tipografia, efecto,
-// color y brillo del nombre; banner (8 diseños, imagen propia o GIF animado con Premium); servidores favoritos,
+// color y brillo del nombre; banner (diseños, imagen propia, GIF de KLIPY gratis o GIF propio con Premium); servidores favoritos,
 // estadisticas publicadas y capturas destacadas; y lo equipado de la tienda. Vista previa en vivo a la izquierda.
 // Lo personalizado se guarda con profile_customize (0020_perfiles.sql); nombre, nombre de Minecraft, estado y el
 // color clasico del banner con la tabla profiles (como siempre). Las imagenes se preparan en la PC (media.js).

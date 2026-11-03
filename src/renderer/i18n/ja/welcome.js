@@ -301,4 +301,6 @@ export default {
   doneReady: "すべての設定が完了しました。",
   bgPacksFailed: "コンテンツパックをインストールできませんでした",
   bgModsFailed_other: "{count}個のModをインストールできませんでした",
+  allSteps: "すべて設定する",
+  quickNote: "その他は推奨値のままです。設定からいつでも変更できます。",
 };

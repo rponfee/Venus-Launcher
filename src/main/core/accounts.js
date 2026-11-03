@@ -6,15 +6,30 @@ const crypto = require('crypto');
 const paths = require('./paths');
 const { t } = require('./i18n');
 const { readJson, writeJson, offlineUUID } = require('./util');
+const { createCipher } = require('./cipher');
+const appConfig = require('./app-config');
 
-const CLIENT_ID = '00000000402b5328';
-const REDIRECT = 'https://login.live.com/oauth20_desktop.srf';
-const SCOPE = 'service::user.auth.xboxlive.com::MBI_SSL';
-const AUTH_URL =
-  `https://login.live.com/oauth20_authorize.srf?client_id=${CLIENT_ID}&response_type=code` +
-  `&redirect_uri=${encodeURIComponent(REDIRECT)}&scope=${encodeURIComponent(SCOPE)}&prompt=select_account`;
+// Cliente de Microsoft. Por defecto, el del launcher oficial: si Microsoft lo restringe, el inicio de sesión deja de
+// andar. Con app-config.msClientId (app propia en Azure, aprobada por Mojang: docs/login-microsoft.md) las cuentas
+// nuevas usan esa. Cada cuenta recuerda el suyo, porque un token de renovación solo vale con el cliente que lo emitió;
+// las viejas siguen con el de siempre y, si un día deja de andar, piden volver a iniciar sesión y pasan a la app propia.
+const LEGACY_CLIENT = Object.freeze({
+  id: '00000000402b5328',
+  authUrl: 'https://login.live.com/oauth20_authorize.srf',
+  tokenUrl: 'https://login.live.com/oauth20_token.srf',
+  redirect: 'https://login.live.com/oauth20_desktop.srf',
+  scope: 'service::user.auth.xboxlive.com::MBI_SSL',
+});
+const azureClient = (id) => ({
+  id,
+  authUrl: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize',
+  tokenUrl: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token',
+  redirect: 'https://login.microsoftonline.com/common/oauth2/nativeclient',
+  scope: 'XboxLive.signin offline_access',
+  pkce: true,
+});
+const clientById = (id) => (id && id !== LEGACY_CLIENT.id ? azureClient(id) : LEGACY_CLIENT);
 
-const MS_TOKEN_URL = 'https://login.live.com/oauth20_token.srf';
 const XBL_URL = 'https://user.auth.xboxlive.com/user/authenticate';
 const XSTS_URL = 'https://xsts.auth.xboxlive.com/xsts/authorize';
 const MC_API = 'https://api.minecraftservices.com';
@@ -28,7 +43,7 @@ const JAVA_ENTITLEMENTS = new Set(['product_minecraft', 'game_minecraft']);
 // Errores de Xbox Live (XErr) con mensaje propio en el diccionario (accounts.xerr_<código>).
 const XERR_CODES = new Set([2148916227, 2148916229, 2148916233, 2148916234, 2148916235, 2148916236, 2148916237, 2148916238]);
 
-let cipher = { encrypt: (s) => s, decrypt: (s) => s };
+let cipher = createCipher(); // hasta que main.js configure el del sistema, nada sin cifrar llega al archivo
 let openLogin = null;
 
 function configure({ encrypt, decrypt, openLoginWindow } = {}) {
@@ -162,13 +177,13 @@ function msTokenError(json, status, grantType) {
   return fail('msRejected', { detail: code || `HTTP ${status}` });
 }
 
-async function msToken(params) {
+async function msToken(client, params) {
   const res = await request(
-    MS_TOKEN_URL,
+    client.tokenUrl,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-      body: new URLSearchParams({ client_id: CLIENT_ID, redirect_uri: REDIRECT, scope: SCOPE, ...params }),
+      body: new URLSearchParams({ client_id: client.id, redirect_uri: client.redirect, scope: client.scope, ...params }),
     },
     'Microsoft',
   );
@@ -285,9 +300,10 @@ async function minecraftFromMs(accessToken) {
   return { token: mc.access_token, expiresAt, profile, entitled, xuid: claims?.xuid ? String(claims.xuid) : null };
 }
 
-function msaRecord(ms, mc, prev) {
+function msaRecord(client, ms, mc, prev) {
   return {
     id: `msa-${mc.profile.id}`,
+    msClient: client.id,
     type: 'msa',
     name: mc.profile.name,
     uuid: mc.profile.id,
@@ -301,11 +317,25 @@ function msaRecord(ms, mc, prev) {
   };
 }
 
+// Pedido de inicio de sesión: la dirección que se abre y lo que hay que mandar después junto con el código.
+function authRequest(client) {
+  const query = new URLSearchParams({ client_id: client.id, response_type: 'code', redirect_uri: client.redirect, scope: client.scope, prompt: 'select_account' });
+  const extra = {};
+  if (client.pkce) {
+    extra.code_verifier = crypto.randomBytes(32).toString('base64url');
+    query.set('code_challenge', crypto.createHash('sha256').update(extra.code_verifier).digest('base64url'));
+    query.set('code_challenge_method', 'S256');
+  }
+  return { url: `${client.authUrl}?${query}`, extra };
+}
+
 async function loginMicrosoft() {
   if (!openLogin) throw fail('unavailable');
+  const client = clientById(appConfig.get().msClientId);
+  const auth = authRequest(client);
   let finalUrl;
   try {
-    finalUrl = await openLogin(AUTH_URL, REDIRECT);
+    finalUrl = await openLogin(auth.url, client.redirect);
   } catch (err) {
     // La ventana se cerró antes de terminar (main.js rechaza con code 'cancelled'). El error que llega al
     // handler de IPC conserva code 'cancelled' (la interfaz lo reconoce en cualquier idioma, sin mirar el
@@ -324,9 +354,9 @@ async function loginMicrosoft() {
     if (!error || error === 'access_denied') throw Object.assign(fail('cancelled'), { cancelled: true });
     throw fail('msRejected', { detail: error });
   }
-  const ms = await msToken({ grant_type: 'authorization_code', code });
+  const ms = await msToken(client, { grant_type: 'authorization_code', code, ...auth.extra });
   const mc = await minecraftFromMs(ms.access_token);
-  await mutate((data) => upsert(data, msaRecord(ms, mc, data.accounts.find((a) => a.id === `msa-${mc.profile.id}`))));
+  await mutate((data) => upsert(data, msaRecord(client, ms, mc, data.accounts.find((a) => a.id === `msa-${mc.profile.id}`))));
   refreshing.delete(`msa-${mc.profile.id}`);
   return list();
 }
@@ -349,13 +379,14 @@ function refreshAccount(id) {
     }
     try {
       if (!refreshToken) throw fail('sessionExpired', { name: acc.name });
-      const ms = await msToken({ grant_type: 'refresh_token', refresh_token: refreshToken });
+      const client = clientById(acc.msClient);
+      const ms = await msToken(client, { grant_type: 'refresh_token', refresh_token: refreshToken });
       const mc = await minecraftFromMs(ms.access_token);
       if (mc.profile.id.replace(/-/g, '') !== String(acc.uuid).replace(/-/g, '')) throw fail('sessionExpired', { name: acc.name });
       return await mutate((d) => {
         const cur = d.accounts.find((a) => a.id === id);
         if (!cur) throw fail('notFound');
-        Object.assign(cur, msaRecord({ refresh_token: ms.refresh_token || refreshToken }, mc, cur));
+        Object.assign(cur, msaRecord(client, { refresh_token: ms.refresh_token || refreshToken }, mc, cur));
         return { ...cur };
       });
     } catch (err) {
@@ -428,7 +459,6 @@ module.exports = {
   loginMicrosoft,
   getLaunchAccount,
   refreshAccount,
-  REDIRECT,
   // Para pruebas
   _internal: { msTokenError, xboxError, jwtClaims, ownsJava, verifyOwnership, minecraftFromMs },
 };

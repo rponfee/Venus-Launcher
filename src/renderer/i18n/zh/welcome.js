@@ -301,4 +301,6 @@ export default {
   doneReady: "一切已配置完成。",
   bgPacksFailed: "无法安装内容包",
   bgModsFailed_other: "有 {count} 个模组安装失败",
+  allSteps: "全部设置",
+  quickNote: "其余选项保持推荐值，可随时在设置中更改。",
 };

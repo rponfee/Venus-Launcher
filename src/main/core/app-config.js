@@ -3,10 +3,13 @@
 // interfaz salvo el Application ID público de Discord, que se puede configurar desde Ajustes.
 // LA COMPLETA EL DUEÑO ANTES DE COMPILAR. Un valor vacío deja
 // esa función apagada (CurseForge, Discord Rich Presence, TURN) o usa el servicio público (bore.pub).
+// La API key de CurseForge no va en este archivo (sus términos prohíben compartirla y el repositorio es público):
+// scripts/write-build-config.js la escribe al compilar en build-config.json, desde el secreto de GitHub Actions
+// VENUS_CURSEFORGE_API_KEY. Ese archivo no se sube y queda dentro del instalador.
 //
 // Para desarrollo (solo con el launcher sin empaquetar, o en pruebas con Node) cada valor se puede pisar con una
-// variable de entorno: VENUS_CURSEFORGE_API_KEY, VENUS_DISCORD_CLIENT_ID, VENUS_TURN_URLS (separadas por coma),
-// VENUS_TURN_USERNAME, VENUS_TURN_CREDENTIAL, VENUS_BORE_HOST y VENUS_BORE_SECRET. La interfaz no las muestra.
+// variable de entorno: VENUS_CURSEFORGE_API_KEY, VENUS_MS_CLIENT_ID, VENUS_DISCORD_CLIENT_ID, VENUS_TURN_URLS (separadas
+// por coma), VENUS_TURN_USERNAME, VENUS_TURN_CREDENTIAL, VENUS_BORE_HOST y VENUS_BORE_SECRET. La interfaz no las muestra.
 //
 // Todo lo que va acá queda dentro del instalador y se puede extraer: usá solo claves pensadas para una app de
 // escritorio (la API key de CurseForge for Studios, el Application ID de Discord, un usuario TURN propio del
@@ -14,7 +17,11 @@
 // El proyecto de Supabase está aparte, en core/cloud-defaults.js.
 const BUILT_IN = Object.freeze({
   // API key de CurseForge for Studios (console.curseforge.com → API keys). Vacía = sin catálogo de CurseForge.
+  // Siempre vacía acá: entra al compilar (ver arriba).
   curseforgeApiKey: '',
+  // Application (client) ID de la app propia de Azure, ya aprobada por Mojang (docs/login-microsoft.md). No es secreto.
+  // Vacío = el cliente de siempre (el del launcher oficial).
+  msClientId: '',
   // Application ID de la aplicación "Venus Launcher" en discord.com/developers/applications. En Rich Presence →
   // Art Assets subí una imagen cuadrada llamada "venus" (el logo). Si está vacío, puede configurarse en Ajustes.
   discordClientId: '1565473760511787028',
@@ -28,6 +35,7 @@ const BUILT_IN = Object.freeze({
 
 const DEFAULT_BORE = 'bore.pub';
 const CLIENT_ID = /^\d{17,21}$/;
+const AZURE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ICE_URL = /^(turns?|stun):[^\s,]+$/i;
 const HOST = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
@@ -51,6 +59,15 @@ function env(name) {
 
 const text = (v, max = 512) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
+// Lo que scripts/write-build-config.js dejó al compilar (sin ese archivo, nada).
+function injected() {
+  try {
+    return require('./build-config.json');
+  } catch {
+    return {};
+  }
+}
+
 function hostOf(v) {
   const s = text(v, 300).toLowerCase().replace(/^[a-z]+:\/\//, '').replace(/[/:].*$/, '');
   return HOST.test(s) ? s : null;
@@ -66,8 +83,10 @@ function get() {
   const dev = devEnv();
   const pick = (name, value) => (dev && env(name) !== null ? env(name) : value);
   const clientId = text(pick('VENUS_DISCORD_CLIENT_ID', BUILT_IN.discordClientId), 32);
+  const msClientId = text(pick('VENUS_MS_CLIENT_ID', BUILT_IN.msClientId), 64);
   return {
-    curseforgeApiKey: text(pick('VENUS_CURSEFORGE_API_KEY', BUILT_IN.curseforgeApiKey), 200),
+    curseforgeApiKey: text(pick('VENUS_CURSEFORGE_API_KEY', injected().curseforgeApiKey || BUILT_IN.curseforgeApiKey), 200),
+    msClientId: AZURE_ID.test(msClientId) ? msClientId : '',
     discordClientId: CLIENT_ID.test(clientId) ? clientId : '',
     turn: {
       urls: urlList(pick('VENUS_TURN_URLS', BUILT_IN.turn.urls)),

@@ -132,4 +132,11 @@ export default {
   v3badge_b2: "Se instala solo en cada instancia",
   v3badge_b3: "Se activa en Ajustes → General",
   v3badge_cta: "Activar la insignia",
+  v3changes_title: "Lo que cambió",
+  v3changes_text: "Algunas cosas ya no están o funcionan distinto.",
+  v3changes_b1: "Se quitó el Modo desarrollador de plugins. Tus proyectos siguen en sus carpetas: Venus no los tocó.",
+  v3changes_b2: "La versión portable no se actualiza sola, pero ahora te avisa cuando hay una nueva.",
+  v3changes_b3: "Los fondos animados se bajan cuando los elegís: el instalador pesa casi 100 MB menos.",
+  v3changes_b4: "Nuevo modo liviano para PCs modestas: Ajustes → Apariencia → Interfaz.",
+  v3changes_cta: "Ver actualizaciones",
 };

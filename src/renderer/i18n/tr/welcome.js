@@ -313,4 +313,6 @@ export default {
   bgPacksFailed: "İçerik paketleri yüklenemedi",
   bgModsFailed_one: "{count} mod yüklenemedi",
   bgModsFailed_other: "{count} mod yüklenemedi",
+  allSteps: "Her şeyi ayarla",
+  quickNote: "Geri kalanı önerilen değerlerde kalır. Ayarlar’dan istediğin zaman değiştirebilirsin.",
 };

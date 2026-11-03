@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "Yuvarlak",
   ui_uiFont_mono: "Sabit aralıklı",
   ui_uiGlass: "Kartların opaklığı",
+  liteTitle: "Hafif mod",
+  liteSub: "Düşük donanımlı bilgisayarlar için: hareketli arka plan, animasyon ve bulanıklık yok, kaplama kapalı.",
+  liveDownloading: "Hareketli arka plan indiriliyor… %{percent}",
+  liveError: "Hareketli arka plan indirilemedi. Yeniden denemek için tekrar tıkla.",
 };

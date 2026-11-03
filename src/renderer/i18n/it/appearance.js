@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "Arrotondato",
   ui_uiFont_mono: "Monospaziato",
   ui_uiGlass: "Opacità delle schede",
+  liteTitle: "Modalità leggera",
+  liteSub: "Per PC modesti: niente sfondi animati, animazioni o sfocature, e overlay spento.",
+  liveDownloading: "Download dello sfondo animato… {percent}%",
+  liveError: "Impossibile scaricare lo sfondo animato. Cliccalo di nuovo per riprovare.",
 };

@@ -20,7 +20,6 @@ export default {
   error: "Güncelleme kontrol edilemedi veya indirilemedi. Bağlantınızı kontrol edip tekrar deneyin.",
   disabled: "Otomatik güncellemeler kullanılamıyor.",
   disabledDevelopment: "Otomatik güncellemeler kurulu sürümde etkindir.",
-  disabledPortable: "Taşınabilir sürümü güncellemek için yayımlanan sürümler sayfasından yeni sürümü indirin.",
   disabledPlatform: "Otomatik güncellemeler Windows kurulumu için kullanılabilir.",
   disabledUnconfigured: "Bu derleme için henüz bir güncelleme kanalı yapılandırılmamış.",
   disabledUnavailable: "Güncelleme bileşeni bu derlemede kullanılamıyor.",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "Bu kurulumda kısayol onarımı kullanılamıyor.",
   windowsSearchHint: "Windows’un Başlat menüsündeki değişiklikleri arama sonuçlarına yansıtması zaman alabilir.",
   windowsPinnedHint: "Sabitlenmiş simge hâlâ eski resmi gösteriyorsa sabitlemesini kaldırıp Venus’ü Başlat menüsünden yeniden sabitleyin.",
+  available: "Yeni bir sürüm var: {version}.",
+  download: "Yeni sürümü indir",
+  portableNote: "Taşınabilir sürüm kendini güncellemez: yeni sürümleri buradan arayabilirsin; Gizlilik bölümünde otomatik aramayı açtıysan kendisi haber verir. Verilerini (VenusData) korumak için yeni .exe dosyasını aynı klasöre kaydet.",
+  noticeTitle: "Venus {version} yayında",
+  noticeText: "Taşınabilir sürüm kendini güncellemez. Verilerini korumak için yeni .exe dosyasını indirip aynı klasöre kaydet.",
+  noticeLater: "Daha sonra",
 };

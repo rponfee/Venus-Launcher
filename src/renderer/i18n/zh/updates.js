@@ -20,7 +20,6 @@ export default {
   error: "无法检查或下载更新。请检查网络连接后重试。",
   disabled: "自动更新不可用。",
   disabledDevelopment: "自动更新在安装版中启用。",
-  disabledPortable: "要更新便携版，请从已发布版本页面下载新版本。",
   disabledPlatform: "自动更新适用于 Windows 安装版。",
   disabledUnconfigured: "此构建版本尚未配置更新渠道。",
   disabledUnavailable: "此构建版本的更新组件不可用。",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "当前安装不支持修复快捷方式。",
   windowsSearchHint: "Windows 可能需要一段时间，才能在搜索结果中显示开始菜单的更改。",
   windowsPinnedHint: "如果固定的图标仍显示旧图片，请先取消固定，再从开始菜单重新固定 Venus。",
+  available: "有新版本可用：{version}",
+  download: "下载新版本",
+  portableNote: "便携版不会自动更新：你可以在这里检查新版本；如果在“隐私”中开启了自动检查，它会主动提醒你。请把新的 .exe 保存到同一文件夹，以保留你的数据（VenusData）。",
+  noticeTitle: "Venus {version} 现已推出",
+  noticeText: "便携版不会自动更新。请下载新的 .exe 并保存到同一文件夹，以保留你的数据。",
+  noticeLater: "稍后",
 };

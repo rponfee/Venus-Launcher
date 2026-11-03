@@ -335,4 +335,6 @@ export default {
   bgPacksFailed: 'The content packs could not be installed',
   bgModsFailed_one: '{count} mod could not be installed',
   bgModsFailed_other: '{count} mods could not be installed',
+  allSteps: "Set up everything",
+  quickNote: "Everything else keeps the recommended values. You can change it anytime in Settings.",
 };

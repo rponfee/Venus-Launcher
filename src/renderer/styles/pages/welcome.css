@@ -481,3 +481,7 @@ html.ax-hc .wl-step.is-current { box-shadow: inset 0 0 0 1px var(--accent); }
   .wl-planet, .wl-brand-planet, .wl-dots { animation: none; }
 }
 body.reduce-motion .wl-planet, body.reduce-motion .wl-brand-planet, body.reduce-motion .wl-dots { animation: none; }
+
+/* Bienvenida corta: el acceso a todos los pasos */
+.wl-all-steps { position: relative; align-self: flex-start; margin: 0 6px var(--sp-2); }
+.wl-quick-note { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }

@@ -1,9 +1,10 @@
-// Venus > Fondos: la galeria de venus-launcher-fondos.netlify.app dentro del launcher. Los fondos vienen con el
-// launcher (wallpapers.js), asi que se ven sin internet y se aplican con un clic como fondo del launcher.
-import { h, icon, mount, modal, ok, debounce } from '../../ui.js';
+// Venus > Fondos: la galeria de venus-launcher-fondos.netlify.app dentro del launcher. Las imagenes vienen con el
+// launcher (wallpapers.js), asi que se ven sin internet y se aplican con un clic como fondo del launcher. Los animados
+// se bajan la primera vez que se usan (modules/wallpapers.js); hasta entonces se ve su miniatura.
+import { h, icon, mount, modal, ok, debounce, fmtBytes } from '../../ui.js';
 import { t } from '../../i18n.js';
 import { WALLPAPERS } from '../../wallpapers.js';
-import { currentWallpaperId, useWallpaper, useStars, onAppearanceChange } from '../../appearance.js';
+import { currentWallpaperId, useWallpaper, useStars, onAppearanceChange, liveWallpaperState, isLite } from '../../appearance.js';
 import { openLink, WALLPAPERS_PAGE } from '../../community.js';
 
 const FILTERS = ['all', 'live', 'still'];
@@ -11,10 +12,16 @@ const FILTERS = ['all', 'live', 'still'];
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 function preview(wp) {
-  const media = wp.video
-    ? h('video', { class: 'vn-wp-media', src: wp.src, poster: wp.thumb, autoplay: true, muted: true, loop: true, playsInline: true, 'aria-label': wp.name })
-    : h('img', { class: 'vn-wp-media', src: wp.src, alt: wp.name, decoding: 'async' });
-  if (wp.video) media.muted = true; // el atributo solo no alcanza para que el video arranque sin interaccion
+  const liveState = () => (wp.video && !isLite() ? liveWallpaperState(wp.id) : null);
+  const mediaFor = (state) => {
+    if (state?.state === 'ready') {
+      const v = h('video', { class: 'vn-wp-media', src: state.url, poster: wp.thumb, autoplay: true, muted: true, loop: true, playsInline: true, 'aria-label': wp.name });
+      v.muted = true; // el atributo solo no alcanza para que el video arranque sin interaccion
+      return v;
+    }
+    return h('img', { class: 'vn-wp-media', src: wp.video ? wp.thumb : wp.src, alt: wp.name, decoding: 'async' });
+  };
+  let media = mediaFor(liveState());
   const status = h('p', { class: 'vn-wp-status', 'aria-live': 'polite' });
   const useBtn = h('button', { type: 'button', class: 'btn primary' }, icon('image'), h('span'));
   const starsBtn = h('button', { type: 'button', class: 'btn ghost' }, icon('sparkles'), h('span', {}, t('venus.wpStars')));
@@ -23,7 +30,17 @@ function preview(wp) {
     useBtn.disabled = current;
     useBtn.lastChild.textContent = current ? t('venus.wpInUse') : t('venus.wpUse');
     starsBtn.hidden = !current;
-    status.textContent = current ? t('venus.wpInUseText') : '';
+    const state = liveState();
+    if (state?.state === 'ready' && media.tagName !== 'VIDEO') {
+      const next = mediaFor(state);
+      media.replaceWith(next);
+      media = next;
+    }
+    if (state?.state === 'downloading') status.textContent = t('venus.wpLiveDownloading', { percent: state.percent });
+    else if (state?.state === 'error') status.textContent = t('venus.wpLiveError');
+    else if (wp.video && isLite()) status.textContent = t('venus.wpLiveLite');
+    else if (state?.state === 'missing' && !current) status.textContent = t('venus.wpLiveHint', { size: fmtBytes(state.size) });
+    else status.textContent = current ? t('venus.wpInUseText') : '';
   };
   let dialog = null;
   useBtn.onclick = () => {
@@ -50,7 +67,7 @@ function preview(wp) {
     ],
     onClose: () => {
       off();
-      if (wp.video) media.pause();
+      if (media.tagName === 'VIDEO') media.pause();
     },
   });
   return dialog;

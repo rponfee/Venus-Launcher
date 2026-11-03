@@ -12,6 +12,7 @@ function register({ app, handle, send, onQuit }) {
   }
   const controller = createController({
     app, updater, repository, portable,
+    fetchText: (url) => require('../core/http').getText(url, { retries: 1 }),
     notify: (state) => send('updater:state', state),
     isBusy: () => Object.values(require('../core/game').status()).some((g) => !g?.quiet) || require('../core/servers').hasRunning(),
   });
@@ -21,6 +22,7 @@ function register({ app, handle, send, onQuit }) {
 
   // La búsqueda automática (al abrir y cada 4 horas) solo corre si el usuario activó privacy.autoUpdates; si no,
   // GitHub se consulta únicamente cuando toca "Buscar actualizaciones". Los errores quedan en Actualizaciones.
+  // Vale igual para la portable, que en vez de instalar avisa (features/update-notice.js).
   const autoCheck = async () => {
     const s = await require('../core/settings').get().catch(() => null);
     if (s?.privacy?.autoUpdates === true) controller.check();

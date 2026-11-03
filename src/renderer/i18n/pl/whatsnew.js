@@ -131,4 +131,11 @@ export default {
   v3badge_b2: "Instaluje się sama w każdej instancji",
   v3badge_b3: "Włączysz ją w Ustawienia → Ogólne",
   v3badge_cta: "Włącz odznakę",
+  v3changes_title: "Co się zmieniło",
+  v3changes_text: "Niektórych rzeczy już nie ma albo działają inaczej.",
+  v3changes_b1: "Usunięto tryb dewelopera wtyczek. Twoje projekty nadal są w swoich folderach: Venus ich nie ruszał.",
+  v3changes_b2: "Wersja przenośna nie aktualizuje się sama, ale teraz informuje o nowej wersji.",
+  v3changes_b3: "Animowane tła pobierają się po ich wybraniu: instalator jest mniejszy o prawie 100 MB.",
+  v3changes_b4: "Nowy tryb lekki dla słabszych komputerów: Ustawienia → Wygląd → Interfejs.",
+  v3changes_cta: "Zobacz aktualizacje",
 };

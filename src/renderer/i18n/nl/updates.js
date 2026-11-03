@@ -20,7 +20,6 @@ export default {
   error: "Kan niet op updates controleren of de update downloaden. Controleer je verbinding en probeer het opnieuw.",
   disabled: "Automatische updates zijn niet beschikbaar.",
   disabledDevelopment: "Automatische updates zijn ingeschakeld in de geïnstalleerde versie.",
-  disabledPortable: "Download de nieuwe versie via de gepubliceerde versies om de draagbare editie bij te werken.",
   disabledPlatform: "Automatische updates zijn beschikbaar voor de Windows-installatie.",
   disabledUnconfigured: "Voor deze build is nog geen updatekanaal ingesteld.",
   disabledUnavailable: "Het updateonderdeel is niet beschikbaar in deze build.",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "Het herstellen van snelkoppelingen is niet beschikbaar voor deze installatie.",
   windowsSearchHint: "Het kan even duren voordat Windows wijzigingen in het Startmenu in de zoekresultaten weergeeft.",
   windowsPinnedHint: "Als het vastgemaakte pictogram nog de oude afbeelding toont, maak je het los en maak je Venus opnieuw vast vanuit Start.",
+  available: "Er is een nieuwe versie: {version}.",
+  download: "Nieuwe versie downloaden",
+  portableNote: "De draagbare versie werkt zichzelf niet bij: hier kun je zoeken naar nieuwe versies en als je automatisch zoeken bij Privacy hebt ingeschakeld, krijg je vanzelf een melding. Sla de nieuwe .exe op in deze map om je gegevens (VenusData) te behouden.",
+  noticeTitle: "Venus {version} is beschikbaar",
+  noticeText: "De draagbare versie werkt zichzelf niet bij. Download de nieuwe .exe en sla die op in deze map om je gegevens te behouden.",
+  noticeLater: "Later",
 };

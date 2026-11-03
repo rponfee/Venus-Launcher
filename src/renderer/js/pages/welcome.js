@@ -24,7 +24,7 @@ registerIcons({
 
 // ---------------- Constantes ----------------
 
-const STEPS = [
+const ALL_STEPS = [
   { id: 'language', icon: 'languages' },
   { id: 'appearance', icon: 'palette' },
   { id: 'account', icon: 'user' },
@@ -35,7 +35,26 @@ const STEPS = [
   { id: 'prefs', icon: 'sliders' },
   { id: 'summary', icon: 'rocket' },
 ];
-const STEP_INDEX = Object.fromEntries(STEPS.map((s, i) => [s.id, i]));
+// Bienvenida corta: lo mínimo para jugar (idioma, cuenta e instancia). Lo demás queda con los valores por defecto y se
+// cambia después en Ajustes; "Configurar todo" muestra todos los pasos.
+const QUICK_STEPS = new Set(['language', 'account', 'instance', 'summary']);
+const quickSteps = () => ALL_STEPS.filter((s) => QUICK_STEPS.has(s.id));
+const indexOfSteps = (steps) => Object.fromEntries(steps.map((s, i) => [s.id, i]));
+let STEPS = quickSteps();
+let STEP_INDEX = indexOfSteps(STEPS);
+
+function showAllSteps() {
+  if (!S?.quick) return;
+  const current = STEPS[S.step].id;
+  const visited = STEPS[S.visited].id;
+  STEPS = ALL_STEPS;
+  STEP_INDEX = indexOfSteps(STEPS);
+  S.quick = false;
+  S.step = STEP_INDEX[current];
+  S.visited = STEP_INDEX[visited];
+  // Con todos los pasos se ve el interruptor de Discord antes de decidir; en la corta no se prende sin que se vea.
+  S.discord = store.settings?.discord?.enabled ?? true;
+}
 
 const OFFLINE_NAME = /^[A-Za-z0-9_]{3,16}$/;
 const VENUS_USER = /^[A-Za-z0-9_]{3,20}$/;
@@ -87,7 +106,10 @@ let venusPass = ''; // contraseña de Venus: solo en memoria mientras se complet
 function freshState() {
   const s = store.settings || {};
   const insts = store.instances || [];
+  STEPS = quickSteps();
+  STEP_INDEX = indexOfSteps(STEPS);
   return {
+    quick: true,
     step: 0,
     visited: 0,
     dir: 0,
@@ -126,7 +148,7 @@ function freshState() {
     lowEnd: null,
     // Preferencias
     afterLaunch: ['keep', 'minimize', 'hide'].includes(s.afterLaunch) ? s.afterLaunch : 'minimize',
-    discord: s.discord?.enabled ?? true,
+    discord: s.discord?.enabled ?? false,
     // Final
     finishing: false,
     finishMsg: null,
@@ -2464,6 +2486,7 @@ function stepSummary(ctx) {
     ['prefs', 'rocket', t('welcome.sumAfter'), t(`welcome.after_${S.afterLaunch}`)],
     ['prefs', 'message', t('welcome.sumDiscord'), S.discord ? t('welcome.on') : t('welcome.off')],
   ];
+  const shownRows = rows.filter(([step]) => STEP_INDEX[step] !== undefined);
   return h(
     'div',
     { class: 'wl-stack' },
@@ -2475,7 +2498,7 @@ function stepSummary(ctx) {
     h(
       'div',
       { class: 'wl-summary' },
-      rows.map(([step, ic, label, value, extra]) =>
+      shownRows.map(([step, ic, label, value, extra]) =>
         h(
           'div',
           { class: ['wl-sum', step === missing && 'is-bad'] },
@@ -2486,6 +2509,14 @@ function stepSummary(ctx) {
       ),
     ),
     h('p', { class: 'wl-hint' }, icon('download'), tg?.existing || !tg?.mcVersion ? t('welcome.sumNoteExisting') : t('welcome.sumNote')),
+    S.quick
+      ? h(
+          'div',
+          { class: 'wl-quick-note' },
+          h('p', { class: 'wl-hint' }, icon('info'), t('welcome.quickNote')),
+          h('button', { type: 'button', class: 'btn sm', 'data-fk': 'all-steps', disabled: S.finishing, onclick: () => (showAllSteps(), ctx.refresh()) }, icon('sliders'), t('welcome.allSteps')),
+        )
+      : null,
   );
 }
 
@@ -2513,6 +2544,7 @@ function createView(root) {
   const progressBar = h('i');
   const progressText = h('span');
   const stepsList = h('ol', { class: 'wl-steps' });
+  const allSteps = h('button', { type: 'button', class: 'btn ghost sm wl-all-steps', 'data-fk': 'rail-all-steps', onclick: () => (showAllSteps(), ctx.refresh()) }, icon('sliders'), t('welcome.allSteps'));
   const rail = h(
     'nav',
     { class: 'wl-rail', 'aria-label': t('welcome.stepsLabel') },
@@ -2523,6 +2555,7 @@ function createView(root) {
       h('div', { class: 'wl-brand-text' }, h('div', { class: 'wl-brand-name' }, 'VENUS'), h('div', { class: 'wl-brand-sub' }, t('welcome.brandSub'))),
     ),
     stepsList,
+    allSteps,
     h('div', { class: 'wl-rail-foot' }, discordButton({ className: 'btn ghost wl-discord', label: 'Discord' }), h('div', { class: 'wl-progress-label' }, progressText), h('div', { class: 'wl-progress', 'aria-hidden': 'true' }, progressBar)),
   );
   const head = h('header', { class: 'wl-head' });
@@ -2540,6 +2573,7 @@ function createView(root) {
   };
 
   function drawRail() {
+    allSteps.hidden = !S.quick;
     const pct = (S.step / (STEPS.length - 1)) * 100;
     progressBar.style.width = `${pct}%`;
     progressText.textContent = t('welcome.progress', { n: S.step + 1, total: STEPS.length });

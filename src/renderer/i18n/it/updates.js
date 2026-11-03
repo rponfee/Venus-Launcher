@@ -20,7 +20,6 @@ export default {
   error: "Impossibile cercare o scaricare l’aggiornamento. Controlla la connessione e riprova.",
   disabled: "Gli aggiornamenti automatici non sono disponibili.",
   disabledDevelopment: "Gli aggiornamenti automatici sono attivi nella versione installata.",
-  disabledPortable: "Per aggiornare l’edizione portatile, scarica la nuova versione dalla pagina delle versioni pubblicate.",
   disabledPlatform: "Gli aggiornamenti automatici sono disponibili per l’installazione Windows.",
   disabledUnconfigured: "Questa build non ha ancora un canale di aggiornamento configurato.",
   disabledUnavailable: "Il componente di aggiornamento non è disponibile in questa build.",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "La riparazione dei collegamenti non è disponibile per questa installazione.",
   windowsSearchHint: "Windows potrebbe impiegare del tempo per mostrare le modifiche al menu Start nei risultati di ricerca.",
   windowsPinnedHint: "Se l’icona aggiunta mostra ancora la vecchia immagine, rimuovila dagli elementi aggiunti e aggiungi nuovamente Venus dal menu Start.",
+  available: "È disponibile una nuova versione: {version}.",
+  download: "Scarica la nuova versione",
+  portableNote: "La versione portatile non si aggiorna da sola: qui puoi cercare nuove versioni e, se hai attivato la ricerca automatica in Privacy, ti avvisa da sola. Salva il nuovo .exe in questa stessa cartella per conservare i tuoi dati (VenusData).",
+  noticeTitle: "Venus {version} è disponibile",
+  noticeText: "La versione portatile non si aggiorna da sola. Scarica il nuovo .exe e salvalo in questa stessa cartella per conservare i tuoi dati.",
+  noticeLater: "Più tardi",
 };

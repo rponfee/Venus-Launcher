@@ -83,6 +83,10 @@ URLs (las muestra el panel): `https://<proyecto>.supabase.co/functions/v1/paymen
 - `node --test src/main/modules/billing/test/client.test.js`: catálogo, pago y seguimiento de la orden en el launcher.
 - Modo de capturas sin servidor ni cobros: `VENUS_DEVSHOT=<carpeta> VENUS_BILLING_FAKE=1 VENUS_ADMIN_FAKE=1`.
 
+## Pagos de prueba
+
+Con la migración `0025`, un pago de prueba (sandbox) no da saldo real: la orden queda `failed` con `provider_status = 'test_payment'` y se registra `payments.testRejected`. Los administradores sí pueden probar así el flujo completo.
+
 ## Lo que falta probar con dinero real
 
 - Un pago real con Mercado Pago (credenciales de producción) y su devolución.

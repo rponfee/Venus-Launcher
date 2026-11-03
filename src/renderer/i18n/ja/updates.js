@@ -20,7 +20,6 @@ export default {
   error: "アップデートの確認またはダウンロードができませんでした。接続を確認して、もう一度お試しください。",
   disabled: "自動アップデートは利用できません。",
   disabledDevelopment: "自動アップデートはインストール版で有効になります。",
-  disabledPortable: "ポータブル版を更新するには、公開リリースのページから新しいバージョンをダウンロードしてください。",
   disabledPlatform: "自動アップデートはWindowsのインストール版で利用できます。",
   disabledUnconfigured: "このビルドにはアップデートチャンネルがまだ設定されていません。",
   disabledUnavailable: "このビルドではアップデート機能を利用できません。",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "このインストールではショートカットを修復できません。",
   windowsSearchHint: "スタートメニューの変更がWindowsの検索結果に反映されるまで、時間がかかる場合があります。",
   windowsPinnedHint: "ピン留めしたアイコンが古い画像のままの場合は、ピン留めを外して、スタートメニューからVenusをもう一度ピン留めしてください。",
+  available: "新しいバージョンがあります: {version}",
+  download: "新しいバージョンをダウンロード",
+  portableNote: "ポータブル版は自動で更新されません。ここで新しいバージョンを確認できます。プライバシーで自動確認をオンにしていれば、自動でお知らせします。データ（VenusData）を残すため、新しい .exe は同じフォルダーに保存してください。",
+  noticeTitle: "Venus {version} が利用できます",
+  noticeText: "ポータブル版は自動で更新されません。データを残すため、新しい .exe をダウンロードして同じフォルダーに保存してください。",
+  noticeLater: "後で",
 };

@@ -169,15 +169,7 @@ function realGamesRunning() {
   return Object.values(game.status()).some((g) => !g?.quiet);
 }
 
-const cipher = {
-  encrypt: (s) => (safeStorage.isEncryptionAvailable() ? `enc:${safeStorage.encryptString(s).toString('base64')}` : `raw:${Buffer.from(s).toString('base64')}`),
-  decrypt: (s) => {
-    if (!s) return '';
-    if (s.startsWith('enc:')) return safeStorage.decryptString(Buffer.from(s.slice(4), 'base64'));
-    if (s.startsWith('raw:')) return Buffer.from(s.slice(4), 'base64').toString();
-    return s;
-  },
-};
+const cipher = require('./core/cipher').createCipher(safeStorage);
 
 modulesLoader.preReady({ app });
 

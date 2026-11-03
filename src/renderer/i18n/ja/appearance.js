@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "丸ゴシック",
   ui_uiFont_mono: "等幅",
   ui_uiGlass: "カードの不透明度",
+  liteTitle: "軽量モード",
+  liteSub: "低スペック PC 向け: アニメーション背景、アニメーション、ぼかしをなくし、オーバーレイをオフにします。",
+  liveDownloading: "アニメーション背景をダウンロード中… {percent}%",
+  liveError: "アニメーション背景をダウンロードできませんでした。もう一度クリックして再試行してください。",
 };

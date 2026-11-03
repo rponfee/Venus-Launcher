@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "Arrondie",
   ui_uiFont_mono: "Monospace",
   ui_uiGlass: "Opacité des cartes",
+  liteTitle: "Mode léger",
+  liteSub: "Pour les PC modestes : pas de fonds animés, d’animations ni de flou, et l’overlay désactivé.",
+  liveDownloading: "Téléchargement du fond animé… {percent} %",
+  liveError: "Impossible de télécharger le fond animé. Cliquez dessus pour réessayer.",
 };

@@ -198,6 +198,25 @@ body.reduce-motion *::after {
 body.reduce-motion .progress.indeterminate > i { animation-duration: 2.4s !important; animation-iteration-count: infinite !important; }
 body.reduce-motion .skeleton::after { display: none; }
 
+/* ---------- Modo liviano (Ajustes > Apariencia > Interfaz): sin animaciones, transiciones ni desenfoques ---------- */
+html[data-ui-lite] *:not(.spinner):not(.ax-keep-motion),
+html[data-ui-lite] *:not(.btn.loading)::before,
+html[data-ui-lite] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+html[data-ui-lite] *,
+html[data-ui-lite] *::before,
+html[data-ui-lite] *::after { backdrop-filter: none !important; }
+html[data-ui-lite] .progress.indeterminate > i { animation-duration: 2.4s !important; animation-iteration-count: infinite !important; }
+html[data-ui-lite] .skeleton::after { display: none; }
+html[data-ui-lite] .icon-btn.loading > svg { animation-duration: 1.8s !important; animation-iteration-count: infinite !important; }
+html[data-ui-lite] .btn.loading::before { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
+
 /* ---------- Fondo espacial ---------- */
 .space-bg {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;

@@ -131,4 +131,11 @@ export default {
   v3badge_b2: "Si installa da solo in ogni istanza",
   v3badge_b3: "Si attiva in Impostazioni → Generali",
   v3badge_cta: "Attiva il badge",
+  v3changes_title: "Cosa è cambiato",
+  v3changes_text: "Alcune cose non ci sono più o funzionano diversamente.",
+  v3changes_b1: "La Modalità sviluppatore di plugin è stata rimossa. I tuoi progetti sono ancora nelle loro cartelle: Venus non li ha toccati.",
+  v3changes_b2: "La versione portatile non si aggiorna da sola, ma ora ti avvisa quando ce n’è una nuova.",
+  v3changes_b3: "Gli sfondi animati si scaricano quando li scegli: il programma di installazione pesa quasi 100 MB in meno.",
+  v3changes_b4: "Nuova modalità leggera per PC modesti: Impostazioni → Aspetto → Interfaccia.",
+  v3changes_cta: "Vedi aggiornamenti",
 };

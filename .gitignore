@@ -3,6 +3,9 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Claves que entran al compilar (scripts/write-build-config.js)
+src/main/core/build-config.json
+
 # Compilaciones e instaladores
 dist/
 dist-*/

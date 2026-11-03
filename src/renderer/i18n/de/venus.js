@@ -109,4 +109,8 @@ export default {
   goSupport: "Zum Support",
 
   disclaimer: "Der Venus Launcher steht in keiner Verbindung zu Mojang Studios oder Microsoft. Minecraft ist eine Marke von Mojang Synergies AB.",
+  wpLiveHint: "Wird geladen, wenn du ihn verwendest ({size}). Bis dahin siehst du diese Vorschau.",
+  wpLiveDownloading: "Hintergrund wird geladen … {percent} %",
+  wpLiveError: "Download fehlgeschlagen. Versuche es erneut mit „Als Hintergrund verwenden“.",
+  wpLiveLite: "Im Leichtmodus wird er als Standbild angezeigt.",
 };

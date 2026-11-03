@@ -109,4 +109,8 @@ export default {
   goSupport: "サポートへ",
 
   disclaimer: "Venus LauncherはMojang StudiosおよびMicrosoftとは提携していません。MinecraftはMojang Synergies ABの商標です。",
+  wpLiveHint: "使用するときにダウンロードされます（{size}）。それまではこのサムネイルが表示されます。",
+  wpLiveDownloading: "背景をダウンロード中… {percent}%",
+  wpLiveError: "ダウンロードできませんでした。「背景に設定」でもう一度お試しください。",
+  wpLiveLite: "軽量モードでは静止画として表示されます。",
 };

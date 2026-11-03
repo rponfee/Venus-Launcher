@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "Afgerond",
   ui_uiFont_mono: "Monospace",
   ui_uiGlass: "Dekking van de kaarten",
+  liteTitle: "Lichte modus",
+  liteSub: "Voor eenvoudige pc’s: geen geanimeerde achtergronden, animaties of vervaging, en de overlay uit.",
+  liveDownloading: "Geanimeerde achtergrond downloaden… {percent}%",
+  liveError: "De geanimeerde achtergrond kon niet worden gedownload. Klik er opnieuw op om het nog eens te proberen.",
 };

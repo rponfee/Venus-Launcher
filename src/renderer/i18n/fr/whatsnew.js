@@ -131,4 +131,11 @@ export default {
   v3badge_b2: "S’installe tout seul sur chaque instance",
   v3badge_b3: "À activer dans Paramètres → Général",
   v3badge_cta: "Activer le badge",
+  v3changes_title: "Ce qui a changé",
+  v3changes_text: "Certaines choses ont disparu ou fonctionnent autrement.",
+  v3changes_b1: "Le mode développeur de plugins a été retiré. Vos projets sont toujours dans leurs dossiers : Venus n’y a pas touché.",
+  v3changes_b2: "La version portable ne se met pas à jour toute seule, mais elle vous prévient désormais quand il y en a une nouvelle.",
+  v3changes_b3: "Les fonds animés se téléchargent quand vous les choisissez : le programme d’installation pèse presque 100 Mo de moins.",
+  v3changes_b4: "Nouveau mode léger pour les PC modestes : Paramètres → Apparence → Interface.",
+  v3changes_cta: "Voir les mises à jour",
 };

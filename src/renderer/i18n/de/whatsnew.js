@@ -132,4 +132,11 @@ export default {
   v3badge_b2: "Installiert sich in jeder Instanz selbst",
   v3badge_b3: "Schalte es unter Einstellungen → Allgemein ein",
   v3badge_cta: "Abzeichen einschalten",
+  v3changes_title: "Was sich geändert hat",
+  v3changes_text: "Manches ist weggefallen oder funktioniert anders.",
+  v3changes_b1: "Der Entwicklermodus für Plugins wurde entfernt. Deine Projekte liegen weiter in ihren Ordnern: Venus hat sie nicht angerührt.",
+  v3changes_b2: "Die portable Version aktualisiert sich nicht selbst, sagt dir aber jetzt, wenn es eine neue gibt.",
+  v3changes_b3: "Animierte Hintergründe werden erst geladen, wenn du sie auswählst: Das Installationsprogramm ist fast 100 MB kleiner.",
+  v3changes_b4: "Neuer Leichtmodus für schwächere PCs: Einstellungen → Darstellung → Oberfläche.",
+  v3changes_cta: "Updates ansehen",
 };

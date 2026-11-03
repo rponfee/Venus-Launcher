@@ -337,4 +337,6 @@ export default {
   bgModsFailed_few: "Nie udało się zainstalować {count} modów",
   bgModsFailed_many: "Nie udało się zainstalować {count} modów",
   bgModsFailed_other: "Nie udało się zainstalować {count} moda",
+  allSteps: "Skonfiguruj wszystko",
+  quickNote: "Reszta zachowuje zalecane wartości. Możesz je zmienić w każdej chwili w Ustawieniach.",
 };

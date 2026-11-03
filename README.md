@@ -1,6 +1,6 @@
 # Venus Launcher
 
-Launcher de **Minecraft: Java Edition** para Windows hecho con Electron. Instala cualquier versión (de pre-classic a las snapshots más nuevas) con Vanilla, Fabric, Quilt, Forge, NeoForge, OptiFine, Iris, Legacy Fabric o Babric; trae el catálogo completo de Modrinth (y CurseForge opcional), servidores locales, juego con amigos sin abrir puertos, amigos, mensajes y Voice Chat, nube de mundos, un asistente de IA y muchas herramientas para que los mods no se rompan. Toda la interfaz está en español rioplatense y se traduce a 14 idiomas.
+Launcher de **Minecraft: Java Edition** para Windows hecho con Electron. Instala cualquier versión (de pre-classic a las snapshots más nuevas) con Vanilla, Fabric, Quilt, Forge, NeoForge, OptiFine, Iris, Legacy Fabric o Babric; trae el catálogo completo de Modrinth (y el de CurseForge, si el build trae su clave), servidores locales, juego con amigos sin abrir puertos, amigos, mensajes y Voice Chat, nube de mundos, un asistente de IA y muchas herramientas para que los mods no se rompan. Toda la interfaz está en español rioplatense y se traduce a 14 idiomas.
 
 ![Logo](src/renderer/assets/logo-256.png)
 
@@ -91,7 +91,7 @@ Bienvenida guiada la primera vez (idioma, cuentas, primera instancia, contenido 
 
 - **Para jugar**: Windows 10 u 11 e internet para descargar el juego y el contenido. Java **no** hace falta: el launcher descarga el Java oficial de Mojang que pide cada versión (8, 16, 17, 21 o 25), con Adoptium de respaldo.
 - **Para desarrollar**: Node.js **22.12 o superior** (el proyecto se usa con Node 24) y npm. `package.json` también trae la configuración de electron-builder para Linux (AppImage) y macOS (dmg), que se compilan en esos sistemas.
-- **Para compilar (el dueño)**: el proyecto de Supabase en `src/main/core/cloud-defaults.js` y, en `src/main/core/app-config.js`, la API key de CurseForge, el Application ID de Discord (Rich Presence) y, si hacen falta, el servidor TURN del Voice Chat y el servidor de túneles bore. Los usuarios no cargan claves.
+- **Para compilar (el dueño)**: la API key de CurseForge en el secreto `VENUS_CURSEFORGE_API_KEY` de GitHub Actions (`scripts/write-build-config.js` la mete en el build; no va en el repositorio), el proyecto de Supabase en `src/main/core/cloud-defaults.js` y, en `src/main/core/app-config.js`, el cliente propio de Microsoft cuando esté aprobado ([docs/login-microsoft.md](docs/login-microsoft.md)), el Application ID de Discord (Rich Presence) y, si hacen falta, el servidor TURN del Voice Chat y el servidor de túneles bore. Los usuarios no cargan claves.
 
 ## Comandos
 
@@ -107,7 +107,7 @@ npm run dist:dir     # solo la carpeta sin empaquetar (dist/win-unpacked)
 `npm run dist` genera en `dist/`:
 
 - `VenusLauncher-Setup.exe`: instalador (NSIS) que deja elegir la carpeta y crea accesos directos.
-- `VenusLauncher-Portable.exe`: versión portable, sin instalar. Guarda sus datos en `VenusData`, al lado del `.exe`.
+- `VenusLauncher-Portable.exe`: versión portable, sin instalar. Guarda sus datos en `VenusData`, al lado del `.exe`. No se actualiza sola: avisa cuando hay una versión nueva y da el link.
 
 ## Scripts de desarrollo
 
@@ -151,7 +151,7 @@ Español (rioplatense, el idioma base), inglés, portugués (Brasil), francés, 
 
 ## Actualizaciones
 
-El launcher instalado se actualiza solo desde las [releases de GitHub](https://github.com/rponfee/Venus-Launcher/releases) (electron-updater, repositorio en `venusUpdates.githubRepository` de `package.json`). Para publicar una versión: subí la versión en `package.json`, compilá con `npm run dist` y creá la release `v<versión>` con `VenusLauncher-Setup.exe`, `VenusLauncher-Portable.exe`, `VenusLauncher-Setup.exe.blockmap` y `latest.yml`. Los nombres son fijos a propósito: el link `releases/latest/download/VenusLauncher-Setup.exe` baja siempre la última versión. También se puede con `npm run release` o con el workflow `.github/workflows/release.yml` al subir un tag `v*`. La versión portable no se actualiza sola.
+El launcher instalado se actualiza solo desde las [releases de GitHub](https://github.com/rponfee/Venus-Launcher/releases) (electron-updater, repositorio en `venusUpdates.githubRepository` de `package.json`). Para publicar una versión: subí la versión en `package.json`, compilá con `npm run dist` y creá la release `v<versión>` con `VenusLauncher-Setup.exe`, `VenusLauncher-Portable.exe`, `VenusLauncher-Setup.exe.blockmap` y `latest.yml`. Los nombres son fijos a propósito: el link `releases/latest/download/VenusLauncher-Setup.exe` baja siempre la última versión. También se puede con `npm run release` o con el workflow `.github/workflows/release.yml` al subir un tag `v*`. La versión portable no se actualiza sola: lee `latest.yml` de la última release y avisa con el link para bajarla (solo si está activada la búsqueda automática o al tocar **Buscar actualizaciones**).
 
 ## Cómo está armado
 
@@ -186,6 +186,7 @@ Venus Launcher does not include telemetry or analytics. Features that would cont
 |---|---|
 | Sign in with Microsoft or play | Microsoft / Xbox Live and Mojang (sign-in, ownership check, game files, Java runtime) |
 | Open **Skins** with a Microsoft account, or change your skin or cape | Minecraft Services (`api.minecraftservices.com`) with your Microsoft account, to read your profile and change your skin or cape, and `textures.minecraft.net` for the skin and cape images (plus Microsoft / Xbox Live if your sign-in needs renewing, as when you play). Your skin library stays on your PC |
+| Use an animated wallpaper for the first time | `venus-launcher-fondos.netlify.app` (with GitHub as a backup), to download that video once. Animated wallpapers are not in the installer. Nothing about you is sent |
 | Browse or install content | Modrinth, CurseForge, the loader sites (Fabric, Quilt, Forge, NeoForge, Legacy Fabric, Babric), OptiFine, PaperMC, Purpur, Mohist and Adoptium |
 | Use your Venus account (friends, messages, Voice Chat, cloud, shared modpacks, AI features, support) | The Venus Launcher server (Supabase); AI features send your question and the related launcher context (instance, mods, logs) to the AI provider through that server (Anthropic; OpenAI only if enabled there as a fallback) |
 | Use your own Claude Code or Codex in the assistant, or connect an MCP client | Anthropic or OpenAI through your own CLI and account; the MCP client you connect |

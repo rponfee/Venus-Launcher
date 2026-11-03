@@ -131,4 +131,11 @@ export default {
   v3badge_b2: "Se instala sozinha em cada instância",
   v3badge_b3: "Ative em Configurações → Geral",
   v3badge_cta: "Ativar a insígnia",
+  v3changes_title: "O que mudou",
+  v3changes_text: "Algumas coisas saíram ou funcionam de outro jeito.",
+  v3changes_b1: "O Modo desenvolvedor de plugins foi removido. Seus projetos continuam nas pastas deles: o Venus não mexeu neles.",
+  v3changes_b2: "A versão portátil não se atualiza sozinha, mas agora avisa quando há uma nova.",
+  v3changes_b3: "Os fundos animados são baixados quando você os escolhe: o instalador ficou quase 100 MB menor.",
+  v3changes_b4: "Novo modo leve para PCs modestos: Configurações → Aparência → Interface.",
+  v3changes_cta: "Ver atualizações",
 };

@@ -20,7 +20,6 @@ export default {
   error: "업데이트를 확인하거나 다운로드하지 못했습니다. 연결을 확인하고 다시 시도하세요.",
   disabled: "자동 업데이트를 사용할 수 없습니다.",
   disabledDevelopment: "자동 업데이트는 설치 버전에서 활성화됩니다.",
-  disabledPortable: "포터블 버전을 업데이트하려면 공개 릴리스 페이지에서 새 버전을 다운로드하세요.",
   disabledPlatform: "자동 업데이트는 Windows 설치 버전에서 사용할 수 있습니다.",
   disabledUnconfigured: "이 빌드에는 업데이트 채널이 아직 설정되지 않았습니다.",
   disabledUnavailable: "이 빌드에서는 업데이트 구성 요소를 사용할 수 없습니다.",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "이 설치에서는 바로 가기 복구를 사용할 수 없습니다.",
   windowsSearchHint: "시작 메뉴의 변경 사항이 Windows 검색 결과에 반영되기까지 시간이 걸릴 수 있습니다.",
   windowsPinnedHint: "고정된 아이콘에 이전 이미지가 계속 표시되면 고정을 해제한 뒤 시작 메뉴에서 Venus를 다시 고정하세요.",
+  available: "새 버전이 있습니다: {version}",
+  download: "새 버전 다운로드",
+  portableNote: "포터블 버전은 자동으로 업데이트되지 않습니다. 여기에서 새 버전을 확인할 수 있으며, 개인정보 보호에서 자동 확인을 켜 두면 알아서 알려 줍니다. 데이터(VenusData)를 유지하려면 새 .exe를 같은 폴더에 저장하세요.",
+  noticeTitle: "Venus {version}을(를) 사용할 수 있습니다",
+  noticeText: "포터블 버전은 자동으로 업데이트되지 않습니다. 데이터를 유지하려면 새 .exe를 내려받아 같은 폴더에 저장하세요.",
+  noticeLater: "나중에",
 };

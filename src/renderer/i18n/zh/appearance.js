@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "圆体",
   ui_uiFont_mono: "等宽",
   ui_uiGlass: "卡片不透明度",
+  liteTitle: "轻量模式",
+  liteSub: "适合低配电脑：关闭动态背景、动画和模糊效果，并关闭游戏内叠加层。",
+  liveDownloading: "正在下载动态背景… {percent}%",
+  liveError: "无法下载动态背景。再次点击可重试。",
 };

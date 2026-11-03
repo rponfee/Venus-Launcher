@@ -109,4 +109,8 @@ export default {
   goSupport: 'Go to Support',
 
   disclaimer: 'Venus Launcher is not affiliated with Mojang Studios or Microsoft. Minecraft is a trademark of Mojang Synergies AB.',
+  wpLiveHint: "It downloads when you use it ({size}). Until then you see this thumbnail.",
+  wpLiveDownloading: "Downloading the wallpaper… {percent}%",
+  wpLiveError: "It could not be downloaded. Try again with “Use as background”.",
+  wpLiveLite: "In light mode it shows as a still image.",
 };

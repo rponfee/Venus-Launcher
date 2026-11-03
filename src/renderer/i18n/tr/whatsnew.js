@@ -131,4 +131,11 @@ export default {
   v3badge_b2: "Her örneğe kendiliğinden kurulur",
   v3badge_b3: "Ayarlar → Genel bölümünden aç",
   v3badge_cta: "Rozeti aç",
+  v3changes_title: "Neler değişti",
+  v3changes_text: "Bazı şeyler kaldırıldı veya farklı çalışıyor.",
+  v3changes_b1: "Eklenti Geliştirici Modu kaldırıldı. Projelerin kendi klasörlerinde duruyor: Venus onlara dokunmadı.",
+  v3changes_b2: "Taşınabilir sürüm kendini güncellemez ama artık yeni sürüm çıkınca haber veriyor.",
+  v3changes_b3: "Hareketli arka planlar seçince iniyor: yükleyici yaklaşık 100 MB küçüldü.",
+  v3changes_b4: "Düşük donanımlı bilgisayarlar için yeni hafif mod: Ayarlar → Görünüm → Arayüz.",
+  v3changes_cta: "Güncellemeleri gör",
 };

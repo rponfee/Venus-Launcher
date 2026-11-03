@@ -20,7 +20,6 @@ export default {
   error: "Nie udało się sprawdzić ani pobrać aktualizacji. Sprawdź połączenie i spróbuj ponownie.",
   disabled: "Automatyczne aktualizacje są niedostępne.",
   disabledDevelopment: "Automatyczne aktualizacje są włączone w zainstalowanej wersji.",
-  disabledPortable: "Aby zaktualizować wersję przenośną, pobierz nową wersję ze strony opublikowanych wydań.",
   disabledPlatform: "Automatyczne aktualizacje są dostępne w zainstalowanej wersji launchera dla systemu Windows.",
   disabledUnconfigured: "Ta kompilacja nie ma jeszcze skonfigurowanego kanału aktualizacji.",
   disabledUnavailable: "Składnik aktualizacji jest niedostępny w tej kompilacji.",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "Naprawa skrótów nie jest dostępna dla tej instalacji.",
   windowsSearchHint: "System Windows może potrzebować czasu, aby uwzględnić zmiany w menu Start w wynikach wyszukiwania.",
   windowsPinnedHint: "Jeśli przypięta ikona nadal pokazuje stary obraz, odepnij ją i przypnij Venus ponownie z menu Start.",
+  available: "Dostępna jest nowa wersja: {version}.",
+  download: "Pobierz nową wersję",
+  portableNote: "Wersja przenośna nie aktualizuje się sama: tutaj możesz sprawdzić nowe wersje, a jeśli włączysz automatyczne sprawdzanie w sekcji Prywatność, powiadomi Cię sama. Zapisz nowy plik .exe w tym samym folderze, aby zachować dane (VenusData).",
+  noticeTitle: "Venus {version} jest już dostępny",
+  noticeText: "Wersja przenośna nie aktualizuje się sama. Pobierz nowy plik .exe i zapisz go w tym samym folderze, aby zachować dane.",
+  noticeLater: "Później",
 };

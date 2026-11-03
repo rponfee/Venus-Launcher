@@ -109,4 +109,8 @@ export default {
   goSupport: "Aller à l'assistance",
 
   disclaimer: "Venus Launcher n'est pas affilié à Mojang Studios ni à Microsoft. Minecraft est une marque de Mojang Synergies AB.",
+  wpLiveHint: "Il se télécharge quand vous l’utilisez ({size}). En attendant, vous voyez cette miniature.",
+  wpLiveDownloading: "Téléchargement du fond… {percent} %",
+  wpLiveError: "Téléchargement impossible. Réessayez avec « Utiliser comme fond ».",
+  wpLiveLite: "En mode léger, il s’affiche comme une image fixe.",
 };

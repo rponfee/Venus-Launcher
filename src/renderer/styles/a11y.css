@@ -253,6 +253,8 @@ body:has(.ax-palette-backdrop) .ax-hintbar { left: 0; }
   width: calc(100% + var(--ap-bg-blur, 0px) * 4); height: calc(100% + var(--ap-bg-blur, 0px) * 4);
   object-fit: cover; filter: blur(var(--ap-bg-blur, 0px)); display: block;
 }
+/* Miniatura de un fondo animado (todavía sin bajar o en el modo liviano): es chica, se difumina para que no se note */
+.ap-bg-media.ap-bg-soft { filter: blur(calc(var(--ap-bg-blur, 0px) + 12px)); transform: scale(1.08); }
 .ap-bg-dim { position: absolute; inset: 0; background: var(--bg-0); opacity: var(--ap-bg-dim, 0.45); transition: opacity var(--dur) var(--ease-out); }
 
 /* ---------- Marca en la barra lateral y de titulo ---------- */

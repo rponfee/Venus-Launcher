@@ -3,11 +3,9 @@
 // Nunca guardar secretos en settings.json: usar secure.get/set con una clave propia del modulo.
 const paths = require('./paths');
 const { readJson, writeJson } = require('./util');
+const { createCipher } = require('./cipher');
 
-let cipher = {
-  encrypt: (s) => `raw:${Buffer.from(s).toString('base64')}`,
-  decrypt: (s) => (s.startsWith('raw:') ? Buffer.from(s.slice(4), 'base64').toString() : s),
-};
+let cipher = createCipher(); // hasta que main.js configure el del sistema, nada sin cifrar llega al archivo
 
 function configure(c) {
   cipher = c;

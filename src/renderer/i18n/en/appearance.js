@@ -144,4 +144,8 @@ export default {
   ui_uiFont_rounded: "Rounded",
   ui_uiFont_mono: "Monospaced",
   ui_uiGlass: "Card opacity",
+  liteTitle: "Light mode",
+  liteSub: "For modest PCs: no animated wallpapers, animations or blur, and the overlay turned off.",
+  liveDownloading: "Downloading the animated wallpaper… {percent}%",
+  liveError: "The animated wallpaper could not be downloaded. Click it again to retry.",
 };

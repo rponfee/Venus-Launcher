@@ -129,4 +129,8 @@ export default {
   ui_uiFont_rounded: "Abgerundet",
   ui_uiFont_mono: "Monospace",
   ui_uiGlass: "Deckkraft der Karten",
+  liteTitle: "Leichtmodus",
+  liteSub: "Für schwächere PCs: keine animierten Hintergründe, Animationen oder Unschärfe, und das Overlay ist aus.",
+  liveDownloading: "Animierter Hintergrund wird geladen … {percent} %",
+  liveError: "Der animierte Hintergrund konnte nicht geladen werden. Klicke erneut darauf, um es noch einmal zu versuchen.",
 };

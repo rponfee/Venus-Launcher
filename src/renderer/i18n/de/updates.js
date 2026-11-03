@@ -20,7 +20,6 @@ export default {
   error: "Die Suche nach Updates oder der Download ist fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.",
   disabled: "Automatische Updates sind nicht verfügbar.",
   disabledDevelopment: "Automatische Updates sind in der installierten Version aktiviert.",
-  disabledPortable: "Lade zum Aktualisieren der portablen Ausgabe die neue Version von der Seite mit den veröffentlichten Versionen herunter.",
   disabledPlatform: "Automatische Updates sind für die Windows-Installation verfügbar.",
   disabledUnconfigured: "Für diesen Build wurde noch kein Update-Kanal eingerichtet.",
   disabledUnavailable: "Die Update-Komponente ist in diesem Build nicht verfügbar.",
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "Die Reparatur von Verknüpfungen ist für diese Installation nicht verfügbar.",
   windowsSearchHint: "Es kann etwas dauern, bis Windows Änderungen am Startmenü in den Suchergebnissen anzeigt.",
   windowsPinnedHint: "Wenn das angeheftete Symbol noch das alte Bild zeigt, löse es und hefte Venus über das Startmenü erneut an.",
+  available: "Eine neue Version ist verfügbar: {version}.",
+  download: "Neue Version herunterladen",
+  portableNote: "Die portable Version aktualisiert sich nicht selbst: Hier kannst du nach neuen Versionen suchen, und wenn du die automatische Suche unter Datenschutz aktiviert hast, meldet sie sich von selbst. Speichere die neue .exe im selben Ordner, um deine Daten (VenusData) zu behalten.",
+  noticeTitle: "Venus {version} ist verfügbar",
+  noticeText: "Die portable Version aktualisiert sich nicht selbst. Lade die neue .exe herunter und speichere sie im selben Ordner, um deine Daten zu behalten.",
+  noticeLater: "Später",
 };

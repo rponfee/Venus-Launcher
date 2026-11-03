@@ -109,4 +109,8 @@ export default {
   goSupport: "Destek'e git",
 
   disclaimer: "Venus Launcher, Mojang Studios veya Microsoft ile bağlantılı değildir. Minecraft, Mojang Synergies AB'nin ticari markasıdır.",
+  wpLiveHint: "Kullandığında iner ({size}). O zamana kadar bu küçük resim görünür.",
+  wpLiveDownloading: "Arka plan indiriliyor… %{percent}",
+  wpLiveError: "İndirilemedi. “Arka plan olarak kullan” ile yeniden dene.",
+  wpLiveLite: "Hafif modda sabit resim olarak görünür.",
 };

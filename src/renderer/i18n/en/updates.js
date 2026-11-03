@@ -20,7 +20,6 @@ export default {
   error: 'Could not check for or download the update. Check your connection and try again.',
   disabled: 'Automatic updates are unavailable.',
   disabledDevelopment: 'Automatic updates are enabled in the installed version.',
-  disabledPortable: 'To update the portable edition, download the new version from the published releases.',
   disabledPlatform: 'Automatic updates are available for the Windows installation.',
   disabledUnconfigured: 'This build does not have an update channel configured yet.',
   disabledUnavailable: 'The update component is unavailable in this build.',
@@ -54,4 +53,10 @@ export default {
   windowsUnavailable: "Shortcut repair is unavailable for this installation.",
   windowsSearchHint: "Windows may take time to reflect Start menu changes in search results.",
   windowsPinnedHint: "If the pinned icon still shows the old image, unpin it and pin Venus again from Start.",
+  available: "A new version is available: {version}.",
+  download: "Download the new version",
+  portableNote: "The portable version does not update itself: you can check for new versions here and, if you turned on automatic checks in Privacy, it tells you on its own. Save the new .exe in this same folder to keep your data (VenusData).",
+  noticeTitle: "Venus {version} is available",
+  noticeText: "The portable version does not update itself. Download the new .exe and save it in this same folder to keep your data.",
+  noticeLater: "Later",
 };
