@@ -1,6 +1,6 @@
 // Ajustes > General (idioma y que hace el launcher al jugar), Privacidad (actividad, Discord Rich Presence y que se
 // guarda en la PC o en la nube) y Acerca de.
-import { h, icon, mount, fail, copyText } from '../../ui.js';
+import { h, icon, mount, fail, copyText, ensureCss } from '../../ui.js';
 import { store, api } from '../../store.js';
 import { t, LANGUAGES, getLanguage, setLanguage, locale } from '../../i18n.js';
 import { cloud } from '../../cloud.js';
@@ -9,6 +9,7 @@ import { navigate } from '../../app.js';
 import { discordButton } from '../../community.js';
 import { sectionHead, card, toggleRow, note, iconList, arrowFocus, extLink, embedPanel } from './shared.js';
 import { isStreamer, setStreamer } from '../../features/streamer.js';
+import { normalizeBreaks, EVERY_OPTIONS, LIMIT_OPTIONS } from '../tools/breaks.js';
 
 const AFTER_LAUNCH = [
   ['keep', 'monitor'],
@@ -174,9 +175,11 @@ export function renderGeneral(body, ctx) {
   ctx.onCleanup(cloud.on('auth', () => ctx.alive() && readBadge()));
   readBadge();
 
-  mount(
-    body,
-    sectionHead('general', 'sliders'),
+  mount(body, sectionHead('general', 'sliders'));
+  // Secciones de la 3.1 (features/tools): descansos, resumen al cerrar y aviso de version nueva
+  const care = careCard(ctx);
+
+  body.append(
     card({ title: t('settings.languageTitle'), iconName: 'languages', sub: t('settings.languageSub'), anchor: 'language' }, langGrid),
     card(
       { title: t('settings.playTitle'), iconName: 'rocket', sub: t('settings.playSub'), anchor: 'play' },
@@ -219,6 +222,87 @@ export function renderGeneral(body, ctx) {
         h('button', { type: 'button', class: 'btn sm ghost', onclick: () => navigate('performance') }, t('settings.perfGo'), icon('arrowRight')),
       ),
     ),
+    care,
+  );
+}
+
+// Descansos y tope de horas (settings.play.breaks), resumen al cerrar el juego (settings.play.sessionRecap) y aviso
+// de version nueva de Minecraft (settings.news.newVersions; consulta solo con la conexion "news" de Privacidad).
+function careCard(ctx) {
+  ensureCss('pages/tools'); // estilos .cfg-care-* (viven con la caja de herramientas)
+  const breaks = () => normalizeBreaks(store.settings?.play?.breaks);
+  const saveBreaks = (patch) => saveSettings({ play: { breaks: { ...breaks(), ...patch } } });
+  const sel = (label, options, get, put) => {
+    const el = h('select', { class: 'select cfg-care-select', 'aria-label': label }, options.map(([v, text]) => h('option', { value: v }, text)));
+    el.value = String(get());
+    el.addEventListener('change', () => put(Number(el.value)));
+    return el;
+  };
+  const every = sel(t('settings.breaksEvery'), EVERY_OPTIONS.map((m) => [m, t('settings.breaksEveryOpt', { count: m })]), () => breaks().everyMin, (v) => saveBreaks({ everyMin: v }));
+  const limit = sel(t('settings.breaksLimit'), LIMIT_OPTIONS.map((m) => [m, m ? t('settings.breaksLimitOpt', { count: m / 60 }) : t('settings.breaksLimitNone')]), () => breaks().dailyLimitMin, (v) => saveBreaks({ dailyLimitMin: v }));
+  const today = h('span', { class: 'small muted' });
+  import('../../features/tools/breaks.js')
+    .then((m) => {
+      if (ctx.alive()) today.textContent = t('settings.breaksToday', { minutes: m.todayMinutesPlayed() });
+    })
+    .catch(() => {});
+  const options = h(
+    'div',
+    { class: 'cfg-care-options' },
+    h('label', { class: 'cfg-care-field' }, h('span', {}, t('settings.breaksEvery')), every),
+    h('label', { class: 'cfg-care-field' }, h('span', {}, t('settings.breaksLimit')), limit),
+    today,
+  );
+  const syncOptions = () => {
+    const on = breaks().enabled;
+    options.classList.toggle('is-disabled', !on);
+    every.disabled = !on;
+    limit.disabled = !on;
+  };
+  syncOptions();
+  ctx.onCleanup(store.on('settings', () => ctx.alive() && syncOptions()));
+
+  const newsAllowed = () => store.settings?.privacy?.news === true;
+  const newsNote = h('div', { class: 'cfg-note-slot' });
+  const drawNewsNote = () =>
+    mount(
+      newsNote,
+      newsAllowed() || store.settings?.news?.newVersions === false
+        ? null
+        : note('info', 'info', h('div', {}, t('settings.newVersionsNeedsNews')), h('button', { type: 'button', class: 'btn sm cfg-note-btn', onclick: () => ctx.go('privacy', 'connections') }, icon('wifi'), t('settings.newVersionsGoPrivacy'))),
+    );
+  drawNewsNote();
+  ctx.onCleanup(store.on('settings', () => ctx.alive() && drawNewsNote()));
+
+  return card(
+    { title: t('settings.careTitle'), iconName: 'coffee', sub: t('settings.careSub'), anchor: 'care' },
+    toggleRow({
+      title: t('settings.breaksToggle'),
+      sub: t('settings.breaksToggleSub'),
+      checked: breaks().enabled,
+      onChange: async (v) => {
+        await saveBreaks({ enabled: v });
+        syncOptions();
+      },
+    }),
+    options,
+    h('p', { class: 'cfg-text small muted' }, t('settings.breaksLimitSub')),
+    toggleRow({
+      title: t('settings.sessionRecapTitle'),
+      sub: t('settings.sessionRecapSub'),
+      checked: store.settings?.play?.sessionRecap !== false,
+      onChange: (v) => saveSettings({ play: { sessionRecap: v } }),
+    }),
+    toggleRow({
+      title: t('settings.newVersionsTitle'),
+      sub: t('settings.newVersionsSub'),
+      checked: store.settings?.news?.newVersions !== false,
+      onChange: async (v) => {
+        await saveSettings({ news: { newVersions: v } });
+        drawNewsNote();
+      },
+    }),
+    newsNote,
   );
 }
 

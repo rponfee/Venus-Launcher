@@ -124,7 +124,7 @@ export async function featuredFromSource(src) {
 }
 
 // ---------- Bucket ----------
-function storageError(error) {
+export function storageError(error) {
   const msg = String(error?.message || error || '');
   const status = Number(error?.statusCode || error?.status || 0);
   if (status === 413 || /maximum allowed size|too large|payload/i.test(msg)) return new MediaError('too_big', msg);
@@ -134,7 +134,7 @@ function storageError(error) {
   return new MediaError('network', msg);
 }
 
-function requireSession() {
+export function requireSession() {
   if (!cloud.client || !cloud.isSignedIn()) throw new MediaError('session');
   return { client: cloud.client, uid: cloud.user.id };
 }

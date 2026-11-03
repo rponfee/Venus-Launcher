@@ -265,4 +265,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "Missie voltooid",
   hist_missionBonus: "Bonus voor missies",
+  hist_gift_in: "Cadeau van een vriend",
+  hist_gift_out: "Cadeau voor een vriend",
+  item_frame_pulse: "Hartslagrand",
+  item_frame_orbit: "Orbitrand",
+  item_frame_halloween: "Halloweenrand",
+  item_frame_xmas: "Kerstrand",
 };

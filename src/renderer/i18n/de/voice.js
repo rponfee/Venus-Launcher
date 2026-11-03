@@ -390,4 +390,6 @@ export default {
   connLoss: "{status} · Instabile Verbindung: {loss} % des Audios gehen verloren",
   netBadBadge: "Instabile Verbindung",
   netBadHint: "Der Ton mit jemandem im Raum bricht ab oder verbindet sich neu. Venus senkt die Qualität und versucht es von selbst erneut.",
+  entryJoined: "ist beigetreten",
+  entryJoinedAria: "{name} ist dem Raum beigetreten",
 };

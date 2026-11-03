@@ -607,3 +607,42 @@ body.ovl-page .ovl-root.ovl-editing .ovl-stage {
 .ovl-reduce .ovl-av {
   transition: none;
 }
+
+/* Rendimiento (3.1): RAM, CPU, ping y sesion en una fila de chips (js/overlay/perf.js) */
+.ovl-perf {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  background: var(--ovl-bg);
+  border: 1px solid var(--ovl-line);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ovl-perf-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.ovl-perf-item svg {
+  width: 13px;
+  height: 13px;
+  align-self: center;
+  color: var(--ovl-ring);
+}
+.ovl-perf-val {
+  font-weight: 600;
+  min-width: 3.2em;
+}
+.ovl-perf-lab {
+  color: var(--ovl-sub);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ovl-perf-item.empty .ovl-perf-val {
+  color: var(--ovl-sub);
+  font-weight: 400;
+}

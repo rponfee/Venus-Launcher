@@ -119,3 +119,7 @@ Premium = `venus_is_premium(usuario)` (0020): tener un plan de Venus vigente, el
 ## 7. Capturas de desarrollo
 
 Con `VENUS_DEVSHOT` y sin empaquetar, `VENUS_REWARDS_FAKE=<escenario>` usa datos de ejemplo en memoria (`pages/rewards/fake.js`) y una verificación que responde sola (`rewards/fake.js`): `demo` (puntos, racha, invitación pendiente de verificar), `premium`, `new` (cuenta nueva que puede canjear un código), `signedOut` y `unavailable`. `VENUS_REWARDS_FAKE_VERIFY_ERROR=<código>` hace fallar la verificación con ese código. No habla con ningún servidor.
+
+## Venus Pass (3.1)
+
+Los premios en puntos del pase entran a `points_ledger` con `reason = 'pass'` (`ref` = temporada:nivel:pista) y una devolución los descuenta con `'pass_refund'`. Los regalos entre amigos usan `'gift_in'` y `'gift_out'`. La XP del pase se calcula a partir de este libro: ver [venus-pass.md](venus-pass.md).

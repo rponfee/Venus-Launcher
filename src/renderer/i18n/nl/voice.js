@@ -390,4 +390,6 @@ export default {
   connLoss: "{status} · Onstabiele verbinding: {loss}% van de audio gaat verloren",
   netBadBadge: "Onstabiele verbinding",
   netBadHint: "De spraak met iemand in de kamer valt weg of wordt opnieuw verbonden. Venus verlaagt de kwaliteit en probeert het vanzelf opnieuw.",
+  entryJoined: "komt binnen",
+  entryJoinedAria: "{name} komt de kamer binnen",
 };

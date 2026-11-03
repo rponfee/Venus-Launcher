@@ -8,11 +8,28 @@ import { EXTRA_FONTS } from './fonts.js';
 // ---------- Catalogo (lo mismo que conoce el servidor) ----------
 export const BASIC_FONTS = ['default', 'pixel', 'outfit', 'serif', 'mono', 'rounded', 'condensed'];
 export const FONTS = [...BASIC_FONTS, ...EXTRA_FONTS.map((f) => f.id)];
-export const EFFECTS = ['none', 'glow', 'gradient', 'shimmer', 'rainbow', 'fire', 'neon', 'ice', 'ocean', 'sakura', 'toxic', 'vapor', 'gold', 'galaxy', 'glitch'];
+export const EFFECTS = ['none', 'glow', 'gradient', 'shimmer', 'rainbow', 'fire', 'neon', 'ice', 'ocean', 'sakura', 'toxic', 'vapor', 'gold', 'galaxy', 'glitch', 'season1'];
 export const PREMIUM_EFFECTS = ['shimmer', 'rainbow', 'fire', 'neon', 'ice', 'ocean', 'sakura', 'toxic', 'vapor', 'gold', 'galaxy', 'glitch'];
+// Efectos del Venus Pass: solo con el item (Premium no los incluye)
+export const PASS_EFFECTS = ['season1'];
 export const BANNER_PRESETS = ['stars', 'sunset', 'nebula', 'forest', 'ocean', 'nether', 'end', 'aurora', 'cherry', 'desert', 'snow', 'deepdark', 'lush', 'mesa', 'mushroom', 'void'];
-export const FRAMES = ['pixel', 'neon', 'gold', 'venus', 'ice', 'emerald', 'amethyst', 'redstone', 'fire', 'ender', 'rainbow', 'diamond', 'cosmic'];
-export const TITLES = ['explorer', 'builder', 'redstoner', 'legend', 'supporter', 'miner', 'farmer', 'architect', 'modder', 'streamer', 'pvp', 'nightowl', 'speedrunner', 'collector', 'hardcore', 'veteran', 'vip'];
+export const FRAMES = ['pixel', 'neon', 'gold', 'venus', 'ice', 'emerald', 'amethyst', 'redstone', 'fire', 'ender', 'rainbow', 'diamond', 'cosmic', 'season1', 'season1legend', 'season1free', 'max', 'pulse', 'orbit', 'halloween', 'xmas'];
+export const TITLES = ['explorer', 'builder', 'redstoner', 'legend', 'supporter', 'miner', 'farmer', 'architect', 'modder', 'streamer', 'pvp', 'nightowl', 'speedrunner', 'collector', 'hardcore', 'veteran', 'vip', 'season1', 'traveler', 'pro'];
+// Venus 3.1: tema de la tarjeta, burbujas de chat, efecto de entrada en voz, poses y fondos de la skin
+export const CARD_THEMES = ['none', 'nether', 'end', 'ocean', 'cherry', 'space', 'aurora'];
+export const BUBBLE_STYLES = ['default', 'round', 'pixel', 'sharp'];
+export const ENTRY_EFFECTS = ['none', 'spark', 'nether', 'ender', 'snow'];
+export const SKIN_POSES = ['stand', 'wave', 'sit', 'walk'];
+export const SKIN_BGS = ['none', 'sunset', 'cave', 'end', 'snow'];
+// Vencimiento del estado: minutos (null = nunca; 'today' = hasta la medianoche local)
+export const STATUS_DURATIONS = ['30m', '1h', '4h', 'today', 'never'];
+// Grilla de emojis del estado (60, sin librerias)
+export const STATUS_EMOJIS = [
+  '😀', '😄', '😂', '🤣', '😊', '😉', '😍', '😎', '🤩', '🥳', '😅', '😇', '🙂', '🤔', '😴', '😮',
+  '😱', '😢', '😭', '😡', '🤯', '🥺', '😏', '🤝', '👍', '👏', '🙌', '🙏', '💪', '👋', '❤️', '🧡',
+  '💛', '💚', '💙', '💜', '🔥', '✨', '⭐', '🎉', '💯', '✅', '⚔️', '🛡️', '⛏️', '🏹', '💎', '🧱',
+  '🌲', '🐷', '🐺', '🧟', '💀', '👾', '🎮', '🏠', '🌙', '☀️', '🍕', '🚀',
+];
 export const BADGE_STYLES = ['nebula', 'ice', 'gold'];
 export const EQUIP_SLOTS = ['frame', 'nameEffect', 'badgeStyle', 'title'];
 export const PATCH_FIELDS = ['pronouns', 'bio', 'theme', 'nameStyle', 'banner', 'favoriteServers', 'publicStats', 'featured', 'equipped', 'cardStyle', 'links', 'showcase'];
@@ -85,6 +102,11 @@ export const SHOP_CATALOG = [
   { id: 'title_hardcore', kind: 'title', price: 1200, premiumOnly: false, style: 'hardcore' },
   { id: 'title_veteran', kind: 'title', price: 2000, premiumOnly: false, style: 'veteran' },
   { id: 'title_vip', kind: 'title', price: 0, premiumOnly: true, style: 'vip' },
+  // Marcos de la 3.1 (0027): animados y de temporada (se venden todo el año)
+  { id: 'frame_pulse', kind: 'frame', price: 1800, premiumOnly: false, style: 'pulse' },
+  { id: 'frame_orbit', kind: 'frame', price: 2400, premiumOnly: false, style: 'orbit' },
+  { id: 'frame_halloween', kind: 'frame', price: 1200, premiumOnly: false, style: 'halloween' },
+  { id: 'frame_xmas', kind: 'frame', price: 1200, premiumOnly: false, style: 'xmas' },
 ];
 
 export const LIMITS = {
@@ -106,6 +128,20 @@ export const LIMITS = {
   featuredW: 1600,
   featuredH: 900,
   mediaUrl: 400,
+  // 3.1
+  rareBadges: 3,
+  songTitle: 60,
+  songBytes: 1024 * 1024,
+  songSourceBytes: 20 * 1024 * 1024,
+  songSeconds: 30,
+  statusText: 80,
+  statusBody: 70,
+  guestbook: 200,
+  guestbookPerDay: 5,
+  giftMin: 10,
+  giftMax: 500,
+  giftDaily: 1000,
+  reportText: 300,
 };
 
 // Pares de colores sugeridos para el fade y colores sugeridos para el nombre
@@ -166,6 +202,34 @@ export function isProfileMediaUrl(url, userId = null) {
 
 // Direccion de un GIF de KLIPY tal como la devuelve su API (igual que private.klipy_url)
 export const isKlipyUrl = (url) => typeof url === 'string' && url.length <= 400 && KLIPY_URL.test(url);
+
+// URL publica de la cancion del perfil en profile-audio (igual que private.profile_audio_url): <uid>/song.webm (+ ?v=)
+export function isProfileAudioUrl(url, userId = null) {
+  if (typeof url !== 'string' || url.length > 300) return false;
+  const m = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/profile-audio\/([0-9a-fA-F-]{36})\/song\.webm(\?v=[0-9]{1,16})?$/.exec(url);
+  if (!m || !UUID.test(m[1])) return false;
+  return userId ? m[1].toLowerCase() === String(userId).toLowerCase() : true;
+}
+// Nombre fijo del archivo en el bucket (la politica solo acepta ese) y la URL con marca para refrescar la cache
+export const AUDIO_FILE = 'song.webm';
+export const AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/webm', 'audio/aac'];
+export const AUDIO_EXTS = ['mp3', 'ogg', 'oga', 'wav', 'm4a', 'webm', 'aac'];
+export const audioFileName = () => AUDIO_FILE;
+export function audioUrlWithVersion(url, now = Date.now()) {
+  const base = String(url || '').replace(/\?v=[0-9]+$/, '');
+  return `${base}?v=${Math.floor(now)}`;
+}
+// Archivo de audio aceptable para la cancion (por tipo o extension) y de hasta 20 MB. Devuelve null o un codigo de error.
+export function audioSourceError(file) {
+  if (!file || typeof file !== 'object') return 'type';
+  const name = String(file.name || '').toLowerCase();
+  const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+  const type = String(file.type || '').toLowerCase().split(';')[0];
+  if (!(AUDIO_TYPES.includes(type) || (!type && AUDIO_EXTS.includes(ext)) || (type.startsWith('audio/') && AUDIO_EXTS.includes(ext)))) return 'type';
+  if (!(file.size > 0)) return 'decode';
+  if (file.size > LIMITS.songSourceBytes) return 'too_big';
+  return null;
+}
 
 // Red del perfil: https y uno de los sitios conocidos (igual que private.profile_link_ok)
 export function isProfileLink(kind, url) {
@@ -229,13 +293,25 @@ const sanitizeNameStyle = (v) => {
   };
 };
 
+const sanitizeSong = (v) => {
+  if (!isObj(v) || !isProfileAudioUrl(v.url)) return null;
+  const title = cleanText(v.title, LIMITS.songTitle).replace(/[<>]/g, '');
+  return title ? { url: v.url, title } : { url: v.url };
+};
 const sanitizeCardStyle = (v) => {
   const s = isObj(v) ? v : {};
+  const theme = isObj(s.theme) ? s.theme : {};
+  const bubble = isObj(s.bubble) ? s.bubble : {};
   return {
     pattern: CARD_PATTERNS.includes(s.pattern) ? s.pattern : 'none',
     avatar: AVATAR_SHAPES.includes(s.avatar) ? s.avatar : 'square',
     layout: CARD_LAYOUTS.includes(s.layout) ? s.layout : 'classic',
     accent: isHex(s.accent) ? s.accent.toLowerCase() : null,
+    theme: { id: CARD_THEMES.includes(theme.id) ? theme.id : 'none', particles: theme.particles === true },
+    bubble: { style: BUBBLE_STYLES.includes(bubble.style) ? bubble.style : 'default', color: isHex(bubble.color) ? bubble.color.toLowerCase() : null },
+    entry: ENTRY_EFFECTS.includes(s.entry) ? s.entry : 'none',
+    song: sanitizeSong(s.song),
+    guestbook: s.guestbook === true,
   };
 };
 
@@ -256,7 +332,18 @@ const sanitizeShowcase = (v) => {
     .map((c) => (typeof c === 'string' ? { id: c } : isObj(c) ? { id: c.id, url: str(c.url), title: cleanText(c.title, 120), expiresAt: str(c.expiresAt) } : null))
     .filter((c) => c && typeof c.id === 'string' && UUID.test(c.id))
     .slice(0, LIMITS.pinnedClips);
-  return { achievements, clips, skin: s.skin === true };
+  const rareBadges = (Array.isArray(s.rareBadges) ? s.rareBadges : [])
+    .map((a) => (typeof a === 'string' ? { id: a } : isObj(a) ? { id: a.id, at: str(a.at) } : null))
+    .filter((a) => a && typeof a.id === 'string' && ACH_ID.test(a.id))
+    .slice(0, LIMITS.rareBadges);
+  return {
+    achievements,
+    clips,
+    skin: s.skin === true,
+    skinPose: SKIN_POSES.includes(s.skinPose) ? s.skinPose : 'stand',
+    skinBg: SKIN_BGS.includes(s.skinBg) ? s.skinBg : 'none',
+    rareBadges,
+  };
 };
 
 const sanitizeBanner = (v, opts) => {
@@ -346,7 +433,9 @@ export function normalizeProfile(raw, opts = {}) {
     mcName: cleanText(pick(r, 'mcName', 'mc_name'), 16),
     mcUuid: cleanText(pick(r, 'mcUuid', 'mc_uuid'), 36),
     bio: cleanText(r.bio, LIMITS.bio) || null,
-    statusText: cleanText(pick(r, 'statusText', 'status_text'), 80),
+    statusText: liveStatusText(cleanText(pick(r, 'statusText', 'status_text'), LIMITS.statusText), pick(r, 'statusUntil', 'status_until')),
+    statusUntil: str(pick(r, 'statusUntil', 'status_until')),
+    song: sanitizeSong(r.song),
     badges: Array.isArray(badges) ? badges.filter((b) => typeof b === 'string').slice(0, 8) : [],
     pronouns: cleanText(r.pronouns, LIMITS.pronouns).replace(/[<>]/g, '') || null,
     theme: sanitizeTheme(r.theme),
@@ -629,13 +718,18 @@ export function canEquip(slot, itemId, ctx) {
   if (!it || it.active === false || it.kind !== SLOT_KIND[slot]) return false;
   return (it.premiumOnly && Boolean(ctx?.premium)) || ownedSet(ctx).has(itemId);
 }
-// Efecto del nombre permitido: los comunes siempre; los premium con premium o con el efecto comprado
+// Efecto del nombre permitido: los comunes siempre; los premium con premium o con el efecto comprado; los del
+// Venus Pass solo con el item
 export function canUseEffect(effect, ctx) {
   if (!EFFECTS.includes(effect)) return false;
-  if (!PREMIUM_EFFECTS.includes(effect) || ctx?.premium) return true;
   const owned = ownedSet(ctx);
-  return itemsList(ctx).some((i) => i.kind === 'name_effect' && i.style === effect && owned.has(i.id));
+  const ownsIt = () => itemsList(ctx).some((i) => i.kind === 'name_effect' && i.style === effect && owned.has(i.id));
+  if (PASS_EFFECTS.includes(effect)) return ownsIt();
+  if (!PREMIUM_EFFECTS.includes(effect) || ctx?.premium) return true;
+  return ownsIt();
 }
+// Particulas del tema de la tarjeta: Premium (o el item extra_particles)
+export const canUseParticles = (ctx) => Boolean(ctx?.premium) || ownedSet(ctx).has('extra_particles');
 
 const onlyKeys = (o, keys) => Object.keys(o).every((k) => keys.includes(k));
 
@@ -709,18 +803,36 @@ export function validateField(field, v, ctx = {}) {
         if (!canEquip(slot, id, ctx)) return `not_owned:${id}`;
       }
       return null;
-    case 'cardStyle':
-      if (!isObj(v) || !onlyKeys(v, ['pattern', 'avatar', 'layout', 'accent'])) return 'bad_cardStyle';
+    case 'cardStyle': {
+      if (!isObj(v) || !onlyKeys(v, ['pattern', 'avatar', 'layout', 'accent', 'theme', 'bubble', 'entry', 'song', 'guestbook'])) return 'bad_cardStyle';
       if ((v.pattern !== undefined && !CARD_PATTERNS.includes(v.pattern)) || (v.avatar !== undefined && !AVATAR_SHAPES.includes(v.avatar))) return 'bad_cardStyle';
       if ((v.layout !== undefined && !CARD_LAYOUTS.includes(v.layout)) || (v.accent !== undefined && !isHex(v.accent))) return 'bad_cardStyle';
+      if (v.theme !== undefined) {
+        if (!isObj(v.theme) || !onlyKeys(v.theme, ['id', 'particles']) || !CARD_THEMES.includes(v.theme.id)) return 'bad_cardStyle';
+        if (v.theme.particles !== undefined && typeof v.theme.particles !== 'boolean') return 'bad_cardStyle';
+        if (v.theme.particles === true && !canUseParticles(ctx)) return 'premium_required:cardStyle';
+      }
+      if (v.bubble !== undefined) {
+        if (!isObj(v.bubble) || !onlyKeys(v.bubble, ['style', 'color']) || !BUBBLE_STYLES.includes(v.bubble.style)) return 'bad_cardStyle';
+        if (v.bubble.color !== undefined && v.bubble.color !== null && !isHex(v.bubble.color)) return 'bad_cardStyle';
+      }
+      if (v.entry !== undefined && !ENTRY_EFFECTS.includes(v.entry)) return 'bad_cardStyle';
+      if (v.guestbook !== undefined && typeof v.guestbook !== 'boolean') return 'bad_cardStyle';
+      if (v.song !== undefined && v.song !== null) {
+        if (!isObj(v.song) || !onlyKeys(v.song, ['url', 'title']) || !isProfileAudioUrl(v.song.url, ctx.userId || null)) return 'bad_cardStyle';
+        if (v.song.title !== undefined && (typeof v.song.title !== 'string' || v.song.title.length > LIMITS.songTitle || CONTROL_OR_TAGS.test(v.song.title))) return 'bad_cardStyle';
+      }
       return null;
+    }
     case 'links':
       if (!Array.isArray(v) || v.length > LIMITS.links) return 'bad_links';
       for (const l of v) if (!isObj(l) || !onlyKeys(l, ['kind', 'url']) || !isProfileLink(l.kind, l.url)) return 'bad_links';
       return null;
     case 'showcase':
-      if (!isObj(v) || !onlyKeys(v, ['achievements', 'clips', 'skin'])) return 'bad_showcase';
+      if (!isObj(v) || !onlyKeys(v, ['achievements', 'clips', 'skin', 'skinPose', 'skinBg', 'rareBadges'])) return 'bad_showcase';
       if (v.skin !== undefined && typeof v.skin !== 'boolean') return 'bad_showcase';
+      if ((v.skinPose !== undefined && !SKIN_POSES.includes(v.skinPose)) || (v.skinBg !== undefined && !SKIN_BGS.includes(v.skinBg))) return 'bad_showcase';
+      if (v.rareBadges !== undefined && (!Array.isArray(v.rareBadges) || v.rareBadges.length > LIMITS.rareBadges || !v.rareBadges.every((a) => typeof a === 'string' && ACH_ID.test(a)))) return 'bad_showcase';
       if (v.achievements !== undefined && (!Array.isArray(v.achievements) || v.achievements.length > LIMITS.pinnedAchievements || !v.achievements.every((a) => typeof a === 'string' && ACH_ID.test(a)))) return 'bad_showcase';
       if (v.clips !== undefined && (!Array.isArray(v.clips) || v.clips.length > LIMITS.pinnedClips || !v.clips.every((c) => typeof c === 'string' && UUID.test(c)))) return 'bad_showcase';
       return null;
@@ -759,7 +871,14 @@ export function customOf(p) {
     equipped: { ...n.equipped },
     cardStyle: { ...n.cardStyle },
     links: n.links.map((l) => ({ ...l })),
-    showcase: { achievements: n.showcase.achievements.map((a) => a.id), clips: n.showcase.clips.map((c) => c.id), skin: n.showcase.skin },
+    showcase: {
+      achievements: n.showcase.achievements.map((a) => a.id),
+      clips: n.showcase.clips.map((c) => c.id),
+      skin: n.showcase.skin,
+      skinPose: n.showcase.skinPose,
+      skinBg: n.showcase.skinBg,
+      rareBadges: n.showcase.rareBadges.map((a) => a.id),
+    },
   });
 }
 
@@ -824,6 +943,20 @@ export function canonical(d) {
     if (AVATAR_SHAPES.includes(c.avatar) && c.avatar !== 'square') cs.avatar = c.avatar;
     if (CARD_LAYOUTS.includes(c.layout) && c.layout !== 'classic') cs.layout = c.layout;
     if (isHex(c.accent)) cs.accent = c.accent.toLowerCase();
+    // 3.1: tema, burbuja, entrada en voz, cancion y libro de visitas (lo que esta en su valor por defecto no se manda)
+    const th = isObj(c.theme) ? c.theme : {};
+    if (CARD_THEMES.includes(th.id) && th.id !== 'none') cs.theme = th.particles === true ? { id: th.id, particles: true } : { id: th.id };
+    const bu = isObj(c.bubble) ? c.bubble : {};
+    if ((BUBBLE_STYLES.includes(bu.style) && bu.style !== 'default') || isHex(bu.color)) {
+      cs.bubble = { style: BUBBLE_STYLES.includes(bu.style) ? bu.style : 'default' };
+      if (isHex(bu.color)) cs.bubble.color = bu.color.toLowerCase();
+    }
+    if (ENTRY_EFFECTS.includes(c.entry) && c.entry !== 'none') cs.entry = c.entry;
+    if (isObj(c.song) && typeof c.song.url === 'string' && c.song.url) {
+      const title = typeof c.song.title === 'string' ? c.song.title.trim() : '';
+      cs.song = title ? { url: c.song.url, title } : { url: c.song.url };
+    }
+    if (c.guestbook === true) cs.guestbook = true;
     out.cardStyle = cs;
   }
   if ('links' in d) {
@@ -835,9 +968,109 @@ export function canonical(d) {
     if (Array.isArray(s.achievements) && s.achievements.length) sc.achievements = s.achievements.slice();
     if (Array.isArray(s.clips) && s.clips.length) sc.clips = s.clips.slice();
     if (s.skin === true) sc.skin = true;
+    if (SKIN_POSES.includes(s.skinPose) && s.skinPose !== 'stand') sc.skinPose = s.skinPose;
+    if (SKIN_BGS.includes(s.skinBg) && s.skinBg !== 'none') sc.skinBg = s.skinBg;
+    if (Array.isArray(s.rareBadges) && s.rareBadges.length) sc.rareBadges = s.rareBadges.slice(0, LIMITS.rareBadges);
     out.showcase = sc;
   }
   return out;
+}
+
+// ---------- Estado con emoji y vencimiento (3.1) ----------
+const EMOJI_RE = /^\p{Extended_Pictographic}(?:️|\p{Emoji_Modifier})?(?:‍\p{Extended_Pictographic}(?:️|\p{Emoji_Modifier})?){0,3}$/u;
+// Un solo emoji (con variante, tono de piel o uniones), como pide profile_set_status
+export function isEmoji(v) {
+  return typeof v === 'string' && v.length > 0 && v.length <= 16 && EMOJI_RE.test(v);
+}
+// "🔥 Jugando bedwars" -> { emoji: '🔥', text: 'Jugando bedwars' } (sin emoji al principio: emoji null)
+export function splitStatus(statusText) {
+  const s = cleanText(statusText, LIMITS.statusText);
+  if (!s) return { emoji: null, text: '' };
+  const first = s.split(/\s+/)[0];
+  if (isEmoji(first)) return { emoji: first, text: s.slice(first.length).trim() };
+  return { emoji: null, text: s };
+}
+// Texto del estado que se guarda (hasta 80 caracteres); null si queda vacio
+export function joinStatus(emoji, text) {
+  const e = isEmoji(emoji) ? emoji : '';
+  const t = cleanText(text, LIMITS.statusBody);
+  const full = [e, t].filter(Boolean).join(' ');
+  return full ? full.slice(0, LIMITS.statusText) : null;
+}
+// Vencimiento elegido -> fecha ISO (null = nunca). 'today' es hasta la medianoche local.
+export function statusUntil(choice, now = Date.now()) {
+  const d = new Date(now);
+  switch (choice) {
+    case '30m':
+      return new Date(now + 30 * 60_000).toISOString();
+    case '1h':
+      return new Date(now + 60 * 60_000).toISOString();
+    case '4h':
+      return new Date(now + 4 * 60 * 60_000).toISOString();
+    case 'today': {
+      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0);
+      return end.toISOString();
+    }
+    default:
+      return null;
+  }
+}
+export function statusExpired(until, now = Date.now()) {
+  if (!until) return false;
+  const t = typeof until === 'number' ? until : Date.parse(until);
+  return Number.isFinite(t) && t <= now;
+}
+// Lo que se muestra: vacio si el estado vencio
+export function liveStatusText(text, until, now = Date.now()) {
+  return statusExpired(until, now) ? '' : String(text || '');
+}
+
+// ---------- Regalos (3.1): las mismas reglas que gift_send ----------
+// { kind: 'points' | 'item', value, balance, sentToday, item?: { id, price, premiumOnly, active }, ownedByTarget?: Set|array }
+// Devuelve null o el codigo de error del servidor.
+export function validateGift({ kind, value, balance = 0, sentToday = 0, item = null, ownedByTarget = [] } = {}) {
+  if (kind === 'points') {
+    const n = Number(value);
+    if (!Number.isInteger(n) || n < LIMITS.giftMin || n > LIMITS.giftMax) return 'bad_amount';
+    if (sentToday + n > LIMITS.giftDaily) return 'daily_limit';
+    if (balance < n) return 'not_enough_points';
+    return null;
+  }
+  if (kind === 'item') {
+    if (!item || item.active === false || item.id !== value) return 'bad_item';
+    if (item.premiumOnly) return 'premium_item';
+    const owned = ownedByTarget instanceof Set ? ownedByTarget : new Set(ownedByTarget || []);
+    if (owned.has(item.id)) return 'owned';
+    if (balance < (Number(item.price) || 0)) return 'not_enough_points';
+    return null;
+  }
+  return 'bad_kind';
+}
+// Puntos regalados hoy segun el historial de points_me (gift_out: delta negativo)
+export function giftSentToday(history, now = Date.now()) {
+  const since = now - 86_400_000;
+  return (Array.isArray(history) ? history : [])
+    .filter((r) => r && r.reason === 'gift_out' && Number.isFinite(Date.parse(r.at)) && Date.parse(r.at) > since)
+    .reduce((acc, r) => acc + Math.max(0, -Number(r.delta) || 0), 0);
+}
+// Quien mando un gift_in: el ref es "<uuid>:<marca>"
+export function giftSenderOf(ref) {
+  const m = /^([0-9a-fA-F-]{36}):/.exec(String(ref || ''));
+  return m && UUID.test(m[1]) ? m[1].toLowerCase() : null;
+}
+
+// ---------- Burbujas de chat (3.1): texto claro u oscuro segun el fondo ----------
+// Si ningun texto llega a 4.5:1 sobre ese color (tonos medios), el fondo se oscurece o se aclara un poco hasta que se lea
+export function bubbleColors(hex) {
+  if (!isHex(hex)) return null;
+  const base = hex.toLowerCase();
+  const dark = '#1b130e';
+  const light = '#ffffff';
+  const fg = contrastRatio(base, dark) >= contrastRatio(base, light) ? dark : light;
+  const toward = fg === light ? '#000000' : '#ffffff';
+  let bg = base;
+  for (let i = 1; i <= 20 && contrastRatio(bg, fg) < 4.5; i++) bg = mixHex(base, toward, i / 20);
+  return { bg, fg, border: mixHex(bg, fg, 0.25), adjusted: bg !== base };
 }
 
 // Patch con solo lo que cambio entre lo guardado (base) y el formulario (draft), en forma canonica.

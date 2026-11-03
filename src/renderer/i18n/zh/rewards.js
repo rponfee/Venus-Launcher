@@ -261,4 +261,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "任务已完成",
   hist_missionBonus: "任务额外奖励",
+  hist_gift_in: "来自好友的礼物",
+  hist_gift_out: "送给好友的礼物",
+  item_frame_pulse: "脉动头像框",
+  item_frame_orbit: "轨道头像框",
+  item_frame_halloween: "万圣节头像框",
+  item_frame_xmas: "圣诞头像框",
 };

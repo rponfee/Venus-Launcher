@@ -6,10 +6,11 @@
 //   { kind: 'music', state: { title, artist, album, art, playing, position, duration, positionAt?, source, appName } | null }
 //     (position y duration en ms, positionAt en epoch ms)
 //   { kind: 'capture', type, path?, thumb?, duration? }
+//   { kind: 'perf', ram? (MB), cpu? (0 a 100), ping? (ms), session? (segundos) }   (cada medida puede ser null)
 // validate(evento) devuelve una copia limpia (textos recortados y sin caracteres de control, numeros dentro de
 // rango, imagenes solo https, data:image o assets/ del launcher) o lanza un Error con code 'badEvent' y field.
 
-const KINDS = ['alert', 'message', 'voice', 'music', 'capture'];
+const KINDS = ['alert', 'message', 'voice', 'music', 'capture', 'perf'];
 const ALERT_ICONS = ['info', 'friend', 'server', 'points', 'achievement', 'capture', 'music', 'party'];
 const CAPTURE_TYPES = ['screenshot', 'clip', 'recording-start', 'recording-stop', 'replay-saved'];
 const MAX_MEMBERS = 16;
@@ -154,6 +155,22 @@ function capture(ev) {
   return { kind: 'capture', type: ev.type, path: p || null, thumb: image(ev.thumb), duration: ev.duration === undefined ? null : seconds(ev.duration) };
 }
 
+// Rendimiento del juego (widget perf, overlay/perf.js): numeros acotados, lo que no se sabe queda en null.
+function perf(ev) {
+  const measure = (v, max, decimals = 0) => {
+    if (v === null || v === undefined) return null;
+    const n = num(v, 0, max);
+    return n === null ? null : Number(n.toFixed(decimals));
+  };
+  return {
+    kind: 'perf',
+    ram: measure(ev.ram, 1e6),
+    cpu: measure(ev.cpu, 100, 1),
+    ping: measure(ev.ping, 60000),
+    session: measure(ev.session, 1e7),
+  };
+}
+
 function validate(ev) {
   if (!ev || typeof ev !== 'object' || Array.isArray(ev)) throw bad('event');
   if (!KINDS.includes(ev.kind)) throw bad('kind');
@@ -161,6 +178,7 @@ function validate(ev) {
   if (ev.kind === 'message') return message(ev);
   if (ev.kind === 'voice') return voice(ev);
   if (ev.kind === 'music') return music(ev);
+  if (ev.kind === 'perf') return perf(ev);
   return capture(ev);
 }
 

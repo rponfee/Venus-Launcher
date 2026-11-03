@@ -148,4 +148,17 @@ export default {
   notFriendsAnymore: 'Ya no sos amigo de {name}: no pueden escribirse.',
   editFailed: 'No se pudo editar el mensaje',
   sendFailed: 'No se pudo enviar el mensaje',
+  // GIF de KLIPY (3.1)
+  gif: 'GIF',
+  gifPicker: 'Buscar un GIF',
+  gifUnavailable: 'Los GIF no están disponibles por ahora',
+  gifUnavailableText: 'Probá más tarde.',
+  gifEmpty: 'No hay resultados.',
+  gifError: 'KLIPY no respondió. Probá de nuevo en un rato.',
+  gifNetwork: 'No se pudo conectar con KLIPY. Revisá tu conexión.',
+  gifLoading: 'Buscando GIF...',
+  gifMore: 'Cargar más',
+  gifAlt: 'GIF',
+  gifPreview: 'GIF',
+  gifSendTitle: 'Mandar este GIF',
 };

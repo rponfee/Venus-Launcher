@@ -16,8 +16,9 @@ import { createLimiter, createChangeGate, voiceSnapshot, accelFromKey, accelPart
 
 const NS = 'overlay';
 const STAGE = { width: 960, height: 540 }; // tamano virtual del juego en la vista previa
-const WIDGET_ICON = { voice: 'mic', messages: 'message', alerts: 'bell', captures: 'camera', music: 'music' };
+const WIDGET_ICON = { voice: 'mic', messages: 'message', alerts: 'bell', captures: 'camera', music: 'music', perf: 'activity' };
 const DURATIONS = [3, 4, 5, 6, 8, 10, 12, 15, 20, 30];
+const PERF_METRICS = ['ram', 'cpu', 'ping', 'session']; // widget de rendimiento (3.1), overlay/config.js
 let readyPromise = null;
 let panelSeq = 0;
 
@@ -183,6 +184,7 @@ function sampleEvents() {
     },
     { kind: 'capture', type: 'screenshot' },
     { kind: 'music', state: { title: t('overlay.sampleSong'), artist: t('overlay.sampleArtist'), album: null, art: null, playing: true, position: 61000, duration: 215000, source: 'test', appName: 'Spotify' } },
+    { kind: 'perf', ram: 2048, cpu: 23, ping: 48, session: 2694 },
   ];
 }
 
@@ -605,11 +607,20 @@ function widgetBlock(id, { uid, cfg, save, preview }) {
       toggle(t(`overlay.${key}`), t(`overlay.${key}Sub`), () => w().filter[g], (v) => set({ filter: { [g]: v } }));
     }
   }
+  // Rendimiento (3.1): que medidas mostrar. Sin FPS (no se pueden medir desde afuera del juego).
+  if (id === 'perf') {
+    for (const m of PERF_METRICS) {
+      const key = `perfShow${m.charAt(0).toUpperCase()}${m.slice(1)}`;
+      toggle(t(`overlay.${key}`), t(`overlay.${key}Sub`), () => w().show?.[m] !== false, (v) => set({ show: { [m]: v } }));
+    }
+  }
+  const togglesLabel = id === 'alerts' ? t('overlay.alertsFilter') : id === 'perf' ? t('overlay.perfShow') : null;
 
   mount(
     body,
     h('div', { class: 'ovp-w-grid' }, h('div', { class: 'ovp-field' }, h('span', { class: 'ovp-label' }, t('overlay.position')), h('div', { class: 'ovp-anchor-row' }, grid, freeNote)), h('div', { class: 'ovp-w-controls' }, scale.el, opacity.el, theme.el, ...extras.map((x) => x.el))),
-    toggles.length ? h('div', { class: 'ovp-toggles' }, id === 'alerts' ? h('div', { class: 'ovp-label' }, t('overlay.alertsFilter')) : null, toggles.map((x) => x.el)) : null,
+    toggles.length ? h('div', { class: 'ovp-toggles' }, togglesLabel ? h('div', { class: 'ovp-label' }, togglesLabel) : null, toggles.map((x) => x.el)) : null,
+    id === 'perf' ? h('p', { class: 'ovp-tip', title: t('overlay.perfNoFps') }, icon('info'), h('span', {}, t('overlay.perfNoFps'))) : null,
   );
 
   function sync() {

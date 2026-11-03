@@ -159,7 +159,56 @@ export function instanceLoaderKind(inst) {
 }
 
 export function matchesInstance(inst, query) {
-  return matchesQuery(`${inst.name} ${inst.mcVersion} ${instanceLoaderKind(inst)} ${inst.loader} ${inst.group || ''}`, query);
+  return matchesQuery(`${inst.name} ${inst.mcVersion} ${instanceLoaderKind(inst)} ${inst.loader} ${inst.group || ''} ${tagsOf(inst).join(' ')}`, query);
+}
+
+// ---------- Metadatos de presentacion (favoritos, etiquetas, tareas) ----------
+
+export function tagsOf(inst) {
+  return Array.isArray(inst?.tags) ? inst.tags.filter((x) => typeof x === 'string' && x) : [];
+}
+
+export function isFavorite(inst) {
+  return inst?.favorite === true;
+}
+
+// Tareas de las notas que faltan hacer (contador de la tarjeta y de la pestania Notas).
+export function pendingTaskCount(inst) {
+  const tasks = inst?.notes?.tasks;
+  return Array.isArray(tasks) ? tasks.filter((x) => x && x.done !== true).length : 0;
+}
+
+// Etiquetas de todas las instancias con su cantidad (sin distinguir mayusculas; se muestra la primera forma vista),
+// las mas usadas primero y, a igual uso, por nombre.
+export function collectTags(list, locale) {
+  const map = new Map();
+  for (const inst of list || []) {
+    for (const tag of tagsOf(inst)) {
+      const key = tag.toLowerCase();
+      const cur = map.get(key);
+      if (cur) cur.count += 1;
+      else map.set(key, { tag, count: 1 });
+    }
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, locale, { sensitivity: 'base' }));
+}
+
+export function hasTag(inst, tag) {
+  const key = String(tag || '').toLowerCase();
+  return Boolean(key) && tagsOf(inst).some((x) => x.toLowerCase() === key);
+}
+
+// Filtro de Mis instancias: solo favoritas y/o con una etiqueta.
+export function filterByMeta(list, { favorites = false, tag = null } = {}) {
+  return (list || []).filter((inst) => (!favorites || isFavorite(inst)) && (!tag || hasTag(inst, tag)));
+}
+
+// Las favoritas van primero, conservando el orden que ya traia la lista.
+export function favoritesFirst(list) {
+  const fav = [];
+  const rest = [];
+  for (const inst of list || []) (isFavorite(inst) ? fav : rest).push(inst);
+  return [...fav, ...rest];
 }
 
 // Compara ids de version: mas nueva primero segun la fecha del manifest y, si no se conoce, orden natural.

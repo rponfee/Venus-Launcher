@@ -94,6 +94,10 @@ export async function openDemoCard(kind = 'premium') {
 export function demoUnlocked() {
   return ['playtime_1', 'playtime_5', 'playtime_10h', 'sessions_5', 'diamond_1', 'diamond_10', 'dragon_1', 'first_friend', 'night_owl', 'mobs_100', 'blocks_1000'];
 }
+// Rareza de ejemplo (porcentaje de jugadores por logro) para las insignias raras de la 3.1
+export function demoRarity() {
+  return { playtime_1: 92, playtime_5: 71, playtime_10h: 38, sessions_5: 80, diamond_1: 55, diamond_10: 12, dragon_1: 3.5, first_friend: 44, night_owl: 0.8, mobs_100: 24, blocks_1000: 60 };
+}
 export function demoClips() {
   return [{ id: '123e4567-e89b-12d3-a456-426614174000', url: 'https://example.invalid/clip.webm', title: 'Dragón en un golpe', expiresAt: null }];
 }

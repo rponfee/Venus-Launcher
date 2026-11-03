@@ -256,4 +256,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "Görev tamamlandı",
   hist_missionBonus: "Görev bonusu",
+  hist_gift_in: "Bir arkadaştan hediye",
+  hist_gift_out: "Bir arkadaşa hediye",
+  item_frame_pulse: "Nabız çerçevesi",
+  item_frame_orbit: "Yörünge çerçevesi",
+  item_frame_halloween: "Cadılar Bayramı çerçevesi",
+  item_frame_xmas: "Noel çerçevesi",
 };

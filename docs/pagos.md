@@ -83,6 +83,10 @@ URLs (las muestra el panel): `https://<proyecto>.supabase.co/functions/v1/paymen
 - `node --test src/main/modules/billing/test/client.test.js`: catálogo, pago y seguimiento de la orden en el launcher.
 - Modo de capturas sin servidor ni cobros: `VENUS_DEVSHOT=<carpeta> VENUS_BILLING_FAKE=1 VENUS_ADMIN_FAKE=1`.
 
+## Venus Pass
+
+Desde la 3.1 el mismo flujo vende el Venus Pass (`plan` `pass_go`, `pass_pro` o `pass_max`): la orden lleva `product = 'pass'`, `season_id` y `pass_tier`, el precio sale de `pass_tiers` (la diferencia si ya se tenía una edición menor) y la acreditación entrega el pase en vez de un período de IA. Ver [venus-pass.md](venus-pass.md).
+
 ## Pagos de prueba
 
 Con la migración `0025`, un pago de prueba (sandbox) no da saldo real: la orden queda `failed` con `provider_status = 'test_payment'` y se registra `payments.testRejected`. Los administradores sí pueden probar así el flujo completo.

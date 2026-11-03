@@ -366,7 +366,18 @@ test('3.0: redes solo de sitios conocidos', () => {
 test('3.0: estilo de la tarjeta, vitrina y rango', () => {
   assert.equal(M.validateField('cardStyle', { pattern: 'hex', avatar: 'round', layout: 'center', accent: '#ff0000' }, {}), null);
   assert.equal(M.validateField('cardStyle', { pattern: 'url(evil)' }, {}), 'bad_cardStyle');
-  assert.deepEqual(M.normalizeProfile({ card_style: { pattern: 'x', accent: 'rojo' } }).cardStyle, { pattern: 'none', avatar: 'square', layout: 'classic', accent: null });
+  // Desde la 3.1 el estilo normalizado trae ademas tema, burbuja, entrada, cancion y libro (en sus valores por defecto)
+  assert.deepEqual(M.normalizeProfile({ card_style: { pattern: 'x', accent: 'rojo' } }).cardStyle, {
+    pattern: 'none',
+    avatar: 'square',
+    layout: 'classic',
+    accent: null,
+    theme: { id: 'none', particles: false },
+    bubble: { style: 'default', color: null },
+    entry: 'none',
+    song: null,
+    guestbook: false,
+  });
   assert.equal(M.validateField('showcase', { achievements: ['diamond_1'], skin: true }, {}), null);
   assert.equal(M.validateField('showcase', { achievements: Array(7).fill('diamond_1') }, {}), 'bad_showcase');
   assert.equal(M.validateField('showcase', { clips: ['no-es-uuid'] }, {}), 'bad_showcase');
@@ -374,6 +385,7 @@ test('3.0: estilo de la tarjeta, vitrina y rango', () => {
   const n = M.normalizeProfile(pub);
   assert.equal(n.showcase.skin, true);
   assert.equal(n.showcase.clips[0].url, 'https://x/y.webm');
+  // customOf es canonico: la pose, el fondo y las insignias raras en su valor por defecto no aparecen
   assert.deepEqual(M.customOf(n).showcase, { achievements: ['diamond_1'], clips: ['123e4567-e89b-12d3-a456-426614174000'], skin: true });
   assert.equal(M.normalizeProfile({ rank: 'owner' }).rank, 'owner');
   assert.equal(M.normalizeProfile({ rank: 'dios' }).rank, null);

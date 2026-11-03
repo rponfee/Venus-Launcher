@@ -1,15 +1,17 @@
 'use strict';
 // Ajustes del overlay (settings.overlay) con sus valores por defecto. Sin Electron: lo usan el modulo, la
 // pagina (le llega ya normalizado) y las pruebas.
-//   overlay: { enabled, shortcut, widgets: { voice, messages, alerts, captures, music } }
+//   overlay: { enabled, shortcut, widgets: { voice, messages, alerts, captures, music, perf } }
 // Cada widget: { enabled, anchor ('tl'...'br' de la grilla de 3x3 o 'free'), x, y (posicion libre, fracciones
 // de 0 a 1 del espacio que queda dentro del juego), scale (0.6 a 1.6), opacity (0.3 a 1), theme ('dark',
 // 'light' o 'accent') } y lo propio de cada uno (ver DEFAULTS).
 
-const WIDGETS = ['voice', 'messages', 'alerts', 'captures', 'music'];
+const WIDGETS = ['voice', 'messages', 'alerts', 'captures', 'music', 'perf'];
 const ANCHORS = ['tl', 'tc', 'tr', 'ml', 'mc', 'mr', 'bl', 'bc', 'br'];
 const THEMES = ['dark', 'light', 'accent'];
 const ALERT_GROUPS = ['launcher', 'friends', 'servers', 'rewards'];
+// Widget de rendimiento (3.1): que medidas muestra. No hay FPS: no se pueden medir desde afuera del juego.
+const PERF_METRICS = ['ram', 'cpu', 'ping', 'session'];
 const DEFAULT_SHORTCUT = 'Alt+Shift+O';
 
 const base = (anchor, x, y) => ({ enabled: true, anchor, x, y, scale: 1, opacity: 0.94, theme: 'dark' });
@@ -27,6 +29,8 @@ const DEFAULTS = Object.freeze({
     captures: { ...base('br', 1, 1), duration: 5 },
     // show: 'always' (mientras suena) o 'change' (unos segundos al cambiar de cancion)
     music: { ...base('br', 1, 1), show: 'always' },
+    // show: que medidas van en el widget (RAM y CPU del juego, ping del servidor y tiempo de sesion)
+    perf: { ...base('bl', 0, 1), show: { ram: true, cpu: true, ping: true, session: true } },
   },
 });
 
@@ -72,6 +76,10 @@ function normalizeWidget(id, raw) {
     const f = r.filter && typeof r.filter === 'object' ? r.filter : {};
     out.filter = Object.fromEntries(ALERT_GROUPS.map((g) => [g, bool(f[g], d.filter[g])]));
   }
+  if (id === 'perf') {
+    const s = r.show && typeof r.show === 'object' ? r.show : {};
+    out.show = Object.fromEntries(PERF_METRICS.map((m) => [m, bool(s[m], d.show[m])]));
+  }
   return out;
 }
 
@@ -113,4 +121,4 @@ function resetPatch() {
   }));
 }
 
-module.exports = { WIDGETS, ANCHORS, THEMES, ALERT_GROUPS, DEFAULTS, DEFAULT_SHORTCUT, normalize, normalizeWidget, positionPatch, resetPatch, validAccelerator };
+module.exports = { WIDGETS, ANCHORS, THEMES, ALERT_GROUPS, PERF_METRICS, DEFAULTS, DEFAULT_SHORTCUT, normalize, normalizeWidget, positionPatch, resetPatch, validAccelerator };

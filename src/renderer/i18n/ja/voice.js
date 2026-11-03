@@ -386,4 +386,6 @@ export default {
   connLoss: "{status} · 接続が不安定: 音声の{loss}%が失われています",
   netBadBadge: "接続が不安定",
   netBadHint: "ルームにいる誰かとの音声が途切れたり、再接続したりしています。Venusが品質を下げて、自動で再試行します。",
+  entryJoined: "参加しました",
+  entryJoinedAria: "{name}がルームに参加しました",
 };

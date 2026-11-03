@@ -23,7 +23,7 @@ import {
   skeleton,
   copyText,
   avatarImg,
-  switchEl,
+  debounce,
   registerIcons,
   LOADERS,
 } from '../ui.js';
@@ -50,10 +50,18 @@ import {
   sortNews,
   gameModeKey,
 } from './home/logic.js';
+// Inicio armable (settings.home.layout): orden, ocultos y bloques a lo ancho (logica pura en ./home/layout.js)
+import { BLOCKS, ALWAYS_WIDE, normalizeLayout, buildRows, isWide, moveBlock, reorder, toggleIn, sameLayout } from './home/layout.js';
 
 registerIcons({
   hmBulb: '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
   hmSignal: '<path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/>',
+  // Asas del modo "Organizar"
+  hmGrip: '<circle cx="9" cy="6" r="1" fill="currentColor"/><circle cx="15" cy="6" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="18" r="1" fill="currentColor"/><circle cx="15" cy="18" r="1" fill="currentColor"/>',
+  hmUp: '<path d="m18 15-6-6-6 6"/>',
+  hmDown: '<path d="m6 9 6 6 6-6"/>',
+  hmWide: '<path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M8 12h8"/>',
+  hmNarrow: '<path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>',
 });
 
 const LIVE_MS = 45000; // ping de servidores (tu servidor y destacados)
@@ -62,10 +70,8 @@ const TIP_MS = 12000; // cada cuanto rota un consejo (lo marca la barrita del pr
 const PING_TTL = 40000;
 const NEWS_TTL = 10 * 60000;
 
-const MAIN_BLOCKS = ['worlds', 'featured', 'screenshots', 'news'];
-const RAIL_BLOCKS = ['server', 'friends', 'stats', 'tips'];
-const BLOCKS = ['quick', ...MAIN_BLOCKS, ...RAIL_BLOCKS];
-const CUSTOMIZABLE = ['quick', 'worlds', 'server', 'friends', 'featured', 'stats', 'screenshots', 'news', 'tips'];
+// Los bloques (BLOCKS), sus columnas y el orden por defecto viven en ./home/layout.js
+const SAVE_MS = 300; // retraso para guardar el layout mientras se organiza
 
 // Color de cada acceso: siempre tokens (el violeta del buscador sale de mezclar --info y --bad, asi sigue al tema)
 const QUICK = [
@@ -262,33 +268,195 @@ export default {
     let stale = false;
 
     // ---------- Estructura ----------
-    const els = Object.fromEntries(BLOCKS.map((id) => [id, h('section', { class: ['hm-block', `hm-b-${id}`], hidden: true })]));
+    // Cada bloque es una seccion (wraps[id]) con su cuerpo adentro (els[id], donde dibuja cada parte). Los
+    // bloques se reparten en filas segun settings.home.layout (ver ./home/layout.js): un bloque "a lo ancho"
+    // ocupa una fila; entre esas filas, los demas van en dos columnas. En el modo "Organizar" cada seccion
+    // suma una barra con las asas y su cuerpo queda inerte.
+    const els = Object.fromEntries(BLOCKS.map((id) => [id, h('div', { class: 'hm-bbody' })]));
+    const wraps = Object.fromEntries(BLOCKS.map((id) => [id, h('section', { class: ['hm-block', `hm-b-${id}`], dataset: { block: id }, hidden: true }, els[id])]));
     const heroPlanet = h('img', { class: 'hero-planet hm-planet', src: 'assets/logo.png', alt: '' });
     const heroContent = h('div', { class: 'hero-content hm-hero-content' });
     const heroEl = h('section', { class: 'hero hm-hero' }, heroPlanet, heroContent);
-    const mainCol = h('div', { class: 'hm-main' }, MAIN_BLOCKS.map((id) => els[id]));
-    const railCol = h('aside', { class: 'hm-rail', 'aria-label': t('home.railLabel') }, RAIL_BLOCKS.map((id) => els[id]));
-    const cols = h('div', { class: 'hm-cols' }, mainCol, railCol);
-    const foot = h('div', { class: 'hm-foot' }, h('button', { class: 'btn ghost sm', onclick: () => openCustomize() }, icon('sliders'), t('home.customize')));
-    mount(root, h('div', { class: 'hm' }, heroEl, els.quick, cols, foot));
+    const headEl = h('div', { class: 'hm-head' });
+    const layoutEl = h('div', { class: 'hm-layout' });
+    const foot = h('div', { class: 'hm-foot' }, h('button', { class: 'btn ghost sm', onclick: () => setEditing(true) }, icon('sliders'), t('home.customize')));
+    const hm = h('div', { class: 'hm' }, headEl, heroEl, layoutEl, foot);
+    mount(root, hm);
 
     // Bloques disponibles (con datos) y ocultos por el usuario. "Continuar" y "Tu actividad" arrancan con un
     // esqueleto (asi el resto no salta cuando llegan los datos) y se ocultan solos si no hay nada que mostrar.
     const avail = { quick: true, worlds: store.instances.length > 0, featured: false, screenshots: false, news: true, server: false, friends: true, stats: true, tips: true };
-    const hiddenByUser = () => new Set(Array.isArray(store.settings?.home?.hidden) ? store.settings.home.hidden : []);
+    let layout = normalizeLayout(store.settings?.home);
+    let editing = false;
+    let savingLayout = false; // hay un guardado pendiente o en curso: no se pisa el layout con los ajustes viejos
+    let rowsSig = '';
+    const shows = (id) => editing || (avail[id] && !layout.hidden.includes(id));
     function applyVisibility() {
-      const hidden = hiddenByUser();
-      for (const id of BLOCKS) els[id].hidden = !avail[id] || hidden.has(id);
-      const anyMain = MAIN_BLOCKS.some((id) => !els[id].hidden);
-      const anyRail = RAIL_BLOCKS.some((id) => !els[id].hidden);
-      cols.hidden = !anyMain && !anyRail;
-      cols.classList.toggle('no-main', !anyMain);
-      cols.classList.toggle('no-rail', !anyRail);
+      // Las filas se vuelven a armar solo si cambia su forma (los bloques se mueven de lugar, no se redibujan)
+      const rows = buildRows(layout, shows);
+      const sig = JSON.stringify(rows);
+      if (sig !== rowsSig) {
+        rowsSig = sig;
+        mount(
+          layoutEl,
+          rows.map((row) =>
+            row.wide
+              ? wraps[row.wide]
+              : h(
+                  'div',
+                  { class: ['hm-cols', !row.main.length && 'no-main', !row.rail.length && 'no-rail'] },
+                  h('div', { class: 'hm-main' }, row.main.map((id) => wraps[id])),
+                  h('aside', { class: 'hm-rail', 'aria-label': t('home.railLabel') }, row.rail.map((id) => wraps[id])),
+                ),
+          ),
+        );
+      }
+      for (const id of BLOCKS) {
+        const w = wraps[id];
+        w.hidden = !shows(id);
+        w.classList.toggle('is-wide', isWide(layout, id));
+        w.classList.toggle('is-hidden', editing && layout.hidden.includes(id));
+        w.classList.toggle('is-empty', editing && !avail[id]);
+      }
+      layoutEl.hidden = rows.length === 0;
+      if (editing) paintEditBars();
     }
     function setAvail(id, value) {
       avail[id] = value;
       applyVisibility();
     }
+
+    // ---------- Organizar (modo edicion del layout) ----------
+    // El heroe (Jugar) no se mueve ni se oculta. Fuera del modo edicion no hay asas ni bordes: nada cambia.
+    let dragId = null;
+    const saveLayout = debounce(() => {
+      store
+        .setSettings({ home: { ...(store.settings?.home || {}), layout } })
+        .catch((err) => fail(t('home.customizeSaveFailed'), err))
+        .finally(() => {
+          savingLayout = false;
+        });
+    }, SAVE_MS);
+    function setLayout(next) {
+      layout = next;
+      savingLayout = true;
+      saveLayout();
+      applyVisibility();
+    }
+    const clearDropMarks = () => layoutEl.querySelectorAll('.drop-before, .drop-after, .is-dragging').forEach((el) => el.classList.remove('drop-before', 'drop-after', 'is-dragging'));
+    function setEditing(on) {
+      editing = Boolean(on);
+      hm.classList.toggle('is-editing', editing);
+      for (const id of BLOCKS) {
+        els[id].inert = editing;
+        if (!editing) {
+          wraps[id].querySelector(':scope > .hm-ed')?.remove();
+          wraps[id].draggable = false;
+        }
+      }
+      dragId = null;
+      clearDropMarks();
+      drawHead();
+      applyVisibility();
+      if (editing) {
+        root.scrollTo({ top: 0, behavior: 'smooth' });
+        headEl.querySelector('button')?.focus({ preventScroll: true });
+      } else headEl.querySelector('button')?.focus({ preventScroll: true });
+    }
+    function drawHead() {
+      mount(
+        headEl,
+        editing
+          ? [
+              h('p', { class: 'hm-head-hint' }, t('home.organizeHint')),
+              h(
+                'div',
+                { class: 'hm-head-actions' },
+                h('button', { class: 'btn ghost sm', onclick: () => setLayout(normalizeLayout({})) }, icon('undo'), t('home.organizeReset')),
+                h('button', { class: 'btn tonal sm', onclick: () => setEditing(false) }, icon('check'), t('home.organizeDone')),
+              ),
+            ]
+          : h('button', { class: 'btn ghost sm hm-organize', title: t('home.organizeTitle'), onclick: () => setEditing(true) }, icon('sliders'), t('home.organize')),
+      );
+    }
+    function editBar(id) {
+      const name = t(`home.block_${id}`);
+      const hidden = layout.hidden.includes(id);
+      const wide = isWide(layout, id);
+      const same = (order) => order.join('|') === layout.order.join('|');
+      const btn = (iconName, title, onclick, { on = false, disabled = false, fk } = {}) =>
+        h('button', { class: ['icon-btn', 'sm', on && 'on'], type: 'button', title, 'aria-label': title, 'aria-pressed': String(on), disabled, dataset: { fk: `${fk}-${id}` }, onclick }, icon(iconName));
+      return h(
+        'div',
+        { class: 'hm-ed', role: 'toolbar', 'aria-label': name },
+        h('span', { class: 'hm-ed-grip', 'aria-hidden': 'true' }, icon('hmGrip')),
+        h('span', { class: 'hm-ed-name' }, h('span', { class: 'ellipsis' }, name), hidden ? h('span', { class: 'hm-ed-tag' }, t('home.blockHiddenTag')) : null, !avail[id] ? h('span', { class: 'hm-ed-tag' }, t('home.blockEmptyTag')) : null),
+        h(
+          'span',
+          { class: 'hm-ed-acts' },
+          btn('hmUp', t('home.blockUp', { block: name }), () => setLayout({ ...layout, order: moveBlock(layout, id, -1) }), { disabled: same(moveBlock(layout, id, -1)), fk: 'up' }),
+          btn('hmDown', t('home.blockDown', { block: name }), () => setLayout({ ...layout, order: moveBlock(layout, id, 1) }), { disabled: same(moveBlock(layout, id, 1)), fk: 'down' }),
+          btn(wide ? 'hmNarrow' : 'hmWide', t(wide ? 'home.blockNarrow' : 'home.blockWide', { block: name }), () => setLayout({ ...layout, wide: toggleIn(layout.wide, id) }), { on: wide, disabled: ALWAYS_WIDE.includes(id), fk: 'wide' }),
+          btn(hidden ? 'eyeOff' : 'eye', t(hidden ? 'home.blockShow' : 'home.blockHide', { block: name }), () => setLayout({ ...layout, hidden: toggleIn(layout.hidden, id) }), { on: hidden, fk: 'eye' }),
+        ),
+      );
+    }
+    // Vuelve a dibujar las barras de todos los bloques (mantiene el foco del teclado por data-fk)
+    function paintEditBars() {
+      const active = document.activeElement;
+      const key = active && layoutEl.contains(active) ? active.dataset?.fk : null;
+      for (const id of BLOCKS) {
+        const w = wraps[id];
+        w.querySelector(':scope > .hm-ed')?.remove();
+        w.prepend(editBar(id));
+        w.draggable = true;
+      }
+      if (key) layoutEl.querySelector(`[data-fk="${CSS.escape(key)}"]`)?.focus({ preventScroll: true });
+    }
+    // Arrastrar y soltar (solo en el modo edicion; el cuerpo de cada bloque esta inerte, asi que el arrastre
+    // sale de la barra o del borde de la seccion)
+    for (const id of BLOCKS) {
+      const w = wraps[id];
+      w.addEventListener('dragstart', (e) => {
+        if (!editing) return;
+        dragId = id;
+        w.classList.add('is-dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          try {
+            e.dataTransfer.setData('text/plain', id);
+          } catch {
+            /* sin datos: alcanza con dragId */
+          }
+        }
+      });
+      w.addEventListener('dragend', () => {
+        dragId = null;
+        clearDropMarks();
+      });
+      w.addEventListener('dragover', (e) => {
+        if (!editing || !dragId || dragId === id) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        const r = w.getBoundingClientRect();
+        const before = e.clientY < r.top + r.height / 2;
+        w.classList.toggle('drop-before', before);
+        w.classList.toggle('drop-after', !before);
+      });
+      w.addEventListener('dragleave', (e) => {
+        if (!(e.relatedTarget instanceof Node) || !w.contains(e.relatedTarget)) w.classList.remove('drop-before', 'drop-after');
+      });
+      w.addEventListener('drop', (e) => {
+        if (!editing || !dragId || dragId === id) return;
+        e.preventDefault();
+        const before = w.classList.contains('drop-before');
+        const src = dragId;
+        dragId = null;
+        clearDropMarks();
+        setLayout({ ...layout, order: reorder(layout.order, src, id, before) });
+      });
+    }
+    drawHead();
 
     // ---------- Acciones compartidas ----------
 
@@ -1292,7 +1460,7 @@ export default {
       };
       let action = null;
       if (tip.route) action = h('button', { class: 'btn sm hm-tip-action', dataset: { fk: 'tip-action' }, onclick: () => navigate(tip.route) }, t(`home.tip_${tip.id}_action`), icon('arrowRight'));
-      else if (tip.customize) action = h('button', { class: 'btn sm hm-tip-action', dataset: { fk: 'tip-action' }, onclick: () => openCustomize() }, icon('sliders'), t(`home.tip_${tip.id}_action`));
+      else if (tip.customize) action = h('button', { class: 'btn sm hm-tip-action', dataset: { fk: 'tip-action' }, onclick: () => setEditing(true) }, icon('sliders'), t(`home.tip_${tip.id}_action`));
       // La barrita marca el tiempo hasta el proximo consejo; se pausa con el mouse o el foco encima
       const progress = h('div', { class: 'hm-tip-progress', style: { animationDuration: `${TIP_MS}ms` }, 'aria-hidden': 'true' });
       progress.addEventListener('animationend', () => alive && go(1));
@@ -1660,60 +1828,6 @@ export default {
       if (alive) drawNews();
     }
 
-    // ---------- Personalizar inicio ----------
-
-    function openCustomize() {
-      const hidden = hiddenByUser();
-      const save = async () => {
-        try {
-          await store.setSettings({ home: { ...(store.settings?.home || {}), hidden: [...hidden] } });
-        } catch (err) {
-          fail(t('home.customizeSaveFailed'), err);
-        }
-      };
-      const rows = h('div', { class: 'hm-cz' });
-      const drawRows = () =>
-        mount(
-          rows,
-          CUSTOMIZABLE.map((id) =>
-            h(
-              'div',
-              { class: 'toggle-row' },
-              h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, t(`home.block_${id}`))),
-              switchEl(
-                !hidden.has(id),
-                (on) => {
-                  if (on) hidden.delete(id);
-                  else hidden.add(id);
-                  save();
-                },
-                t(`home.block_${id}`),
-              ),
-            ),
-          ),
-        );
-      drawRows();
-      const m = modal({
-        title: t('home.customize'),
-        body: h('div', { class: 'stack' }, h('p', { class: 'text-2 hm-cz-text' }, t('home.customizeText')), rows),
-        footer: [
-          h(
-            'button',
-            {
-              class: 'btn ghost',
-              onclick: () => {
-                hidden.clear();
-                drawRows();
-                save();
-              },
-            },
-            t('home.customizeShowAll'),
-          ),
-          h('button', { class: 'btn primary', onclick: () => m.close() }, t('home.close')),
-        ],
-      });
-    }
-
     // ---------- Refrescos ----------
 
     // Textos relativos sin redibujar: [data-ago] (+ data-ago-key) y [data-since]
@@ -1786,6 +1900,12 @@ export default {
     sub(
       store.on('settings', () => {
         redrawHero();
+        // Layout guardado desde otro lado (por ejemplo, un restablecimiento de ajustes); mientras se organiza
+        // o hay un guardado pendiente manda lo que esta en pantalla
+        if (!editing && !savingLayout) {
+          const next = normalizeLayout(store.settings?.home);
+          if (!sameLayout(next, layout)) layout = next;
+        }
         applyVisibility();
         const addr = branding().address;
         // Conexiones opcionales activadas o apagadas desde el aviso o Ajustes > Privacidad

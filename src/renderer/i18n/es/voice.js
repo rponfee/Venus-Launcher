@@ -415,4 +415,7 @@ export default {
   err_noMic: 'No se encontró ningún micrófono.',
   err_micBusy: 'El micrófono está en uso por otra aplicación.',
   err_micFailed: 'No se pudo abrir el micrófono.',
+  // Efecto de entrada (3.1)
+  entryJoined: 'entró',
+  entryJoinedAria: '{name} entró a la sala',
 };

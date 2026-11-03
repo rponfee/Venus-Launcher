@@ -14,10 +14,14 @@ import * as auditTab from './admin/audit.js';
 import * as supportTab from './admin/support.js';
 import * as paymentsTab from './admin/payments.js';
 import * as integrationsTab from './admin/integrations.js';
+import * as passTab from './admin/pass.js';
+import * as reportsTab from './admin/reports.js';
 
 const TABS = [
   { id: 'overview', icon: 'chart', mod: overviewTab },
   { id: 'payments', icon: 'card', mod: paymentsTab },
+  { id: 'pass', icon: 'rocket', mod: passTab },
+  { id: 'reports', icon: 'alert', mod: reportsTab },
   { id: 'integrations', icon: 'plug', mod: integrationsTab },
   { id: 'support', icon: 'message', mod: supportTab },
   { id: 'users', icon: 'users', mod: usersTab },

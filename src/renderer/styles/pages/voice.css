@@ -223,6 +223,31 @@
 }
 .vc-tile.weak { opacity: 0.62; }
 .vc-tile.failed { border-color: var(--bad-line); }
+/* Efecto de entrada (3.1, card_style.entry): 1,5 s sobre la tarjeta del que entra, y la etiqueta "entro" */
+.vc-entry-tag {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 2; padding: 2px 8px; border-radius: var(--radius-full);
+  font-size: var(--fs-xs); font-weight: 700; color: var(--good-text); background: color-mix(in srgb, var(--good) 18%, var(--surface-2)); border: 1px solid color-mix(in srgb, var(--good) 45%, transparent);
+  animation: vc-entry-tag 1.5s var(--ease-out) forwards;
+}
+@keyframes vc-entry-tag { 0% { opacity: 0; transform: translate(-50%, 6px); } 15%, 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -4px); } }
+.vc-tile.vc-entry { overflow: hidden; }
+.vc-tile.vc-entry::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1; border-radius: inherit; animation: vc-entry-fade 1.5s var(--ease-out) forwards; }
+@keyframes vc-entry-fade { 0% { opacity: 0; } 20%, 70% { opacity: 1; } 100% { opacity: 0; } }
+.vc-tile.vc-entry-spark::after {
+  background: radial-gradient(circle at 20% 30%, #fff1a8 0 2px, transparent 3px), radial-gradient(circle at 70% 20%, #ffd27a 0 2.5px, transparent 3.5px), radial-gradient(circle at 40% 75%, #ffffff 0 1.5px, transparent 2.5px), radial-gradient(circle at 85% 65%, #ffd27a 0 2px, transparent 3px), radial-gradient(circle at 55% 45%, #fff1a8 0 1.5px, transparent 2.5px);
+  animation: vc-entry-fade 1.5s var(--ease-out) forwards, vc-entry-rise 1.5s linear forwards;
+}
+.vc-tile.vc-entry-nether::after { background: linear-gradient(0deg, rgba(194, 64, 26, 0.75), rgba(255, 138, 60, 0.35) 50%, transparent); animation: vc-entry-fade 1.5s var(--ease-out) forwards, vc-entry-rise 1.5s var(--ease-out) forwards; }
+.vc-tile.vc-entry-ender::after { background: radial-gradient(circle at 50% 55%, rgba(200, 120, 255, 0.75), rgba(126, 91, 214, 0.25) 55%, transparent 75%); animation: vc-entry-fade 1.5s var(--ease-out) forwards, vc-entry-ender 1.5s var(--ease-out) forwards; }
+.vc-tile.vc-entry-snow::after {
+  background: radial-gradient(circle at 15% 10%, #fff 0 1.6px, transparent 2.6px), radial-gradient(circle at 45% 25%, #e8f4ff 0 1.3px, transparent 2.3px), radial-gradient(circle at 75% 5%, #fff 0 1.8px, transparent 2.8px), radial-gradient(circle at 30% 60%, #fff 0 1.2px, transparent 2.2px), radial-gradient(circle at 88% 45%, #e8f4ff 0 1.5px, transparent 2.5px), radial-gradient(circle at 60% 80%, #fff 0 1.4px, transparent 2.4px);
+  animation: vc-entry-fade 1.5s var(--ease-out) forwards, vc-entry-fall 1.5s linear forwards;
+}
+@keyframes vc-entry-rise { from { transform: translateY(12px); } to { transform: translateY(-14px); } }
+@keyframes vc-entry-fall { from { transform: translateY(-14px); } to { transform: translateY(14px); } }
+@keyframes vc-entry-ender { 0% { transform: scale(0.4); } 60% { transform: scale(1.15); } 100% { transform: scale(1.3); } }
+@media (prefers-reduced-motion: reduce) { .vc-entry-tag, .vc-tile.vc-entry::after { animation: none; } }
+body.reduce-motion .vc-entry-tag, body.reduce-motion .vc-tile.vc-entry::after { animation: none; }
 .vc-avatar-wrap { position: relative; width: 72px; height: 72px; }
 .vc-avatar {
   position: relative; width: 72px; height: 72px; border-radius: var(--radius-l); image-rendering: pixelated; background: var(--surface-3); display: block;

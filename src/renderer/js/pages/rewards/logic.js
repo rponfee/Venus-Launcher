@@ -225,7 +225,8 @@ export function shopView(items, { owned = [], premium = false, balance = 0, equi
   const have = new Set(Array.isArray(owned) ? owned : []);
   const eq = equipped && typeof equipped === 'object' ? equipped : {};
   const groups = new Map(KIND_ORDER.map((k) => [k, []]));
-  const rows = (Array.isArray(items) ? items : []).filter((it) => it && typeof it.id === 'string' && SLOT_BY_KIND[it.kind] && it.active !== false);
+  // Lo que viene del Venus Pass (source 'pass', 0026) no se vende: no va en la tienda.
+  const rows = (Array.isArray(items) ? items : []).filter((it) => it && typeof it.id === 'string' && SLOT_BY_KIND[it.kind] && it.active !== false && (!it.source || it.source === 'shop'));
   rows.sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0) || a.id.localeCompare(b.id));
   for (const it of rows) {
     const slot = SLOT_BY_KIND[it.kind];
@@ -263,7 +264,7 @@ export function equipPatch(equipped, slot, itemId, { items = [], owned = [], pre
 }
 
 // ---------- Historial ----------
-const REASON_ICONS = { daily: 'calendar', achievement: 'trophy', referral: 'userPlus', referred: 'heart', shop: 'tag', admin: 'shieldCheck' };
+const REASON_ICONS = { daily: 'calendar', achievement: 'trophy', referral: 'userPlus', referred: 'heart', shop: 'tag', admin: 'shieldCheck', gift_in: 'sparkles', gift_out: 'heart' };
 
 /** Normaliza una fila del historial de points_me para dibujarla. */
 export function historyEntry(row) {

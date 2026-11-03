@@ -265,4 +265,11 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "Misión completada",
   hist_missionBonus: "Bono de misiones",
+  // Regalos y marcos de la 3.1
+  hist_gift_in: 'Regalo de un amigo',
+  hist_gift_out: 'Regalo a un amigo',
+  item_frame_pulse: 'Marco Latido',
+  item_frame_orbit: 'Marco Órbita',
+  item_frame_halloween: 'Marco Halloween',
+  item_frame_xmas: 'Marco Navidad',
 };

@@ -5,19 +5,22 @@
 // color clasico del banner con la tabla profiles (como siempre). Las imagenes se preparan en la PC (media.js).
 //   import('../features/profile-editor.js').then((m) => m.openProfileEditor({ tab: 'style' }))
 // Tambien: openShareProfile() (imagen PNG de la tarjeta) y featureCapture({ src, title }) para Capturas y clips.
-import { h, icon, mount, modal, ok, fail, toast, ensureCss, switchEl, setBusy, skeleton, emptyState, copyText, confirmDialog, fmtDate, LOADERS } from '../ui.js';
+import { h, icon, mount, modal, ok, fail, toast, ensureCss, switchEl, setBusy, skeleton, emptyState, copyText, confirmDialog, fmtDate, fmtBytes, fmtDuration, LOADERS } from '../ui.js';
 import { api, store } from '../store.js';
 import { t, locale, getLanguage, loadNs } from '../i18n.js';
 import { navigate } from '../app.js';
 import { cloud } from '../cloud.js';
 import { social } from '../social.js';
 import { BANNERS, bannerBackground, bannerName, encodeBanner, parseBanner, isMcName, presenceLabel, MY_STATUSES, publicAddress } from '../social/cosmetics.js';
-import { ensureProfileStyle, styledName, normalize, setStyleCache, titleLabel, premiumChip, applyFrame } from '../social/profile-style.js';
+import { ensureProfileStyle, styledName, normalize, setStyleCache, titleLabel, premiumChip, applyFrame, bubbleAttrs } from '../social/profile-style.js';
 import { profileCard, presenceDot, headImg, headWithDot, prepareSocialUi, fetchPublicProfile, forgetPublicProfile } from '../social/profile-ui.js';
+import { openEmojiPicker } from '../social/richtext.js';
 import * as M from './profile-editor/model.js';
 import { EXTRA_FONTS, FONT_GROUPS } from './profile-editor/fonts.js';
 import { searchGifs, reportShare } from './profile-editor/klipy.js';
+import { audioSupported, decodeAudio, clipBuffer, encodeWebm, uploadSong, removeSong } from './profile-editor/audio.js';
 import { achievementName, achievementInfo } from '../pages/achievements/names.js';
+import { rarityOf, RARITY_MIN_USERS } from '../pages/achievements/catalog.js';
 import { MediaError, readImageFile, bannerFromImage, featuredFromImage, featuredFromSource, gifBanner, uploadMedia, removeMedia, makeRoom, loadImage } from './profile-editor/media.js';
 import { drawShareCard, loadFonts } from './profile-editor/share.js';
 
@@ -366,7 +369,15 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
   };
   S.draft = { basics: clone(S.saved.basics), custom: clone(S.saved.custom), prefs: clone(S.saved.prefs) };
   S.draft.custom.nameStyle = { font: 'default', effect: 'none', color: null, glow: 0, ...S.draft.custom.nameStyle };
-  S.draft.custom.showcase = { achievements: [], clips: [], skin: false, ...S.draft.custom.showcase };
+  S.draft.custom.showcase = { achievements: [], clips: [], skin: false, skinPose: 'stand', skinBg: 'none', rareBadges: [], ...S.draft.custom.showcase };
+  // 3.1: tema, burbuja, entrada en voz, cancion y libro de visitas (lo que queda en su valor por defecto no se manda)
+  S.draft.custom.cardStyle = { theme: { id: 'none', particles: false }, bubble: { style: 'default', color: null }, entry: 'none', song: null, guestbook: false, ...S.draft.custom.cardStyle };
+  // Estado con emoji y vencimiento (3.1): el texto guardado es "<emoji> <texto>"
+  const st0 = M.splitStatus(S.saved.basics.status_text);
+  S.status = { emoji: st0.emoji, text: st0.text, until: n.statusUntil && !M.statusExpired(n.statusUntil) ? n.statusUntil : null };
+  S.status.choice = S.status.until ? 'keep' : 'never';
+  S.pending.song = null; // { blob } listo para subir al guardar
+  S.removeSong = false;
   const ctx = () => ({ userId: S.uid, premium: S.premium, owned: S.owned, items: S.items });
   const locked = !S.available;
 
@@ -398,11 +409,16 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       equipped: c.equipped,
       rank: S.n.rank,
       card_style: c.cardStyle,
+      song: c.cardStyle.song,
+      status_until: S.status.choice === 'keep' ? S.status.until : M.statusUntil(S.status.choice),
       links: c.links.filter((l) => M.isProfileLink(l.kind, l.url)),
       // En la vista previa se muestran los clips que ya se conocen (no hace falta pedirlos de nuevo al servidor)
       showcase: {
         skin: c.showcase.skin === true,
+        skinPose: c.showcase.skinPose,
+        skinBg: c.showcase.skinBg,
         achievements: c.showcase.achievements.map((id) => ({ id })),
+        rareBadges: c.showcase.rareBadges.map((id) => ({ id })),
         clips: c.showcase.clips.map((id) => (S.clips || []).find((x) => x.id === id) || S.n.showcase.clips.find((x) => x.id === id)).filter(Boolean),
       },
     };
@@ -444,7 +460,8 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     return out;
   };
   const prefsChanged = () => socialReady && !M.deepEqual(S.saved.prefs, S.draft.prefs);
-  const isDirty = () => Object.keys(basicsDiff()).length > 0 || Object.keys(M.buildPatch(S.saved.custom, currentCustom())).length > 0 || prefsChanged();
+  const statusChanged = () => S.status.choice !== (S.status.until ? 'keep' : 'never');
+  const isDirty = () => Object.keys(basicsDiff()).length > 0 || Object.keys(M.buildPatch(S.saved.custom, currentCustom())).length > 0 || prefsChanged() || statusChanged();
   function updateDirty() {
     const dirty = isDirty();
     dirtyNote.textContent = dirty ? P('dirty') : '';
@@ -559,11 +576,44 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         t('social.useAccount', { name: acc.name }),
       )
     : null;
-  const statusTextInput = h('input', { class: 'input', value: S.draft.basics.status_text, maxlength: 80, placeholder: t('social.statusTextPlaceholder') });
-  statusTextInput.addEventListener('input', () => {
-    S.draft.basics.status_text = statusTextInput.value;
+  // Estado: emoji (grilla fija de 60), texto y vencimiento (3.1)
+  const statusTextInput = h('input', { class: 'input', value: S.status.text, maxlength: M.LIMITS.statusBody, placeholder: t('social.statusTextPlaceholder'), 'aria-label': t('social.statusText') });
+  const emojiBtn = h('button', { class: 'btn ghost pfe-emoji-btn', type: 'button', title: P('statusEmojiPick'), 'aria-label': P('statusEmojiPick'), 'aria-haspopup': 'dialog' });
+  const emojiClear = h('button', { class: 'icon-btn sm', type: 'button', title: P('statusEmojiNone'), 'aria-label': P('statusEmojiNone') }, icon('x'));
+  const untilChoices = [...(S.status.until ? ['keep'] : []), ...M.STATUS_DURATIONS];
+  const untilSelect = h(
+    'select',
+    { class: 'select pfe-until', 'aria-label': P('statusUntil') },
+    untilChoices.map((c) => h('option', { value: c }, c === 'keep' ? P('statusExpiresAt', { date: fmtDate(Date.parse(S.status.until), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) : P(`statusUntil_${c}`))),
+  );
+  untilSelect.value = S.status.choice;
+  untilSelect.addEventListener('change', () => {
+    S.status.choice = untilSelect.value;
     schedule();
   });
+  function syncStatus() {
+    mount(emojiBtn, S.status.emoji ? h('span', { class: 'pfe-emoji' }, S.status.emoji) : icon('smile'));
+    emojiClear.hidden = !S.status.emoji;
+    S.draft.basics.status_text = M.joinStatus(S.status.emoji, S.status.text) || '';
+    schedule();
+  }
+  emojiBtn.addEventListener('click', () =>
+    openEmojiPicker(emojiBtn, (e) => {
+      S.status.emoji = M.isEmoji(e) ? e : null;
+      syncStatus();
+    }, { label: P('statusEmojiPick'), set: M.STATUS_EMOJIS }),
+  );
+  emojiClear.addEventListener('click', () => {
+    S.status.emoji = null;
+    syncStatus();
+  });
+  statusTextInput.addEventListener('input', () => {
+    S.status.text = statusTextInput.value;
+    syncStatus();
+  });
+  mount(emojiBtn, S.status.emoji ? h('span', { class: 'pfe-emoji' }, S.status.emoji) : icon('smile'));
+  emojiClear.hidden = !S.status.emoji;
+  const statusRow = h('div', { class: 'pfe-status-row' }, emojiBtn, emojiClear, statusTextInput, untilSelect);
   const statusGroup = socialReady
     ? radioGroup({
         label: t('social.status'),
@@ -603,7 +653,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         fieldBox(t('social.mcNameLabel'), mcInput, { error: mcErr, hint: t('social.mcNameHint'), extra: useAccount ? h('div', { class: 'pfe-inline' }, useAccount) : null }),
       ),
       socialReady ? h('div', { class: 'full' }, fieldBox(t('social.status'), statusGroup.el, { hint: t('social.statusHint') })) : null,
-      socialReady ? h('div', { class: 'full' }, fieldBox(t('social.statusText'), statusTextInput)) : null,
+      socialReady ? h('div', { class: 'full' }, fieldBox(t('social.statusText'), statusRow, { hint: P('statusUntilHint') })) : null,
     ),
     socialReady
       ? h(
@@ -824,6 +874,168 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     card().accent = accentInput.value.toLowerCase();
     schedule();
   });
+  // ----- 3.1: tema completo de la tarjeta -----
+  const themeGroup = radioGroup({
+    label: P('cardTheme'),
+    cls: 'pfe-patterns',
+    options: M.CARD_THEMES.map((id) => ({ id, label: P(`cardTheme_${id}`) })),
+    value: card().theme.id,
+    render: (o) => [h('span', { class: ['pfe-theme-art', o.id !== 'none' && 'pf-card', o.id !== 'none' && 'pf-themed', o.id !== 'none' && `pf-theme-${o.id}`], 'aria-hidden': 'true' }, h('span', { class: 'pf-card-body' })), h('span', { class: 'pfe-radio-label' }, o.label)],
+    onPick: (id) => {
+      card().theme.id = id;
+      schedule();
+    },
+  });
+  const particlesOk = M.canUseParticles(ctx());
+  const particlesSwitch = switchEl(card().theme.particles === true && particlesOk, (v) => {
+    card().theme.particles = v;
+    schedule();
+  }, P('themeParticles'));
+  if (!particlesOk || locked) particlesSwitch.querySelector('input').disabled = true;
+  const particlesRow = h(
+    'div',
+    { class: 'toggle-row' },
+    h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, particlesOk ? null : icon('crown'), P('themeParticles')), h('div', { class: 'tr-sub' }, particlesOk ? P('themeParticlesHint') : P('themeParticlesLocked'))),
+    particlesOk ? particlesSwitch : h('button', { class: 'btn tonal sm', type: 'button', onclick: goPlans }, icon('crown'), P('seePlans')),
+  );
+  // ----- 3.1: burbujas de chat -----
+  const bub = () => card().bubble;
+  const bubbleSample = h('div', { class: 'pfe-bubble-sample', 'aria-label': P('bubbleSample') });
+  function drawBubbleSample() {
+    const look = bubbleAttrs({ id: S.uid, cardStyle: card(), hasStyle: true });
+    mount(bubbleSample, h('div', { class: 'msg-row mine first last' }, h('div', { class: 'msg-col' }, h('div', { class: ['msg-bubble', ...look.classes], style: look.vars }, P('bubbleSampleText')))));
+  }
+  const bubbleGroup = radioGroup({
+    label: P('bubble'),
+    cls: 'pfe-avatars',
+    options: M.BUBBLE_STYLES.map((id) => ({ id, label: P(`bubble_${id}`) })),
+    value: bub().style,
+    onPick: (id) => {
+      bub().style = id;
+      drawBubbleSample();
+      schedule();
+    },
+  });
+  const bubbleColor = h('input', { type: 'color', class: 'pfe-color', value: bub().color || '#f29a2e', 'aria-label': P('bubbleColor'), disabled: locked });
+  const bubbleClear = h('button', { class: 'btn ghost sm', type: 'button', disabled: locked, onclick: () => ((bub().color = null), drawBubbleSample(), schedule()) }, icon('x'), P('bubbleColorAuto'));
+  bubbleColor.addEventListener('input', () => {
+    bub().color = bubbleColor.value.toLowerCase();
+    drawBubbleSample();
+    schedule();
+  });
+  drawBubbleSample();
+  // ----- 3.1: efecto de entrada en salas de voz -----
+  const entryGroup = radioGroup({
+    label: P('entry'),
+    cls: 'pfe-avatars',
+    options: M.ENTRY_EFFECTS.map((id) => ({ id, label: P(`entry_${id}`) })),
+    value: card().entry,
+    render: (o) => [h('span', { class: ['pfe-entry-art', `is-${o.id}`], 'aria-hidden': 'true' }), h('span', { class: 'pfe-radio-label' }, o.label)],
+    onPick: (id) => {
+      card().entry = id;
+      schedule();
+    },
+  });
+  // ----- 3.1: cancion de perfil (recorte de 30 s hecho en la PC, se sube al guardar) -----
+  const songBox = h('div', { class: 'pfe-song' });
+  const sg = { file: null, buffer: null, start: 0, encoding: false, progress: 0, abort: null, ready: null };
+  const songInput = h('input', { type: 'file', accept: 'audio/*,.mp3,.ogg,.oga,.wav,.m4a,.webm,.aac', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' });
+  songInput.addEventListener('change', () => {
+    const f = songInput.files?.[0];
+    songInput.value = '';
+    if (f) pickSong(f);
+  });
+  const audioMessage = (err) => (['type', 'too_big', 'decode'].includes(err?.code) ? P(`errAudio_${err.code}`) : ['unsupported', 'cancelled'].includes(err?.code) ? P(`errMedia_${err.code}`) : mediaMessage(err));
+  async function pickSong(file) {
+    showError('');
+    const code = M.audioSourceError(file);
+    if (code) return showError(P(`errAudio_${code}`));
+    try {
+      sg.buffer = await decodeAudio(file);
+      sg.file = file;
+      sg.start = 0;
+      sg.ready = null;
+      drawSong();
+    } catch (err) {
+      showError(audioMessage(err));
+    }
+  }
+  async function encodeSong() {
+    if (!sg.buffer || sg.encoding) return;
+    sg.encoding = true;
+    sg.progress = 0;
+    sg.abort = new AbortController();
+    drawSong();
+    try {
+      const blob = await encodeWebm(clipBuffer(sg.buffer, sg.start), {
+        signal: sg.abort.signal,
+        onProgress: (k) => {
+          sg.progress = k;
+          songBox.querySelector('.pfe-song-progress > i')?.style.setProperty('width', `${Math.round(k * 100)}%`);
+          const out = songBox.querySelector('.pfe-song-progress-text');
+          if (out) out.textContent = P('songEncoding', { pct: Math.round(k * 100) });
+        },
+      });
+      sg.ready = { blob, size: blob.size };
+      S.pending.song = { blob };
+      S.removeSong = false;
+      card().song = { url: 'pending', ...(card().song?.title ? { title: card().song.title } : {}) };
+      schedule();
+    } catch (err) {
+      if (err?.code !== 'cancelled') showError(audioMessage(err));
+    } finally {
+      sg.encoding = false;
+      sg.abort = null;
+      drawSong();
+    }
+  }
+  function clearSong() {
+    sg.file = null;
+    sg.buffer = null;
+    sg.ready = null;
+    S.pending.song = null;
+    S.removeSong = Boolean(S.saved.custom.cardStyle?.song);
+    card().song = null;
+    drawSong();
+    schedule();
+  }
+  function drawSong() {
+    if (!audioSupported()) return mount(songBox, h('div', { class: 'notice info' }, icon('info'), h('div', {}, P('songUnsupported'))));
+    const saved = Boolean(card().song?.url) && card().song.url !== 'pending';
+    const pickBtn = h('button', { class: 'btn tonal', type: 'button', disabled: locked || sg.encoding }, icon('music'), saved || sg.file ? P('songReplace') : P('songPick'));
+    pickBtn.addEventListener('click', () => songInput.click());
+    const titleInput = h('input', { class: 'input', value: card().song?.title || '', maxlength: M.LIMITS.songTitle, placeholder: P('songTitlePlaceholder'), 'aria-label': P('songTitle'), disabled: locked || !card().song });
+    titleInput.addEventListener('input', () => {
+      if (!card().song) return;
+      const title = titleInput.value.trim();
+      if (title) card().song.title = title;
+      else delete card().song.title;
+      schedule();
+    });
+    const parts = [h('div', { class: 'pfe-upload-actions' }, pickBtn, songInput, card().song || sg.file ? h('button', { class: 'btn ghost', type: 'button', disabled: locked, onclick: clearSong }, icon('trash'), P('songRemove')) : null)];
+    if (sg.buffer && !sg.ready) {
+      const maxStart = Math.max(0, Math.floor(sg.buffer.duration - M.LIMITS.songSeconds));
+      const range = h('input', { type: 'range', class: 'pfe-range', min: 0, max: maxStart, step: 1, value: Math.min(sg.start, maxStart), disabled: sg.encoding || maxStart === 0 });
+      const out = h('output', { class: 'pfe-range-value num' }, fmtDuration(Math.min(sg.start, maxStart) * 1000));
+      range.addEventListener('input', () => {
+        sg.start = Number(range.value);
+        out.textContent = fmtDuration(sg.start * 1000);
+      });
+      const encodeBtn = h('button', { class: 'btn primary sm', type: 'button', disabled: sg.encoding, onclick: encodeSong }, icon('check'), P('songEncode'));
+      parts.push(
+        h('div', { class: 'field-help' }, `${sg.file.name} · ${fmtDuration(sg.buffer.duration * 1000)}`),
+        h('label', { class: 'pfe-range-field' }, h('span', {}, P('songStart')), range, out),
+        sg.encoding
+          ? h('div', { class: 'pfe-song-encoding' }, h('div', { class: 'progress pfe-song-progress' }, h('i', { style: { width: `${Math.round(sg.progress * 100)}%` } })), h('span', { class: 'pfe-song-progress-text' }, P('songEncoding', { pct: Math.round(sg.progress * 100) })), h('button', { class: 'btn ghost sm', type: 'button', onclick: () => sg.abort?.abort() }, P('songCancel')))
+          : encodeBtn,
+      );
+    }
+    if (sg.ready) parts.push(h('div', { class: 'pill info' }, icon('cloudUpload'), P('songReady', { size: fmtBytes(sg.ready.size) })));
+    else if (saved) parts.push(h('div', { class: 'field-help' }, icon('check'), ` ${P('songCurrent')}`));
+    parts.push(fieldBox(P('songTitle'), titleInput), h('div', { class: 'field-help' }, P('songFileHint')));
+    mount(songBox, parts);
+  }
+  drawSong();
   panel(
     'style',
     locked ? unavailableNote() : null,
@@ -839,8 +1051,12 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     h('div', { class: 'pfe-group' }, groupTitle(P('card_pattern'), P('card_patternHint')), patternGroup.el),
     h('div', { class: 'pfe-group pfe-two' }, h('div', {}, groupTitle(P('card_avatar')), avatarGroup.el), h('div', {}, groupTitle(P('card_layout')), layoutGroup.el)),
     h('div', { class: 'pfe-group' }, groupTitle(P('card_accent'), P('card_accentHint')), h('div', { class: 'row' }, accentInput, accentClear)),
+    h('div', { class: 'pfe-group' }, groupTitle(P('cardTheme'), P('cardThemeHint')), themeGroup.el, h('div', { class: 'pfe-toggles' }, particlesRow)),
+    h('div', { class: 'pfe-group' }, groupTitle(P('bubble'), P('bubbleHint')), bubbleGroup.el, h('div', { class: 'row wrap' }, bubbleColor, bubbleClear), bubbleSample),
+    h('div', { class: 'pfe-group' }, groupTitle(P('entry'), P('entryHint')), entryGroup.el),
+    h('div', { class: 'pfe-group' }, groupTitle(P('song'), P('songHint')), songBox),
   );
-  if (locked) for (const g of [fontGroup.el, effectGroup.el, patternGroup.el, avatarGroup.el, layoutGroup.el]) g.querySelectorAll('button').forEach((b) => (b.disabled = true));
+  if (locked) for (const g of [fontGroup.el, effectGroup.el, patternGroup.el, avatarGroup.el, layoutGroup.el, themeGroup.el, bubbleGroup.el, entryGroup.el]) g.querySelectorAll('button').forEach((b) => (b.disabled = true));
 
   // ===== Banner =====
   const banner = () => S.draft.custom.banner;
@@ -1246,6 +1462,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       S.clips ||= [];
       drawAch();
       drawClips();
+      drawRare();
     });
     if (S.publishStats && S.stats === undefined) fetchStats();
   }
@@ -1434,26 +1651,101 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     schedule();
   }, P('showcaseSkin'));
   if (locked) skinSwitch.querySelector('input').disabled = true;
+  // 3.1: pose y fondo de la skin
+  const poseGroup = radioGroup({
+    label: P('skinPose'),
+    cls: 'pfe-avatars',
+    options: M.SKIN_POSES.map((id) => ({ id, label: P(`skinPose_${id}`) })),
+    value: showcase().skinPose,
+    onPick: (id) => {
+      showcase().skinPose = id;
+      schedule();
+    },
+  });
+  const bgGroup = radioGroup({
+    label: P('skinBg'),
+    cls: 'pfe-avatars',
+    options: M.SKIN_BGS.map((id) => ({ id, label: P(`skinBg_${id}`) })),
+    value: showcase().skinBg,
+    render: (o) => [h('span', { class: ['pfe-skinbg-art', o.id !== 'none' && `pf-skinbg-${o.id}`], 'aria-hidden': 'true' }), h('span', { class: 'pfe-radio-label' }, o.label)],
+    onPick: (id) => {
+      showcase().skinBg = id;
+      schedule();
+    },
+  });
+  // 3.1: insignias por logros raros (menos del 5 % de los jugadores, segun achievements_me)
+  const rareBox = h('div', { class: 'pfe-ach-pick', role: 'group', 'aria-label': P('rareBadges') });
+  const rareCount = h('span', { class: 'pfe-range-value num' });
+  S.rarity = null;
+  S.totalUsers = 0;
+  function drawRare() {
+    const pinned = showcase().rareBadges;
+    rareCount.textContent = `${pinned.length} / ${M.LIMITS.rareBadges}`;
+    if (!S.unlocked) return mount(rareBox, skeleton('line', { width: 200, label: P('statsLoading') }));
+    if (!S.rarity || S.totalUsers < RARITY_MIN_USERS) return mount(rareBox, h('div', { class: 'pfe-empty-line' }, icon('info'), P('rareBadgesNoData')));
+    const rare = S.unlocked.filter((id) => ['epic', 'legendary'].includes(rarityOf(Number(S.rarity[id]), S.totalUsers)) || pinned.includes(id));
+    if (!rare.length) return mount(rareBox, h('div', { class: 'pfe-empty-line' }, P('rareBadgesEmpty')));
+    mount(
+      rareBox,
+      rare.map((id) => {
+        const on = pinned.includes(id);
+        const info = achievementInfo(id);
+        const pct = Number(S.rarity[id]) || 0;
+        return h(
+          'button',
+          {
+            type: 'button',
+            class: ['pf-ach', 'pfe-ach-item', on && 'active'],
+            dataset: { tier: info.tier },
+            'aria-pressed': String(on),
+            title: P('rareBadgeTitle', { name: info.name, pct }),
+            disabled: locked || (!on && pinned.length >= M.LIMITS.rareBadges),
+            onclick: () => {
+              if (on) pinned.splice(pinned.indexOf(id), 1);
+              else pinned.push(id);
+              drawRare();
+              schedule();
+            },
+          },
+          h('span', { class: 'pf-ach-icon' }, icon(info.icon)),
+          h('span', { class: 'pf-ach-main' }, h('span', { class: 'pf-ach-name' }, info.name), h('span', { class: 'pf-ach-tier' }, `${pct} %`)),
+          on ? icon('check') : null,
+        );
+      }),
+    );
+  }
+  // 3.1: libro de visitas
+  const gbSwitch = switchEl(card().guestbook === true, (v) => {
+    card().guestbook = v;
+    schedule();
+  }, P('guestbook'));
+  if (locked) gbSwitch.querySelector('input').disabled = true;
   async function loadShowcaseExtras() {
     if (S.demo) {
       S.unlocked = S.demo.demoUnlocked();
       S.clips = S.demo.demoClips();
+      S.rarity = S.demo.demoRarity?.() || null;
+      S.totalUsers = S.rarity ? 100 : 0;
     } else {
       const [ach, clips] = await Promise.all([
         cloud.client.rpc('achievements_me').then((r) => r.data).catch(() => null),
         cloud.client.from('shared_media').select('id,url,world,instance_name,file_name,expires_at').eq('owner', S.uid).eq('kind', 'clip').order('created_at', { ascending: false }).limit(30).then((r) => r.data).catch(() => null),
       ]);
       S.unlocked = Object.keys(ach?.unlocked || {});
+      S.rarity = ach?.rarity && typeof ach.rarity === 'object' ? ach.rarity : null;
+      S.totalUsers = Number(ach?.totalUsers) || 0;
       S.clips = (clips || [])
         .filter((c) => c.url && (!c.expires_at || new Date(c.expires_at).getTime() > Date.now()))
         .map((c) => ({ id: c.id, url: c.url, title: c.world || c.instance_name || c.file_name, expiresAt: c.expires_at }));
     }
     drawAch();
     drawClips();
+    drawRare();
     schedule();
   }
   drawAch();
   drawClips();
+  drawRare();
   panel(
     'showcase',
     locked ? unavailableNote() : null,
@@ -1468,7 +1760,9 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('stats'), P('statsHint')), statsSwitch), statsBox),
     h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('pinnedAch'), P('pinnedAchHint')), achCount), achSearch, achBox),
     h('div', { class: 'pfe-group' }, groupTitle(P('pinnedClips'), P('pinnedClipsHint', { max: M.LIMITS.pinnedClips })), clipBox),
-    h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('showcaseSkin'), P('showcaseSkinHint')), skinSwitch)),
+    h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('showcaseSkin'), P('showcaseSkinHint')), skinSwitch), h('div', { class: 'pfe-two' }, h('div', {}, groupTitle(P('skinPose')), poseGroup.el), h('div', {}, groupTitle(P('skinBg')), bgGroup.el))),
+    h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('rareBadges'), P('rareBadgesHint')), rareCount), rareBox),
+    h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('guestbook'), P('guestbookHint')), gbSwitch)),
     h('div', { class: 'pfe-group' }, groupTitle(P('featured'), P('featuredHint')), featuredBox),
     h('div', { class: 'pfe-group' }, groupTitle(P('links'), P('linksHint', { max: M.LIMITS.links })), linkBox, h('div', { class: 'pfe-server-add' }, fieldBox(P('linkKind'), linkKind), fieldBox(P('linkUrl'), linkUrl, { error: linkErr }), linkAdd)),
   );
@@ -1566,6 +1860,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     const fake = (i) => `${PLACEHOLDER_HOST}/${S.uid}/pending-${i}.webp`;
     if ((c.banner?.kind === 'image' || c.banner?.kind === 'animated') && S.pending.banner?.url === c.banner.url) c.banner.url = fake(0);
     c.featured = (c.featured || []).map((f, i) => (S.pending.featured.has(f.url) ? { ...f, url: fake(i + 1) } : f));
+    if (c.cardStyle?.song?.url === 'pending') c.cardStyle.song.url = `https://pending.supabase.co/storage/v1/object/public/profile-audio/${S.uid}/${M.AUDIO_FILE}`;
     return c;
   }
   function failWith(info) {
@@ -1581,6 +1876,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     if (tabId) selectTab(tabId);
     if (info.field === 'pronouns') pronErr.set(text, pronInput);
     if (info.field === 'bio') bioErr.set(text, bioInput);
+    if (['bad_emoji', 'bad_status', 'bad_until'].includes(code)) selectTab('identity');
   }
 
   saveBtn.addEventListener('click', async () => {
@@ -1624,6 +1920,19 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
             if (p) f.url = await uploadMedia(p.blob, { kind: 'featured', ext: p.ext });
           }
         }
+        // Cancion de perfil (3.1): el recorte se sube recien ahora (un solo archivo por usuario)
+        if (S.available && S.pending.song && custom.cardStyle?.song?.url === 'pending') {
+          dirtyNote.textContent = P('uploading');
+          custom.cardStyle.song.url = await uploadSong(S.pending.song.blob);
+        }
+        // Estado con emoji y vencimiento (3.1): la RPC valida el emoji y guarda hasta cuando vale; el texto va ademas
+        // por la tabla, como siempre, para que la lista de amigos lo tome al instante
+        if (S.available && ('status_text' in basics || statusChanged())) {
+          const until = S.status.choice === 'keep' ? S.status.until : M.statusUntil(S.status.choice);
+          const { error } = await cloud.client.rpc('profile_set_status', { p_emoji: S.status.emoji, p_text: S.status.text.trim() || null, p_until: until });
+          if (error && !/PGRST202|42883/.test(String(error.code || ''))) throw error;
+          if (!error) S.status.until = until;
+        }
         if (Object.keys(basics).length) {
           if (socialReady) await social.updateProfile(basics);
           else await cloud.updateProfile(basics);
@@ -1640,12 +1949,15 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         const mine = old.map((u) => M.mediaPathFromUrl(u)).filter((p) => p && p.userId.toLowerCase() === S.uid.toLowerCase()).map((p) => p.name);
         if (mine.length) removeMedia(mine).catch((err) => console.warn('[profile] borrar imagenes viejas:', err?.message || err));
         if (custom.banner?.kind === 'klipy' && custom.banner.url !== S.saved.custom.banner?.url) reportShare(custom.banner.slug);
+        if (S.removeSong && !custom.cardStyle?.song) removeSong().catch((err) => console.warn('[profile] borrar cancion:', err?.message || err));
         forgetPublicProfile(S.uid);
         setStyleCache(S.uid, { ...previewRaw(), banner_style: custom.banner, featured: custom.featured, hasStyle: true });
         cloud.loadProfile().catch(() => null);
       }
       S.pending.banner = null;
       S.pending.featured.clear();
+      S.pending.song = null;
+      S.removeSong = false;
       dialog.close();
       ok(P('saved'));
     } catch (err) {

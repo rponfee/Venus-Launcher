@@ -12,8 +12,8 @@ import { t, loadNs, has } from '../i18n.js';
 import { navigate } from '../app.js';
 
 const NS = 'whatsnew';
-export const TOUR_VERSION = '3.0.10';
-const FULL_TOUR_VERSION = '3.0.0'; // quien ya vio esta versión del recorrido no lo vuelve a ver entero
+export const TOUR_VERSION = '3.1.0';
+const FULL_TOUR_VERSION = '3.1.0'; // quien ya vio esta versión del recorrido no lo vuelve a ver entero
 const CHANGES_SLIDE = 'v3changes';
 
 registerIcons({
@@ -41,6 +41,14 @@ async function tryOpen(candidates, fallback) {
 
 const SLIDES = [
   { id: 'intro', icon: 'sparkles' },
+  // Venus 3.1
+  { id: 'v31pass', art: 'rewards', icon: 'rocket', go: () => navigate('pass') },
+  { id: 'v31look', art: 'themes', icon: 'palette', go: () => navigate('settings/appearance') },
+  { id: 'v31home', art: 'overlay', icon: 'home', go: () => navigate('home') },
+  { id: 'v31profile', art: 'profiles', icon: 'user', go: () => tryOpen([[() => import('./profile-editor.js'), ['openProfileEditor']]], 'messages') },
+  { id: 'v31instances', art: 'party', icon: 'layers', go: () => navigate('versions') },
+  { id: 'v31tools', art: 'clips', icon: 'wrench', go: () => navigate('tools') },
+  // Venus 3.0
   { id: 'v3profile', art: 'profiles', icon: 'user', go: () => tryOpen([[() => import('./profile-editor.js'), ['openProfileEditor']]], 'messages') },
   { id: 'v3gif', art: 'themes', icon: 'image', go: () => tryOpen([[async () => { const m = await import('./profile-editor.js'); return { open: () => m.openProfileEditor({ tab: 'banner' }) }; }, ['open']]], 'messages') },
   { id: 'v3ach', art: 'rewards', icon: 'trophy', go: () => navigate('achievements') },
@@ -82,7 +90,7 @@ const i = (cls, ...kids) => h('i', { class: cls.split(' ').filter(Boolean).map((
 function art(id) {
   const scene = (...kids) => h('div', { class: `wn-art wn-art-${id}`, 'aria-hidden': 'true' }, h('div', { class: 'wn-glow' }), ...kids);
   if (id === 'intro') {
-    return scene(i('orbit'), i('orbit orbit-2'), h('img', { class: 'wn-logo', src: 'assets/logo-256.png', alt: '' }), h('span', { class: 'wn-ver' }, '3.0'), i('spark s1'), i('spark s2'), i('spark s3'));
+    return scene(i('orbit'), i('orbit orbit-2'), h('img', { class: 'wn-logo', src: 'assets/logo-256.png', alt: '' }), h('span', { class: 'wn-ver' }, '3.1'), i('spark s1'), i('spark s2'), i('spark s3'));
   }
   if (id === 'music') {
     return scene(

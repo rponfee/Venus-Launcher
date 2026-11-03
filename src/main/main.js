@@ -176,12 +176,14 @@ modulesLoader.preReady({ app });
 if (!DEVSHOT && !app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (event, argv) => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.show();
       mainWindow.focus();
     }
+    // Un acceso directo abrió otra copia con argumentos (--play-instance=<id>): los módulos los reciben acá.
+    app.emit('venus:argv', Array.isArray(argv) ? argv : []);
   });
 
   app.whenReady().then(async () => {

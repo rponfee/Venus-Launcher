@@ -3,66 +3,57 @@
 // imagen/video propio con oscurecer y desenfoque, logo y nombre del launcher (barra lateral y de titulo),
 // música de fondo en bucle y la direccion de "Tu servidor" que muestra Inicio.
 // Ajustes en settings.appearance y settings.branding. Contrato: startup(), appearancePanel() -> Element.
-import { h, icon, mount, ensureCss, switchEl, modal, confirmDialog, fail, toast, skeleton, setBusy, fmtNumber } from './ui.js';
+// 3.1: looks guardados (settings.looks), editor de colores (appearance.palette), tema claro (appearance.scheme),
+// temas de temporada (appearance.seasonal), fondos rotativos (appearance.rotation) y boton Jugar a gusto
+// (appearance.playButton). La logica pura esta en a11y/appearance-logic.js y features/themes/looks.js.
+import { h, icon, mount, ensureCss, switchEl, modal, confirmDialog, promptDialog, fail, ok, toast, skeleton, setBusy, copyText, fmtNumber, fmtDate } from './ui.js';
 import { store, api } from './store.js';
 import { t, loadNs, has, onLanguageChange } from './i18n.js';
 import * as engine from './a11y/engine.js';
-import { parseColor, toHsl } from './a11y/color.js';
+import { parseColor, toHsl, toHex, contrast } from './a11y/color.js';
 import { registerCommands } from './a11y/palette.js';
 import { topDialog } from './a11y/aria.js';
 import { dispatchEscape } from './a11y/gamepad.js';
 import { navigate } from './app.js';
 import { WALLPAPERS, getWallpaper } from './wallpapers.js';
 import { openWallpapersPage } from './community.js';
+import {
+  PRESETS,
+  APPEARANCE_DEFAULTS,
+  BRANDING_DEFAULTS,
+  NAME_MAX,
+  PALETTE_KEYS,
+  PLAY_ANIMATIONS,
+  PLAY_SOUNDS,
+  PLAY_LABEL_MAX,
+  ROTATION_PRESETS,
+  SEASONS,
+  isHex,
+  normalizeAppearance,
+  normalizeBranding,
+  appearanceDefaults,
+  accentColor as accentOf,
+  effectiveScheme,
+  seasonFor,
+  seasonById,
+  nextRotation,
+  legiblePalette,
+  paletteActive,
+  cleanLabel,
+} from './a11y/appearance-logic.js';
+import * as looksCodec from './features/themes/looks.js';
 
-export const PRESETS = [
-  { id: 'venus', color: '#f29a2e' },
-  { id: 'mars', color: '#f0603c' },
-  { id: 'neptune', color: '#3fa2ff' },
-  { id: 'jupiter', color: '#f2c14e' },
-  { id: 'earth', color: '#58c27d' },
-  { id: 'saturn', color: '#a879f2' },
-];
-
-export const APPEARANCE_DEFAULTS = {
-  accent: 'venus', // id de PRESETS o 'custom'
-  customColor: '#f29a2e',
-  tint: true, // teñir fondos y textos con el tono del acento
-  background: 'stars', // 'stars' | 'wallpaper' | 'image'
-  // la primera imagen (los animados van primero en la galería, pero gastan más al elegir "Galería" sin mirar)
-  wallpaperId: (WALLPAPERS.find((w) => !w.video) || WALLPAPERS[0])?.id || '',
-  bgFile: '',
-  bgDim: 45, // 0-90 %
-  bgBlur: 0, // 0-24 px
-  // Interfaz (3.0): bordes, densidad, menu lateral y tipografia de todo el launcher
-  uiRadius: 'normal', // 'sharp' | 'normal' | 'round'
-  uiDensity: 'normal', // 'compact' | 'normal' | 'spacious'
-  uiSidebar: 'full', // 'full' | 'icons'
-  uiFont: 'outfit', // 'outfit' | 'system' | 'rounded' | 'mono'
-  uiGlass: 100, // 40-100: opacidad de las tarjetas (deja ver el fondo)
-  lite: false, // modo liviano: sin fondos animados, animaciones ni desenfoques, y con el overlay apagado
-  liteOverlay: false, // el overlay estaba prendido al activar el modo liviano (vuelve a prenderse al salir)
-  music: { enabled: false, file: '', volume: 35, pauseInGame: true },
-};
-
-export const BRANDING_DEFAULTS = {
-  name: '', // vacio = Venus Launcher
-  subtitle: 'LAUNCHER',
-  logo: '', // imagen en data: (PNG reducido) para que no dependa del archivo original
-  logoName: '',
-  logoPixel: false,
-  server: '', // "Tu servidor" (host[:puerto]), lo usa Inicio
-};
+export { PRESETS, APPEARANCE_DEFAULTS, BRANDING_DEFAULTS };
 
 const IMAGE_EXT = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp'];
 const VIDEO_EXT = ['mp4', 'webm', 'm4v', 'ogv'];
 const AUDIO_EXT = ['mp3', 'ogg', 'oga', 'opus', 'wav', 'flac', 'm4a', 'aac', 'weba'];
 const LOGO_EXT = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp', 'ico', 'avif'];
-const NAME_MAX = 24;
 
 let started = false;
 let ap = normalizeAppearance();
 let br = normalizeBranding();
+let looks = [];
 let pending = { appearance: {}, branding: {} };
 let inFlight = { appearance: {}, branding: {} };
 let activeSave = null;
@@ -72,69 +63,37 @@ let ORIG = null;
 let bgError = false;
 const music = { audio: null, src: '', error: false, userPaused: false, fadeTimer: 0, voiceRoom: false };
 const reduceQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+// Esquema aplicado ('dark' | 'light'), temporada anunciada (venus:season) y temporizadores
+let scheme = 'dark';
+let seasonAnnounced;
+let minuteTimer = 0;
+const rotation = { timer: 0, key: '' };
 
 // ---------- Ajustes ----------
-function intIn(v, min, max, def) {
-  const n = Math.round(Number(v));
-  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
-}
-function isHex(s) {
-  return /^#[0-9a-f]{6}$/i.test(String(s || ''));
-}
-function str(v, max = 4096) {
-  return typeof v === 'string' ? v.slice(0, max) : '';
-}
-
-function normalizeAppearance(raw = {}) {
-  const r = raw && typeof raw === 'object' ? raw : {};
-  const m = r.music && typeof r.music === 'object' ? r.music : {};
-  const out = { ...APPEARANCE_DEFAULTS, ...r, music: { ...APPEARANCE_DEFAULTS.music, ...m } };
-  if (out.accent !== 'custom' && !PRESETS.some((p) => p.id === out.accent)) out.accent = 'venus';
-  out.customColor = isHex(out.customColor) ? out.customColor.toLowerCase() : APPEARANCE_DEFAULTS.customColor;
-  out.tint = out.tint !== false;
-  out.background = ['image', 'wallpaper'].includes(out.background) ? out.background : 'stars';
-  out.wallpaperId = getWallpaper(out.wallpaperId)?.id || APPEARANCE_DEFAULTS.wallpaperId;
-  if (out.background === 'wallpaper' && !out.wallpaperId) out.background = 'stars';
-  out.bgFile = str(out.bgFile);
-  out.bgDim = intIn(out.bgDim, 0, 90, 45);
-  out.bgBlur = intIn(out.bgBlur, 0, 24, 0);
-  out.uiRadius = ['sharp', 'round'].includes(out.uiRadius) ? out.uiRadius : 'normal';
-  out.uiDensity = ['compact', 'spacious'].includes(out.uiDensity) ? out.uiDensity : 'normal';
-  out.uiSidebar = out.uiSidebar === 'icons' ? 'icons' : 'full';
-  out.uiFont = ['system', 'rounded', 'mono'].includes(out.uiFont) ? out.uiFont : 'outfit';
-  out.uiGlass = intIn(out.uiGlass, 40, 100, 100);
-  out.lite = Boolean(out.lite);
-  out.liteOverlay = Boolean(out.liteOverlay);
-  out.music = {
-    enabled: Boolean(out.music.enabled),
-    file: str(out.music.file),
-    volume: intIn(out.music.volume, 0, 100, 35),
-    pauseInGame: out.music.pauseInGame !== false,
-  };
-  return out;
-}
-
-function normalizeBranding(raw = {}) {
-  const r = raw && typeof raw === 'object' ? raw : {};
-  const out = { ...BRANDING_DEFAULTS, ...r };
-  out.name = str(out.name, NAME_MAX);
-  out.subtitle = typeof out.subtitle === 'string' ? out.subtitle.slice(0, NAME_MAX) : BRANDING_DEFAULTS.subtitle;
-  out.logo = /^data:image\/(png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(out.logo || '') ? out.logo : '';
-  out.logoName = str(out.logoName, 200);
-  out.logoPixel = Boolean(out.logoPixel);
-  out.server = str(out.server, 260).trim();
-  return out;
-}
-
 function fromStore() {
   const s = store.settings || {};
   const a = normalizeAppearance({ ...(s.appearance || {}), ...inFlight.appearance, ...pending.appearance, music: { ...(s.appearance?.music || {}), ...(inFlight.appearance.music || {}), ...(pending.appearance.music || {}) } });
   const b = normalizeBranding({ ...(s.branding || {}), ...inFlight.branding, ...pending.branding });
-  return { a, b };
+  return { a, b, l: looksCodec.normalizeLooks(s.looks) };
+}
+
+// Tarjetas de otros módulos (decoración, etc.): registerAppearanceCard(() => Element | null) antes de abrir el panel.
+const extraCards = [];
+export function registerAppearanceCard(fn) {
+  if (typeof fn === 'function' && !extraCards.includes(fn)) extraCards.push(fn);
 }
 
 export function appearanceSettings() {
-  return { appearance: { ...ap, music: { ...ap.music } }, branding: { ...br } };
+  return { appearance: normalizeAppearance(ap), branding: { ...br } };
+}
+
+// Looks guardados (copia) y esquema aplicado ahora ('dark' | 'light'), para otros modulos
+export function savedLooks() {
+  return looks.map((l) => looksCodec.normalizeLook(l));
+}
+
+export function currentScheme() {
+  return scheme;
 }
 
 // Para otras paginas (Venus > Fondos): el fondo de la galeria elegido, cambiarlo y enterarse de los cambios.
@@ -317,8 +276,7 @@ function extOf(p) {
 const isVideo = (p) => VIDEO_EXT.includes(extOf(p));
 
 export function accentColor(a = ap) {
-  if (a.accent === 'custom') return a.customColor;
-  return PRESETS.find((p) => p.id === a.accent)?.color || PRESETS[0].color;
+  return accentOf(a);
 }
 
 function reducedMotion() {
@@ -329,22 +287,139 @@ function gameRunning() {
   return Object.values(store.running || {}).some((r) => r && r.state === 'running');
 }
 
-// ---------- Aplicar: color ----------
+// ---------- Aplicar: color, esquema y paleta ----------
+// Fondo sobre el que se comprueba la legibilidad del texto de la paleta: el elegido o el del esquema
+function paletteBaseBg(sch = scheme) {
+  return ap.palette.bg || engine.baseTokens(sch)['--bg-0'];
+}
+
+// Paleta lista para el motor (texto corregido si no se lee) y el hex corregido, si hizo falta
+function effectivePalette(sch = scheme) {
+  return legiblePalette(ap.palette, paletteBaseBg(sch));
+}
+
 function applyTheme() {
-  const color = accentColor();
-  const isDefault = color.toLowerCase() === PRESETS[0].color;
-  engine.setTheme(isDefault ? null : { accent: color, tint: ap.tint });
-  // el planeta del logo gira su tono para acompañar al acento (filtro hue-rotate)
+  scheme = effectiveScheme(ap);
   const root = document.documentElement;
+  if (scheme === 'light') root.setAttribute('data-scheme', 'light');
+  else root.removeAttribute('data-scheme');
+  const { palette } = effectivePalette(scheme);
+  const color = palette.accent || accentColor();
+  const isDefault = color.toLowerCase() === PRESETS[0].color;
+  const plain = isDefault && scheme === 'dark' && !paletteActive(palette);
+  engine.setTheme(plain ? null : { accent: isDefault ? null : color, tint: ap.tint, scheme, palette: paletteActive(palette) ? palette : null });
+  // el planeta del logo gira su tono para acompañar al acento (filtro hue-rotate)
   if (isDefault) {
     root.style.removeProperty('--ap-hue');
     root.style.removeProperty('--ap-sat');
   } else {
-    const target = toHsl(parseColor(engine.legibleAccent(color)));
+    const target = toHsl(parseColor(engine.legibleAccent(color, scheme === 'light')));
     const base = toHsl(parseColor(PRESETS[0].color));
     root.style.setProperty('--ap-hue', `${Math.round(target.h - base.h)}deg`);
     root.style.setProperty('--ap-sat', String(Math.round(Math.min(1.3, Math.max(0, target.s / base.s)) * 100) / 100));
   }
+}
+
+// ---------- Aplicar: boton Jugar ----------
+// Color, texto y animacion con variables y atributos en <html> (styles/a11y.css); el sonido se avisa con el
+// evento venus:ui-sound al hacer clic en .play-btn (otro modulo lo hace sonar).
+function playInk(hex) {
+  const c = parseColor(hex);
+  const dark = parseColor('#2b1405');
+  const light = parseColor('#fff8ee');
+  return !c || contrast(c, dark) >= contrast(c, light) ? '#2b1405' : '#fff8ee';
+}
+
+function applyPlayButton() {
+  const pb = ap.playButton;
+  const root = document.documentElement;
+  const custom = pb.color !== 'accent';
+  root.toggleAttribute('data-play-color', custom);
+  if (custom) {
+    root.style.setProperty('--play-color', pb.color);
+    root.style.setProperty('--play-ink', playInk(pb.color));
+  } else {
+    root.style.removeProperty('--play-color');
+    root.style.removeProperty('--play-ink');
+  }
+  if (pb.label) {
+    root.style.setProperty('--play-label', JSON.stringify(pb.label)); // cadena CSS con comillas y escapes validos
+    root.setAttribute('data-play-label', '');
+  } else {
+    root.style.removeProperty('--play-label');
+    root.removeAttribute('data-play-label');
+  }
+  const anim = ap.lite || pb.animation === 'none' ? '' : pb.animation;
+  if (anim) root.setAttribute('data-play-anim', anim);
+  else root.removeAttribute('data-play-anim');
+}
+
+function playSound() {
+  const id = ap.playButton.sound;
+  if (id === 'none') return;
+  window.dispatchEvent(new CustomEvent('venus:ui-sound', { detail: { id } }));
+}
+
+// ---------- Temporadas ----------
+// Al entrar en una fecha se guarda lo que habia (seasonalBackup) y se aplican el acento y el fondo de la
+// temporada; al salir (o al apagar el ajuste) se restaura. venus:season avisa al arrancar y en cada cambio.
+function checkSeason() {
+  const want = ap.seasonal ? seasonFor(new Date()) : null;
+  const backup = ap.seasonalBackup;
+  const have = backup?.season || null;
+  if (want !== have) {
+    if (want) {
+      const s = seasonById(want);
+      const keep = backup || { accent: ap.accent, customColor: ap.customColor, background: ap.background, wallpaperId: ap.wallpaperId };
+      const patch = { accent: 'custom', customColor: s.accent, seasonalBackup: { ...keep, season: want } };
+      if (getWallpaper(s.wallpaper)) {
+        patch.background = 'wallpaper';
+        patch.wallpaperId = s.wallpaper;
+      }
+      save({ appearance: patch });
+    } else {
+      save({ appearance: { accent: backup.accent, customColor: backup.customColor, background: backup.background, wallpaperId: backup.wallpaperId, seasonalBackup: null } });
+    }
+  }
+  if (want !== seasonAnnounced) {
+    seasonAnnounced = want;
+    window.dispatchEvent(new CustomEvent('venus:season', { detail: { id: want } }));
+  }
+}
+
+// id de la temporada aplicada ahora (null si no hay o el ajuste esta apagado)
+export function currentSeason() {
+  return ap.seasonal ? ap.seasonalBackup?.season || null : null;
+}
+
+// ---------- Fondos rotativos ----------
+export function rotateWallpaper() {
+  const next = nextRotation(ap.rotation.ids, ap.wallpaperId);
+  if (!next) return false;
+  return useWallpaper(next);
+}
+
+function scheduleRotation() {
+  const r = ap.rotation;
+  const key = r.enabled && r.ids.length ? String(r.everyMin) : '';
+  if (key === rotation.key) return;
+  rotation.key = key;
+  clearInterval(rotation.timer);
+  rotation.timer = 0;
+  if (key) {
+    rotation.timer = setInterval(() => {
+      if (ap.rotation.enabled) rotateWallpaper();
+    }, r.everyMin * 60000);
+  }
+}
+
+// Cada minuto: el modo automatico del tema claro y las fechas de temporada
+function tick() {
+  if (effectiveScheme(ap) !== scheme) {
+    applyTheme();
+    emit();
+  }
+  checkSeason();
 }
 
 // ---------- Aplicar: fondo ----------
@@ -622,6 +697,8 @@ function applyAll() {
   applyTheme();
   applyBackground();
   applyBranding();
+  applyPlayButton();
+  scheduleRotation();
   updateMusic();
 }
 
@@ -636,7 +713,7 @@ export async function startup() {
   }
   document.querySelector('link[href="styles/a11y.css"]')?.setAttribute('data-ax-skip', '');
   captureOriginal();
-  ({ a: ap, b: br } = fromStore());
+  ({ a: ap, b: br, l: looks } = fromStore());
   await loadLiveFiles();
   api.on('wallpapers:progress', ({ id, percent }) => {
     if (!live.downloads.has(id)) return;
@@ -646,15 +723,36 @@ export async function startup() {
   applyAll();
   engine.applyNow();
   registerCommands(appearanceCommands);
+  // Temporada (avisa siempre al arrancar), fondo rotativo al abrir y revision por minuto
+  checkSeason();
+  if (ap.rotation.enabled && ap.rotation.onLaunch) rotateWallpaper();
+  minuteTimer = setInterval(tick, 60000);
+  // Sonido del boton Jugar (delegado: el boton lo dibuja pages/home.js)
+  document.addEventListener(
+    'click',
+    (e) => {
+      const btn = e.target?.closest?.('.play-btn');
+      if (!btn || btn.disabled || btn.classList.contains('stop') || btn.closest('.ap-play-preview')) return;
+      playSound();
+    },
+    true,
+  );
 
   store.on('settings', () => {
-    const { a, b } = fromStore();
+    const { a, b, l } = fromStore();
+    const looksChanged = JSON.stringify(l) !== JSON.stringify(looks);
+    if (looksChanged) looks = l;
     const changed = JSON.stringify(a) !== JSON.stringify(ap) || JSON.stringify(b) !== JSON.stringify(br);
-    if (!changed) return;
+    if (!changed) {
+      if (looksChanged) emit();
+      return;
+    }
     if (a.bgFile !== ap.bgFile || a.background !== ap.background || a.wallpaperId !== ap.wallpaperId) bgError = false;
+    const seasonalWas = ap.seasonal;
     ap = a;
     br = b;
     applyAll();
+    if (seasonalWas !== ap.seasonal) checkSeason();
     emit();
   });
   store.on('running', () => {
@@ -698,6 +796,13 @@ function appearanceCommands() {
   if (ap.music.enabled && ap.music.file) {
     cmds.push({ id: 'ap:music', group: 'appearance', title: musicPlaying() ? t('appearance.cmdMusicPause') : t('appearance.cmdMusicPlay'), sub: baseName(ap.music.file), icon: musicPlaying() ? 'pause' : 'play', keywords: t('appearance.kwMusic'), run: () => toggleMusicPause() });
   }
+  for (const id of ['dark', 'light', 'auto']) {
+    cmds.push({ id: `ap:scheme:${id}`, group: 'appearance', title: t('appearance.cmdScheme', { name: t(`appearance.scheme_${id}`) }), icon: id === 'light' ? 'sun' : id === 'dark' ? 'moon' : 'clock', state: ap.scheme === id, radio: true, keywords: t('appearance.kwScheme'), run: () => save({ appearance: { scheme: id } }) });
+  }
+  if (ap.rotation.enabled && ap.rotation.ids.length) cmds.push({ id: 'ap:rotate', group: 'appearance', title: t('appearance.cmdRotate'), icon: 'refresh', keywords: t('appearance.kwBackground'), run: () => rotateWallpaper() });
+  for (const look of looks) {
+    cmds.push({ id: `ap:look:${look.id}`, group: 'appearance', title: t('appearance.cmdLook', { name: look.name }), icon: 'sparkles', keywords: t('appearance.kwLook'), run: () => applyLook(look) });
+  }
   cmds.push({
     id: 'ap:panel',
     group: 'appearance',
@@ -716,6 +821,81 @@ function appearanceCommands() {
 function swatchIcon(color) {
   const el = h('span', { class: 'ap-cmd-swatch', style: { '--sw': color } });
   return el;
+}
+
+// ---------- Looks guardados (settings.looks) ----------
+function setLooks(list) {
+  looks = looksCodec.normalizeLooks(list);
+  emit();
+  return store.setSettings({ looks }).catch((err) => fail(t('appearance.saveFailed'), err));
+}
+
+export function applyLook(look) {
+  const l = looksCodec.normalizeLook(look);
+  if (!l) return false;
+  music.userPaused = false;
+  bgError = false;
+  save({ appearance: l.appearance, branding: l.branding });
+  ok(t('appearance.lookApplied', { name: l.name }));
+  return true;
+}
+
+async function saveCurrentLook() {
+  if (looks.length >= looksCodec.MAX_LOOKS) {
+    toast('info', t('appearance.looksFullTitle'), t('appearance.looksFullText', { max: looksCodec.MAX_LOOKS }));
+    return;
+  }
+  const name = await promptDialog(t('appearance.lookSaveTitle'), t('appearance.lookName'), { placeholder: t('appearance.lookNamePlaceholder'), hint: t('appearance.lookSaveHint'), okText: t('appearance.lookSaveOk') });
+  if (name === null) return;
+  const look = looksCodec.lookFromSettings(appearanceSettings(), name);
+  if (!look) {
+    toast('bad', t('appearance.lookNameRequired'));
+    return;
+  }
+  await setLooks([look, ...looks]);
+  ok(t('appearance.lookSaved', { name: look.name }));
+}
+
+async function renameLook(look) {
+  const name = await promptDialog(t('appearance.lookRenameTitle'), t('appearance.lookName'), { value: look.name, okText: t('appearance.lookRenameOk') });
+  if (name === null) return;
+  const clean = looksCodec.cleanLookName(name);
+  if (!clean) {
+    toast('bad', t('appearance.lookNameRequired'));
+    return;
+  }
+  await setLooks(looks.map((l) => (l.id === look.id ? { ...l, name: clean } : l)));
+}
+
+async function deleteLook(look) {
+  if (!(await confirmDialog(t('appearance.lookDeleteTitle'), t('appearance.lookDeleteText', { name: look.name }), { okText: t('appearance.lookDeleteOk'), danger: true }))) return;
+  await setLooks(looks.filter((l) => l.id !== look.id));
+}
+
+async function shareLook(look) {
+  try {
+    await copyText(looksCodec.encodeLook(look), t('appearance.lookCopied'));
+    if (look.appearance.background === 'image' || look.appearance.music.file) toast('info', t('appearance.lookShareLocalTitle'), t('appearance.lookShareLocalText'), 6000);
+  } catch (err) {
+    fail(t('appearance.lookShareFailed'), err);
+  }
+}
+
+async function pasteLook() {
+  const code = await promptDialog(t('appearance.lookPasteTitle'), t('appearance.lookPasteLabel'), { placeholder: `${looksCodec.PREFIX}…`, hint: t('appearance.lookPasteHint'), okText: t('appearance.lookPasteOk') });
+  if (code === null) return;
+  const r = looksCodec.decodeLook(code);
+  if (!r.ok) {
+    toast('bad', t('appearance.lookPasteFailed'), t(`appearance.lookCode_${r.code}`));
+    return;
+  }
+  if (looks.length >= looksCodec.MAX_LOOKS) {
+    toast('info', t('appearance.looksFullTitle'), t('appearance.looksFullText', { max: looksCodec.MAX_LOOKS }));
+    return;
+  }
+  const look = looksCodec.normalizeLook({ ...r.look, id: looksCodec.newLookId(), createdAt: Date.now() });
+  await setLooks([look, ...looks]);
+  applyLook(look);
 }
 
 export function openAppearanceModal() {
@@ -1079,7 +1259,7 @@ function createAppearanceControls({ compact = false } = {}) {
       hexInput.classList.remove('ap-invalid');
     }
     if (colorInput.value.toLowerCase() !== ap.customColor) colorInput.value = ap.customColor;
-    const applied = engine.legibleAccent(ap.customColor);
+    const applied = engine.legibleAccent(ap.customColor, scheme === 'light');
     legibility.hidden = ap.accent !== 'custom' || applied.toLowerCase() === ap.customColor.toLowerCase();
     legibility.replaceChildren(icon('info'), t('appearance.legibleAdjusted', { color: applied }));
     tint.set(ap.tint);
@@ -1149,10 +1329,327 @@ function createAppearanceControls({ compact = false } = {}) {
   return { colorCard, bgCard, sync };
 }
 
+// ---------- Tarjetas de la 3.1 (cada una devuelve { el, sync }) ----------
+function segmented(label, options, onPick, { labelOf, iconOf } = {}) {
+  const seg = h('div', { class: 'segmented ax-seg', role: 'group', 'aria-label': label });
+  const btns = options.map((o) => h('button', { type: 'button', dataset: { value: o }, onclick: () => onPick(o) }, iconOf ? icon(iconOf(o)) : null, labelOf ? labelOf(o) : o));
+  seg.append(...btns);
+  return {
+    el: seg,
+    set(v) {
+      btns.forEach((b) => {
+        const on = b.dataset.value === String(v);
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+    },
+  };
+}
+
+const iconBtn = (name, title, onclick, cls) => h('button', { type: 'button', class: ['icon-btn sm', cls], title, 'aria-label': title, onclick }, icon(name));
+const colorHex = (css) => toHex(parseColor(css) || parseColor('#000000'));
+
+// Color propio con un selector del sistema: muestra el valor elegido o "el de Venus", con un boton para volver
+function colorItem(name, { onPick, onClear, clearLabel }) {
+  const input = h('input', { type: 'color', 'aria-label': name });
+  input.addEventListener('input', () => onPick(input.value.toLowerCase()));
+  const swatch = h('label', { class: 'ap-pal-swatch' }, input);
+  const value = h('span', { class: 'ap-pal-value' });
+  const clear = h('button', { type: 'button', class: 'ap-pal-clear', title: clearLabel, 'aria-label': clearLabel, onclick: onClear }, icon('x'));
+  const el = h('div', { class: 'ap-pal-item' }, swatch, h('div', { class: 'ap-pal-text' }, h('span', { class: 'ap-pal-name' }, name), value), clear);
+  return {
+    el,
+    set(custom, shown, text) {
+      swatch.style.setProperty('--pal', shown);
+      if (document.activeElement !== input && input.value.toLowerCase() !== shown) input.value = shown;
+      value.textContent = text;
+      el.classList.toggle('ap-pal-custom', Boolean(custom));
+      clear.hidden = !custom;
+    },
+  };
+}
+
+// Mis looks: guardar, aplicar, renombrar, borrar, compartir y pegar un codigo
+function looksCard() {
+  const list = h('div', { class: 'ap-looks-list', role: 'list', 'aria-label': t('appearance.panelLooks') });
+  const empty = h('div', { class: 'ax-hint' }, icon('info'), t('appearance.looksEmpty'));
+  const count = h('span', { class: 'ax-hint' });
+  const saveBtn = h('button', { type: 'button', class: 'btn sm', onclick: saveCurrentLook }, icon('save'), t('appearance.lookSave'));
+  const pasteBtn = h('button', { type: 'button', class: 'btn sm ghost', onclick: pasteLook }, icon('download'), t('appearance.lookPaste'));
+  const el = card('sparkles', t('appearance.panelLooks'), t('appearance.panelLooksSub'), h('div', { class: 'ap-looks-head' }, saveBtn, pasteBtn, h('span', { class: 'spacer' }), count), list, empty);
+  let lastKey = null;
+  const sync = () => {
+    count.textContent = t('appearance.looksCount', { count: looks.length, max: looksCodec.MAX_LOOKS });
+    saveBtn.disabled = looks.length >= looksCodec.MAX_LOOKS;
+    empty.hidden = looks.length > 0;
+    list.hidden = !looks.length;
+    const key = looks.map((l) => `${l.id}:${l.name}`).join('|');
+    if (key === lastKey) return;
+    lastKey = key;
+    mount(list, looks.map(lookRow));
+  };
+  return { el, sync };
+}
+
+function lookRow(look) {
+  const a = look.appearance;
+  const wp = a.background === 'wallpaper' ? getWallpaper(a.wallpaperId) : null;
+  const sw = h('span', { class: 'ap-look-sw', style: { '--lk-bg': a.palette.bg || (a.scheme === 'light' ? '#f4ece2' : '#1b130e'), '--lk-accent': a.palette.accent || accentOf(a) }, 'aria-hidden': 'true' }, wp ? h('img', { src: wp.thumb, alt: '', loading: 'lazy' }) : null, h('i'));
+  const meta = [fmtDate(look.createdAt), a.accent === 'custom' ? a.palette.accent || a.customColor : t(`appearance.preset_${a.accent}`), a.scheme !== 'dark' ? t(`appearance.scheme_${a.scheme}`) : null, look.branding.name || null].filter(Boolean).join(' · ');
+  return h(
+    'div',
+    { class: 'ap-look', role: 'listitem' },
+    sw,
+    h('div', { class: 'ap-look-main' }, h('div', { class: 'ap-look-name', title: look.name }, look.name), h('div', { class: 'ap-look-meta', title: meta }, meta)),
+    h(
+      'div',
+      { class: 'ap-look-actions' },
+      h('button', { type: 'button', class: 'btn sm tonal', 'aria-label': t('appearance.lookApplyNamed', { name: look.name }), onclick: () => applyLook(look) }, icon('check'), t('appearance.lookApply')),
+      iconBtn('copy', t('appearance.lookShare'), () => shareLook(look)),
+      iconBtn('edit', t('appearance.lookRename'), () => renameLook(look)),
+      iconBtn('trash', t('appearance.lookDelete'), () => deleteLook(look), 'danger'),
+    ),
+  );
+}
+
+// Editor de colores: fondo, tarjetas, texto, bordes y acento, con el texto corregido si no se lee
+function paletteCard() {
+  const items = PALETTE_KEYS.map((key) => ({
+    key,
+    item: colorItem(t(`appearance.pal_${key}`), {
+      onPick: (v) => save({ appearance: { palette: { ...ap.palette, [key]: v } } }, 300),
+      onClear: () => save({ appearance: { palette: { ...ap.palette, [key]: null } } }),
+      clearLabel: t('appearance.palClearNamed', { name: t(`appearance.pal_${key}`) }),
+    }),
+  }));
+  const hint = h('div', { class: 'ax-hint ap-legible' });
+  const resetBtn = h('button', { type: 'button', class: 'btn sm ghost', onclick: () => save({ appearance: { palette: { bg: null, surface: null, text: null, border: null, accent: null } } }) }, icon('undo'), t('appearance.palReset'));
+  const el = card('contrast', t('appearance.panelPalette'), t('appearance.panelPaletteSub'), h('div', { class: 'ap-palette-grid' }, items.map((i) => i.item.el)), hint, h('div', { class: 'row wrap' }, resetBtn, h('span', { class: 'ax-hint' }, t('appearance.palHint'))));
+  const sync = () => {
+    const base = engine.baseTokens(scheme);
+    const defaults = { bg: base['--bg-0'], surface: base['--surface'], text: base['--text'], border: base['--border'], accent: accentColor() };
+    const { palette, adjustedText } = effectivePalette();
+    for (const { key, item } of items) {
+      const custom = ap.palette[key];
+      const shown = key === 'text' && palette.text ? palette.text : custom || colorHex(defaults[key]);
+      item.set(custom, shown, custom ? shown : t('appearance.palDefault'));
+    }
+    hint.hidden = !adjustedText;
+    if (adjustedText) hint.replaceChildren(icon('info'), t('appearance.palAdjusted', { color: adjustedText }));
+    resetBtn.disabled = !paletteActive(ap.palette);
+  };
+  return { el, sync };
+}
+
+// Tema claro u oscuro (con horario automatico) y temas de temporada
+function schemeCard() {
+  const seg = segmented(t('appearance.schemeLabel'), ['dark', 'light', 'auto'], (v) => save({ appearance: { scheme: v } }), {
+    labelOf: (o) => t(`appearance.scheme_${o}`),
+    iconOf: (o) => (o === 'light' ? 'sun' : o === 'dark' ? 'moon' : 'clock'),
+  });
+  const ids = { from: fieldId('light-from'), to: fieldId('light-to') };
+  const from = h('input', { type: 'time', class: 'input', id: ids.from, value: ap.autoLightFrom, step: 300 });
+  const to = h('input', { type: 'time', class: 'input', id: ids.to, value: ap.autoLightTo, step: 300 });
+  from.addEventListener('change', () => {
+    if (from.value) save({ appearance: { autoLightFrom: from.value } });
+  });
+  to.addEventListener('change', () => {
+    if (to.value) save({ appearance: { autoLightTo: to.value } });
+  });
+  const times = h('div', { class: 'ap-scheme-times' }, h('label', { for: ids.from }, t('appearance.autoFrom')), from, h('label', { for: ids.to }, t('appearance.autoTo')), to);
+  const autoHint = h('div', { class: 'ax-hint' });
+  const seasonal = toggleRow(t('appearance.seasonalTitle'), t('appearance.seasonalSub'), ap.seasonal, (v) => {
+    save({ appearance: { seasonal: v } });
+    checkSeason();
+  });
+  const chips = h('div', { class: 'ap-season-row' });
+  const el = card(
+    'sun',
+    t('appearance.panelScheme'),
+    t('appearance.panelSchemeSub'),
+    h('div', { class: 'ap-ui-row' }, h('span', { class: 'ap-ui-label' }, t('appearance.schemeLabel')), seg.el),
+    times,
+    autoHint,
+    h('div', { class: 'divider' }),
+    h('div', { class: 'ax-toggles' }, seasonal.el),
+    chips,
+  );
+  let lastSeason = null;
+  const sync = () => {
+    seg.set(ap.scheme);
+    times.hidden = ap.scheme !== 'auto';
+    autoHint.hidden = ap.scheme !== 'auto';
+    if (document.activeElement !== from) from.value = ap.autoLightFrom;
+    if (document.activeElement !== to) to.value = ap.autoLightTo;
+    autoHint.replaceChildren(icon(scheme === 'light' ? 'sun' : 'moon'), t(scheme === 'light' ? 'appearance.autoNowLight' : 'appearance.autoNowDark'));
+    seasonal.set(ap.seasonal);
+    const active = currentSeason();
+    if (active !== lastSeason) {
+      lastSeason = active;
+      mount(chips, SEASONS.map((s) => h('span', { class: ['ap-season-chip', active === s.id && 'on'] }, h('i', { style: { '--sw': s.accent }, 'aria-hidden': 'true' }), t(`appearance.season_${s.id}`), h('span', { class: 'muted' }, t(`appearance.seasonDates_${s.id}`)))));
+    }
+  };
+  return { el, sync };
+}
+
+// Fondos rotativos: varios fondos de la galeria que cambian cada N minutos o al abrir
+function openRotationPicker() {
+  const count = h('span', { class: 'ax-hint' });
+  const btns = WALLPAPERS.map((w) =>
+    h(
+      'button',
+      {
+        type: 'button',
+        class: 'ap-wallpaper',
+        role: 'checkbox',
+        'aria-checked': 'false',
+        title: w.name,
+        'aria-label': w.video ? `${w.name}, ${t('appearance.liveBadge')}` : w.name,
+        dataset: { id: w.id },
+        onclick: () => {
+          const ids = ap.rotation.ids;
+          const next = ids.includes(w.id) ? ids.filter((x) => x !== w.id) : [...ids, w.id];
+          save({ appearance: { rotation: { ...ap.rotation, ids: next } } });
+          refresh();
+        },
+      },
+      h('img', { src: w.thumb, alt: '', loading: 'lazy', decoding: 'async', width: 320, height: 180 }),
+      w.video ? h('span', { class: 'ap-wallpaper-live', 'aria-hidden': 'true' }, icon('play'), t('appearance.liveBadge')) : null,
+      h('span', { class: 'ap-wallpaper-name', 'aria-hidden': 'true' }, w.name),
+      h('span', { class: 'ap-wallpaper-check', 'aria-hidden': 'true' }, icon('check')),
+    ),
+  );
+  const refresh = () => {
+    const ids = ap.rotation.ids;
+    btns.forEach((b) => {
+      const on = ids.includes(b.dataset.id);
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', String(on));
+    });
+    count.textContent = t('appearance.rotCount', { count: ids.length });
+  };
+  refresh();
+  const clearBtn = h('button', { type: 'button', class: 'btn sm ghost', onclick: () => { save({ appearance: { rotation: { ...ap.rotation, ids: [] } } }); refresh(); } }, icon('x'), t('appearance.rotClear'));
+  const m = modal({
+    title: t('appearance.rotPickTitle'),
+    subtitle: t('appearance.rotPickSub'),
+    icon: 'image',
+    size: 'wide',
+    body: h('div', {}, h('div', { class: 'ap-rot-head' }, count, clearBtn), h('div', { class: 'ap-wallpapers ap-rot-pick', role: 'group', 'aria-label': t('appearance.rotPickTitle') }, btns)),
+    footer: [h('button', { type: 'button', class: 'btn primary', onclick: () => m.close() }, icon('check'), t('appearance.rotDone'))],
+  });
+}
+
+function rotationCard() {
+  const enabled = toggleRow(t('appearance.rotTitle'), t('appearance.rotSub'), ap.rotation.enabled, (v) => save({ appearance: { rotation: { ...ap.rotation, enabled: v } } }));
+  const chips = h('div', { class: 'ap-rot-chips' });
+  const empty = h('div', { class: 'ax-hint' }, icon('info'), t('appearance.rotEmpty'));
+  const pickBtn = h('button', { type: 'button', class: 'btn sm', onclick: openRotationPicker }, icon('image'), t('appearance.rotPick'));
+  const nowBtn = h('button', { type: 'button', class: 'btn sm ghost', onclick: () => rotateWallpaper() }, icon('refresh'), t('appearance.rotNow'));
+  const every = segmented(t('appearance.rotEvery'), ROTATION_PRESETS.map(String), (v) => save({ appearance: { rotation: { ...ap.rotation, everyMin: Number(v) } } }), { labelOf: (o) => t('appearance.rotMinutes', { n: o }) });
+  const onLaunch = toggleRow(t('appearance.rotOnLaunch'), t('appearance.rotOnLaunchSub'), ap.rotation.onLaunch, (v) => save({ appearance: { rotation: { ...ap.rotation, onLaunch: v } } }));
+  const liteHint = h('div', { class: 'ax-hint' }, icon('info'), t('appearance.rotLiteHint'));
+  const el = card(
+    'refresh',
+    t('appearance.panelRotation'),
+    t('appearance.panelRotationSub'),
+    h('div', { class: 'ax-toggles' }, enabled.el),
+    chips,
+    empty,
+    h('div', { class: 'row wrap' }, pickBtn, nowBtn),
+    h('div', { class: 'ap-ui-row' }, h('span', { class: 'ap-ui-label' }, t('appearance.rotEvery')), every.el),
+    h('div', { class: 'ax-toggles' }, onLaunch.el),
+    liteHint,
+  );
+  let lastKey = null;
+  const sync = () => {
+    const ids = ap.rotation.ids;
+    enabled.set(ap.rotation.enabled);
+    empty.hidden = ids.length > 0;
+    chips.hidden = !ids.length;
+    nowBtn.disabled = !ids.length;
+    every.set(ROTATION_PRESETS.includes(ap.rotation.everyMin) ? ap.rotation.everyMin : '');
+    onLaunch.set(ap.rotation.onLaunch);
+    liteHint.hidden = !(ap.lite && ids.some((id) => getWallpaper(id)?.video));
+    const current = ap.background === 'wallpaper' ? ap.wallpaperId : '';
+    const key = `${ids.join('|')}#${current}`;
+    if (key === lastKey) return;
+    lastKey = key;
+    mount(
+      chips,
+      ids.map((id) => {
+        const w = getWallpaper(id);
+        return h(
+          'span',
+          { class: ['ap-rot-chip', current === id && 'current'] },
+          h('img', { src: w.thumb, alt: '', loading: 'lazy' }),
+          h('span', { class: 'ellipsis', title: w.name }, w.name),
+          iconBtn('x', t('appearance.rotRemove', { name: w.name }), () => save({ appearance: { rotation: { ...ap.rotation, ids: ap.rotation.ids.filter((x) => x !== id) } } })),
+        );
+      }),
+    );
+  };
+  return { el, sync };
+}
+
+// Boton Jugar: color, texto, animacion y sonido (el boton real lo dibuja Inicio; aca hay una vista previa)
+function playCard() {
+  const previewText = h('span', {});
+  const previewBtn = h('span', { class: 'play-btn' }, icon('play'), previewText);
+  const preview = h('div', { class: 'ap-play-preview', 'aria-hidden': 'true', inert: '' }, previewBtn);
+  const color = colorItem(t('appearance.playColor'), {
+    onPick: (v) => save({ appearance: { playButton: { ...ap.playButton, color: v } } }, 300),
+    onClear: () => save({ appearance: { playButton: { ...ap.playButton, color: 'accent' } } }),
+    clearLabel: t('appearance.playColorAccent'),
+  });
+  const labelId = fieldId('play-label');
+  const labelInput = h('input', { class: 'input', id: labelId, maxlength: PLAY_LABEL_MAX, placeholder: t('appearance.playLabelPlaceholder'), value: ap.playButton.label, autocomplete: 'off', spellcheck: 'false' });
+  labelInput.addEventListener('input', () => save({ appearance: { playButton: { ...ap.playButton, label: cleanLabel(labelInput.value) } } }, 400));
+  const anim = segmented(t('appearance.playAnim'), PLAY_ANIMATIONS, (v) => save({ appearance: { playButton: { ...ap.playButton, animation: v } } }), { labelOf: (o) => t(`appearance.playAnim_${o}`) });
+  const sound = segmented(
+    t('appearance.playSound'),
+    PLAY_SOUNDS,
+    (v) => {
+      save({ appearance: { playButton: { ...ap.playButton, sound: v } } });
+      playSound();
+    },
+    { labelOf: (o) => t(`appearance.playSound_${o}`) },
+  );
+  const testBtn = h('button', { type: 'button', class: 'btn sm ghost', onclick: playSound }, icon('volume'), t('appearance.playSoundTest'));
+  const liteHint = h('div', { class: 'ax-hint' }, icon('info'), t('appearance.playLiteHint'));
+  const el = card(
+    'play',
+    t('appearance.panelPlay'),
+    t('appearance.panelPlaySub'),
+    preview,
+    h('div', { class: 'ap-play-grid' }, color.el, h('div', { class: 'field' }, h('label', { for: labelId }, t('appearance.playLabel')), labelInput, h('div', { class: 'field-help' }, t('appearance.playLabelHint', { max: PLAY_LABEL_MAX })))),
+    h('div', { class: 'ap-ui-row' }, h('span', { class: 'ap-ui-label' }, t('appearance.playAnim')), anim.el),
+    h('div', { class: 'ap-ui-row' }, h('span', { class: 'ap-ui-label' }, t('appearance.playSound')), h('div', { class: 'row wrap' }, sound.el, testBtn)),
+    liteHint,
+  );
+  const sync = () => {
+    const pb = ap.playButton;
+    previewText.textContent = pb.label || t('appearance.previewPlay');
+    const custom = pb.color !== 'accent';
+    color.set(custom, custom ? pb.color : accentColor(), custom ? pb.color : t('appearance.playColorAccent'));
+    if (document.activeElement !== labelInput) labelInput.value = pb.label;
+    anim.set(pb.animation);
+    sound.set(pb.sound);
+    testBtn.disabled = pb.sound === 'none';
+    liteHint.hidden = !(ap.lite && pb.animation !== 'none');
+  };
+  return { el, sync };
+}
+
 function buildPanel(root) {
-  if (!started) ({ a: ap, b: br } = fromStore());
+  if (!started) ({ a: ap, b: br, l: looks } = fromStore());
 
   const { colorCard, bgCard, sync: syncVisuals } = createAppearanceControls();
+  const looksC = looksCard();
+  const paletteC = paletteCard();
+  const schemeC = schemeCard();
+  const rotationC = rotationCard();
+  const playC = playCard();
 
   // --- Marca ---
   const miniLogo = h('img', { class: 'ap-mini-logo', alt: '' });
@@ -1299,7 +1796,7 @@ function buildPanel(root) {
         music.userPaused = false;
         bgError = false;
         const { server } = br;
-        save({ appearance: { ...APPEARANCE_DEFAULTS, music: { ...APPEARANCE_DEFAULTS.music } }, branding: { ...BRANDING_DEFAULTS, server } });
+        save({ appearance: appearanceDefaults(), branding: { ...BRANDING_DEFAULTS, server } });
         nameInput.value = '';
         subInput.value = BRANDING_DEFAULTS.subtitle;
       },
@@ -1333,11 +1830,17 @@ function buildPanel(root) {
     glass.el || glass,
   );
 
-  mount(root, colorCard, bgCard, uiCard, brandCard, musicCard, h('div', { class: 'ax-panel-foot' }, h('span', { class: 'ax-hint' }, t('appearance.liveNote')), resetBtn));
+  const extra = extraCards.map((fn) => { try { return fn(); } catch (err) { console.warn('[appearance] tarjeta', err?.message || err); return null; } }).filter(Boolean);
+  mount(root, looksC.el, colorCard, paletteC.el, schemeC.el, bgCard, rotationC.el, uiCard, ...extra, brandCard, playC.el, musicCard, h('div', { class: 'ax-panel-foot' }, h('span', { class: 'ax-hint' }, t('appearance.liveNote')), resetBtn));
 
   // --- Sincronizar ---
   const sync = () => {
     syncVisuals();
+    looksC.sync();
+    paletteC.sync();
+    schemeC.sync();
+    rotationC.sync();
+    playC.sync();
 
     const v = brandingView();
     miniLogo.src = v.logoSrc;

@@ -20,6 +20,8 @@ const { t } = require('./i18n');
 const { readJson, writeJson, uid, exists, rmrf, sanitizeFileName, dirSize } = require('./util');
 // Rutas seguras y copias que respetan los enlaces duros del almacen (compartido con modrinth y los modulos).
 const safety = require('../modules/packs/safety');
+// Metadatos de presentacion (cover, coverAt, tags, favorite, notes): se validan en cada update.
+const meta = require('../modules/instancemeta/meta');
 
 const gunzip = promisify(zlib.gunzip);
 
@@ -209,6 +211,7 @@ function update(id, patch = {}) {
       if (name) clean.name = name;
       else delete clean.name;
     }
+    meta.applyMetaPatch(clean);
     const next = { ...cur, ...clean, id };
     if (clean.memory) next.memory = { ...cur.memory, ...clean.memory };
     if (clean.java) next.java = { ...cur.java, ...clean.java };
@@ -281,6 +284,12 @@ async function create(opts = {}) {
     playtime: 0,
     launches: 0,
     modrinth: { projects: {}, pack: opts.pack || null },
+    // Presentacion (modulo instancemeta): caratula, etiquetas, favorito y notas
+    cover: null,
+    coverAt: null,
+    tags: meta.normalizeTags(opts.tags),
+    favorite: false,
+    notes: { text: '', tasks: [] },
   };
   return save(inst);
 }
@@ -359,6 +368,11 @@ async function duplicate(id, { name, worlds = true } = {}) {
     window: src.window,
     modrinth: src.modrinth,
     icon: src.icon,
+    // La caratula (cover.png va en la copia), las etiquetas y las notas se conservan; favorito no.
+    cover: src.cover || null,
+    coverAt: src.coverAt || null,
+    tags: src.tags || [],
+    notes: src.notes || null,
   });
 }
 

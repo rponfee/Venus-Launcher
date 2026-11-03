@@ -386,4 +386,6 @@ export default {
   connLoss: "{status} · 连接不稳定：{loss}% 的音频丢失",
   netBadBadge: "连接不稳定",
   netBadHint: "与房间里某人的语音出现断断续续或正在重新连接。Venus 会自动降低音质并重试。",
+  entryJoined: "加入了",
+  entryJoinedAria: "{name} 加入了房间",
 };

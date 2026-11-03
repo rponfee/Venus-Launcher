@@ -262,4 +262,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "Місію виконано",
   hist_missionBonus: "Бонус за місії",
+  hist_gift_in: "Подарунок від друга",
+  hist_gift_out: "Подарунок другу",
+  item_frame_pulse: "Рамка «Пульс»",
+  item_frame_orbit: "Рамка «Орбіта»",
+  item_frame_halloween: "Гелловінська рамка",
+  item_frame_xmas: "Різдвяна рамка",
 };

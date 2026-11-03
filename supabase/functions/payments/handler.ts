@@ -20,7 +20,8 @@ const TAG = 'payments';
 const BODY_LIMIT = 16 * 1024;
 const CHECKOUT_INTERVAL_MS = 3000;
 const STATUS_INTERVAL_MS = 2500;
-const PLANS = new Set(['basic', 'go', 'pro', 'max']);
+// Planes de Venus IA y las ediciones del Venus Pass (0026): la base decide el precio y qué se entrega.
+const PLANS = new Set(['basic', 'go', 'pro', 'max', 'pass_go', 'pass_pro', 'pass_max']);
 const PROVIDERS = new Set(['mercado_pago', 'paypal']);
 
 export type AuthResult =
@@ -83,6 +84,7 @@ export function webhookUrls(base: string) {
 }
 
 function planTitle(order: Order): string {
+  if (String(order.plan).startsWith('pass_')) return order.planName || `Venus Pass ${String(order.plan).slice(5)}`;
   return `Venus IA · Plan ${order.planName || order.plan}`;
 }
 

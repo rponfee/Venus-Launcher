@@ -261,4 +261,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "미션 완료",
   hist_missionBonus: "미션 보너스",
+  hist_gift_in: "친구의 선물",
+  hist_gift_out: "친구에게 선물",
+  item_frame_pulse: "펄스 테두리",
+  item_frame_orbit: "궤도 테두리",
+  item_frame_halloween: "할로윈 테두리",
+  item_frame_xmas: "크리스마스 테두리",
 };

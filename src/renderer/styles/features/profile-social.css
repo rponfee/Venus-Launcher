@@ -1,0 +1,76 @@
+/* Perfil y social 3.1 (la carga social/profile-ui.js): insignias raras, libro de visitas, cancion de perfil,
+   regalos, denuncias y el panel de denuncias. Prefijo .pf- (tarjeta) y .pf-gb-, .pf-song-, .pf-gift-, .pf-rep-. */
+
+/* Insignias por logros raros: chips con el icono del logro */
+.pf-rare { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.pf-rare-chip {
+  display: inline-flex; align-items: center; gap: var(--sp-1); height: 26px; padding: 0 var(--sp-2) 0 var(--sp-1); border-radius: var(--radius-full);
+  font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; max-width: 100%;
+  color: #2b1405; background: linear-gradient(135deg, #fff1a8, #f0b429 60%, #d9761c); border: 1px solid rgba(255, 255, 255, 0.35); box-shadow: 0 0 10px rgba(240, 180, 41, 0.35);
+}
+.pf-rare-chip[data-rarity='legendary'] { color: #fff; background: linear-gradient(135deg, #ff4fd8, #7e5bd6 55%, #2a3a8f); box-shadow: 0 0 12px rgba(255, 79, 216, 0.5); }
+.pf-rare-chip > svg { width: 14px; height: 14px; flex-shrink: 0; }
+.pf-rare-chip > span { overflow: hidden; text-overflow: ellipsis; }
+.pf-rare-chip .pf-rare-pct { opacity: 0.8; font-weight: 600; }
+
+/* Libro de visitas */
+.pf-gb { display: flex; flex-direction: column; gap: var(--sp-2); }
+.pf-gb-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.pf-gb-item { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-2); border-radius: var(--radius); background: rgba(12, 7, 5, 0.45); border: 1px solid var(--border-2); min-width: 0; }
+.pf-gb-item .sc-head { width: 28px; height: 28px; border-radius: var(--radius-s); flex-shrink: 0; }
+.pf-gb-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pf-gb-head { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.pf-gb-name { font-weight: 700; font-size: var(--fs-sm); min-width: 0; }
+.pf-gb-time { margin-left: auto; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+.pf-gb-body { font-size: var(--fs-sm); line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pf-gb-empty { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
+.pf-gb-empty svg { width: 14px; height: 14px; }
+.pf-gb > .btn { align-self: center; }
+.pf-gb-compose { display: flex; flex-direction: column; gap: var(--sp-1); }
+.pf-gb-input { min-height: 56px; resize: vertical; }
+.pf-gb-compose-row { display: flex; align-items: center; gap: var(--sp-2); }
+.pf-gb-count { font-size: var(--fs-xs); color: var(--muted); }
+
+/* Cancion de perfil: reproductor chico */
+.pf-song { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); border-radius: var(--radius); background: rgba(12, 7, 5, 0.45); border: 1px solid var(--border-2); }
+.pf-song-row { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.pf-song-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.pf-song-title { display: flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-sm); font-weight: 700; min-width: 0; }
+.pf-song-title svg { width: 14px; height: 14px; color: var(--pf-accent, var(--accent-hi)); flex-shrink: 0; }
+.pf-song-bar { height: 4px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.pf-song-bar > i { display: block; height: 100%; width: 0; background: var(--pf-accent, var(--accent)); transition: width 0.25s linear; }
+.pf-song.playing .pf-song-title svg { animation: pf-song-bounce 1.2s ease-in-out infinite; }
+@keyframes pf-song-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+.pf-song-vol { width: 70px; }
+.pf-song-opt { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); font-size: var(--fs-xs); color: var(--muted); }
+.pf-song-note { font-size: var(--fs-xs); color: var(--muted); }
+.pf-song.failed { opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) { .pf-song.playing .pf-song-title svg { animation: none; } }
+body.reduce-motion .pf-song.playing .pf-song-title svg { animation: none; }
+
+/* Regalar */
+.pf-gift { display: flex; flex-direction: column; gap: var(--sp-3); }
+.pf-gift-info { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.pf-gift-panel { display: flex; flex-direction: column; gap: var(--sp-3); }
+.pf-gift-items { max-height: 320px; overflow-y: auto; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
+.pf-gift-items .pfe-radio { align-items: center; text-align: center; min-height: 92px; }
+.pf-gift-price { font-size: var(--fs-xs); color: var(--accent-hi); }
+.pf-gift-head .sc-head { width: 36px; height: 36px; border-radius: var(--radius-s); }
+
+/* Denunciar */
+.pf-report-reasons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pf-report-reasons .pfe-radio { flex-direction: row; align-items: center; gap: var(--sp-2); }
+.pf-report-reasons .pfe-radio svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* Acciones de la tarjeta (Regalar y Denunciar) */
+.pf-card-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+/* Panel de administracion: denuncias */
+.pf-rep { display: flex; flex-direction: column; gap: var(--sp-2); }
+.pf-rep.closed { opacity: 0.7; }
+.pf-rep-head { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.pf-rep-time { margin-left: auto; font-size: var(--fs-xs); color: var(--muted); }
+.pf-rep-who { font-size: var(--fs-sm); }
+.pf-rep-text { margin: 0; font-size: var(--fs-sm); white-space: pre-wrap; overflow-wrap: anywhere; }
+.pf-rep-song { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-sm); }
+.pf-rep-song audio { height: 32px; max-width: 320px; }

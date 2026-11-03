@@ -1,6 +1,6 @@
 # Guía de Venus Launcher
 
-Todo lo que podés hacer con Venus Launcher, función por función: cómo se usa y qué necesita. Después de los primeros pasos, las funciones siguen el orden del menú de la izquierda (**Jugar**, **Contenido**, **En línea** y **Herramientas**); al final están el **Asistente IA**, las herramientas de cada instancia, los **Ajustes** (el engranaje de abajo a la izquierda) y los atajos.
+Todo lo que podés hacer con Venus Launcher, función por función: cómo se usa y qué necesita. Después de los primeros pasos, las funciones siguen el orden del menú de la izquierda (**Jugar**, **Contenido**, **En línea** y **Herramientas**); al final están el **Asistente IA**, las herramientas de cada instancia, los **Ajustes** (el engranaje de abajo a la izquierda), el [menú lateral y el modo mini](#menú-lateral-y-modo-mini) y los atajos.
 
 **Qué necesita cada cosa.** La mayoría de las funciones andan solas. Algunas piden algo más, y lo vas a ver indicado así:
 
@@ -31,8 +31,9 @@ En **Ajustes → Cuenta y nube → Cuenta de Venus** creá tu cuenta con un nomb
 
 Tu instancia elegida con el botón **JUGAR**. Mientras jugás se convierte en **DETENER** y muestra el tiempo de juego y dónde estás (mundo o servidor); mientras se prepara, muestra el progreso. Con el selector de arriba cambiás de instancia.
 
-Debajo hay accesos rápidos y bloques que se ocultan solos si no tienen datos: **Continuar donde quedaste** (entra directo a tus últimos mundos), servidores destacados con su ping, tus capturas, novedades de Minecraft, **Tu servidor** (el que configures en Apariencia), amigos en línea con botón para unirte, tu actividad de la semana y consejos. Con **Personalizar inicio** elegís qué bloques ver.
+Debajo hay accesos rápidos y bloques que se ocultan solos si no tienen datos: **Continuar donde quedaste** (entra directo a tus últimos mundos), servidores destacados con su ping, tus capturas, novedades de Minecraft, **Tu servidor** (el que configures en Apariencia), amigos en línea con botón para unirte, tu actividad de la semana y consejos. Con **Organizar** (arriba a la derecha, o **Personalizar inicio** al pie) armás el Inicio a tu gusto.
 
+- **Inicio armable**: en el modo Organizar cada bloque muestra una barra con su nombre y botones para subirlo o bajarlo (o lo arrastrás a donde quieras), ocultarlo o mostrarlo y ponerlo a lo ancho de la página o al ancho normal. Los ocultos se ven atenuados y los que no tienen datos dicen "Sin datos por ahora". La instancia elegida y el botón JUGAR siempre quedan arriba. **Restablecer** vuelve al orden de siempre y **Listo** sale. Lo que elegís se guarda solo; si venías de una versión anterior, se respetan los bloques que ya tenías ocultos.
 - Necesita: cuenta de Minecraft para jugar. Los amigos en línea necesitan cuenta de Venus.
 
 ### Venus
@@ -71,6 +72,7 @@ Con **Ajustes → General → Venus en el juego → Insignia de Venus junto a tu
 Mientras jugás, Venus muestra encima del juego quién habla en el Voice Chat y quién está silenciado, los mensajes que te llegan, avisos (del launcher, de amigos, de tus servidores, logros y Venus Points), capturas, clips y grabación, y la canción que suena.
 
 - En **Ajustes → En el juego** activás cada widget, elegís su lugar en una grilla de 3×3 o lo arrastrás a donde quieras (en la vista previa o con **Editar posiciones en el juego**), y cambiás su tamaño, opacidad y tema (oscuro, claro o acento). Podés ocultar el texto de los mensajes (solo se ve quién escribió) y elegir qué avisos ver.
+- **Rendimiento**: un widget con la RAM y la CPU que usa el juego, el ping del servidor en el que estás (si Venus sabe cuál es) y cuánto hace que abriste el juego. En **Ajustes → En el juego** lo activás y elegís qué mostrar. No muestra FPS: no se pueden medir desde afuera del juego (usá F3 o un mod). Se esconde solo cuando deja de haber datos.
 - **Alt+Shift+O** (se puede cambiar) lo muestra u oculta mientras jugás. **Probar overlay** manda avisos de ejemplo.
 - Anda con cualquier versión y loader. En pantalla completa exclusiva puede no verse: jugá en ventana maximizada o sin bordes. Detalles: [overlay.md](overlay.md).
 
@@ -79,10 +81,17 @@ Mientras jugás, Venus muestra encima del juego quién habla en el Voice Chat y 
 Una **instancia** es una instalación independiente de Minecraft, con su versión, su loader y sus propios mods, mundos y ajustes.
 
 - **Instalar nueva**: elegí cualquier versión (releases, snapshots, bromas del 1 de abril, beta, alpha y versiones antiguas hasta la pre-classic) y un loader: Vanilla, Fabric, Quilt, Forge, NeoForge, OptiFine, Iris (Fabric + Iris + Sodium), Legacy Fabric o Babric. La instalación sigue en segundo plano y la ves en el panel de tareas.
-- **Mis instancias**: en cuadrícula o lista, con búsqueda, orden (jugadas hace poco, nombre, versión o tiempo jugado) y agrupadas por loader. Desde el menú de cada una podés renombrarla, duplicarla, repararla o eliminarla (va a la papelera).
+- **Mis instancias**: en cuadrícula, lista o **biblioteca** (carátulas grandes al estilo de Steam, con el nombre, el loader y la versión encima y **Jugar** al pasar el mouse o con el teclado), con búsqueda (también por etiqueta), orden (jugadas hace poco, nombre, versión o tiempo jugado) y agrupadas por loader. Desde el menú **⋯** de cada una podés renombrarla, duplicarla, repararla, marcarla como favorita, ponerle etiquetas, crear un acceso directo o eliminarla (va a la papelera).
 - **Importar**: modpacks de Modrinth (`.mrpack`), modpacks de otros launchers (CurseForge, MultiMC, Prism), **Usar código** para un modpack que te compartieron (`PACK-XXXXXX`) o **Del launcher oficial de Minecraft** (ver [Importar desde el launcher oficial](#importar-desde-el-launcher-oficial)). También podés arrastrar el archivo a la ventana.
+- **Favoritas y etiquetas**: la estrella de cada tarjeta, fila o carátula (y de la cabecera de la instancia) la marca como favorita: las favoritas van primero con cualquier orden y el chip **Solo favoritas** muestra solo esas. Con **Etiquetas…** (menú ⋯ o tarjeta Presentación) le ponés hasta 10 etiquetas de hasta 24 caracteres ("Survival", "Amigos"…), que se ven como chips; **Filtrar por etiqueta** aparece cuando alguna instancia tiene etiquetas y tocar un chip filtra por esa etiqueta. Los filtros duran mientras el launcher está abierto.
+- **Carátulas**: una imagen tuya (PNG, JPG o WebP de hasta 8 MB) o una captura de esa instancia, recortada a 16:9 y guardada reducida (640×360) dentro de la carpeta de la instancia. Se cambia desde la tarjeta **Presentación** del Resumen; **Quitar** vuelve a la carátula generada (color del loader y letra, con el ícono del modpack si tiene). Al duplicar una instancia, la carátula, las etiquetas y las notas viajan con ella (el favorito no).
+- **Comparar** (botón de la barra de Mis instancias, con 2 o más instancias): elegís dos y ves lado a lado Minecraft, loader y su versión, memoria, Java, optimización de memoria, argumentos de la JVM y los mods, shaders y resource packs de cada una (nombre y versión), con lo distinto resaltado. **Copiar diferencias** copia un texto plano para pegar donde quieras.
+- **Accesos directos** (solo Windows; menú ⋯ o tarjeta Presentación → **Crear acceso directo**): deja `<nombre>.lnk` en el escritorio. Al abrirlo, Venus arranca (o se trae al frente si ya estaba abierto) y lanza esa instancia con la cuenta elegida apenas la interfaz está lista; si falta una cuenta o la instancia ya no existe, lo avisa como una tarea fallida.
 
-La página de cada instancia tiene las pestañas **Resumen** (tiempo jugado, espacio en disco y las herramientas de la instancia), **Contenido** (mods, resource packs, shaders y data packs de cada mundo, con interruptores para activarlos y botón para agregar más), **Mundos** (jugar directo o ver el mapa), **Capturas**, **Registros** (la consola en vivo y los archivos de registro) y **Ajustes** (memoria, Java, ventana y **Optimizar**). Las herramientas del Resumen se explican en [Herramientas de cada instancia](#herramientas-de-cada-instancia).
+La página de cada instancia tiene las pestañas **Resumen** (tiempo jugado, espacio en disco, la tarjeta **Presentación** —carátula, favorito, etiquetas y acceso directo— y las herramientas de la instancia), **Contenido** (mods, resource packs, shaders y data packs de cada mundo, con interruptores para activarlos y botón para agregar más), **Mundos** (jugar directo o ver el mapa), **Capturas**, **Notas** (abajo), **Registros** (la consola en vivo y los archivos de registro) y **Ajustes** (memoria, Java, ventana y **Optimizar**). Las herramientas del Resumen se explican en [Herramientas de cada instancia](#herramientas-de-cada-instancia).
+
+- **Notas y tareas** (pestaña **Notas**): un cuadro de texto para lo que quieras recordar de esa instancia (seeds, coordenadas, qué mods probar; hasta 20 000 caracteres) que se guarda solo mientras escribís, y una lista de tareas con casillas (hasta 100): **Agregar** con Enter, borrar de a una o **Borrar hechas**. Las pendientes se cuentan en la pestaña, en la tarjeta, en la fila y en la biblioteca.
+- Necesita: nada. Carátulas, etiquetas, favoritos y notas quedan en tu PC, dentro de la carpeta de cada instancia.
 
 Si la instancia ya se verificó hace poco y no cambió nada, arranca rápido sin revisar todo por internet. **Reparar** revisa todos los archivos.
 
@@ -160,6 +169,14 @@ En **Música** (menú Jugar) ves lo que suena en Spotify (gratis o Premium), You
 - **Venus Premium** (cualquier plan de Venus): puntos x2 en el premio diario y los logros, insignia dorada en el juego, banners animados, efectos de nombre premium, Marco Venus y título Supporter, repetición instantánea de 5 minutos y todo lo del plan (IA). Se ve en **Venus Points → Premium** y en **Ajustes → Plan**.
 - Necesita: cuenta de Venus. Reglas completas: [venus-points.md](venus-points.md).
 
+### Venus Pass
+
+Pase de temporada, en **Venus Pass** del menú. Cada temporada dura 8 semanas y tiene 50 niveles con dos pistas: la gratis (puntos y dos cosméticos) y la premium (más puntos y cuatro cosméticos exclusivos), que se abre con cualquier edición del pase: **Go**, **Pro** (10 niveles al instante y el título Pro) o **Max** (25 niveles, +25 % de XP y el marco Max). Se compra una vez con Mercado Pago o PayPal, como los planes de IA, y pasar a una edición mejor cuesta la diferencia.
+
+- **XP**: cada Venus Point que ganás en la temporada vale 1 XP (premio diario, misiones, logros e invitaciones) y jugar da 1 XP por minuto, hasta 120 por día. Venus Premium multiplica la XP por 1,2.
+- **Premios**: se reclaman nivel por nivel o con **Reclamar todo**; el punto en el menú avisa cuando hay algo. Los cosméticos del pase se equipan desde Mi perfil y no se venden en la tienda.
+- Necesita: cuenta de Venus. El progreso vive en el servidor.
+
 ## Contenido
 
 ### Modrinth (y CurseForge)
@@ -218,6 +235,7 @@ Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, F
   - **Nivelar voces**: compensa a quien habla muy bajo o muy fuerte y evita que se sature cuando hablan varios. Se suma al volumen de cada persona y se puede apagar.
   - **Calidad de voz**: Ahorro (40 kbps), Normal (80 kbps) o Alta (128 kbps) por persona. En salas de más de 5 personas el tope baja para no saturar tu subida, y baja solo si la conexión pierde paquetes.
 - **Cortes y compatibilidad**: la voz usa Opus en mono con corrección de errores (FEC) y sin mandar datos en silencio (DTX). Se puede entrar a la misma sala con clientes 2.x.
+- **Efecto de entrada**: cuando alguien entra a la sala, su tarjeta muestra durante un segundo y medio el efecto que eligió en su perfil (chispas, Nether, Ender o nieve) y la etiqueta "entró". Con movimiento reducido no se anima. El tuyo se elige en **Mi perfil → Estilo**.
 - **En el juego**: instala **Simple Voice Chat** en tus instancias o servidores para tener voz de proximidad dentro de Minecraft.
 - Invitá a un amigo desde Mensajes con **Invitar a voz**: si no estás en una sala, se crea una privada.
 - Necesita: cuenta de Venus y micrófono. Pulsar para hablar funciona con el launcher en primer plano; dentro del juego usá el atajo global.
@@ -228,7 +246,10 @@ Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, F
 - La lista muestra quién está conectado y a qué juega ("Jugando 1.21.1 Fabric · mc.ejemplo.net").
 - El chat es en tiempo real: respuestas, reacciones, editar y borrar tus mensajes, emojis, "escribiendo..." y avisos de lectura. Si no hay conexión, los mensajes quedan en cola y se mandan solos.
 - Desde el chat: **Unirse** al servidor de tu amigo (con una instancia compatible), **Invitar a voz** y **Ver perfil**.
-- **Mi perfil**: banner, estado (en línea, ausente, ocupado o invisible), mensaje de estado, nombre de Minecraft y privacidad. Podés bloquear a alguien y dejar de compartir tu actividad en **Ajustes → Privacidad**.
+- **GIF**: con el botón **GIF** del cuadro de escribir buscás en KLIPY y mandás un GIF, que tu amigo ve en el chat. Si tu versión del launcher no trae la clave de KLIPY, el botón te avisa que no está disponible.
+- Tus mensajes (y los de tu amigo) se ven con la **burbuja** que cada uno eligió en **Mi perfil → Estilo**.
+- Desde la tarjeta de un amigo podés **Regalar** Venus Points o un cosmético, escribir en su **libro de visitas**, escuchar su **canción de perfil** o **Denunciar** el perfil (ver [Perfiles](#perfiles)).
+- **Mi perfil**: banner, estado (en línea, ausente, ocupado o invisible), mensaje de estado (con emoji y, si querés, vencimiento), nombre de Minecraft y privacidad. Podés bloquear a alguien y dejar de compartir tu actividad en **Ajustes → Privacidad**.
 - Si tu cuenta está silenciada o suspendida por moderación, Mensajes te lo avisa (con la fecha hasta la que dura) y no te deja escribir.
 - Necesita: cuenta de Venus.
 
@@ -236,12 +257,15 @@ Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, F
 
 **Mi perfil** (en Mensajes, tocando tu cabeza, o **Ajustes → Cuenta y nube → Editar perfil**) abre un editor con vista previa en vivo de tu tarjeta y de cómo se ve tu nombre en la lista de un amigo:
 
-- **Perfil**: pronombres y descripción.
-- **Estilo**: degradado de dos colores con ángulo, tipografía del nombre (7), efecto (brillo, degradado, destello, arcoíris o fuego), color y brillo del nombre.
+- **Perfil**: pronombres, descripción y el **estado con emoji**: un emoji de la grilla, un texto (hasta 70 caracteres) y **Dura** (30 minutos, 1 hora, 4 horas, hasta mañana o siempre); cuando vence, el estado desaparece solo.
+- **Estilo**: degradado de dos colores con ángulo, tipografía del nombre (7), efecto (brillo, degradado, destello, arcoíris o fuego), color y brillo del nombre. Desde la 3.1, además: **Tema de la tarjeta** (Nether, End, Océano, Cerezos, Espacio o Aurora; con Premium, también con partículas), **burbujas de chat** (clásica, redonda, pixel o recta y su color, con una muestra: así se ven tus mensajes en Mensajes), **entrada en salas de voz** (chispas, Nether, Ender o nieve) y la **canción de perfil**: elegís un archivo de tu PC (MP3, OGG, WAV, M4A o WebM de hasta 20 MB), marcás dónde empiezan los 30 segundos y el recorte se prepara en tu PC y se sube al guardar (el original no se sube). Solo tus amigos la escuchan al abrir tu tarjeta, con play, pausa y volumen, y cualquiera puede apagarlas con **No reproducir canciones de perfil**.
 - **Banner**: 8 diseños pixel, tu propia imagen (se recorta y comprime en tu PC), un GIF animado con Premium o el color clásico.
-- **Vitrina**: hasta 5 servidores favoritos (tus amigos los ven con **Unirme**), tus estadísticas (si las querés publicar) y hasta 3 capturas destacadas.
-- **Cosméticos**: marco, título y estilo de la insignia de la tienda o de Premium. Lo premium que no tenés se ve con un candado que lleva a los planes.
+- **Vitrina**: hasta 5 servidores favoritos (tus amigos los ven con **Unirme**), tus estadísticas (si las querés publicar) y hasta 3 capturas destacadas. Desde la 3.1, además: la **pose** (de pie, saludando, sentado o caminando) y el **fondo** (atardecer, cueva, End o nieve) de tu skin en 3D, hasta 3 **insignias raras** (logros épicos o legendarios que tiene menos del 5 % de los jugadores, como chips en tu tarjeta) y el **libro de visitas**: si lo abrís, tus amigos te dejan mensajes en tu tarjeta (hasta 5 por día cada uno, de hasta 200 caracteres); los borra quien los escribió o vos.
+- **Cosméticos**: marco, título y estilo de la insignia de la tienda o de Premium, incluidos los marcos animados (Latido, Órbita) y de temporada (Halloween, Navidad), que se compran todo el año, y los del Venus Pass (marcos, efecto y títulos de la temporada), que se equipan acá pero no se venden en la tienda. Lo premium que no tenés se ve con un candado que lleva a los planes.
+- **Regalar** (botón en la tarjeta de un amigo): Venus Points (de 10 a 500 por regalo, hasta 1000 por día) o un cosmético de la tienda al precio normal (no los de Premium ni los que ya tiene), con confirmación. Cuando te regalan, el launcher te avisa y el regalo queda en el historial de Venus Points.
+- **Denunciar** (en la tarjeta de otro jugador): la canción o el contenido de un perfil, con un motivo y un texto opcional (hasta 10 denuncias por día). Las revisa el equipo de Venus.
 - **Compartir mi perfil** arma una imagen PNG de tu tarjeta para copiar o guardar. Ver [perfiles.md](perfiles.md).
+- Necesita: cuenta de Venus. Las partículas del tema de la tarjeta piden Venus Premium.
 
 ### Grupos para jugar
 
@@ -293,6 +317,27 @@ La memoria de Minecraft en una sola tarjeta:
 - **Manual**: un deslizador con zonas (poco, ideal, demasiado) y la marca de lo recomendado.
 
 En **Opciones avanzadas** están el recolector de Java (explicado en criollo), argumentos extra, prioridad del proceso, tamaño de ventana y qué hace el launcher al iniciar el juego. A la derecha ves **Tu PC** (con una prueba de rendimiento de la CPU) y un monitor en vivo de la RAM y la CPU del juego. **Optimizar una instancia** abre la herramienta Optimizar.
+
+### Caja de herramientas
+
+**Herramientas** (menú Herramientas) junta cuentas útiles para jugar. Todo se calcula en tu PC, sin conexión:
+
+- **Nether ↔ Overworld**: escribís las coordenadas de un lado y se completan las del otro (escala 1:8; la altura no cambia).
+- **Stacks y cofres**: cuántos stacks son tantos ítems (de 64, de 16 o no apilables), cuántos espacios ocupan y en cuántos cofres simples, dobles o shulkers entran; y al revés, de stacks a ítems.
+- **Orden de encantamientos**: elegís el ítem (espada, pico, armadura o arco), cuántas veces ya pasó por el yunque y hasta 8 libros, y te dice en qué orden combinarlos para gastar menos niveles, contando la penalización por trabajo previo. Avisa si ningún orden evita el "Demasiado caro" y qué encantamientos no van juntos.
+- **Ticks, segundos y hora del día**: convierte entre ticks, segundos y la hora del mundo (con la fase del día), con los atajos de `/time set` y el comando listo para copiar.
+- **Códigos de color §**: escribís un texto con § (o &) y lo ves como en el chat, con la paleta y botones de formato que insertan los códigos.
+- **Bloque, chunk y región**: en qué chunk y en qué archivo de región (`r.X.Z.mca`) cae una coordenada, y al revés.
+- Necesita: nada.
+
+### Descansos, resumen y versiones nuevas
+
+Tres avisos alrededor del juego, que se prenden y apagan en **Ajustes → General → Descansos y resumen**:
+
+- **Recordatorio de descansos** (apagado por defecto): cada 30, 45, 60, 90 o 120 minutos seguidos de juego te avisa, en el overlay y en el launcher, que llevás un rato jugando. Podés sumar un **tope de horas por día** (de 1 a 8): al llegar te avisa cada 10 minutos. Venus nunca cierra el juego. La tarjeta muestra cuánto jugaste hoy.
+- **Resumen al cerrar el juego** (prendido por defecto): al cerrar una partida de al menos un minuto aparece un resumen con la duración, la instancia, las capturas y clips, los logros desbloqueados y las misiones completadas en esa sesión, y **Ver estadísticas**. Después de un crash no aparece (ya tenés el diagnóstico).
+- **Avisar cuando sale una versión nueva de Minecraft** (prendido por defecto): al abrir el launcher y cada 6 horas compara la lista de versiones de Mojang y, si hay una release o una snapshot nueva, un aviso te ofrece **Crear instancia** o **Ya vi**. La primera vez no avisa nada: toma las versiones de ese día como punto de partida.
+- Necesita: nada para los descansos y el resumen. El aviso de versión nueva usa la conexión opcional **Novedades de Minecraft** de **Ajustes → Privacidad**; si está apagada, la tarjeta te manda a activarla.
 
 ### Estado de los servicios
 
@@ -389,10 +434,16 @@ Si no se sabe qué mod lo causa, **Buscar el culpable** prueba activando y desac
 
 El engranaje de abajo a la izquierda. Cada sección tiene su enlace directo (por ejemplo, desde otros lugares del launcher te lleva directo a "Cuenta y nube" o a "Inteligencia artificial").
 
-- **General**: idioma (14, se cambia al instante), qué hace el launcher al empezar a jugar (seguir abierto, minimizarse u ocultarse) y abrir la consola al jugar.
+- **General**: idioma (14, se cambia al instante), qué hace el launcher al empezar a jugar (seguir abierto, minimizarse u ocultarse) y abrir la consola al jugar. La tarjeta **Descansos y resumen** junta el recordatorio de descansos, el tope de horas por día, el resumen al cerrar el juego y el aviso de versión nueva de Minecraft (ver [Descansos, resumen y versiones nuevas](#descansos-resumen-y-versiones-nuevas)).
 - **Modo liviano** (Apariencia > Interfaz): para PCs modestas. Sin fondos animados, animaciones ni desenfoques, y con el overlay apagado (vuelve a prenderse al salir del modo, si estaba prendido).
 - **Apariencia**: temas planetarios (Venus, Marte, Neptuno, Júpiter, Tierra y Saturno) o tu propio color, fondo de la galería (99 fondos, 16 animados, que se bajan la primera vez que los usás), de tu propia imagen o video (con oscurecer y desenfocar) o estrellas, con un botón a la página de fondos, música de fondo que se pausa al jugar o en Voice Chat, y tu marca: logo, nombre y **Tu servidor** (el que aparece en el Inicio), con prueba de conexión. **Temas**: copiá el código de tu tema (`VENUS-THEME:…`, solo colores y fondo; si tu fondo es una imagen de tu PC, el código usa las estrellas), pegá el de otro jugador y probalo antes de usarlo, o elegí uno de la galería de la comunidad (Populares y Nuevos) con tu cuenta de Venus; también podés publicar el tuyo (hasta 10). Se aplica al instante y podés volver al anterior.
-- **En el juego**: el overlay (widgets, posiciones, tamaño, opacidad, tema y atajo), la grabación y la repetición instantánea (atajos, calidad, fps y audio) y la música (reproductor elegido, mostrarla en el overlay y atajos).
+  - **Mis looks** (la primera tarjeta): **Guardar el look actual** guarda con un nombre la combinación completa de ahora (colores, fondo, interfaz, marca, música y botón Jugar; hasta 20) para volver a ella con **Aplicar** o desde Ctrl+K ("Look: …"). **Compartir** copia un código `VENUS-LOOK:…` para pasarle a otro jugador, que lo importa con **Pegar código**; también podés renombrar o borrar cada look. La imagen o el video de tu PC y la música no viajan en el código (usa las estrellas y va sin música), y el modo liviano no forma parte del look.
+  - **Editor de colores**: fondo, tarjetas, texto, bordes y acento a mano, con el selector de color del sistema y vista en vivo en todo el launcher; la × de cada color o **Volver al de Venus** los deja seguir al tema. Si el texto no se leería bien sobre el fondo, Venus lo ajusta solo y te lo dice.
+  - **Tema claro u oscuro**: **Oscuro**, **Claro** o **Automático** (claro entre dos horas que elegís, aunque el rango cruce la medianoche); la tarjeta dice qué se ve ahora y también se cambia desde Ctrl+K ("Tema: …"). En la misma tarjeta, **Temas de temporada** (apagado por defecto): en Halloween (24 oct – 1 nov), Navidad (15 dic – 6 ene) y Año Nuevo (31 dic – 2 ene) cambian solos el acento y el fondo, y al terminar vuelve lo tuyo.
+  - **Fondos rotativos**: elegí varios fondos de la galería (**Elegir fondos**) y pasan al siguiente cada 5, 15, 30, 60 o 120 minutos, al abrir el launcher (**Cambiar al abrir el launcher**) o cuando quieras (**Cambiar ahora**, también en Ctrl+K). Los animados se bajan la primera vez que les toca; con el modo liviano se ven como miniatura.
+  - **Botón Jugar**: color (el del acento u otro), texto (hasta 16 caracteres), animación (pulso o brillo; ninguna con el modo liviano o con movimiento reducido) y sonido al tocarlo (clic, whoosh o campana), con vista previa y **Probar**. Cambia solo el botón de Jugar, nunca Detener.
+  - **Decoración** (debajo de Interfaz; todo apagado por defecto): **partículas sobre el fondo** (nieve, lluvia, hojas, chispas o destellos, pocas o normal; se pausan mientras jugás o con la ventana oculta y no se muestran con el modo liviano ni con movimiento reducido), con **Partículas de temporada** para que Halloween, Navidad y Año Nuevo elijan solas sin pisar tu elección; **sonidos de la interfaz** al tocar botones, abrir diálogos y con los avisos, en tres estilos (Suave, Pixel o Espacial) con volumen y **Probar** (se generan en el momento, sin archivos; el botón Jugar suena aunque estén apagados); una **pantalla de inicio** al abrir el launcher con el logo y el nombre de Tu marca, un texto tuyo (hasta 24 caracteres) o una versión mínima, que se va sola, con un clic o con una tecla (**Ver ahora** la muestra); y el **cursor** del launcher: flecha pixel, espada, pico o diamante, dibujados por Venus, que cambian de color sobre botones y enlaces.
+- **En el juego**: el overlay (widgets —incluido **Rendimiento**: RAM y CPU del juego, ping y tiempo de sesión, con qué mostrar—, posiciones, tamaño, opacidad, tema y atajo), la grabación y la repetición instantánea (atajos, calidad, fps y audio) y la música (reproductor elegido, mostrarla en el overlay y atajos).
 - **Accesibilidad**: modos para daltonismo con intensidad regulable, alto contraste, tamaño de la interfaz (90 a 130 %), movimiento reducido, foco siempre visible, símbolos en los estados y navegación con control (ver [Atajos y control](#atajos-y-control)). También instala **Controlify** para jugar Minecraft con control.
 - **Cuenta y nube**: tus cuentas de Minecraft y tu cuenta de Venus (crearla, iniciar sesión, código de amigo, nombre visible y contraseña) y **Editar perfil**.
 - **Privacidad**: compartir o no tu actividad con tus amigos, qué datos quedan en tu PC y cuáles en la nube, **Avisos** de amigos y servidores favoritos, y **Discord Rich Presence**: muestra en tu perfil de Discord si estás en el launcher o jugando (instancia, versión, mundo o servidor, tiempo y hasta 2 botones), sin mostrar nunca direcciones IP. Solo hace falta dejar abierta la app de escritorio de Discord (la web no sirve); **Probar** muestra una actividad de prueba.
@@ -400,9 +451,15 @@ El engranaje de abajo a la izquierda. Cada sección tiene su enlace directo (por
 - **Inteligencia artificial**: estado de la IA, tu plan con las preguntas que te quedan por modelo y el presupuesto del mes, activar o desactivar la IA, **Probar la IA**, la conexión con **Claude y ChatGPT (MCP)**, los **servidores MCP del asistente** y qué se envía.
 - **Plan**: tu plan de Venus IA (con aviso si un pago falló o si la suscripción se cancela), las tarjetas de los 6 planes con su precio, modelos y preguntas, **Mejorar plan** (abre el pago de Stripe en tu navegador) y **Administrar suscripción** (cambiar la tarjeta, ver facturas o cancelar), y los beneficios de **Venus Premium**.
 - **Java**: el Java que descargó Venus, el que encuentra en tu PC, probar un ejecutable y qué Java usa cada versión de Minecraft.
-- **Descargas y almacenamiento**: medidor de descargas en vivo, pausa, límite de velocidad, descargas simultáneas y **modo sin conexión**; **estado de los servicios** (¿es tu conexión o un servicio caído?); uso del disco por categoría; **unificar archivos repetidos** (los mods y packs iguales de varias instancias pasan a ocupar lugar una sola vez, también en automático) y limpieza con vista previa (caché, versiones y Java que no usa nadie, descargas incompletas). La limpieza borra para siempre lo que se puede volver a descargar, y pide confirmación.
+- **Descargas y almacenamiento**: medidor de descargas en vivo, pausa, límite de velocidad, descargas simultáneas y **modo sin conexión**; **descargas programadas** (una franja horaria, por ejemplo de 02:00 a 08:00, aunque cruce la medianoche: fuera de ella las descargas quedan en pausa y adentro se reanudan solas; **Bajar ahora** levanta la pausa por 2 horas y **Volver a la franja** la respeta de nuevo; mientras hay tareas esperando, el panel de tareas muestra "Descargas en espera" con el mismo botón; una pausa que pusiste vos desde Descargas no se toca); **estado de los servicios** (¿es tu conexión o un servicio caído?); uso del disco por categoría; **unificar archivos repetidos** (los mods y packs iguales de varias instancias pasan a ocupar lugar una sola vez, también en automático) y limpieza con vista previa (caché, versiones y Java que no usa nadie, descargas incompletas). La limpieza borra para siempre lo que se puede volver a descargar, y pide confirmación.
 - **Datos**: dónde se guarda todo (podés moverlo a otra carpeta o disco, con reinicio), cuánto ocupa cada cosa, vaciar la caché y el modo portable.
 - **Acerca de**: versión, información para copiar, **Novedades de Venus 2.0** (el recorrido de lo nuevo, también con Ctrl+K) y créditos. Venus no se actualiza solo por ahora: las versiones nuevas se instalan a mano.
+
+## Menú lateral y modo mini
+
+- **Personalizar menú**: el engranaje chico al pie del menú de la izquierda (o el comando de Ctrl+K) abre un editor para ordenar las secciones con las flechas o arrastrándolas dentro de su grupo, fijar tus favoritas arriba de todo (grupo **Fijados**), ocultar las que no usás y elegir el **estilo de los íconos** (Clásico, Pixel o Relleno). Inicio y Ajustes siempre quedan a mano. Los cambios se aplican en vivo y **Restablecer** vuelve al menú de siempre.
+- **Modo mini** (**Ctrl+M**, el botón de la barra de título o Ctrl+K): la ventana se achica a 420×640 y muestra solo lo esencial: tu cuenta, la instancia elegida con su selector y el botón **Jugar** / **Detener** (con el mismo progreso que el Inicio), tus amigos conectados (tocar uno abre el chat; **Unirme** si está en un servidor) y el reproductor de música. Al salir, la ventana vuelve al tamaño que tenía. Si cerrás el launcher en modo mini, se abre así la próxima vez.
+- Necesita: nada. Los amigos del modo mini necesitan cuenta de Venus.
 
 ## Atajos y control
 
@@ -410,6 +467,7 @@ El engranaje de abajo a la izquierda. Cada sección tiene su enlace directo (por
 |---|---|
 | **Ctrl+K** | Paleta de comandos: escribí para saltar a cualquier página, instancia, servidor u opción, o hacer una acción. |
 | **Ctrl+J** | Abre el Asistente IA. |
+| **Ctrl+M** | Entra y sale del [modo mini](#menú-lateral-y-modo-mini) (no en campos de texto ni en la bienvenida). |
 | **Ctrl+V** | Con un código `PACK-XXXXXX` copiado (y sin un campo de texto activo), abre la importación del modpack compartido. |
 | **Ctrl+Shift+M** | Silenciarte en Voice Chat, aunque estés jugando (se cambia en Voice Chat → Audio). |
 | **V** | Pulsar para hablar, si lo activaste (se cambia en Voice Chat → Audio). |

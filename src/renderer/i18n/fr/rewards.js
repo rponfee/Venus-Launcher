@@ -264,4 +264,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "Mission accomplie",
   hist_missionBonus: "Bonus de missions",
+  hist_gift_in: "Cadeau d’un ami",
+  hist_gift_out: "Cadeau à un ami",
+  item_frame_pulse: "Cadre Pulsation",
+  item_frame_orbit: "Cadre Orbite",
+  item_frame_halloween: "Cadre Halloween",
+  item_frame_xmas: "Cadre Noël",
 };

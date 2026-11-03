@@ -44,7 +44,7 @@ const real = {
     if (!cloud.isSignedIn()) throw new RewardsError('noSession');
     let res;
     try {
-      res = await cloud.client.from('shop_items').select('id, kind, price, premium_only, sort, data').order('sort');
+      res = await cloud.client.from('shop_items').select('id, kind, price, premium_only, sort, data, source').order('sort');
     } catch (err) {
       throw toRewardsError(err, 'shop_items');
     }

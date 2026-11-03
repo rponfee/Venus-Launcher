@@ -23,6 +23,7 @@ const config = require('./overlay/config');
 const events = require('./overlay/events');
 const geometry = require('./overlay/geometry');
 const tracker = require('./overlay/tracker');
+const perf = require('./overlay/perf');
 
 const TEST_MS = 9000;
 const EDIT_MAX_MS = 15 * 60 * 1000; // el modo edicion se apaga solo (la ventana no puede quedar tomando el mouse)
@@ -55,6 +56,7 @@ const st = {
   shortcut: { accel: null, ok: true },
   idleTimer: null,
   captures: new Map(), // tipo|ruta -> hora (para no mostrar dos veces la misma captura)
+  perfSampler: null, // widget de rendimiento (overlay/perf.js): muestras del juego que se sigue
   lastLayout: '',
   lastStatus: '',
   quitting: false,
@@ -247,7 +249,42 @@ function evaluate() {
   }
   setInteractive(st.editing && st.shown);
   if (modeChanged) sendLayout();
+  syncPerf();
   emitStatus();
+}
+
+// ---------- Widget de rendimiento (3.1) ----------
+// Muestras cada 2 s del juego que se sigue (RAM, CPU, ping del servidor y tiempo de sesion), solo mientras el
+// overlay y el widget estan activados y hay un juego abierto. El ayudante es barato (overlay/perf.js).
+const perfWanted = () => supported() && !st.quitting && st.cfg.enabled && st.cfg.widgets.perf?.enabled !== false && st.games.size > 0;
+
+function serverAddress(id) {
+  try {
+    const a = require('../core/game').activity(id);
+    return a?.type === 'server' && typeof a.address === 'string' ? a.address : null;
+  } catch {
+    return null;
+  }
+}
+
+function syncPerf() {
+  const game = perfWanted() ? target() || [...st.games.values()].sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0))[0] : null;
+  if (st.perfSampler && (!game || st.perfSampler.pid !== game.pid)) {
+    st.perfSampler.stop();
+    st.perfSampler = null;
+    // Sin muestras, la pagina esconde el widget enseguida (si no, lo haria sola a los segundos).
+    deliver({ kind: 'perf', ram: null, cpu: null, ping: null, session: null });
+  }
+  if (game && !st.perfSampler) {
+    st.perfSampler = perf.createSampler({
+      pid: game.pid,
+      startedAt: game.startedAt,
+      getAddress: () => serverAddress(game.id),
+      onSample: (ev) => {
+        if (st.perfSampler?.pid === game.pid) push(ev);
+      },
+    });
+  }
 }
 
 // ---------- Juegos y seguimiento de la ventana ----------
@@ -305,6 +342,7 @@ function stopGame(id) {
     if (st.editing && st.mode === 'game') stopEdit();
   }
   armShortcut();
+  syncPerf();
   evaluate();
 }
 
@@ -674,6 +712,8 @@ function register({ app, handle, send, getWindow, onQuit }) {
     clearTimeout(st.testTimer);
     clearTimeout(st.editTimer);
     for (const g of st.games.values()) g.track?.stop();
+    st.perfSampler?.stop();
+    st.perfSampler = null;
     unregisterShortcut();
     closeWindow();
   });

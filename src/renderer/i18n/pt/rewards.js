@@ -264,4 +264,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "Missão concluída",
   hist_missionBonus: "Bônus das missões",
+  hist_gift_in: "Presente de um amigo",
+  hist_gift_out: "Presente para um amigo",
+  item_frame_pulse: "Moldura Pulso",
+  item_frame_orbit: "Moldura Órbita",
+  item_frame_halloween: "Moldura Halloween",
+  item_frame_xmas: "Moldura Natal",
 };

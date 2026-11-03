@@ -6,6 +6,7 @@ import { t } from '../../i18n.js';
 import { versionKind } from '../versions/catalog.js';
 import { instanceBadge, kindLabel, supportsMods, runFeature, mirrorServer, repairInstance, openFolder, fileUrl, playInstance, skeletonBlocks } from '../versions/common.js';
 import { openViewer } from './screenshots.js';
+import { presentationCard } from './presentation.js';
 
 const OVERVIEW_TTL = 60 * 1000;
 const overviewCache = new Map(); // id -> { at, promise }
@@ -181,9 +182,11 @@ export function overviewTab(container, ctx) {
     usageBox,
   );
 
+  // Caratula, favorito, etiquetas y acceso directo (se redibuja cuando cambia la instancia)
+  const present = presentationCard(ctx);
   mount(
     container,
-    h('div', { class: 'ih-overview' }, kpis, h('div', { class: 'grid ih-two' }, install, contentCard), sectionTitle(t('instance.tools')), toolGroups(inst), recentWrap),
+    h('div', { class: 'ih-overview' }, kpis, h('div', { class: 'grid ih-two' }, install, contentCard, present), sectionTitle(t('instance.tools')), toolGroups(inst), recentWrap),
   );
 
   manifestEntry(inst.mcVersion)
@@ -316,6 +319,7 @@ export function overviewTab(container, ctx) {
 
   return () => {
     alive = false;
+    if (typeof present.destroy === 'function') present.destroy();
     if (viewer?.el?.isConnected) viewer.close();
   };
 }

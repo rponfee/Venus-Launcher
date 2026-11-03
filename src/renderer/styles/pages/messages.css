@@ -221,6 +221,34 @@
 .msg-link { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
 .mine .msg-link { color: var(--accent-ink); font-weight: 600; }
 
+/* Burbujas personalizadas (3.1, card_style.bubble): estilo y color propio con texto legible */
+.msg-bubble.msg-bub-round { border-radius: 22px; }
+.theirs .msg-bubble.msg-bub-round { border-bottom-left-radius: 6px; }
+.mine .msg-bubble.msg-bub-round { border-bottom-right-radius: 6px; }
+.msg-bubble.msg-bub-sharp { border-radius: 4px !important; }
+.msg-bubble.msg-bub-pixel { border-radius: 0 !important; border-width: 2px; box-shadow: 3px 3px 0 0 color-mix(in srgb, var(--msg-bub-line, var(--border-3)) 70%, transparent); image-rendering: pixelated; }
+.msg-bubble.msg-bub-colored, .mine .msg-bubble.msg-bub-colored { background: var(--msg-bub-bg); border-color: var(--msg-bub-line); color: var(--msg-bub-fg); }
+.msg-bubble.msg-bub-colored .msg-meta, .mine .msg-bubble.msg-bub-colored .msg-meta, .msg-bubble.msg-bub-colored .msg-receipt, .mine .msg-bubble.msg-bub-colored .msg-receipt { color: color-mix(in srgb, var(--msg-bub-fg) 75%, transparent); }
+.msg-bubble.msg-bub-colored .msg-link, .mine .msg-bubble.msg-bub-colored .msg-link { color: var(--msg-bub-fg); font-weight: 600; }
+/* GIF de KLIPY (3.1) */
+.msg-bubble.gif { padding: 4px; }
+.msg-gif { display: block; max-width: 280px; max-height: 240px; border-radius: calc(var(--radius-l) - 3px); background: var(--surface-2); }
+.msg-bubble.gif .msg-meta { float: none; display: flex; justify-content: flex-end; margin: 2px 4px 0; }
+.msg-gif-btn { width: auto; padding: 0 var(--sp-2); font-family: var(--font); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; }
+.msg-gif-label { display: inline-block; padding: 1px 4px; border: 1.5px solid currentColor; border-radius: 4px; line-height: 1; }
+.msg-gif-pop {
+  position: fixed; z-index: var(--z-popover, 60); width: min(420px, calc(100vw - 16px)); display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-2);
+  background: var(--surface-2); border: 1px solid var(--border-2); border-radius: var(--radius); box-shadow: var(--shadow-l);
+}
+.msg-gif-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); grid-auto-rows: 72px; gap: 4px; max-height: 300px; overflow-y: auto; }
+.msg-gif-item { padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: var(--radius-s); background: var(--surface-3); cursor: pointer; }
+.msg-gif-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.msg-gif-item:hover, .msg-gif-item:focus-visible { border-color: var(--accent); }
+.msg-gif-foot { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-height: 24px; font-size: var(--fs-xs); color: var(--text-2); }
+.msg-gif-status { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.msg-gif-status svg { width: 14px; height: 14px; }
+.msg-gif-mark { margin-left: auto; }
+
 .msg-bubble.jumbo { background: none; border-color: transparent; padding: 0 2px; }
 .msg-jumbo { display: block; font-size: 40px; line-height: 1.15; }
 .msg-bubble.jumbo .msg-meta { float: none; display: flex; justify-content: flex-end; margin: 2px 0 0; color: var(--muted); }

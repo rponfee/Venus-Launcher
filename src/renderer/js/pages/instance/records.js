@@ -21,3 +21,20 @@ export function curseforgeUrl(modId) {
   const id = String(modId ?? '').trim();
   return /^\d+$/.test(id) ? `https://www.curseforge.com/projects/${id}` : null;
 }
+
+// Nombre y version para mostrar de un archivo de contenido (misma regla que la lista de la instancia):
+// el titulo del proyecto (Modrinth en f.title, CurseForge en cf, identificacion por hash en id) o el nombre
+// del archivo sin extension. Lo usa Comparar instancias.
+export function entryLabel(f, cf = null, id = null) {
+  const fileName = String(f?.file || '').replace(/\.disabled$/i, '');
+  const known = f?.title || cf?.title || id?.title || null;
+  const name = known || (f?.isDir ? fileName : fileName.replace(/\.(jar|zip|litemod)$/i, ''));
+  return {
+    name,
+    version: f?.versionNumber || cf?.versionNumber || id?.versionNumber || null,
+    file: fileName,
+    projectId: f?.projectId || id?.projectId || null,
+    modId: cf?.modId || null,
+    enabled: f?.enabled !== false,
+  };
+}

@@ -390,4 +390,6 @@ export default {
   connLoss: "{status} · Kararsız bağlantı: sesin %{loss} kadarı kayboluyor",
   netBadBadge: "Kararsız bağlantı",
   netBadHint: "Odadaki biriyle ses kesiliyor veya yeniden bağlanıyor. Venus kaliteyi düşürür ve kendiliğinden yeniden dener.",
+  entryJoined: "katıldı",
+  entryJoinedAria: "{name} odaya katıldı",
 };

@@ -293,3 +293,105 @@ html.ax-hc .pf-name-text::after { content: none; }
 .pf-profile .pf-card-banner { height: 128px; }
 .pf-profile-note { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
 .pf-profile-note svg { width: 14px; height: 14px; }
+
+/* ---------- 3.1: marcos del Venus Pass ---------- */
+/* Temporada 1: anillo dorado y violeta que gira despacio */
+.pf-frame-season1::before { background: conic-gradient(from var(--pf-ang), #ffd27a, #f0b429 30%, #7e5bd6 55%, #b06bff 75%, #ffd27a); box-shadow: 0 0 12px rgba(176, 107, 255, 0.4); animation: pf-spin 14s linear infinite; }
+/* Legendario: el mismo con brillo y particulas */
+.pf-frame-season1legend::before { background: conic-gradient(from var(--pf-ang), #fff1a8, #f0b429 30%, #7e5bd6 55%, #d8b4ff 75%, #fff1a8); box-shadow: 0 0 16px rgba(255, 210, 122, 0.6), 0 0 32px rgba(176, 107, 255, 0.45); animation: pf-spin 10s linear infinite; }
+.pf-frame-season1legend::after {
+  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -4); z-index: -2; border-radius: calc(var(--pf-frame-r) + var(--pf-frame-w) * 3); pointer-events: none;
+  background: radial-gradient(circle at 18% 12%, #ffe6b0 0 1.6px, transparent 2.6px), radial-gradient(circle at 84% 26%, #d8b4ff 0 1.5px, transparent 2.5px), radial-gradient(circle at 68% 88%, #ffd27a 0 1.3px, transparent 2.3px), radial-gradient(circle at 12% 74%, #b06bff 0 1.3px, transparent 2.3px), radial-gradient(circle at 48% 4%, #ffffff 0 1px, transparent 2px);
+  animation: pf-particles 2.8s ease-in-out infinite;
+}
+@keyframes pf-particles { 0%, 100% { opacity: 0.35; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+/* Gratis: linea doble dorada, sin animacion */
+.pf-frame-season1free { --pf-frame-w: 2px; }
+.pf-frame-season1free::before { background: #f0b429; box-shadow: 0 0 0 2px #1d1410, 0 0 0 3px #ffd27a; }
+/* Max: marco negro con borde animado estilo legendario, dorado y rojo */
+.pf-frame-max { --pf-frame-w: 4px; }
+.pf-frame-max::before { background: #0b0608; box-shadow: inset 0 0 0 1px rgba(255, 210, 122, 0.35); }
+.pf-frame-max::after {
+  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -1 - 2px); z-index: -2; border-radius: calc(var(--pf-frame-r) + 2px); pointer-events: none;
+  background: conic-gradient(from var(--pf-ang), #ffd27a, #ff3b3b 30%, #3a0b07 50%, #ffd27a 65%, #ff3b3b 85%, #ffd27a); box-shadow: 0 0 16px rgba(255, 59, 59, 0.5), 0 0 30px rgba(255, 210, 122, 0.3);
+  animation: pf-spin 3s linear infinite;
+}
+/* ---------- 3.1: marcos de la tienda (animados y de temporada) ---------- */
+.pf-frame-pulse::before { background: linear-gradient(135deg, #ff7eb3, #ff4fd8 50%, #c58cff); animation: pf-beat 1.8s ease-in-out infinite; }
+@keyframes pf-beat { 0%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(255, 79, 216, 0.4); } 50% { transform: scale(1.07); box-shadow: 0 0 18px rgba(255, 79, 216, 0.8); } }
+.pf-frame-orbit::before { background: linear-gradient(135deg, #7fb2ff, #2a3a8f 70%, #5aa7f0); box-shadow: 0 0 10px rgba(90, 167, 240, 0.45); }
+.pf-frame-orbit::after {
+  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -4); z-index: 1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 50% 0%, #fff1a8 0 3px, transparent 4px), radial-gradient(circle at 50% 100%, #7df9ff 0 2.4px, transparent 3.4px);
+  animation: pf-orbit 4s linear infinite;
+}
+@keyframes pf-orbit { to { transform: rotate(360deg); } }
+.pf-frame-halloween::before { background: repeating-linear-gradient(45deg, #ff7a00 0 6px, #3b1450 6px 12px); box-shadow: 0 0 10px rgba(255, 122, 0, 0.45); }
+.pf-frame-halloween::after { content: '🎃'; position: absolute; right: -9px; top: -11px; z-index: 1; font-size: 14px; line-height: 1; pointer-events: none; animation: pf-bob 2.4s ease-in-out infinite; }
+@keyframes pf-bob { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-2px) rotate(8deg); } }
+.pf-frame-xmas::before { background: repeating-linear-gradient(135deg, #d32f2f 0 8px, #1f8a3a 8px 16px); box-shadow: 0 0 10px rgba(211, 47, 47, 0.4); }
+.pf-frame-xmas::after {
+  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -1); z-index: 1; border-radius: var(--pf-frame-r); pointer-events: none;
+  background: radial-gradient(circle at 10% 0%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 50% 0%, #ffe066 0 1.5px, transparent 2.5px), radial-gradient(circle at 90% 0%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 0% 50%, #ffe066 0 1.5px, transparent 2.5px), radial-gradient(circle at 100% 50%, #ffe066 0 1.5px, transparent 2.5px), radial-gradient(circle at 10% 100%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 50% 100%, #ffe066 0 1.5px, transparent 2.5px), radial-gradient(circle at 90% 100%, #fff 0 1.5px, transparent 2.5px);
+  animation: pf-twinkle 1.6s steps(2) infinite;
+}
+@keyframes pf-twinkle { 50% { opacity: 0.35; } }
+html[data-ui-lite] .pf-frame::before, html[data-ui-lite] .pf-frame::after, html[data-ui-lite] .pf-particles::after, html[data-ui-lite] .pf-name-text { animation: none !important; }
+
+/* ---------- 3.1: efecto de nombre del Venus Pass (aurora dorada y violeta que se desplaza) ---------- */
+.pf-fx-season1 .pf-name-text {
+  background: linear-gradient(90deg, #ffd27a, #f0b429 20%, #b06bff 45%, #7e5bd6 65%, #ffe6b0 85%, #ffd27a); background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; animation: pf-rainbow 5s linear infinite;
+}
+.pf-static.pf-fx-season1 .pf-name-text { background-position: 30% 0; }
+
+/* ---------- 3.1: temas de la tarjeta (fondo con patron, textos y bordes) ---------- */
+.pf-card.pf-themed { position: relative; overflow: hidden; --pf-edge: var(--pf-theme-line); border-color: var(--pf-theme-line); color: var(--pf-theme-text); }
+.pf-card.pf-themed .pf-card-body { color: var(--pf-theme-text); background: var(--pf-theme-pattern), var(--pf-theme-bg); }
+.pf-card.pf-themed.has-fade .pf-card-body { background: var(--pf-theme-pattern), linear-gradient(180deg, rgba(14, 9, 6, 0.55), rgba(14, 9, 6, 0.72)), var(--pf-fade); }
+.pf-card.pf-themed .pf-sec-label, .pf-card.pf-themed .pf-fact, .pf-card.pf-themed .pf-card-sub, .pf-card.pf-themed .pf-card-statustext { color: var(--pf-theme-text2); }
+.pf-card.pf-themed .pf-sec-label svg, .pf-card.pf-themed .pf-fact > svg { color: var(--pf-accent, var(--pf-theme-accent)); }
+.pf-card.pf-themed .pf-ach, .pf-card.pf-themed .pf-stat, .pf-card.pf-themed .pf-server, .pf-card.pf-themed .pf-bio { border-color: var(--pf-theme-line); }
+.pf-theme-nether { --pf-theme-bg: linear-gradient(180deg, #2a0806, #4a1008 55%, #6b1c0a); --pf-theme-pattern: repeating-linear-gradient(0deg, rgba(255, 138, 60, 0.08) 0 2px, transparent 2px 12px); --pf-theme-text: #ffe6d6; --pf-theme-text2: #f3b89a; --pf-theme-line: rgba(255, 138, 60, 0.4); --pf-theme-accent: #ff8a3c; }
+.pf-theme-end { --pf-theme-bg: linear-gradient(180deg, #0b0716, #1d1236 60%, #2a1a4d); --pf-theme-pattern: radial-gradient(rgba(230, 220, 255, 0.5) 0.8px, transparent 1.4px); --pf-theme-text: #ece6ff; --pf-theme-text2: #c2b4ea; --pf-theme-line: rgba(200, 170, 255, 0.35); --pf-theme-accent: #c8aaff; }
+.pf-theme-end .pf-card-body { background-size: 26px 26px, auto; }
+.pf-theme-ocean { --pf-theme-bg: linear-gradient(180deg, #0b2a52, #15528f 60%, #1a6aa8); --pf-theme-pattern: repeating-radial-gradient(circle at 0 100%, rgba(166, 236, 255, 0.1) 0 1px, transparent 1px 16px); --pf-theme-text: #e9f7ff; --pf-theme-text2: #a9d8f0; --pf-theme-line: rgba(166, 236, 255, 0.35); --pf-theme-accent: #7de0ff; }
+.pf-theme-cherry { --pf-theme-bg: linear-gradient(180deg, #4a1d3c, #7b3a66 60%, #9c4f7f); --pf-theme-pattern: radial-gradient(rgba(255, 224, 236, 0.55) 1.2px, transparent 1.8px); --pf-theme-text: #fff0f6; --pf-theme-text2: #f3c3d8; --pf-theme-line: rgba(255, 183, 213, 0.4); --pf-theme-accent: #ff9ec9; }
+.pf-theme-cherry .pf-card-body { background-size: 34px 34px, auto; background-position: 7px 11px, 0 0; }
+.pf-theme-space { --pf-theme-bg: linear-gradient(180deg, #03060f, #0a1024 65%, #120a2e); --pf-theme-pattern: radial-gradient(rgba(255, 255, 255, 0.7) 0.7px, transparent 1.2px); --pf-theme-text: #eef2ff; --pf-theme-text2: #b7c0e6; --pf-theme-line: rgba(140, 160, 255, 0.35); --pf-theme-accent: #9fb4ff; }
+.pf-theme-space .pf-card-body { background-size: 42px 42px, auto; }
+.pf-theme-aurora { --pf-theme-bg: linear-gradient(180deg, #04121f, #0a2a3a 55%, #10343c); --pf-theme-pattern: linear-gradient(100deg, rgba(125, 255, 190, 0.14), transparent 35%, rgba(120, 140, 255, 0.14) 60%, transparent 85%); --pf-theme-text: #eafff6; --pf-theme-text2: #a9e6cf; --pf-theme-line: rgba(125, 255, 190, 0.3); --pf-theme-accent: #7dffbe; }
+/* Particulas sutiles (Premium): puntos que suben despacio */
+.pf-card.pf-particles::after {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0.55;
+  background-image: radial-gradient(circle, var(--pf-theme-accent, #ffd27a) 0 1.2px, transparent 2px), radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 0.9px, transparent 1.6px), radial-gradient(circle, var(--pf-theme-accent, #ffd27a) 0 0.8px, transparent 1.5px);
+  background-size: 140px 140px, 210px 210px, 90px 90px; background-position: 10px 20px, 70px 110px, 40px 60px;
+  animation: pf-drift 22s linear infinite;
+}
+@keyframes pf-drift { to { background-position: 10px -120px, 70px -100px, 40px -30px; } }
+@media (prefers-reduced-motion: reduce) { .pf-card.pf-particles::after { animation: none; } }
+body.reduce-motion .pf-card.pf-particles::after { animation: none; }
+
+/* ---------- 3.1: skin en 3D con pose y fondo ---------- */
+.pf-skin-stage { position: relative; display: inline-block; padding: var(--sp-2); border-radius: var(--radius); border: 1px solid var(--border-2); background: var(--surface-3); overflow: hidden; }
+.pf-skin-stage .sk-viewer { width: 220px; height: 280px; }
+.pf-skinbg-sunset { background: linear-gradient(180deg, #2b1440, #8a2f5c 40%, #ff6a4d 75%, #ffc46b); }
+.pf-skinbg-cave { background: radial-gradient(60% 40% at 50% 100%, rgba(40, 220, 230, 0.35), transparent 70%), linear-gradient(180deg, #06161f, #0a2530); }
+.pf-skinbg-end { background: radial-gradient(40% 30% at 70% 30%, rgba(200, 170, 255, 0.4), transparent 70%), linear-gradient(180deg, #0b0716, #2a1a4d); }
+.pf-skinbg-snow { background: radial-gradient(rgba(255, 255, 255, 0.9) 1px, transparent 1.6px) 0 0 / 28px 28px, linear-gradient(180deg, #22375f, #5b84b8 60%, #c7e0f4); }
+.pf-skinbg-sunset .sk-floor, .pf-skinbg-cave .sk-floor, .pf-skinbg-end .sk-floor, .pf-skinbg-snow .sk-floor { opacity: 0.5; }
+/* Poses: las animaciones pisan el balanceo que pone el visor en linea; lo quieto va con !important */
+.pf-skin-pose-wave [data-part='rightArm'] > .sk-pose { animation: pf-pose-wave 1.1s ease-in-out infinite; }
+@keyframes pf-pose-wave { 0%, 100% { transform: rotateZ(2.75rad) rotateX(0rad); } 50% { transform: rotateZ(2.95rad) rotateX(0.25rad); } }
+.pf-skin-pose-sit [data-part='rightLeg'] > .sk-pose, .pf-skin-pose-sit [data-part='leftLeg'] > .sk-pose { transform: rotateX(1.5rad) !important; }
+.pf-skin-pose-sit [data-part='rightArm'] > .sk-pose { transform: rotateZ(0.12rad) rotateX(0.55rad) !important; }
+.pf-skin-pose-sit [data-part='leftArm'] > .sk-pose { transform: rotateZ(-0.12rad) rotateX(0.55rad) !important; }
+.pf-skin-pose-walk [data-part='rightLeg'] > .sk-pose, .pf-skin-pose-walk [data-part='leftArm'] > .sk-pose { animation: pf-pose-walk-a 0.9s ease-in-out infinite; }
+.pf-skin-pose-walk [data-part='leftLeg'] > .sk-pose, .pf-skin-pose-walk [data-part='rightArm'] > .sk-pose { animation: pf-pose-walk-b 0.9s ease-in-out infinite; }
+@keyframes pf-pose-walk-a { 0%, 100% { transform: rotateX(0.6rad); } 50% { transform: rotateX(-0.6rad); } }
+@keyframes pf-pose-walk-b { 0%, 100% { transform: rotateX(-0.6rad); } 50% { transform: rotateX(0.6rad); } }
+@media (prefers-reduced-motion: reduce) { .pf-skin-stage .sk-pose { animation: none !important; } }
+body.reduce-motion .pf-skin-stage .sk-pose { animation: none !important; }
+body.reduce-motion .pf-skin-pose-wave [data-part='rightArm'] > .sk-pose { transform: rotateZ(2.8rad) !important; }
+body.reduce-motion .pf-skin-pose-walk [data-part='rightLeg'] > .sk-pose, body.reduce-motion .pf-skin-pose-walk [data-part='leftArm'] > .sk-pose { transform: rotateX(0.5rad) !important; }
+body.reduce-motion .pf-skin-pose-walk [data-part='leftLeg'] > .sk-pose, body.reduce-motion .pf-skin-pose-walk [data-part='rightArm'] > .sk-pose { transform: rotateX(-0.5rad) !important; }

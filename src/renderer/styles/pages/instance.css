@@ -276,3 +276,64 @@
   .ih-shot:hover img, .ih-shot-mini:hover img, .ih-tool:hover .ih-tool-chev { transform: none; }
 }
 body.reduce-motion .ih-shot:hover img, body.reduce-motion .ih-shot-mini:hover img, body.reduce-motion .ih-tool:hover .ih-tool-chev { transform: none; }
+
+/* ============================================================
+   3.1: caratula, favorito y etiquetas en la cabecera, tarjeta
+   Presentacion del resumen y pestania Notas (notas + tareas).
+   ============================================================ */
+
+/* ---------- Cabecera: caratula de fondo, estrella y etiquetas ---------- */
+.ih-cover { aspect-ratio: auto; height: 190px; border-radius: var(--radius-l); margin-bottom: -46px; -webkit-mask-image: linear-gradient(180deg, #000 50%, transparent 100%); mask-image: linear-gradient(180deg, #000 50%, transparent 100%); }
+.ih-head.has-cover { position: relative; z-index: 1; padding: 0 var(--sp-3); }
+.ih-star { flex-shrink: 0; width: var(--control-h); height: var(--control-h); border-radius: 10px; }
+.ih-star svg { width: 18px; height: 18px; }
+.ih-meta .vs-tags { min-width: 0; }
+
+/* ---------- Presentacion (resumen) ---------- */
+.ih-present { grid-column: 1 / -1; }
+.ih-present-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+.ih-present-cover { position: relative; display: block; width: 100%; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface-3); cursor: pointer; transition: border-color var(--dur-fast) var(--ease-out); }
+.ih-present-cover:hover, .ih-present-cover:focus-visible { border-color: var(--accent-line); }
+.ih-present-cover-hint { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 6px; padding: var(--sp-3) 8px 8px; font-size: var(--fs-xs); font-weight: 600; color: var(--cream); background: linear-gradient(transparent, rgba(0, 0, 0, 0.78)); opacity: 0; transition: opacity var(--dur-fast) var(--ease-out); }
+.ih-present-cover-hint svg { width: 14px; height: 14px; }
+.ih-present-cover:hover .ih-present-cover-hint, .ih-present-cover:focus-visible .ih-present-cover-hint { opacity: 1; }
+.ih-present-main { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.ih-present-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: var(--sp-3); align-items: center; min-height: var(--control-h-sm); }
+.ih-present-label { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ih-present-row .vs-tags { max-width: 100%; }
+@container ih (max-width: 860px) {
+  .ih-present-body { grid-template-columns: minmax(0, 1fr); }
+  .ih-present-cover { max-width: 320px; }
+  .ih-present-row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
+
+/* ---------- Notas y tareas ---------- */
+.ih-notes-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+@container ih (max-width: 860px) {
+  .ih-notes-grid { grid-template-columns: minmax(0, 1fr); }
+}
+.ih-notes .card-head, .ih-tasks-card .card-head { align-items: flex-start; }
+.ih-notes-text { width: 100%; min-height: 320px; height: max(320px, calc(100vh - 470px)); resize: vertical; font-family: var(--font); font-size: var(--fs-md); line-height: 1.55; }
+.ih-task-add .input { flex: 1; min-width: 0; }
+.ih-task-list { list-style: none; margin: var(--sp-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.ih-task { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 6px 4px 10px; border-radius: var(--radius-s); transition: background-color var(--dur-fast) var(--ease-out); }
+.ih-task:hover, .ih-task:focus-within { background: var(--hover-bg); }
+.ih-task-check {
+  appearance: none; -webkit-appearance: none; width: 20px; height: 20px; margin: 0; flex-shrink: 0; border-radius: 6px; border: 2px solid var(--border-3); background: var(--well-bg); cursor: pointer; display: grid; place-items: center;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.ih-task-check:hover { border-color: var(--accent); }
+.ih-task-check:checked { background: var(--accent); border-color: var(--accent); }
+.ih-task-check:checked::after { content: ''; width: 5px; height: 10px; border: solid var(--bg-0); border-width: 0 2.5px 2.5px 0; transform: translateY(-1px) rotate(45deg); }
+.ih-task-check:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+.ih-task-text { flex: 1; min-width: 0; overflow-wrap: anywhere; cursor: pointer; line-height: 1.4; }
+.ih-task.done .ih-task-text { color: var(--muted); text-decoration: line-through; }
+.ih-task-del { opacity: 0; transition: opacity var(--dur-fast) var(--ease-out); }
+.ih-task:hover .ih-task-del, .ih-task:focus-within .ih-task-del, .ih-task-del:focus-visible { opacity: 1; }
+.ih-tasks .empty { padding: var(--sp-5) var(--sp-3); }
+@media (hover: none) {
+  .ih-task-del { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ih-present-cover, .ih-present-cover-hint, .ih-task, .ih-task-check, .ih-task-del { transition: none; }
+}

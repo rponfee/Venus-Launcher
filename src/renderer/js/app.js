@@ -6,6 +6,10 @@ import { voice } from './voice.js';
 import { cloud } from './cloud.js';
 import { t, loadNs, setLanguage, onLanguageChange, systemLanguage } from './i18n.js';
 import { discordButton } from './community.js';
+// Menu a gusto (settings.nav): orden, fijados, ocultos y pack de iconos (features/navcustom). icons.js registra
+// los packs al importarse, asi el primer dibujo del menu ya sale con el pack elegido.
+import { normalizeNav, navLayout } from './features/navcustom/logic.js';
+import { navIconName } from './features/navcustom/icons.js';
 
 // Menu lateral. { group } dibuja un separador con titulo. La etiqueta sale de t(`nav.<id>`).
 // img: imagen en lugar del icono (la entrada de Venus usa el logo).
@@ -21,6 +25,7 @@ const NAV = [
   { id: 'music', icon: 'music' },
   { id: 'achievements', icon: 'trophy' },
   { id: 'rewards', icon: 'star' },
+  { id: 'pass', icon: 'rocket' },
   { group: 'content' },
   { id: 'modrinth', icon: 'package', cls: 'modrinth' },
   { id: 'smartsearch', icon: 'sparkles' },
@@ -50,6 +55,7 @@ const PAGES = {
   clips: () => import('./pages/clips.js'),
   music: () => import('./pages/music.js'),
   rewards: () => import('./pages/rewards.js'),
+  pass: () => import('./pages/pass.js'),
   achievements: () => import('./pages/achievements.js'),
   modrinth: () => import('./pages/modrinth.js'),
   smartsearch: () => import('./pages/smartsearch.js'),
@@ -100,6 +106,12 @@ const STARTUP = [
   () => import('./features/notify.js'), // avisos de amigos y servidores favoritos
   () => import('./features/whatsnew.js'), // recorrido de novedades la primera vez que se abre la 3.0 (y Ctrl+K)
   () => import('./features/update-notice.js'), // edición portable: avisa si hay una versión nueva
+  // Venus 3.1
+  () => import('./features/pass.js'), // Venus Pass: XP por jugar, subida de nivel y punto en el menú
+  () => import('./features/decor.js'), // partículas, sonidos, cursores y pantalla de inicio
+  () => import('./features/navcustom.js'), // menú lateral a gusto, packs de íconos y modo mini
+  () => import('./features/tools.js'), // caja de herramientas, descansos, resumen al cerrar y aviso de versión nueva
+  () => import('./social/gifts.js').then((m) => ({ startup: m.startGiftWatch })), // aviso cuando un amigo te regala puntos o un cosmético
   () => import('./features/achievements.js'), // logros de Venus: revisa los cumplidos cada tanto (no hay tope de cantidad)
   () => import('./features/missions.js'), // misiones diarias y semanales: cuenta el progreso
   () => import('./features/streamer.js'), // modo streamer: difumina codigos, direcciones, nombres y mensajes (y Ctrl+K)
@@ -217,21 +229,49 @@ function navLabel(item) {
   return t(`nav.${item.id}`);
 }
 
+// Entradas del menu tal como estan registradas (grupos y paginas, con la etiqueta ya traducida), para el
+// editor "Personalizar menu" de features/navcustom.
+export function navEntries() {
+  return NAV.map((item) => (item.group ? { group: item.group } : { id: item.id, icon: item.icon, img: item.img, cls: item.cls, label: navLabel(item) }));
+}
+
+// Preferencias del menu (settings.nav) ya normalizadas contra las entradas actuales
+function navPrefs() {
+  return normalizeNav(store.settings?.nav, NAV.filter((n) => n.id).map((n) => n.id));
+}
+
 function buildNav() {
   const nav = document.getElementById('nav');
   if (!nav) return;
+  ensureCss('features/navcustom');
+  const prefs = navPrefs();
   mount(
     nav,
-    NAV.map((item) =>
+    navLayout(NAV, prefs).map((item) =>
       item.group
         ? h('div', { class: 'nav-group', dataset: { group: item.group } }, t(`nav.group_${item.group}`))
         : h(
             'div',
             { class: ['nav-item', item.cls], dataset: { route: item.id }, onclick: () => navigate(item.id), title: navLabel(item), role: 'link', tabindex: 0 },
-            item.img ? h('img', { class: 'nav-img', src: item.img, alt: '', 'aria-hidden': 'true' }) : icon(item.icon),
+            item.img ? h('img', { class: 'nav-img', src: item.img, alt: '', 'aria-hidden': 'true' }) : icon(navIconName(item.icon, prefs.iconPack)),
             h('span', {}, navLabel(item)),
             h('span', { class: 'nav-extra', dataset: { for: item.id } }),
           ),
+    ),
+    // Engranaje chico al pie del menu: abre "Personalizar menu" (orden, fijados, ocultos y pack de iconos)
+    h(
+      'button',
+      {
+        class: 'nav-gear icon-btn sm',
+        type: 'button',
+        title: t('nav.customizeMenu'),
+        'aria-label': t('nav.customizeMenu'),
+        onclick: () =>
+          import('./features/navcustom.js')
+            .then((m) => m.openNavEditor())
+            .catch((err) => console.warn('[nav]', err)),
+      },
+      icon('settings'),
     ),
   );
   const navId = currentRoute() in NAV_PARENT ? NAV_PARENT[currentRoute()] : currentRoute();
@@ -677,11 +717,21 @@ async function init() {
   const early = Promise.all(EARLY_STARTUP.map(runStartup));
   await loadNs('common', 'nav');
 
+  // Modo mini (features/navcustom): si quedo activado, la interfaz arranca compacta desde el primer dibujo
+  if (store.settings?.window?.mini) document.documentElement.setAttribute('data-mini', '');
   buildNav();
   translateShell();
   starfield();
   renderAccountChip();
   store.on('accounts', renderAccountChip);
+  // El menu se rearma cuando cambian sus preferencias (editor de features/navcustom o Ajustes)
+  let navSig = JSON.stringify(store.settings?.nav ?? null);
+  store.on('settings', (s) => {
+    const sig = JSON.stringify(s?.nav ?? null);
+    if (sig === navSig) return;
+    navSig = sig;
+    buildNav();
+  });
   onLanguageChange(async () => {
     await loadNs('common', 'nav');
     buildNav();

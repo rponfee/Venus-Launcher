@@ -5,6 +5,8 @@
 // Sin Electron: ../billing.js le pasa las dependencias reales y las pruebas, dobles.
 
 const PLAN_ID = /^[a-z][a-z0-9_-]{1,31}$/;
+// Ediciones del Venus Pass (0026): se compran por el mismo camino que los planes de IA.
+const PASS_PLAN = /^pass_(go|pro|max)$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PROVIDERS = new Set(['mercado_pago', 'paypal']);
 const TERMINAL = new Set(['paid', 'failed', 'cancelled', 'expired', 'refunded']);
@@ -92,6 +94,24 @@ function normalizeCatalog(data) {
       prices: { mercado_pago: normalizeQuote(prices.mercado_pago), paypal: normalizeQuote(prices.paypal) },
     });
   }
+  // Venus Pass de la temporada activa (0026): precios completos de cada edición.
+  let pass = null;
+  if (d.pass && typeof d.pass === 'object' && d.pass.season && typeof d.pass.season === 'object') {
+    const s = d.pass.season;
+    pass = {
+      season: { id: str(s.id) || '', name: str(s.name) || '', startsAt: str(s.startsAt), endsAt: str(s.endsAt), levels: num(s.levels) ?? 50, xpPerLevel: num(s.xpPerLevel) ?? 150 },
+      tiers: (Array.isArray(d.pass.tiers) ? d.pass.tiers : [])
+        .filter((x) => x && PASS_PLAN.test(String(x.id)))
+        .map((x) => ({
+          id: x.id,
+          tier: String(x.id).slice(5),
+          priceUsd: num(x.priceUsd),
+          bonusLevels: num(x.bonusLevels) ?? 0,
+          xpMult: num(x.xpMult) ?? 1,
+          prices: { mercado_pago: normalizeQuote(x.prices?.mercado_pago), paypal: normalizeQuote(x.prices?.paypal) },
+        })),
+    };
+  }
   return {
     source: 'backend',
     providers: {
@@ -101,6 +121,7 @@ function normalizeCatalog(data) {
     arsPerUsd: num(d.arsPerUsd),
     rateUpdatedAt: str(d.rateUpdatedAt),
     plans,
+    pass,
   };
 }
 
@@ -226,7 +247,7 @@ function createBillingClient(deps) {
   function emitOrder(order) {
     deps.send?.('billing:order', order);
     if (order.status === 'paid') {
-      deps.send?.('billing:changed', { reason: 'paid', kind: 'order', plan: order.plan });
+      deps.send?.('billing:changed', { reason: 'paid', kind: PASS_PLAN.test(String(order.plan)) ? 'pass' : 'order', plan: order.plan });
       deps.aiStatus?.({ refresh: true })?.catch?.(() => {});
     }
   }
@@ -270,7 +291,7 @@ function createBillingClient(deps) {
   async function checkout(input) {
     const plan = typeof input?.plan === 'string' ? input.plan.trim().toLowerCase() : '';
     const provider = typeof input?.provider === 'string' ? input.provider : '';
-    if (!STATIC_PLANS.some((p) => p.id === plan)) throw coded('unknownPlan', t('billing.errUnknownPlan'));
+    if (!STATIC_PLANS.some((p) => p.id === plan) && !PASS_PLAN.test(plan)) throw coded('unknownPlan', t('billing.errUnknownPlan'));
     if (!PROVIDERS.has(provider)) throw coded('providerDisabled', t('billing.errProviderDisabled'));
     const owner = deps.sessionUser ? await deps.sessionUser() : null;
     const result = await payments('checkout', { plan, provider });

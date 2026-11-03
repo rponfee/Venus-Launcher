@@ -148,4 +148,17 @@ export default {
   notFriendsAnymore: 'You are no longer friends with {name}: you cannot message each other.',
   editFailed: 'Could not edit the message',
   sendFailed: 'Could not send the message',
+  // KLIPY GIFs (3.1)
+  gif: 'GIF',
+  gifPicker: 'Find a GIF',
+  gifUnavailable: 'GIFs are not available right now',
+  gifUnavailableText: 'Try again later.',
+  gifEmpty: 'No results.',
+  gifError: 'KLIPY did not answer. Try again in a bit.',
+  gifNetwork: 'Could not reach KLIPY. Check your connection.',
+  gifLoading: 'Searching GIFs...',
+  gifMore: 'Load more',
+  gifAlt: 'GIF',
+  gifPreview: 'GIF',
+  gifSendTitle: 'Send this GIF',
 };

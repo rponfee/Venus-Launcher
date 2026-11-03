@@ -264,4 +264,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "Missione completata",
   hist_missionBonus: "Bonus delle missioni",
+  hist_gift_in: "Regalo di un amico",
+  hist_gift_out: "Regalo a un amico",
+  item_frame_pulse: "Cornice Battito",
+  item_frame_orbit: "Cornice Orbita",
+  item_frame_halloween: "Cornice Halloween",
+  item_frame_xmas: "Cornice Natale",
 };

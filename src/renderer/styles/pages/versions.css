@@ -294,3 +294,170 @@
 }
 body.reduce-motion .vs-live i { animation: none; }
 body.reduce-motion .vs-loader:active, body.reduce-motion .vs-pick:hover > svg:last-child, body.reduce-motion .vs-panel-btn:hover > svg:last-child { transform: none; }
+
+/* ============================================================
+   3.1: favoritos, etiquetas, tareas pendientes, caratulas,
+   vista biblioteca, comparar y los dialogos de etiquetas y caratula.
+   ============================================================ */
+
+/* ---------- Estrella de favorito (tarjeta, fila, biblioteca y cabecera de la instancia) ---------- */
+.vs-star { color: var(--muted); }
+.vs-star:hover:not(:disabled), .vs-star.on { color: var(--accent-hi); }
+.vs-star.on svg { fill: currentColor; }
+.vs-card .ic-top .vs-star { margin: -2px 0 0; }
+.vs-favchip.active svg { fill: currentColor; }
+
+/* ---------- Filtro por etiqueta (barra de herramientas) ---------- */
+.vs-tagfilter { display: inline-flex; align-items: center; gap: 6px; }
+.vs-tagfilter > svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--muted); }
+.vs-tagfilter.active > svg { color: var(--accent-hi); }
+.vs-tagfilter .select { width: auto; max-width: 230px; }
+.vs-tagfilter.active .select { border-color: var(--accent-line); background-color: var(--accent-wash); }
+.vs-toolbar .vs-compare { height: var(--control-h); }
+
+/* ---------- Etiquetas (chips chicos) ---------- */
+.vs-tags { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.vs-tag {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; height: 20px; padding: 0 8px; border-radius: var(--radius-full); border: 1px solid var(--border-2);
+  background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text-2); font: inherit; font-size: var(--fs-xs); font-weight: 600; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.vs-tag svg { width: 11px; height: 11px; flex-shrink: 0; color: var(--muted); }
+button.vs-tag { cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+button.vs-tag:hover, button.vs-tag:focus-visible { border-color: var(--accent-line); background: var(--accent-wash); color: var(--accent-hi); }
+button.vs-tag:hover svg, button.vs-tag:focus-visible svg { color: var(--accent-hi); }
+.vs-tag-more { color: var(--muted); }
+.vs-tag-add { border-style: dashed; background: transparent; }
+.vs-row-sub .vs-tags { flex-shrink: 1; min-width: 0; }
+
+/* ---------- Tareas pendientes ---------- */
+.vs-todo { gap: 4px; background: var(--info-wash); color: var(--info-text); border-color: var(--info-line); flex-shrink: 0; }
+.vs-todo svg { width: 12px; height: 12px; }
+
+/* Fila de la lista: estrella + Jugar + menu (3 x 30 + 2 x 6 = 102, + 13 de borde y aire) */
+.vs-list { --vs-cols: 53px minmax(0, 1fr) 184px 96px 116px 118px; }
+@container vsmine (max-width: 860px) {
+  .vs-list { --vs-cols: 53px minmax(0, 1fr) 168px 88px 118px; }
+}
+
+/* ---------- Caratula (imagen elegida o generada: color del loader y letra, con el icono del modpack si hay) ---------- */
+.vs-cover { position: relative; overflow: hidden; aspect-ratio: 16 / 9; background: var(--surface-3); container: vscover / inline-size; }
+.vs-cover > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vs-cover-gen {
+  display: grid; place-items: center;
+  background: radial-gradient(120% 90% at 18% 10%, color-mix(in srgb, var(--c) 55%, transparent), transparent 62%), linear-gradient(135deg, color-mix(in srgb, var(--c) 70%, var(--surface)), color-mix(in srgb, var(--c) 22%, var(--bg-0)));
+}
+.vs-cover-gen::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 14px, transparent 14px 28px); pointer-events: none; }
+.vs-cover-letter { position: relative; font-family: var(--pixel); font-weight: 700; font-size: clamp(36px, 24cqi, 110px); line-height: 1; color: #fff; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.28); opacity: 0.92; }
+.vs-cover-gen .vs-cover-icon { position: relative; height: 54%; width: auto; aspect-ratio: 1; object-fit: cover; border-radius: 14%; box-shadow: var(--shadow); }
+.vs-cover-gen:has(.vs-cover-icon) .vs-cover-letter { display: none; }
+.vs-card.has-cover { overflow: hidden; }
+.vs-card-cover { margin: calc(var(--sp-4) * -1) calc(var(--sp-4) * -1) 0; aspect-ratio: 16 / 7; border-bottom: 1px solid var(--border); }
+
+/* ---------- Vista biblioteca (caratulas grandes) ---------- */
+.vs-lib { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: var(--sp-4); }
+.vs-lib-card {
+  position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-l); overflow: hidden; border: 1px solid var(--border); background: var(--surface-3); cursor: pointer; isolation: isolate;
+  transition: border-color var(--dur) var(--ease-out), transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+}
+.vs-lib-card:hover, .vs-lib-card:focus-within { border-color: var(--border-3); transform: translateY(-2px); box-shadow: var(--shadow); }
+.vs-lib-card:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+.vs-lib-card.running { border-color: var(--good-line); box-shadow: 0 0 0 1px color-mix(in srgb, var(--good) 25%, transparent), 0 0 24px color-mix(in srgb, var(--good) 12%, transparent); }
+.vs-lib-cover { position: absolute; inset: 0; aspect-ratio: auto; }
+/* Caratula generada en la biblioteca: la letra va a la derecha, lejos del nombre (abajo a la izquierda) */
+.vs-lib-cover.vs-cover-gen { place-items: center end; padding-right: 8%; }
+.vs-lib-cover .vs-cover-letter { opacity: 0.55; font-size: clamp(44px, 26cqi, 120px); }
+.vs-lib-cover .vs-cover-icon { height: 46%; margin-right: 2%; }
+.vs-lib-cover > img { transition: transform var(--dur-slow) var(--ease-out); }
+.vs-lib-card:hover .vs-lib-cover > img, .vs-lib-card:focus-within .vs-lib-cover > img { transform: scale(1.04); }
+.vs-lib-card::after { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, transparent 32%, transparent 42%, rgba(8, 4, 2, 0.94) 100%); pointer-events: none; }
+.vs-lib-top { position: absolute; z-index: 2; top: var(--sp-2); left: var(--sp-2); right: var(--sp-2); display: flex; align-items: center; gap: 6px; min-width: 0; }
+.vs-lib-top .icon-btn { background: color-mix(in srgb, var(--bg-0) 62%, transparent); backdrop-filter: blur(6px); border-color: transparent; color: var(--cream); }
+.vs-lib-top .icon-btn:hover { background: color-mix(in srgb, var(--bg-0) 86%, transparent); border-color: var(--border-2); }
+.vs-lib-top .vs-star.on { color: var(--accent-hi); }
+.vs-lib-top .vs-live, .vs-lib-top .badge, .vs-lib-top .vs-todo { backdrop-filter: blur(6px); }
+.vs-lib-info { position: absolute; z-index: 2; left: var(--sp-4); right: 104px; bottom: var(--sp-4); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.vs-lib-name { font-family: var(--pixel); font-size: var(--fs-xl); font-weight: 700; line-height: 1.2; color: #fff; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65); }
+.vs-lib-sub { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; flex-wrap: wrap; }
+.vs-lib-sub .badge { background: color-mix(in srgb, var(--bg-0) 62%, transparent); backdrop-filter: blur(4px); }
+.vs-lib-mc { font-size: var(--fs-sm); font-weight: 600; color: var(--cream); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65); }
+.vs-lib-info .vs-tag { background: color-mix(in srgb, var(--bg-0) 55%, transparent); border-color: rgba(255, 255, 255, 0.16); color: var(--cream); backdrop-filter: blur(4px); }
+.vs-lib-info .vs-tag svg { color: var(--cream); opacity: 0.8; }
+.vs-lib-play { position: absolute; z-index: 3; right: var(--sp-4); bottom: var(--sp-4); opacity: 0; transform: translateY(6px); transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
+.vs-lib-card:hover .vs-lib-play, .vs-lib-card:focus-within .vs-lib-play, .vs-lib-card.busy .vs-lib-play, .vs-lib-card.running .vs-lib-play { opacity: 1; transform: none; }
+.vs-lib-play .btn.vs-play { background: var(--accent); border-color: transparent; color: var(--bg-0); box-shadow: var(--shadow); }
+.vs-lib-play .btn.vs-play:hover:not(:disabled) { background: var(--accent-hi); color: var(--bg-0); }
+.vs-lib-card .ic-progress { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 3px; border-radius: 0; }
+@media (hover: none) {
+  .vs-lib-play { opacity: 1; transform: none; }
+}
+
+/* ---------- Dialogo de etiquetas ---------- */
+.vs-tagedit-chips { min-height: 32px; align-items: center; }
+.vs-tagedit-chip { padding-right: 4px; max-width: 100%; cursor: default; }
+.vs-tagedit-chip:active { transform: none; }
+.vs-tagedit-chip > .ellipsis { max-width: 220px; }
+.vs-tagedit-x { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; border: 0; background: transparent; color: inherit; cursor: pointer; flex-shrink: 0; }
+.vs-tagedit-x:hover, .vs-tagedit-x:focus-visible { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+.vs-tagedit-x svg { width: 12px; height: 12px; }
+.vs-tagedit-row .input { flex: 1; min-width: 0; }
+.vs-tagedit-suggest { display: flex; flex-direction: column; gap: var(--sp-2); }
+.vs-tagedit-suggest:empty { display: none; }
+
+/* ---------- Dialogo de caratula ---------- */
+.vs-coverdlg { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+.vs-coverdlg-side { display: flex; flex-direction: column; gap: var(--sp-3); }
+.vs-coverdlg-preview .vs-cover { border-radius: var(--radius); border: 1px solid var(--border); }
+.vs-coverdlg-main { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.vs-coverdlg-shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-2); max-height: 380px; overflow-y: auto; padding: 2px; }
+.skeleton-shapes.vs-coverdlg-shots > .skeleton { aspect-ratio: 16 / 9; border-radius: var(--radius-s); }
+.vs-coverdlg-shot { position: relative; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-s); overflow: hidden; aspect-ratio: 16 / 9; background: var(--surface-3); cursor: pointer; transition: border-color var(--dur-fast) var(--ease-out); }
+.vs-coverdlg-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vs-coverdlg-shot:hover, .vs-coverdlg-shot:focus-visible { border-color: var(--accent); }
+.vs-coverdlg-shot-date { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--sp-3) 8px 6px; font-size: var(--fs-xs); font-weight: 600; text-align: left; color: var(--cream); background: linear-gradient(transparent, rgba(0, 0, 0, 0.78)); font-variant-numeric: tabular-nums; }
+.vs-coverdlg-empty .empty { padding: var(--sp-5) var(--sp-3); }
+@media (max-width: 1100px) {
+  .vs-coverdlg { grid-template-columns: minmax(0, 1fr); }
+  .vs-coverdlg-preview { max-width: 320px; }
+}
+
+/* ---------- Comparar dos instancias ---------- */
+.vs-cmp-body { gap: var(--sp-3); }
+.vs-cmp-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--sp-3); align-items: end; }
+.vs-cmp-pick .icon-btn { margin-bottom: 4px; }
+.vs-cmp-pick .select { width: 100%; max-width: none; }
+.vs-cmp-summary { min-height: 20px; }
+.vs-cmp-wrap { max-height: calc(100vh - 330px); min-height: 220px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card-bg-flat); }
+.vs-cmp-wrap > .notice { margin: var(--sp-3); }
+.vs-cmp-wrap > .skeleton-group { padding: var(--sp-3); }
+.vs-cmp { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: var(--fs-sm); }
+.vs-cmp th, .vs-cmp td { padding: 8px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border); }
+.vs-cmp thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-raised); }
+.vs-cmp-label { width: 150px; color: var(--muted); font-weight: 600; font-size: var(--fs-xs); }
+.vs-cmp-headbox { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.vs-cmp-icon.inst-icon { width: 36px; height: 36px; border-radius: 9px; font-size: 16px; }
+.vs-cmp-headtext { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.vs-cmp-headname { font-weight: 700; font-size: var(--fs-md); }
+.vs-cmp-section th { background: var(--well-bg); }
+.vs-cmp-section-in { display: flex; align-items: center; gap: var(--sp-2); }
+.vs-cmp-section-title { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.vs-cmp-row.diff td, .vs-cmp-row.diff th { background: color-mix(in srgb, var(--warn) 9%, transparent); }
+.vs-cmp-row.diff .vs-cmp-label { color: var(--warn-text); }
+.vs-cmp-cell { min-width: 0; }
+.vs-cmp-cell.removed .vs-cmp-name { color: var(--bad-text); }
+.vs-cmp-cell.added .vs-cmp-name { color: var(--good-text); }
+.vs-cmp-cell.changed .vs-cmp-ver { color: var(--warn-text); font-weight: 700; }
+.vs-cmp-name { display: block; font-weight: 600; }
+.vs-cmp-ver { display: inline-block; margin-top: 2px; font-size: var(--fs-xs); color: var(--muted); }
+.vs-cmp-off { margin-left: 6px; height: 18px; background: var(--surface-3); color: var(--muted); }
+.vs-cmp-missing { color: var(--muted); }
+.vs-cmp-value { overflow-wrap: anywhere; }
+.vs-cmp-row.same td, .vs-cmp-row.same th { opacity: 0.72; }
+.vs-cmp-samehead td { padding: 4px 8px; }
+.vs-cmp-empty { text-align: center; }
+.vs-cmp-err { color: var(--warn-text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .vs-lib-card, .vs-lib-card:hover, .vs-lib-cover > img, .vs-lib-play, button.vs-tag, .vs-coverdlg-shot { transition: none; transform: none; }
+  .vs-lib-card:hover .vs-lib-cover > img { transform: none; }
+}
+body.reduce-motion .vs-lib-card:hover, body.reduce-motion .vs-lib-card:hover .vs-lib-cover > img { transform: none; }

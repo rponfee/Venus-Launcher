@@ -4,7 +4,9 @@ import { h, icon, mount, toast, ok, fail, confirmDialog, promptDialog, registerI
 import { store, api } from '../../store.js';
 import { t, loadNs } from '../../i18n.js';
 import { navigate, launchInstance } from '../../app.js';
-import { INSTANCE_SORTS, instanceLoaderKind } from './catalog.js';
+import { INSTANCE_SORTS, instanceLoaderKind, isFavorite } from './catalog.js';
+// Favoritos, etiquetas y accesos directos (metadatos de la instancia); meta.js importa de aca solo funciones.
+import { toggleFavorite, openTagsDialog, createShortcut, shortcutsSupported } from './meta.js';
 
 registerIcons({
   vsDashboard: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
@@ -117,11 +119,12 @@ export function isBusy(id) {
 
 // Preferencias de la vista de instancias (clave propia en los ajustes: settings.versions).
 // Los cambios se guardan tambien en memoria para que dos cambios seguidos no se pisen.
+export const VIEW_MODES = ['grid', 'list', 'library'];
 let pendingPrefs = {};
 export function viewPrefs() {
   const p = { ...(store.settings?.versions || {}), ...pendingPrefs };
   return {
-    view: p.view === 'list' ? 'list' : 'grid',
+    view: VIEW_MODES.includes(p.view) ? p.view : 'grid',
     sort: INSTANCE_SORTS.includes(p.sort) ? p.sort : 'recent',
     group: Boolean(p.group),
     allLoaderVersions: Boolean(p.allLoaderVersions),
@@ -344,6 +347,10 @@ export function instanceMenuItems(inst, { onDeleted, manage = true } = {}) {
     { icon: 'edit', label: t('instance.rename'), run: () => renameInstance(inst) },
     { icon: 'copy', label: t('instance.duplicate'), run: () => duplicateInstance(inst) },
     { icon: 'wrench', label: t('instance.repair'), run: () => repairInstance(inst), disabled: isBusy(inst.id) },
+    '-',
+    { icon: 'star', label: isFavorite(inst) ? t('versions.removeFavorite') : t('versions.addFavorite'), run: () => toggleFavorite(inst) },
+    { icon: 'tag', label: t('versions.editTags'), run: () => openTagsDialog(inst) },
+    shortcutsSupported() ? { icon: 'vsShortcut', label: t('versions.shortcut'), run: () => createShortcut(inst) } : null,
     '-',
     {
       icon: 'trash',

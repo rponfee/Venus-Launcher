@@ -328,4 +328,35 @@ export default {
   jvmArgsHint: 'Only if you know what you are doing: they are added to the global arguments.',
   maintenance: 'Maintenance',
   maintenanceText: 'Repair verifies every game file (slower than the quick start).',
+
+  // Notes tab
+  tab_notes: 'Notes',
+
+  // Presentation (overview): cover, favorite, tags and desktop shortcut
+  presentation: 'Presentation',
+  presentationSub: 'Cover, favorite, tags and desktop shortcut',
+
+  // Notes and tasks
+  notesTitle: 'Notes',
+  notesSub: 'Seeds, coordinates, mods to try: whatever you want to remember about this instance',
+  notesPlaceholder: 'Write your notes here…',
+  notesHint: 'Saves itself while you type.',
+  notesSaving: 'Saving…',
+  notesChars: '{count} / {max}',
+  tasksTitle: 'Tasks',
+  tasksSub: 'What you still have to do in this instance',
+  taskPlaceholder: 'New task (Enter to add)',
+  taskAdd: 'Add',
+  taskDone: 'Mark as done: {text}',
+  taskUndone: 'Mark as pending: {text}',
+  taskDelete: 'Delete task: {text}',
+  tasksEmpty: 'No tasks yet',
+  tasksEmptyText: 'Write down what is left: build the farm, try a mod, visit a biome…',
+  tasksPending_one: '{count} pending',
+  tasksPending_other: '{count} pending',
+  tasksAllDone: 'All done',
+  tasksClearDone: 'Delete done',
+  tasksClearDoneText_one: '{count} completed task will be deleted.',
+  tasksClearDoneText_other: '{count} completed tasks will be deleted.',
+  tasksFull: 'You reached the maximum of 100 tasks: delete one to add another.',
 };

@@ -253,4 +253,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "ミッション達成",
   hist_missionBonus: "ミッションのボーナス",
+  hist_gift_in: "フレンドからのギフト",
+  hist_gift_out: "フレンドへのギフト",
+  item_frame_pulse: "パルスフレーム",
+  item_frame_orbit: "オービットフレーム",
+  item_frame_halloween: "ハロウィンフレーム",
+  item_frame_xmas: "クリスマスフレーム",
 };

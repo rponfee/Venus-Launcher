@@ -7,6 +7,7 @@ import { social } from '../social.js';
 import { voice } from '../voice.js';
 import { acceleratorParts, keyLabel } from './keys.js';
 import { personAvatar, fmtPing, openRoomEditor, tSlot, kbdKeys } from './ui-common.js';
+import { joinedMembers, ENTRY_EFFECT_MS } from '../social/logic.js';
 
 const SPEAK_LEVEL = 0.34; // ~ -53 dB
 
@@ -129,9 +130,31 @@ export function roomView(container, { onTab } = {}) {
     hostBtn.classList.toggle('hidden', !room.isOwner);
   }
 
+  // Efecto de entrada (3.1): 1,5 s del efecto que eligio cada uno (card_style.entry) sobre su tarjeta y "entro"
+  let prevMembers = null;
+  async function playEntry(tile, userId) {
+    let fx = 'none';
+    try {
+      const { fetchStyle } = await import('../social/profile-style.js');
+      fx = (await fetchStyle(userId))?.cardStyle?.entry || 'none';
+    } catch {
+      fx = 'none';
+    }
+    if (!tile.el.isConnected) return;
+    const tag = h('span', { class: 'vc-entry-tag', role: 'status' }, t('voice.entryJoined'));
+    tile.el.append(tag);
+    if (fx !== 'none' && !reducedMotion()) tile.el.classList.add('vc-entry', `vc-entry-${fx}`);
+    setTimeout(() => {
+      tag.remove();
+      for (const c of [...tile.el.classList]) if (c === 'vc-entry' || c.startsWith('vc-entry-')) tile.el.classList.remove(c);
+    }, ENTRY_EFFECT_MS);
+  }
+
   function drawMembers(list) {
     const room = voice.room;
     if (!room) return;
+    const joined = joinedMembers(prevMembers, list, { initial: prevMembers === null });
+    prevMembers = list;
     const seen = new Set();
     for (const m of list) {
       seen.add(m.userId);
@@ -139,6 +162,7 @@ export function roomView(container, { onTab } = {}) {
       if (!tile) {
         tile = createTile(m);
         tiles.set(m.userId, tile);
+        if (joined.includes(m.userId)) playEntry(tile, m.userId);
       }
       updateTile(tile, m);
     }

@@ -386,4 +386,6 @@ export default {
   connLoss: "{status} · 연결 불안정: 오디오의 {loss}%가 손실되고 있어요",
   netBadBadge: "연결 불안정",
   netBadHint: "방에 있는 누군가와의 음성이 끊기거나 다시 연결되는 중이에요. Venus가 품질을 낮추고 자동으로 다시 시도해요.",
+  entryJoined: "입장",
+  entryJoinedAria: "{name}님이 방에 입장했어요",
 };

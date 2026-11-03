@@ -1,10 +1,12 @@
-// Mis instancias: cuadricula o lista, busqueda, orden, agrupado por loader, juego en curso,
-// jugar rapido, menu de acciones e importacion de modpacks (botones o arrastrando el archivo).
+// Mis instancias: cuadricula, lista o biblioteca (caratulas grandes), busqueda, orden, agrupado por loader,
+// favoritas primero (estrella en cada tarjeta), filtros "Solo favoritas" y por etiqueta, contador de tareas
+// pendientes, Comparar dos instancias, juego en curso, jugar rapido, menu de acciones e importacion de
+// modpacks (botones o arrastrando el archivo).
 import { h, icon, mount, emptyState, fmtAgo, fmtDuration, debounce, selectEl } from '../../ui.js';
 import { store, api } from '../../store.js';
 import { t, locale } from '../../i18n.js';
 import { navigate } from '../../app.js';
-import { sortInstances, groupByLoader, matchesInstance, INSTANCE_SORTS } from './catalog.js';
+import { sortInstances, groupByLoader, matchesInstance, INSTANCE_SORTS, favoritesFirst, filterByMeta, collectTags, isFavorite } from './catalog.js';
 import {
   loaderMeta,
   instanceBadge,
@@ -12,6 +14,7 @@ import {
   iconButton,
   viewPrefs,
   saveViewPrefs,
+  VIEW_MODES,
   popMenu,
   instanceMenuItems,
   importMenuItems,
@@ -20,7 +23,10 @@ import {
   handlePackDrop,
   keepFocus,
 } from './common.js';
+import { listFilters, favoriteButton, tagChips, pendingBadge, coverEl } from './meta.js';
+import { openCompare } from './compare.js';
 
+const VIEW_ICONS = { grid: 'grid', list: 'list', library: 'vsLibrary' };
 let versionTimes = null; // id de version -> fecha (para ordenar por version)
 
 function liveBadge(run) {
@@ -99,14 +105,14 @@ function notInstalledBadge(inst, task) {
   return !inst.installed && !task ? h('span', { class: 'badge warn' }, t('versions.notInstalled')) : null;
 }
 
-function card(inst) {
+function card(inst, pickTag) {
   const run = store.running[inst.id];
   const task = store.taskFor(inst.id);
   const mc = t('versions.minecraftVersion', { version: inst.mcVersion });
   return h(
     'div',
     {
-      class: ['inst-card', 'vs-card', run?.state === 'running' && 'running'],
+      class: ['inst-card', 'vs-card', run?.state === 'running' && 'running', inst.cover && 'has-cover'],
       tabindex: 0,
       role: 'link',
       'aria-label': inst.name,
@@ -114,14 +120,17 @@ function card(inst) {
       onclick: () => navigate(`instance/${encodeURIComponent(inst.id)}`),
       onkeydown: (e) => openOnKey(e, inst),
     },
+    inst.cover ? coverEl(inst, 'vs-card-cover') : null,
     h(
       'div',
       { class: 'ic-top' },
       instIcon(inst),
       h('div', { class: 'ellipsis spacer' }, h('div', { class: 'ic-name ellipsis', title: inst.name }, inst.name), h('div', { class: 'ic-sub', title: mc }, mc)),
+      favoriteButton(inst),
       moreButton(inst),
     ),
-    h('div', { class: 'row wrap vs-card-badges' }, instanceBadge(inst), notInstalledBadge(inst, task), liveBadge(run)),
+    h('div', { class: 'row wrap vs-card-badges' }, instanceBadge(inst), notInstalledBadge(inst, task), pendingBadge(inst), liveBadge(run)),
+    tagChips(inst, { max: 3, onPick: pickTag }),
     h(
       'div',
       { class: 'ic-foot' },
@@ -137,7 +146,7 @@ function card(inst) {
   );
 }
 
-function row(inst) {
+function row(inst, pickTag) {
   const run = store.running[inst.id];
   const task = store.taskFor(inst.id);
   return h(
@@ -155,13 +164,43 @@ function row(inst) {
     h(
       'div',
       { class: 'vs-row-main' },
-      h('div', { class: 'vs-row-name' }, h('span', { class: 'ellipsis', title: inst.name }, inst.name), liveBadge(run)),
-      h('div', { class: 'vs-row-sub' }, h('span', { class: 'ellipsis' }, t('versions.minecraftVersion', { version: inst.mcVersion })), notInstalledBadge(inst, task)),
+      h('div', { class: 'vs-row-name' }, h('span', { class: 'ellipsis', title: inst.name }, inst.name), pendingBadge(inst), liveBadge(run)),
+      h('div', { class: 'vs-row-sub' }, h('span', { class: 'ellipsis' }, t('versions.minecraftVersion', { version: inst.mcVersion })), notInstalledBadge(inst, task), tagChips(inst, { max: 2, onPick: pickTag })),
     ),
     h('div', { class: 'vs-row-loader' }, instanceBadge(inst)),
     h('div', { class: ['vs-row-time', !inst.playtime && 'none'] }, inst.playtime ? fmtDuration(inst.playtime, { short: true }) : '—'),
     h('div', { class: ['vs-row-last', !inst.lastPlayed && 'none'], title: inst.lastPlayed ? lastPlayedLabel(inst) : null }, inst.lastPlayed ? fmtAgo(inst.lastPlayed) : t('versions.neverShort')),
-    h('div', { class: 'vs-row-actions' }, playButton(inst, { compact: true }), moreButton(inst)),
+    h('div', { class: 'vs-row-actions' }, favoriteButton(inst), playButton(inst, { compact: true }), moreButton(inst)),
+    progressBar(task),
+  );
+}
+
+// Biblioteca: caratula grande con nombre, loader y version encima; Jugar aparece al pasar el mouse (o con el foco).
+function libCard(inst, pickTag) {
+  const run = store.running[inst.id];
+  const task = store.taskFor(inst.id);
+  const mc = t('versions.minecraftVersion', { version: inst.mcVersion });
+  return h(
+    'div',
+    {
+      class: ['vs-lib-card', run?.state === 'running' && 'running', isFavorite(inst) && 'fav', (run || task) && 'busy'],
+      tabindex: 0,
+      role: 'link',
+      'aria-label': inst.name,
+      dataset: { fk: `open:${inst.id}` },
+      onclick: () => navigate(`instance/${encodeURIComponent(inst.id)}`),
+      onkeydown: (e) => openOnKey(e, inst),
+    },
+    coverEl(inst, 'vs-lib-cover'),
+    h('div', { class: 'vs-lib-top' }, liveBadge(run) || notInstalledBadge(inst, task), h('span', { class: 'spacer' }), pendingBadge(inst), favoriteButton(inst, { cls: 'vs-lib-btn' }), moreButton(inst)),
+    h(
+      'div',
+      { class: 'vs-lib-info' },
+      h('div', { class: 'vs-lib-name ellipsis', title: inst.name }, inst.name),
+      h('div', { class: 'vs-lib-sub' }, instanceBadge(inst), h('span', { class: 'vs-lib-mc ellipsis', title: mc }, mc)),
+      tagChips(inst, { max: 3, onPick: pickTag }),
+    ),
+    h('div', { class: 'vs-lib-play' }, playButton(inst)),
     progressBar(task),
   );
 }
@@ -218,7 +257,53 @@ export function instancesView(container) {
     draw();
   });
 
-  const viewBtns = ['grid', 'list'].map((v) =>
+  // Filtros de la sesion (favoritas y etiqueta): viven en listFilters para volver igual desde la pagina de una instancia
+  const favBtn = h('button', { class: ['chip', 'vs-favchip', listFilters.favorites && 'active'], type: 'button', 'aria-pressed': String(listFilters.favorites) }, icon('star'), t('versions.onlyFavorites'));
+  favBtn.addEventListener('click', () => {
+    listFilters.favorites = !listFilters.favorites;
+    favBtn.classList.toggle('active', listFilters.favorites);
+    favBtn.setAttribute('aria-pressed', String(listFilters.favorites));
+    draw();
+  });
+  const tagBox = h('div', { class: 'vs-tagfilter', hidden: true });
+  let tagSel = null;
+  let tagKey = null;
+  function drawTagFilter(all) {
+    const tags = collectTags(all, locale());
+    if (listFilters.tag && !tags.some((x) => x.tag.toLowerCase() === listFilters.tag.toLowerCase())) listFilters.tag = null;
+    const key = tags.map((x) => `${x.tag}:${x.count}`).join('|');
+    if (key !== tagKey) {
+      tagKey = key;
+      tagBox.hidden = !tags.length;
+      tagSel = selectEl(
+        [{ value: '', label: t('versions.allTags') }, ...tags.map((x) => ({ value: x.tag, label: t('versions.tagOption', { tag: x.tag, count: x.count }) }))],
+        listFilters.tag || '',
+        (v) => {
+          listFilters.tag = v || null;
+          draw();
+        },
+      );
+      tagSel.setAttribute('aria-label', t('versions.tagFilter'));
+      tagSel.title = t('versions.tagFilter');
+      mount(tagBox, icon('tag'), tagSel);
+    } else if (tagSel) tagSel.value = listFilters.tag || '';
+    tagBox.classList.toggle('active', Boolean(listFilters.tag));
+  }
+  const pickTag = (tag) => {
+    listFilters.tag = tag;
+    draw();
+  };
+  function clearFilters() {
+    listFilters.favorites = false;
+    listFilters.tag = null;
+    favBtn.classList.remove('active');
+    favBtn.setAttribute('aria-pressed', 'false');
+    draw();
+  }
+
+  const compareBtn = h('button', { class: 'btn vs-compare', type: 'button', onclick: () => openCompare(store.instances) }, icon('vsCompare'), t('versions.compare'));
+
+  const viewBtns = VIEW_MODES.map((v) =>
     h(
       'button',
       {
@@ -230,7 +315,7 @@ export function instancesView(container) {
         onclick: () => {
           state.view = v;
           viewBtns.forEach((b, i) => {
-            const on = ['grid', 'list'][i] === v;
+            const on = VIEW_MODES[i] === v;
             b.classList.toggle('active', on);
             b.setAttribute('aria-pressed', String(on));
           });
@@ -238,7 +323,7 @@ export function instancesView(container) {
           draw();
         },
       },
-      icon(v),
+      icon(VIEW_ICONS[v]),
     ),
   );
 
@@ -248,7 +333,10 @@ export function instancesView(container) {
     h('div', { class: 'input-icon vs-search' }, icon('search'), search),
     sortSel,
     groupBtn,
+    favBtn,
+    tagBox,
     h('span', { class: 'spacer' }),
+    compareBtn,
     h('div', { class: 'segmented', role: 'group', 'aria-label': t('versions.viewMode') }, viewBtns),
   );
 
@@ -279,8 +367,9 @@ export function instancesView(container) {
   }
 
   function block(items) {
-    if (state.view !== 'list') return h('div', { class: 'grid vs-grid' }, items.map(card));
-    return h('div', { class: 'vs-list card flat' }, state.group ? null : listHead(), items.map(row));
+    if (state.view === 'list') return h('div', { class: 'vs-list card flat' }, state.group ? null : listHead(), items.map((i) => row(i, pickTag)));
+    if (state.view === 'library') return h('div', { class: 'vs-lib' }, items.map((i) => libCard(i, pickTag)));
+    return h('div', { class: 'grid vs-grid' }, items.map((i) => card(i, pickTag)));
   }
 
   function clearSearch() {
@@ -297,11 +386,13 @@ export function instancesView(container) {
   function drawSummary(all) {
     const runningCount = Object.values(store.running).filter((r) => r.state === 'running').length;
     const totalTime = all.reduce((a, i) => a + (i.playtime || 0), 0);
+    const favCount = all.filter(isFavorite).length;
     const parts = all.length
       ? [
           t('versions.instancesCount', { count: all.length }),
           totalTime ? t('versions.totalPlaytime', { time: fmtDuration(totalTime, { short: true }) }) : null,
           runningCount ? t('versions.runningCount', { count: runningCount }) : null,
+          favCount ? t('versions.favoritesCount', { count: favCount }) : null,
         ]
       : [];
     // Solo se reescribe si cambia (es una region viva: no se repite en cada progreso de instalacion)
@@ -320,19 +411,34 @@ export function instancesView(container) {
       mount(results, emptyAll());
       return;
     }
-    const filtered = all.filter((i) => matchesInstance(i, state.query));
+    drawTagFilter(all);
+    compareBtn.disabled = all.length < 2;
+    compareBtn.title = all.length < 2 ? t('versions.compareHint') : t('versions.compareTitle');
+    const byQuery = all.filter((i) => matchesInstance(i, state.query));
+    const filtered = filterByMeta(byQuery, listFilters);
     if (!filtered.length) {
+      const onlyFilters = byQuery.length > 0;
       mount(
         results,
         h(
           'div',
           { class: 'card flat' },
-          emptyState('search', t('versions.noMatchTitle'), t('versions.noMatchText', { query: state.query.trim() }), h('button', { class: 'btn sm', type: 'button', onclick: clearSearch }, icon('x'), t('versions.clearSearch'))),
+          emptyState(
+            onlyFilters ? 'star' : 'search',
+            onlyFilters ? t('versions.noFilterMatchTitle') : t('versions.noMatchTitle'),
+            onlyFilters ? t('versions.noFilterMatchText') : t('versions.noMatchText', { query: state.query.trim() }),
+            h(
+              'div',
+              { class: 'row wrap vs-empty-actions' },
+              state.query ? h('button', { class: 'btn sm', type: 'button', onclick: clearSearch }, icon('x'), t('versions.clearSearch')) : null,
+              listFilters.favorites || listFilters.tag ? h('button', { class: 'btn sm', type: 'button', onclick: clearFilters }, icon('x'), t('versions.clearFilters')) : null,
+            ),
+          ),
         ),
       );
       return;
     }
-    const sorted = sortInstances(filtered, state.sort, { timeMap: versionTimes, locale: locale() });
+    const sorted = favoritesFirst(sortInstances(filtered, state.sort, { timeMap: versionTimes, locale: locale() }));
     if (!state.group) {
       mount(results, block(sorted));
       return;

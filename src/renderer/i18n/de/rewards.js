@@ -257,4 +257,10 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "Mission abgeschlossen",
   hist_missionBonus: "Missionsbonus",
+  hist_gift_in: "Geschenk von einem Freund",
+  hist_gift_out: "Geschenk an einen Freund",
+  item_frame_pulse: "Puls-Rahmen",
+  item_frame_orbit: "Orbit-Rahmen",
+  item_frame_halloween: "Halloween-Rahmen",
+  item_frame_xmas: "Weihnachtsrahmen",
 };

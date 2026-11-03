@@ -398,4 +398,6 @@ export default {
   connLoss: "{status} · Niestabilne połączenie: gubione jest {loss}% dźwięku",
   netBadBadge: "Niestabilne połączenie",
   netBadHint: "Głos z kimś w pokoju się przerywa lub ponownie łączy. Venus obniża jakość i sama próbuje ponownie.",
+  entryJoined: "wchodzi",
+  entryJoinedAria: "{name} wchodzi do pokoju",
 };

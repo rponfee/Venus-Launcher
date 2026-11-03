@@ -496,9 +496,47 @@
 .hm-pick-empty { padding: var(--sp-6); text-align: center; font-size: var(--fs-sm); color: var(--muted); }
 .hm-pick .badge .status-dot { width: 8px; height: 8px; }
 
-/* ---------- Personalizar + pie ---------- */
+/* ---------- Organizar (Inicio armable) + pie ----------
+   Fuera del modo edicion solo esta el boton "Organizar" arriba a la derecha; al entrar, cada bloque suma una
+   barra con las asas (subir, bajar, ancho, ocultar) y se puede arrastrar. */
+.hm-head { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-3); min-height: 30px; margin-bottom: calc(-1 * var(--sp-3)); }
+.hm-organize { color: var(--muted); }
+.hm-organize:hover { color: var(--text); }
+.hm-head-hint { flex: 1; min-width: 0; margin: 0; font-size: var(--fs-sm); line-height: 1.45; color: var(--text-2); }
+.hm-head-actions { display: flex; gap: var(--sp-2); flex-shrink: 0; }
+.hm-layout { display: flex; flex-direction: column; gap: var(--sp-6); }
+.hm-layout[hidden] { display: none; }
+.hm-bbody { min-width: 0; }
+.hm.is-editing .hm-foot { display: none; }
+.hm.is-editing .hm-block {
+  position: relative; padding: var(--sp-2); border-radius: var(--radius-l); outline: 1px dashed var(--accent-line); outline-offset: 0;
+  background: color-mix(in srgb, var(--accent) 4%, transparent); cursor: grab;
+}
+.hm.is-editing .hm-block:active { cursor: grabbing; }
+.hm.is-editing .hm-block.is-dragging { opacity: 0.45; }
+.hm.is-editing .hm-block.drop-before::before, .hm.is-editing .hm-block.drop-after::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 3px; border-radius: 3px; background: var(--accent); box-shadow: 0 0 10px var(--accent); pointer-events: none; z-index: 1;
+}
+.hm.is-editing .hm-block.drop-before::before { top: -6px; }
+.hm.is-editing .hm-block.drop-after::after { bottom: -6px; }
+.hm.is-editing .hm-bbody { pointer-events: none; user-select: none; }
+.hm.is-editing .hm-block.is-hidden .hm-bbody { opacity: 0.35; filter: grayscale(0.5); }
+.hm.is-editing .hm-block.is-empty .hm-bbody { display: none; }
+.hm-ed {
+  display: flex; align-items: center; gap: var(--sp-2); min-height: 34px; padding: 3px 4px 3px 8px; margin-bottom: var(--sp-2); border-radius: var(--radius-s);
+  background: var(--accent-wash); border: 1px solid var(--accent-line);
+}
+.hm-ed-grip { display: grid; place-items: center; color: var(--accent-hi); opacity: 0.8; flex-shrink: 0; }
+.hm-ed-grip svg { width: 16px; height: 16px; }
+.hm-ed-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); font-weight: 600; color: var(--cream); }
+.hm-ed-tag { flex-shrink: 0; font-size: var(--fs-xs); font-weight: 600; padding: 1px 6px; border-radius: var(--radius-xs); background: var(--surface-4); color: var(--muted); }
+.hm-ed-acts { display: flex; gap: 2px; flex-shrink: 0; }
+.hm-ed-acts .icon-btn { width: 26px; height: 26px; border-radius: 6px; border-color: transparent; background: none; color: var(--text-2); }
+.hm-ed-acts .icon-btn:hover:not(:disabled) { border-color: var(--accent-line); background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--cream); }
+.hm-ed-acts .icon-btn.on { color: var(--accent-hi); }
+.hm-ed-acts .icon-btn:disabled { opacity: 0.3; }
+.hm-ed-acts .icon-btn svg { width: 14px; height: 14px; }
 .hm-cz-text { margin: 0; font-size: var(--fs-sm); }
-.hm-cz .toggle-row { padding: var(--sp-3) 0; }
 .hm-foot { display: flex; justify-content: center; }
 .hm-foot .btn { color: var(--muted); }
 .hm-foot .btn:hover { color: var(--text); }

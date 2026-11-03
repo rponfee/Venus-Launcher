@@ -265,4 +265,11 @@ export default {
   item_title_vip: "VIP",
   hist_mission: "Mission completed",
   hist_missionBonus: "Missions bonus",
+  // Gifts and 3.1 frames
+  hist_gift_in: 'Gift from a friend',
+  hist_gift_out: 'Gift to a friend',
+  item_frame_pulse: 'Pulse frame',
+  item_frame_orbit: 'Orbit frame',
+  item_frame_halloween: 'Halloween frame',
+  item_frame_xmas: 'Christmas frame',
 };

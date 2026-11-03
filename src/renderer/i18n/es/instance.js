@@ -33,6 +33,7 @@ export default {
   tab_datapacks: 'Data packs',
   tab_worlds: 'Mundos',
   tab_screenshots: 'Capturas',
+  tab_notes: 'Notas',
   tab_logs: 'Registros',
   tab_settings: 'Ajustes',
 
@@ -328,4 +329,32 @@ export default {
   jvmArgsHint: 'Solo si sabés lo que hacés: se suman a los argumentos globales.',
   maintenance: 'Mantenimiento',
   maintenanceText: 'Reparar verifica todos los archivos del juego (más lento que el arranque rápido).',
+
+  // Presentacion (resumen): caratula, favorito, etiquetas y acceso directo
+  presentation: 'Presentación',
+  presentationSub: 'Carátula, favorito, etiquetas y acceso directo en el escritorio',
+
+  // Notas y tareas
+  notesTitle: 'Notas',
+  notesSub: 'Seeds, coordenadas, qué mods probar: lo que quieras recordar de esta instancia',
+  notesPlaceholder: 'Escribí tus notas acá…',
+  notesHint: 'Se guarda solo mientras escribís.',
+  notesSaving: 'Guardando…',
+  notesChars: '{count} / {max}',
+  tasksTitle: 'Tareas',
+  tasksSub: 'Lo que te falta hacer en esta instancia',
+  taskPlaceholder: 'Nueva tarea (Enter para agregar)',
+  taskAdd: 'Agregar',
+  taskDone: 'Marcar como hecha: {text}',
+  taskUndone: 'Marcar como pendiente: {text}',
+  taskDelete: 'Borrar la tarea: {text}',
+  tasksEmpty: 'Sin tareas todavía',
+  tasksEmptyText: 'Anotá qué te falta: construir la granja, probar un mod, visitar un bioma…',
+  tasksPending_one: '{count} pendiente',
+  tasksPending_other: '{count} pendientes',
+  tasksAllDone: 'Todo hecho',
+  tasksClearDone: 'Borrar hechas',
+  tasksClearDoneText_one: 'Se va a borrar {count} tarea hecha.',
+  tasksClearDoneText_other: 'Se van a borrar {count} tareas hechas.',
+  tasksFull: 'Llegaste al máximo de 100 tareas: borrá alguna para agregar otra.',
 };

@@ -415,4 +415,7 @@ export default {
   err_noMic: 'No microphone was found.',
   err_micBusy: 'The microphone is being used by another application.',
   err_micFailed: 'Could not open the microphone.',
+  // Entrance effect (3.1)
+  entryJoined: 'joined',
+  entryJoinedAria: '{name} joined the room',
 };

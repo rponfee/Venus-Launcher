@@ -24,6 +24,7 @@ import {
   DEFAULT_NAME_COLOR,
   FONTS,
   FRAMES,
+  bubbleColors,
 } from '../features/profile-editor/model.js';
 
 const NS = 'profile';
@@ -127,6 +128,19 @@ async function flushStyles() {
 // Pide de una vez el estilo de varios usuarios (por ejemplo, toda la lista de amigos)
 export function primeStyles(ids) {
   for (const id of ids || []) if (id && !cachedStyle(id)) requestStyle(id, () => {});
+}
+
+// Estilo de un usuario cuando este (perfil normalizado solo con lo de la tabla); null si no se pudo pedir
+export function fetchStyle(id) {
+  if (!id) return Promise.resolve(null);
+  const c = cachedStyle(id);
+  if (c) return Promise.resolve(normalize({ id, hasStyle: false }));
+  return new Promise((resolve) => {
+    if (Date.now() < offUntil) return resolve(null);
+    requestStyle(id, () => resolve(cachedStyle(id) ? normalize({ id, hasStyle: false }) : null));
+    // Si el pedido falla, flushStyles no llama a nadie: no se espera para siempre
+    setTimeout(() => resolve(cachedStyle(id) ? normalize({ id, hasStyle: false }) : null), 8000);
+  });
 }
 
 // ---------- Perfil ----------
@@ -271,7 +285,7 @@ export function gradientCss(profile) {
 
 // ---------- Textos ----------
 // Respaldo en español si todavia no cargo el namespace (lo correcto es esperar ensureProfileStyle() antes de dibujar)
-const TITLE_FALLBACK = { explorer: 'Explorador', builder: 'Constructor', redstoner: 'Redstoner', legend: 'Leyenda', supporter: 'Colaborador', miner: 'Minero', farmer: 'Granjero', architect: 'Arquitecto', modder: 'Modder', streamer: 'Streamer', pvp: 'PvP', nightowl: 'Búho nocturno', speedrunner: 'Speedrunner', collector: 'Coleccionista', hardcore: 'Hardcore', veteran: 'Veterano', vip: 'VIP' };
+const TITLE_FALLBACK = { explorer: 'Explorador', builder: 'Constructor', redstoner: 'Redstoner', legend: 'Leyenda', supporter: 'Colaborador', miner: 'Minero', farmer: 'Granjero', architect: 'Arquitecto', modder: 'Modder', streamer: 'Streamer', pvp: 'PvP', nightowl: 'Búho nocturno', speedrunner: 'Speedrunner', collector: 'Coleccionista', hardcore: 'Hardcore', veteran: 'Veterano', vip: 'VIP', season1: 'Pionero de Venus', traveler: 'Viajero', pro: 'Pro' };
 export function titleLabel(titleId) {
   const id = titleStyle(titleId);
   if (!id) return '';
@@ -302,11 +316,34 @@ export function rankChip(profile, { compact = false } = {}) {
   return h('span', { class: ['pf-rank', compact && 'compact'], dataset: { rank: info.id }, title: info.label, 'aria-label': info.label }, icon(info.icon), compact ? null : h('span', {}, info.label));
 }
 
-// Clases y variables de la tarjeta segun su estilo (dibujo de fondo, disposicion y color de acento)
+// Clases y variables de la tarjeta segun su estilo (dibujo de fondo, disposicion, color de acento y tema de la 3.1)
 export function cardStyleAttrs(profile) {
-  const c = normalize(profile).cardStyle || {};
+  const n = normalize(profile);
+  const c = n.cardStyle || {};
+  const theme = c.theme?.id && c.theme.id !== 'none' ? c.theme.id : null;
   return {
-    classes: [c.pattern && c.pattern !== 'none' && `pf-pattern-${c.pattern}`, c.layout === 'center' && 'pf-layout-center'].filter(Boolean),
+    classes: [
+      c.pattern && c.pattern !== 'none' && `pf-pattern-${c.pattern}`,
+      c.layout === 'center' && 'pf-layout-center',
+      theme && 'pf-themed',
+      theme && `pf-theme-${theme}`,
+      theme && c.theme.particles && !reducedMotion() && 'pf-particles',
+    ].filter(Boolean),
     vars: c.accent ? { '--pf-accent': c.accent } : {},
   };
+}
+
+// Burbuja de chat (Mensajes): clase del estilo y colores legibles si eligio uno. { classes, vars }
+export function bubbleAttrs(profile) {
+  const b = normalize(profile).cardStyle?.bubble || {};
+  const colors = bubbleColors(b.color);
+  return {
+    classes: [b.style && b.style !== 'default' && `msg-bub-${b.style}`, colors && 'msg-bub-colored'].filter(Boolean),
+    vars: colors ? { '--msg-bub-bg': colors.bg, '--msg-bub-fg': colors.fg, '--msg-bub-line': colors.border } : {},
+  };
+}
+
+// Efecto de entrada en salas de voz ('none' si no eligio)
+export function entryEffectOf(profile) {
+  return normalize(profile).cardStyle?.entry || 'none';
 }

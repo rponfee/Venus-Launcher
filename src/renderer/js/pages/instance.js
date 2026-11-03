@@ -1,16 +1,20 @@
 // Instancia: el centro de cada instalacion. Resumen y herramientas, contenido (mods, resource packs,
-// shaders, data packs por mundo), mundos, capturas, registros y ajustes.
+// shaders, data packs por mundo), mundos, capturas, notas y tareas, registros y ajustes. En la cabecera:
+// caratula, favorito y etiquetas (metadatos de venus-instance.json, modulo instancemeta).
 // Rutas: #/instance/<id>[/<pestania>[/<extra>]]. Pestanias: overview, mods, resourcepacks, shaderpacks,
-// datapacks[/<mundo>], worlds, screenshots, logs[/files], settings ("saves" y "console" siguen funcionando).
+// datapacks[/<mundo>], worlds, screenshots, notes, logs[/files], settings ("saves" y "console" siguen funcionando).
 import { h, icon, mount, emptyState, fmtAgo, fmtDuration } from '../ui.js';
 import { store, api } from '../store.js';
 import { t } from '../i18n.js';
 import { navigate } from '../app.js';
 import { instIcon, instanceBadge, iconButton, popMenu, closeMenu, instanceMenuItems, feature, openFolder, playInstance, supportsMods, guardDrops, keepFocus } from './versions/common.js';
+import { pendingTaskCount } from './versions/catalog.js';
+import { listFilters, favoriteButton, tagChips, coverEl } from './versions/meta.js';
 import { overviewTab, getOverview, invalidateOverview } from './instance/overview.js';
 import { contentHub, CONTENT_KINDS } from './instance/content.js';
 import { worldsTab } from './instance/worlds.js';
 import { screenshotsTab } from './instance/screenshots.js';
+import { notesTab } from './instance/notes.js';
 import { logsTab } from './instance/logs.js';
 import { settingsTab } from './instance/settings.js';
 
@@ -19,6 +23,7 @@ const TABS = [
   { id: 'content', icon: 'package', count: (c) => (c.mods || 0) + (c.resourcepacks || 0) + (c.shaderpacks || 0) },
   { id: 'worlds', icon: 'globe', count: (c) => c.worlds },
   { id: 'screenshots', icon: 'image', count: (c) => c.screenshots },
+  { id: 'notes', icon: 'fileText', count: (c, inst) => pendingTaskCount(inst) },
   { id: 'logs', icon: 'terminal' },
   { id: 'settings', icon: 'sliders' },
 ];
@@ -92,7 +97,9 @@ export default {
     const body = h('div', { class: 'ih-body', role: 'tabpanel', id: 'ih-panel' });
     const groupSlot = h('span', { class: 'ih-group-slot' });
     const countListeners = new Set();
+    const instListeners = new Set();
     let tabCleanup = null;
+    const notifyInstance = () => instListeners.forEach((fn) => fn(inst));
 
     // Insignia de grupo compartido (modulo share): opcional.
     const fillGroup = async () => {
@@ -117,6 +124,13 @@ export default {
         if (!next) return;
         inst = next;
         drawHead();
+        drawTabs();
+        notifyInstance();
+      },
+      // Avisa cuando cambian los datos de la instancia (nombre, caratula, etiquetas, notas...).
+      onInstance(fn) {
+        instListeners.add(fn);
+        return () => instListeners.delete(fn);
       },
       goTab(tab, ...sub) {
         selectTab(tab, sub);
@@ -173,17 +187,23 @@ export default {
       const folderBtn = iconButton('folder', t('instance.openFolder'), () => openFolder(inst));
       folderBtn.dataset.fk = 'folder';
       const act = run?.state === 'running' ? activityText(state.activity) : null;
+      // Una etiqueta lleva a Mis instancias filtrado por ella
+      const pickTag = (tag) => {
+        listFilters.tag = tag;
+        navigate('versions');
+      };
       keepFocus(headBox, () => mount(
         headBox,
         h('button', { class: 'back-link ih-back', type: 'button', dataset: { fk: 'back' }, onclick: () => navigate('versions') }, icon('chevronLeft'), t('instance.backToVersions')),
+        inst.cover ? coverEl(inst, 'ih-cover') : null,
         h(
           'div',
-          { class: 'detail-head ih-head' },
+          { class: ['detail-head ih-head', inst.cover && 'has-cover'] },
           instIcon(inst),
           h(
             'div',
             { class: 'ih-title-wrap' },
-            h('div', { class: 'ih-title-row' }, h('h1', { class: 'page-title ellipsis', title: inst.name }, inst.name), groupSlot),
+            h('div', { class: 'ih-title-row' }, h('h1', { class: 'page-title ellipsis', title: inst.name }, inst.name), favoriteButton(inst, { cls: 'ih-star', onChange: (next) => ctx.setInstance(next) }), groupSlot),
             h(
               'div',
               { class: 'ih-meta' },
@@ -192,6 +212,7 @@ export default {
               run ? h('span', { class: ['vs-live', run.state === 'running' ? 'on' : 'starting'] }, h('i', { 'aria-hidden': 'true' }), run.state === 'running' ? t('instance.playing') : t('instance.starting')) : null,
               !inst.installed && !task ? h('span', { class: 'badge warn' }, t('instance.notInstalled')) : null,
               act ? h('span', { class: 'small text-2 ih-activity ellipsis', title: act }, act) : null,
+              tagChips(inst, { max: 6, editable: true, onPick: pickTag, onChange: (next) => ctx.setInstance(next) }),
             ),
             h(
               'div',
@@ -235,7 +256,7 @@ export default {
       keepFocus(tabsBar, () => mount(
         tabsBar,
         TABS.map((tb) => {
-          const n = c && tb.count ? tb.count(c) : null;
+          const n = tb.count ? tb.count(c || {}, inst) : null;
           const label = t(`instance.tab_${tb.id}`);
           const on = state.tab === tb.id;
           return h(
@@ -293,6 +314,9 @@ export default {
         case 'screenshots':
           tabCleanup = screenshotsTab(body, ctx);
           break;
+        case 'notes':
+          tabCleanup = notesTab(body, ctx);
+          break;
         case 'logs':
           tabCleanup = logsTab(body, ctx, state.sub);
           break;
@@ -337,6 +361,8 @@ export default {
         const nameChanged = next.name !== inst.name;
         inst = next;
         drawHead();
+        drawTabs();
+        notifyInstance();
         if (nameChanged) fillGroup();
       } catch {
         if (!state.gone) {
@@ -371,6 +397,7 @@ export default {
       offs.forEach((off) => off());
       offGuard();
       countListeners.clear();
+      instListeners.clear();
       closeMenu();
       if (tabCleanup) tabCleanup();
     };

@@ -32,7 +32,8 @@ const RETRY_NOT_MET = 60 * 1000; // un logro del servidor que no se cumplió no 
 /** Nombre, descripción e ítems de la tienda con respaldo si falta la traducción. */
 export const achievementName = (id) => catalogName(id);
 export const achievementDesc = (id) => catalogDesc(id);
-export const itemName = (id) => (has(`rewards.item_${id}`) ? R(`item_${id}`) : humanizeId(id));
+// Los cosméticos del Venus Pass (0026) se nombran en el namespace "pass" (features/pass.js lo carga al arrancar).
+export const itemName = (id) => (has(`rewards.item_${id}`) ? R(`item_${id}`) : has(`pass.item_${id}`) ? t(`pass.item_${id}`) : humanizeId(id));
 
 // ---------- Resumen compartido (points_me) ----------
 const summary = { user: null, data: null, error: null, at: 0 };

@@ -38,6 +38,14 @@ function unwrap(res) {
   return res.data;
 }
 
+// status_until (0027): si vencio, el texto de estado no se muestra
+let withUntil = null;
+export function liveStatus(row) {
+  if (!row || !row.status_until) return row;
+  const t = Date.parse(row.status_until);
+  return Number.isFinite(t) && t <= Date.now() ? { ...row, status_text: null } : row;
+}
+
 function chunks(list, size = CHUNK) {
   const out = [];
   for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
@@ -66,8 +74,19 @@ export function createSupabaseBackend(client, userId, auth) {
       return unwrap(await client.from('friendships').select('id,requester,addressee,status,created_at,updated_at'));
     },
 
+    // Con la 0027 trae ademas status_until: un estado vencido llega con status_text vacio. Sin esa columna
+    // (servidor sin actualizar) se piden las columnas de siempre.
     profiles(ids) {
-      return inChunks(ids, async (part) => unwrap(await client.from('profiles').select(PROFILE_COLS).in('id', part)));
+      return inChunks(ids, async (part) => {
+        let rows;
+        if (withUntil !== false) {
+          const res = await client.from('profiles').select(`${PROFILE_COLS},status_until`).in('id', part);
+          if (res.error && (res.error.code === '42703' || /status_until/.test(res.error.message || ''))) withUntil = false;
+          else rows = unwrap(res);
+        }
+        if (!rows) rows = unwrap(await client.from('profiles').select(PROFILE_COLS).in('id', part));
+        return (rows || []).map(liveStatus);
+      });
     },
 
     activities(ids) {

@@ -12,6 +12,7 @@ import { badgesOf, headId, presenceLabel, activityLine, isJoinable, MY_STATUSES 
 import { ensureProfileStyle, normalize, styledName, applyFrame, bannerEl as profileBanner, gradientCss, premiumChip, rankChip, cardStyleAttrs } from './profile-style.js';
 import { mergeProfiles } from '../features/profile-editor/model.js';
 import { achievementInfo } from '../pages/achievements/names.js';
+import { shouldAutoplaySong } from './logic.js';
 
 registerIcons({
   scCheckCheck: '<path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/>',
@@ -26,7 +27,10 @@ registerIcons({
 // Hoja de estilos y textos del modulo (por si se abre una tarjeta fuera de la pagina de Mensajes).
 export async function prepareSocialUi() {
   ensureCss('pages/messages');
+  ensureCss('features/profile-social');
   await Promise.all([loadNs('social'), ensureProfileStyle(), loadNs('achievements').catch(() => null)]);
+  // Bandeja de regalos (3.1): avisa cuando llega uno nuevo
+  import('./gifts.js').then((m) => m.startGiftWatch()).catch(() => {});
 }
 
 // ---------- Piezas ----------
@@ -215,7 +219,20 @@ function pinnedClips(list) {
   );
 }
 
-// Skin en 3D: se pide recien cuando el visitante toca el boton (consulta a Mojang)
+// Insignias por logros raros (3.1): chips con el icono del logro
+function rareBadgeChips(list) {
+  const items = (list || []).map((a) => ({ a, info: achievementInfo(a.id) })).filter((x) => x.info);
+  if (!items.length) return null;
+  return h(
+    'div',
+    { class: 'pf-rare', role: 'list', 'aria-label': P('rareBadges') },
+    items.map(({ a, info }) =>
+      h('span', { class: 'pf-rare-chip', role: 'listitem', dataset: { rarity: info.tier === 'netherite' ? 'legendary' : 'epic' }, title: a.at ? `${info.name} · ${fmtDate(a.at)}` : info.name }, icon(info.icon), h('span', {}, info.name)),
+    ),
+  );
+}
+
+// Skin en 3D: se pide recien cuando el visitante toca el boton (consulta a Mojang). Con la pose y el fondo elegidos (3.1).
 function skinBlock(n, { preview }) {
   if (!n.showcase?.skin || !n.mcName) return null;
   const box = h('div', { class: 'pf-skin-box' });
@@ -230,7 +247,9 @@ function skinBlock(n, { preview }) {
       const norm = normalizeSkin(await loadImage(res.dataUrl));
       const viewer = createViewer({ label: P('skinViewerLabel', { name: n.mcName }) });
       viewer.setSkin(norm.canvas, res.variant);
-      mount(box, viewer.el);
+      const pose = n.showcase.skinPose || 'stand';
+      const bg = n.showcase.skinBg || 'none';
+      mount(box, h('div', { class: ['pf-skin-stage', pose !== 'stand' && `pf-skin-pose-${pose}`, bg !== 'none' && `pf-skinbg-${bg}`] }, viewer.el));
     } catch (err) {
       console.warn('[perfil] skin:', err?.code || err?.message || err);
       btn.disabled = false;
@@ -243,6 +262,34 @@ function skinBlock(n, { preview }) {
 
 const section = (iconName, label, content) => (content ? h('div', { class: 'pf-sec' }, h('div', { class: 'pf-sec-label' }, icon(iconName), h('span', {}, label)), content) : null);
 
+// Cancion de perfil (3.1): solo llega para los amigos y el dueño (profile_public); el reproductor se carga aparte
+function songBox(n, { preview, self, friend }) {
+  if (!n.song?.url) return null;
+  const box = h('div', { class: 'pf-song-box' });
+  import('./song.js')
+    .then((m) => {
+      if (!box.isConnected && !preview) return;
+      const el = m.songPlayer(n.song, { name: n.name, autoplay: shouldAutoplaySong({ song: n.song, allowed: m.songsAllowed(), preview, self, friend: Boolean(friend) }) });
+      if (el) mount(box, el);
+    })
+    .catch((err) => console.warn('[profile] cancion:', err?.message || err));
+  return box;
+}
+
+// Libro de visitas (3.1): se muestra si el dueño lo prendio (card_style.guestbook)
+function guestbookBox(n, { preview, self, friend }) {
+  if (!n.cardStyle?.guestbook || !n.id) return null;
+  const box = h('div', { class: 'pf-gb-box' });
+  if (preview) {
+    mount(box, h('div', { class: 'pf-gb-empty' }, icon('message'), P('guestbookOn')));
+    return box;
+  }
+  import('./guestbook.js')
+    .then((m) => mount(box, m.guestbookSection(n.id, { isMe: self, isFriend: Boolean(friend), preview })))
+    .catch((err) => console.warn('[profile] libro de visitas:', err?.message || err));
+  return box;
+}
+
 /**
  * Tarjeta del perfil (modal de perfil, vista previa del editor y donde haga falta).
  * profile: fila de profiles o perfil de profile_public. full: agrega actividad, descripcion, servidores favoritos,
@@ -250,6 +297,7 @@ const section = (iconName, label, content) => (content ? h('div', { class: 'pf-s
  */
 export function profileCard(profile, { presence = 'offline', statusText = '', self = false, full = false, compact = false, friend = null, preview = false, onJoin, onAction } = {}) {
   ensureProfileStyle();
+  ensureCss('features/profile-social');
   const n = normalize(profile, { allowLocalMedia: preview });
   const fade = gradientCss(n);
   const name = n.name || t('social.someone');
@@ -267,6 +315,7 @@ export function profileCard(profile, { presence = 'offline', statusText = '', se
       styledName(n, { size: 'lg', title: true }),
       sub.length ? h('div', { class: 'pf-card-sub' }, sub.flatMap((s, i) => (i ? [h('span', { class: 'pf-dot-sep', 'aria-hidden': 'true' }), s] : [s]))) : null,
     ),
+    rareBadgeChips(n.showcase?.rareBadges),
     showStatus
       ? h(
           'div',
@@ -295,6 +344,7 @@ export function profileCard(profile, { presence = 'offline', statusText = '', se
     body.push(
       friend?.presence === 'offline' && friend.lastSeen ? h('div', { class: 'pf-profile-note' }, icon('clock'), t('social.lastSeen', { ago: fmtAgo(friend.lastSeen) })) : null,
       friend ? activityBlock(friend, { onJoin }) : null,
+      section('music', P('song'), songBox(n, { preview, self, friend })),
       section('user', t('social.about'), n.bio ? h('div', { class: 'pf-bio selectable' }, n.bio) : null),
       section('link', P('links'), linkRow(n.links, { preview })),
       section('trophy', Number.isFinite(n.achievementCount) ? P('pinnedAchCount', { n: n.achievementCount, total: n.achievementTotal || '?' }) : P('pinnedAch'), pinnedAchievements(n.showcase.achievements)),
@@ -303,6 +353,7 @@ export function profileCard(profile, { presence = 'offline', statusText = '', se
       section('camera', P('pinnedClips'), pinnedClips(n.showcase.clips)),
       section('user', P('showcaseSkin'), skinBlock(n, { preview })),
       section('camera', P('featured'), featuredGrid(n.featured, { preview })),
+      section('message', P('guestbook'), guestbookBox(n, { preview, self, friend })),
       facts.length ? h('div', { class: 'pf-divider', role: 'presentation' }) : null,
       facts.length ? h('div', { class: 'pf-facts' }, facts) : null,
     );
@@ -553,7 +604,10 @@ export async function openProfile(userId, { profile: given = null } = {}) {
     footer.push(
       h('button', { class: 'icon-btn danger', type: 'button', title: t('social.block'), 'aria-label': t('social.block'), onclick: act(() => confirmBlock(user)) }, icon('ban')),
       h('button', { class: 'icon-btn danger', type: 'button', title: t('social.remove'), 'aria-label': t('social.remove'), onclick: act(() => confirmRemoveFriend(friend)) }, icon('scUserMinus')),
+      reportBtn(),
       h('span', { class: 'spacer' }),
+      // Regalar (3.1): puntos o un cosmetico de la tienda
+      h('button', { class: 'btn', type: 'button', onclick: () => import('./gifts.js').then((m) => m.openGiftDialog({ id: userId, name, profile: latestPub })).catch((e) => fail(P('giftFailed'), e)) }, icon('sparkles'), P('gift')),
       h('button', { class: 'btn', onclick: act(() => inviteToVoice(friend)), disabled: friend.presence === 'offline', title: friend.presence === 'offline' ? t('social.friendOffline') : null }, icon('mic'), t('social.inviteVoice')),
       h('button', { class: 'btn primary', onclick: act(() => social.openChat(userId)) }, icon('message'), t('social.sendMessage')),
     );
@@ -567,7 +621,13 @@ export async function openProfile(userId, { profile: given = null } = {}) {
   } else if (isBlocked) {
     footer.push(h('button', { class: 'btn', onclick: act(() => social.unblockUser(userId).catch((e) => fail(t('social.actionFailed'), e))) }, icon('check'), t('social.unblock')));
   }
+  if (!isMe && !friend) footer.unshift(reportBtn());
+  // Denunciar (3.1): la cancion o el contenido del perfil
+  function reportBtn() {
+    return h('button', { class: 'icon-btn', type: 'button', title: P('report'), 'aria-label': P('report'), onclick: () => import('./report.js').then((mod) => mod.openReportDialog({ id: userId, name, hasSong: Boolean(normalize(latestPub || base).song?.url) })).catch((e) => fail(P('reportFailed'), e)) }, icon('alert'));
+  }
 
+  let latestPub = null;
   const body = h('div', { class: 'pf-profile' });
   const draw = (p) =>
     mount(
@@ -576,16 +636,18 @@ export async function openProfile(userId, { profile: given = null } = {}) {
         full: true,
         self: isMe,
         friend,
+        // Sin presencia (no es amigo) el estado sale de profile_public, que ya lo manda vacio si vencio
         presence: pres.presence,
-        statusText: pres.statusText,
+        statusText: friend || isMe ? pres.statusText : normalize(p).statusText,
         onJoin: friend ? act(() => joinFriend(friend)) : undefined,
         onAction: () => m.close(),
       }),
     );
   draw(base);
-  const m = modal({ title: t('social.profileTitle', { name }), body, footer: footer.length ? footer : null });
+  const m = modal({ title: t('social.profileTitle', { name }), body, footer: footer.length ? footer : null, onClose: () => import('./song.js').then((s) => s.stopSongs()).catch(() => {}) });
   // Lo personalizado llega aparte (profile_public): se vuelve a dibujar cuando esta
   fetchPublicProfile(userId).then((pub) => {
+    latestPub = pub;
     if (pub && body.isConnected) draw(mergeProfiles(base, pub));
   });
   return m;

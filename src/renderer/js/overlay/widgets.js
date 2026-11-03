@@ -9,9 +9,11 @@
 // teclado (flechas, Mayus+flechas, 1 a 9 para la grilla); onMove(id, { anchor, x?, y? }) avisa cada cambio.
 import { h, icon } from './dom.js';
 import { ANCHORS, DIGIT_ANCHOR, boxFor, snap, clampBox, nudge, sizeOf, clampScale } from './layout.js';
+import { drawPerf, samplePerf, hasPerfData, PERF_STALE_MS } from './perf.js';
 
-export const WIDGETS = ['voice', 'messages', 'alerts', 'captures', 'music'];
-const WIDGET_ICON = { voice: 'mic', messages: 'message', alerts: 'info', captures: 'capture', music: 'music' };
+// perf (3.1): rendimiento del juego (RAM, CPU, ping y tiempo de sesion), ver perf.js.
+export const WIDGETS = ['voice', 'messages', 'alerts', 'captures', 'music', 'perf'];
+const WIDGET_ICON = { voice: 'mic', messages: 'message', alerts: 'info', captures: 'capture', music: 'music', perf: 'info' };
 const DEFAULT_DURATION = { alerts: 6, messages: 8, captures: 5 };
 const MAX_ALERTS = 3;
 const MAX_QUEUE = 20;
@@ -55,7 +57,7 @@ export class OverlayView {
     this.isReduced = isReduced || (() => false);
     this.now = now || (() => Date.now());
     this.layout = null;
-    this.data = { voice: null, messages: [], alerts: [], queue: [], captures: [], recording: null, music: null };
+    this.data = { voice: null, messages: [], alerts: [], queue: [], captures: [], recording: null, music: null, perf: null };
     this.timer = null;
     this.drag = null;
     this.destroyed = false;
@@ -264,6 +266,10 @@ export class OverlayView {
       if (d.alerts.length < MAX_ALERTS) d.alerts.push(this.showAlert(item, now));
       else d.queue = [...d.queue, item].slice(-MAX_QUEUE);
       this.renderWidget('alerts');
+    } else if (ev.kind === 'perf') {
+      // Una muestra cada 2 s; con todo en null (se cerro el juego) el widget se esconde.
+      d.perf = hasPerfData(ev) ? { ...ev, at: now } : null;
+      this.renderWidget('perf');
     }
     this.schedule();
   }
@@ -288,6 +294,7 @@ export class OverlayView {
       if (!m.state.playing && m.pausedAt) next = Math.min(next, m.pausedAt + MUSIC_PAUSED_MS + 20);
     }
     if (d.recording) next = Math.min(next, now + 1000);
+    if (d.perf) next = Math.min(next, d.perf.at + PERF_STALE_MS + 20);
     if (next === Infinity) return;
     this.timer = setTimeout(() => this.tick(), Math.max(60, Math.min(next - now, 60000)));
   }
@@ -304,6 +311,10 @@ export class OverlayView {
     if (before[1] !== d.messages.length) this.renderWidget('messages');
     this.renderWidget('captures');
     if (d.music) this.renderWidget('music');
+    if (d.perf && now - d.perf.at > PERF_STALE_MS) {
+      d.perf = null; // sin muestras nuevas (se cerro el juego o el overlay dejo de medir)
+      this.renderWidget('perf');
+    }
     this.schedule();
   }
 
@@ -468,6 +479,13 @@ export class OverlayView {
       ),
     );
     return true;
+  }
+
+  draw_perf(inner, cfg, editing) {
+    let p = this.data.perf;
+    if (this.preview || (!p && editing)) p = samplePerf();
+    if (!p) return false;
+    return drawPerf(inner, cfg, p, { tr: this.tr });
   }
 
   sampleVoice() {

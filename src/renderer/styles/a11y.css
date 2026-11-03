@@ -392,3 +392,158 @@ html.ap-themed .hero-planet { filter: hue-rotate(var(--ap-hue, 0deg)) saturate(v
 /* Apariencia > Interfaz */
 .ap-ui-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
 .ap-ui-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+
+/* ---------- Tema claro (appearance.js pone html[data-scheme="light"]) ----------
+   Los valores son los mismos que LIGHT_VARS de js/a11y/engine.js (que los usa de base para el acento, la paleta
+   propia, el daltonismo y el alto contraste); la prueba a11y/test/light-palette.test.js los compara. Esta hoja
+   no se espeja (data-ax-skip), asi que el motor no los vuelve a transformar. */
+html[data-scheme='light'] {
+  color-scheme: light;
+  --bg-0: #f4ece2;
+  --bg-1: #faf5ee;
+  --surface: #fffaf3;
+  --surface-2: #f7eee2;
+  --surface-3: #eee2d2;
+  --surface-4: #e2d2bd;
+  --surface-raised: #fffdf9;
+  --card-bg: linear-gradient(180deg, rgba(255, 252, 247, 0.9), rgba(255, 248, 240, 0.9));
+  --card-bg-flat: rgba(255, 250, 243, 0.85);
+  --field-bg: rgba(255, 255, 255, 0.72);
+  --well-bg: rgba(120, 82, 44, 0.07);
+  --hover-bg: rgba(120, 82, 44, 0.08);
+  --scrim: rgba(64, 42, 24, 0.5);
+  --border: rgba(94, 58, 22, 0.13);
+  --border-2: rgba(94, 58, 22, 0.22);
+  --border-3: rgba(94, 58, 22, 0.36);
+  --text: #2b1d12;
+  --text-2: #4e3a2a;
+  --muted: #6e5945;
+  --faint: #86715c;
+  --accent: #e8891c;
+  --accent-hi: #9a4e08;
+  --accent-lo: #c96f10;
+  --accent-deep: #8a4210;
+  --accent-ink: #2b1405;
+  --accent-wash: rgba(232, 137, 28, 0.14);
+  --accent-line: rgba(232, 137, 28, 0.45);
+  --accent-glow: rgba(232, 137, 28, 0.28);
+  --cream: #6e3808;
+  --good: #1f9a45;
+  --good-wash: rgba(31, 154, 69, 0.12);
+  --good-line: rgba(31, 154, 69, 0.4);
+  --good-text: #176b32;
+  --warn: #c98400;
+  --warn-wash: rgba(201, 132, 0, 0.14);
+  --warn-line: rgba(201, 132, 0, 0.45);
+  --warn-text: #7a5000;
+  --bad: #d23b32;
+  --bad-wash: rgba(210, 59, 50, 0.1);
+  --bad-line: rgba(210, 59, 50, 0.4);
+  --bad-text: #a0281f;
+  --info: #2b7fd0;
+  --info-wash: rgba(43, 127, 208, 0.1);
+  --info-line: rgba(43, 127, 208, 0.4);
+  --info-text: #1c5d9c;
+  --shadow: 0 10px 30px rgba(70, 45, 20, 0.16);
+  --shadow-s: 0 4px 14px rgba(70, 45, 20, 0.12);
+  --focus-ring-color: #c96f10;
+}
+/* Piezas pensadas para el fondo oscuro: degradados claro-a-oscuro, sombras de texto y letras blancas */
+html[data-scheme='light'] .space-bg canvas { opacity: 0.28; }
+html[data-scheme='light'] .btn.primary { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 72%, white), var(--accent) 55%, var(--accent-lo)); border-color: color-mix(in srgb, var(--accent-lo) 55%, white); }
+html[data-scheme='light'] .play-btn:not(.stop) { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 66%, white), var(--accent) 50%, var(--accent-lo)); border-color: color-mix(in srgb, var(--accent-lo) 45%, white); }
+html[data-scheme='light'] .brand .brand-name,
+html[data-scheme='light'] .boot-name,
+html[data-scheme='light'] .ap-mini-name { background-image: linear-gradient(180deg, var(--accent-lo), var(--accent-deep)); }
+html[data-scheme='light'] .kpi.hero-kpi .kpi-value { background-image: linear-gradient(180deg, var(--cream), var(--accent-lo)); }
+html[data-scheme='light'] .hero-title { text-shadow: none; }
+html[data-scheme='light'] .inst-icon { color: var(--text); text-shadow: none; }
+html[data-scheme='light'] .modal-foot,
+html[data-scheme='light'] .ax-pal-foot { background: var(--well-bg); }
+html[data-scheme='light'] .tab.active { box-shadow: inset 0 0 0 1px var(--border-2); }
+html[data-scheme='light'] .nav-item.active { color: var(--accent-hi); }
+html[data-scheme='light'] .nav-item.active::before { box-shadow: none; }
+html[data-scheme='light'] .toast.info svg { color: var(--accent-lo); }
+html[data-scheme='light'] .ap-swatch.active { color: var(--accent-hi); }
+html[data-scheme='light'] .ax-value { color: var(--accent-lo); }
+html[data-scheme='light'] .modal { box-shadow: var(--shadow); }
+html[data-scheme='light'] .ap-preview-link { color: var(--accent-hi); }
+
+/* ---------- Boton Jugar a gusto (appearance.js: applyPlayButton; sin tocar pages/home.js) ----------
+   Color: --play-color y --play-ink en <html>. Texto: --play-label (una cadena CSS) solo en el boton de Jugar
+   (data-fk="play"), nunca en Detener, Crear ni en el de la bienvenida. Animaciones: data-play-anim. */
+html[data-play-color] .play-btn:not(.stop):not(.wl-start) {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--play-color) 70%, white), var(--play-color) 50%, color-mix(in srgb, var(--play-color) 78%, black));
+  border-color: color-mix(in srgb, var(--play-color) 45%, white); color: var(--play-ink, #2b1405); text-shadow: none;
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--play-color) 55%, black), 0 10px 30px color-mix(in srgb, var(--play-color) 40%, transparent), inset 0 2px 0 rgba(255, 255, 255, 0.45);
+}
+html[data-play-color] .play-btn:not(.stop):not(.wl-start):active:not(:disabled) {
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--play-color) 55%, black), 0 6px 18px color-mix(in srgb, var(--play-color) 35%, transparent), inset 0 2px 0 rgba(255, 255, 255, 0.45);
+}
+html[data-play-label] .play-btn[data-fk='play']:not(.stop):not(.is-busy) > span { display: none; }
+html[data-play-label] .play-btn[data-fk='play']:not(.stop):not(.is-busy)::after { content: var(--play-label); }
+html[data-play-anim] .play-btn:not(.stop):not(.wl-start) { position: relative; }
+html[data-play-anim='pulse'] .play-btn:not(.stop):not(.wl-start):not(:disabled)::before {
+  content: ''; position: absolute; inset: -3px; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--play-color, var(--accent)) 55%, transparent); animation: ap-play-pulse 2.2s ease-out infinite;
+}
+@keyframes ap-play-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--play-color, var(--accent)) 55%, transparent); }
+  70% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--play-color, var(--accent)) 0%, transparent); }
+  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--play-color, var(--accent)) 0%, transparent); }
+}
+html[data-play-anim='shine'] .play-btn:not(.stop):not(.wl-start) { overflow: hidden; }
+html[data-play-anim='shine'] .play-btn:not(.stop):not(.wl-start):not(:disabled)::before {
+  content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 45%; pointer-events: none;
+  background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.55) 50%, transparent 80%); transform: skewX(-18deg);
+  animation: ap-play-shine 3.2s ease-in-out infinite;
+}
+@keyframes ap-play-shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+/* Vista previa en el panel: un boton Jugar chico con los mismos estilos (sin data-fk, asi el texto se pone a mano) */
+.ap-play-preview { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: 14px; border-radius: 14px; background: var(--well-bg); border: 1px solid var(--border); }
+.ap-play-preview .play-btn { font-size: 18px; height: 46px; padding: 0 24px; border-radius: 11px; gap: 10px; pointer-events: none; }
+.ap-play-preview .play-btn svg { width: 18px; height: 18px; }
+.ap-play-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-3) var(--sp-5); align-items: start; }
+
+/* ---------- Editor de colores, tema claro, temporadas, rotacion y looks (tarjetas del panel) ---------- */
+.ap-palette-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ap-pal-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--well-bg); min-width: 0; }
+.ap-pal-swatch { position: relative; width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; border: 1px solid var(--border-3); background: var(--pal, var(--surface-3)); cursor: pointer; overflow: hidden; }
+.ap-pal-swatch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+.ap-pal-swatch:focus-within { outline: var(--focus-ring); outline-offset: 2px; }
+.ap-pal-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ap-pal-name { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.ap-pal-value { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.ap-pal-item.ap-pal-custom .ap-pal-value { color: var(--accent-hi); }
+.ap-pal-clear { width: 24px; height: 24px; border-radius: 7px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.ap-pal-clear:hover { background: var(--hover-bg); color: var(--text); }
+.ap-pal-clear svg { width: 13px; height: 13px; }
+.ap-scheme-times { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: var(--fs-sm); color: var(--text-2); }
+.ap-scheme-times .input { width: 110px; font-variant-numeric: tabular-nums; }
+.ap-season-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ap-season-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 6px; border-radius: 999px; border: 1px solid var(--border-2); background: var(--well-bg); font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.ap-season-chip i { width: 14px; height: 14px; border-radius: 50%; background: var(--sw); box-shadow: 0 0 8px var(--sw); }
+.ap-season-chip.on { border-color: var(--accent-line); background: var(--accent-wash); color: var(--text); }
+.ap-rot-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ap-rot-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 6px 4px 4px; border-radius: 10px; border: 1px solid var(--border-2); background: var(--well-bg); font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); max-width: 100%; }
+.ap-rot-chip img { width: 44px; height: 26px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.ap-rot-chip.current { border-color: var(--accent); color: var(--text); }
+.ap-rot-chip .ellipsis { max-width: 160px; }
+.ap-rot-chip .icon-btn { width: 22px; height: 22px; border-radius: 6px; }
+.ap-rot-chip .icon-btn svg { width: 12px; height: 12px; }
+.ap-rot-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 10px; max-height: min(460px, 60vh); overflow-y: auto; padding: 4px; margin: -4px; }
+.ap-rot-pick .ap-wallpaper { border-style: dashed; }
+.ap-rot-pick .ap-wallpaper.active { border-style: solid; }
+.ap-rot-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.ap-looks-list { display: flex; flex-direction: column; gap: 6px; }
+.ap-look { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--well-bg); min-width: 0; }
+.ap-look-sw { width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; border: 1px solid var(--border-2); background: linear-gradient(135deg, var(--lk-bg) 0 50%, var(--lk-accent) 50% 100%); position: relative; overflow: hidden; }
+.ap-look-sw img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ap-look-sw i { position: absolute; right: 3px; bottom: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--lk-accent); box-shadow: 0 0 0 2px var(--lk-bg); }
+.ap-look-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ap-look-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-look-meta { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-look-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.ap-looks-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ap-code-box { width: 100%; min-height: 92px; font-family: var(--mono); font-size: var(--fs-xs); resize: vertical; }
+@container (max-width: 560px) { .ap-look { flex-wrap: wrap; } .ap-look-actions { width: 100%; justify-content: flex-end; } }

@@ -19,8 +19,10 @@ import {
   confirmRemoveFriend,
   confirmBlock,
 } from '../social/profile-ui.js';
-import { styledName } from '../social/profile-style.js';
+import { styledName, bubbleAttrs, fetchStyle } from '../social/profile-style.js';
 import { renderBody, isJumbo, openEmojiPicker, closeEmojiPicker, insertAtCursor, EMOJIS, QUICK_REACTIONS } from '../social/richtext.js';
+import { isKlipyUrl } from '../features/profile-editor/model.js';
+import { openGifPicker, closeGifPicker } from '../social/gifpicker.js';
 
 const drafts = new Map(); // borradores por conversacion (sobreviven al cambiar de pagina)
 const GROUP_MS = 5 * 60_000;
@@ -71,9 +73,16 @@ function fullTime(iso) {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleString(locale(), { dateStyle: 'full', timeStyle: 'short' });
 }
 
+// Un mensaje que es solo la direccion de un GIF de KLIPY se muestra como imagen (cualquier otra URL sigue como texto)
+const gifOf = (body) => {
+  const s = String(body || '').trim();
+  return s && !/\s/.test(s) && isKlipyUrl(s) ? s : null;
+};
+
 function preview(last) {
   if (!last) return '';
-  return last.deleted ? t('messages.deletedShort') : String(last.body || '').replace(/\s+/g, ' ');
+  if (last.deleted) return t('messages.deletedShort');
+  return gifOf(last.body) ? t('messages.gifPreview') : String(last.body || '').replace(/\s+/g, ' ');
 }
 
 const typingDots = () => h('span', { class: 'msg-dots', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'));
@@ -120,6 +129,7 @@ class MessagesPage {
   }
 
   start() {
+    import('../social/gifts.js').then((m) => m.startGiftWatch()).catch(() => {});
     this.offs.push(
       social.on('state', () => this.render()),
       social.on('ready', () => this.render()),
@@ -148,6 +158,7 @@ class MessagesPage {
     cancelAnimationFrame(this.raf);
     this.chat?.destroy();
     closeEmojiPicker();
+    closeGifPicker();
     social.setActive(null);
   }
 
@@ -827,6 +838,8 @@ class ChatView {
       this.mountChat();
       this.renderMessages('open');
       social.markRead(this.chatId);
+      // Burbujas personalizadas (3.1): si el estilo de alguno de los dos llega despues, se vuelven a dibujar
+      Promise.all([fetchStyle(this.userId), fetchStyle(social.userId)]).then((list) => list.some(Boolean) && !this.destroyed && this.renderMessages('keep'));
     } catch (err) {
       if (this.destroyed) return;
       mount(
@@ -1055,11 +1068,15 @@ class ChatView {
       mine && !m.deleted ? this.receiptEl(m) : null,
     );
     let bubble;
+    // Burbuja personalizada del que escribe (card_style.bubble, 3.1): estilo y color legible
+    const look = bubbleAttrs(mine ? social.me || { id: social.userId } : this.profile());
+    const gif = m.deleted ? null : gifOf(m.body);
     if (m.deleted) bubble = h('div', { class: 'msg-bubble deleted' }, icon('ban'), h('span', { class: 'msg-text' }, t('messages.deletedMessage')), meta);
     else {
       const keys = local ? null : mine ? 'R E' : 'R';
-      if (isJumbo(m.body)) bubble = h('div', { class: 'msg-bubble jumbo', tabindex: 0, 'aria-keyshortcuts': keys }, h('span', { class: 'msg-jumbo' }, m.body), meta);
-      else bubble = h('div', { class: 'msg-bubble', tabindex: 0, 'aria-keyshortcuts': keys }, m.reply_to ? this.quoteEl(m.reply_to) : null, h('span', { class: 'msg-text priv' }, renderBody(m.body)), meta);
+      if (gif) bubble = h('div', { class: ['msg-bubble', 'gif', ...look.classes], style: look.vars, tabindex: 0, 'aria-keyshortcuts': keys }, m.reply_to ? this.quoteEl(m.reply_to) : null, h('img', { class: 'msg-gif', src: gif, alt: t('messages.gifAlt'), loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', draggable: 'false' }), meta);
+      else if (isJumbo(m.body)) bubble = h('div', { class: 'msg-bubble jumbo', tabindex: 0, 'aria-keyshortcuts': keys }, h('span', { class: 'msg-jumbo' }, m.body), meta);
+      else bubble = h('div', { class: ['msg-bubble', ...look.classes], style: look.vars, tabindex: 0, 'aria-keyshortcuts': keys }, m.reply_to ? this.quoteEl(m.reply_to) : null, h('span', { class: 'msg-text priv' }, renderBody(m.body)), meta);
     }
     bubble.addEventListener('dblclick', (ev) => {
       if (ev.target.closest('a, button') || m.deleted || local) return;
@@ -1384,6 +1401,19 @@ class ChatView {
       { class: 'icon-btn msg-emoji-btn', type: 'button', title: t('messages.emoji'), 'aria-label': t('messages.emoji'), 'aria-haspopup': 'dialog', onclick: () => openEmojiPicker(this.emojiBtn, (e) => insertAtCursor(this.input, e), { label: t('messages.emoji') }) },
       icon('smile'),
     );
+    // GIF de KLIPY (3.1): el mensaje lleva solo la direccion del GIF
+    this.gifBtn = h(
+      'button',
+      {
+        class: 'icon-btn msg-gif-btn',
+        type: 'button',
+        title: t('messages.gifPicker'),
+        'aria-label': t('messages.gifPicker'),
+        'aria-haspopup': 'dialog',
+        onclick: () => openGifPicker(this.gifBtn, (g) => this.send(g.url, this.replyTo?.id || null)),
+      },
+      h('span', { class: 'msg-gif-label', 'aria-hidden': 'true' }, t('messages.gif')),
+    );
     this.sendBtn = h('button', { class: 'btn primary msg-send', type: 'button', title: t('messages.send'), 'aria-label': t('messages.send'), onclick: () => this.submit() }, icon('send'));
     this.input.addEventListener('input', () => {
       this.autoGrow();
@@ -1413,7 +1443,7 @@ class ChatView {
       }
     });
     this.lockNote = h('div', { class: 'msg-locked', role: 'status', hidden: true });
-    mount(this.composer, this.ctx, this.lockNote, h('div', { class: 'msg-compose-row' }, this.emojiBtn, h('div', { class: 'msg-input-wrap' }, this.input, this.counter), this.sendBtn));
+    mount(this.composer, this.ctx, this.lockNote, h('div', { class: 'msg-compose-row' }, this.emojiBtn, this.gifBtn, h('div', { class: 'msg-input-wrap' }, this.input, this.counter), this.sendBtn));
     this.autoGrow();
     this.updateCounter();
     this.updateComposerState();
@@ -1428,6 +1458,7 @@ class ChatView {
     const canWrite = isFriend && !mod;
     this.input.disabled = !canWrite;
     this.emojiBtn.disabled = !canWrite;
+    if (this.gifBtn) this.gifBtn.disabled = !canWrite;
     this.lockNote.hidden = canWrite;
     let note = [];
     if (mod) note = [icon(mod.kind === 'banned' ? 'ban' : 'micOff'), h('span', {}, t(mod.kind === 'banned' ? 'messages.modBannedShort' : 'messages.modMutedShort'))];

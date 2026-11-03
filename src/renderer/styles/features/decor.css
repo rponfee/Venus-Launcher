@@ -1,0 +1,76 @@
+/* ============================================================
+   Decoración (features/decor.js, prefijo .dc-): partículas sobre el fondo, pantalla de inicio propia,
+   cursores pixel art y la tarjeta "Decoración" de Ajustes > Apariencia.
+   Colores solo con los tokens del tema; el modo liviano y el movimiento reducido apagan las partículas.
+   ============================================================ */
+
+/* ---------- Partículas: canvas propio dentro de .space-bg, encima de las estrellas y del fondo propio ---------- */
+.space-bg canvas.dc-particles { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 1; pointer-events: none; }
+/* a11y.css esconde los canvas de .space-bg cuando hay un fondo propio: las partículas se ven igual */
+.space-bg.ap-has-image canvas.dc-particles { display: block; }
+.space-bg canvas.dc-particles[hidden],
+html[data-ui-lite] .space-bg canvas.dc-particles,
+body.reduce-motion .space-bg canvas.dc-particles { display: none !important; }
+html.ax-hc .space-bg canvas.dc-particles { opacity: 0.55; }
+
+/* ---------- Pantalla de inicio (deja libre la barra de título, como la pantalla de carga) ---------- */
+.dc-splash {
+  position: fixed; z-index: var(--z-system); inset: var(--titlebar-h) 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: radial-gradient(60% 55% at 50% 45%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%), var(--bg-0);
+  cursor: pointer; user-select: none; transition: opacity 0.42s var(--ease-in);
+}
+.dc-splash.out { opacity: 0; pointer-events: none; }
+.dc-splash-logo { width: 112px; height: 112px; object-fit: contain; filter: drop-shadow(0 0 26px var(--accent-glow)); animation: dc-splash-in 0.6s var(--ease-out) both; }
+.dc-splash-logo.ap-logo-pixel { image-rendering: pixelated; }
+.dc-splash-name {
+  margin-top: 12px; font-family: var(--pixel); font-weight: 700; font-size: 40px; line-height: 1; letter-spacing: 0.08em; text-align: center; max-width: 86vw; overflow-wrap: anywhere;
+  background: linear-gradient(180deg, var(--cream), var(--accent) 70%, var(--accent-lo)); -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: dc-splash-in 0.6s 0.1s var(--ease-out) both;
+}
+.dc-splash-sub { font-family: var(--pixel); font-size: var(--fs-sm); letter-spacing: 0.5em; margin-right: -0.5em; color: var(--muted); animation: dc-splash-in 0.6s 0.18s var(--ease-out) both; }
+.dc-splash-text {
+  font-family: var(--pixel); font-weight: 700; font-size: 48px; line-height: 1.1; letter-spacing: 0.06em; text-align: center; max-width: 86vw; padding: 0 24px; overflow-wrap: anywhere; text-wrap: balance;
+  background: linear-gradient(180deg, var(--cream), var(--accent) 70%, var(--accent-lo)); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 18px var(--accent-glow)); animation: dc-splash-in 0.6s var(--ease-out) both;
+}
+.dc-splash.is-minimal .dc-splash-logo { width: 56px; height: 56px; filter: drop-shadow(0 0 14px var(--accent-glow)); }
+.dc-splash.is-minimal .dc-splash-name { margin-top: 10px; font-size: 15px; font-weight: 600; letter-spacing: 0.32em; margin-right: -0.32em; background: none; -webkit-text-fill-color: var(--muted); color: var(--muted); }
+@keyframes dc-splash-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } }
+html.ax-hc .dc-splash-name, html.ax-hc .dc-splash-text { background: none; -webkit-text-fill-color: var(--cream); color: var(--cream); filter: none; }
+
+/* ---------- Cursores: las URLs van en variables de <html> (cursors.js); acá solo qué elementos usan cuál ---------- */
+html[data-dc-cursor] { cursor: var(--dc-cursor), auto; }
+html[data-dc-cursor] :is(a, button, summary, label[for], select, .btn, .icon-btn, .nav-item, .brand, .account-chip, .tb-btn, .tb-net, .chip, .tab, .segmented > button, .switch, .range,
+    [role='button'], [role='link'], [role='tab'], [role='radio'], [role='checkbox'], [role='switch'], [role='menuitem'], [role='menuitemradio'], [role='menuitemcheckbox'], [role='option'], [role='treeitem'],
+    [data-route], input[type='range'], input[type='checkbox'], input[type='radio'], input[type='color'], input[type='file'],
+    [tabindex='0']:not(input):not(textarea):not(select):not([contenteditable]):not(.modal):not(.main):not([role='dialog']):not([role='region']):not([role='list']):not([role='listbox']):not([role='grid']):not([role='group'])):not(:disabled):not([aria-disabled='true']) {
+  cursor: var(--dc-cursor-pointer), pointer;
+}
+html[data-dc-cursor] :is(input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='color']):not([type='file']):not([type='button']):not([type='submit']), textarea, [contenteditable='true']) { cursor: text; }
+html[data-dc-cursor] :is(:disabled, [aria-disabled='true']) { cursor: var(--dc-cursor), not-allowed; }
+html[data-dc-cursor] .dc-splash { cursor: var(--dc-cursor-pointer), pointer; }
+
+/* ---------- Tarjeta Decoración (Ajustes > Apariencia, debajo de Interfaz) ---------- */
+.dc-card { gap: var(--sp-4); }
+.dc-section { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.dc-section-head { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dc-section-title { display: flex; align-items: center; gap: var(--sp-2); font-weight: 600; font-size: var(--fs-md); color: var(--text); }
+.dc-section-title svg { width: 16px; height: 16px; color: var(--accent-hi); flex-shrink: 0; }
+.dc-section-sub { font-size: var(--fs-sm); line-height: 1.45; color: var(--muted); max-width: 72ch; }
+.dc-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.dc-row-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.dc-divider { height: 1px; background: var(--border); margin: 0; }
+.dc-seg { flex-wrap: wrap; width: fit-content; max-width: 100%; }
+.dc-seg button { min-height: 32px; }
+.dc-seg button img { width: 18px; height: 18px; image-rendering: pixelated; flex-shrink: 0; }
+.dc-test-row { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.dc-test-row .btn svg { width: 14px; height: 14px; }
+.dc-splash-field .input { max-width: 360px; }
+.dc-note { display: flex; align-items: flex-start; gap: 6px; padding: 8px 10px; border-radius: var(--radius-s); background: var(--accent-wash); border: 1px solid var(--accent-line); font-size: var(--fs-sm); line-height: 1.45; color: var(--text); }
+.dc-note svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--accent-hi); }
+.ax-panel .dc-section [hidden] { display: none !important; }
+
+@media (max-width: 1100px) {
+  .dc-splash-name { font-size: 32px; }
+  .dc-splash-text { font-size: 38px; }
+}

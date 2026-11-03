@@ -245,4 +245,19 @@ export default {
   block_news: 'Novedades de Minecraft',
   block_tips: 'Consejos',
   railLabel: 'Resumen',
+
+  // Organizar (Inicio armable: orden, ocultos y bloques a lo ancho)
+  organize: 'Organizar',
+  organizeTitle: 'Organizar el Inicio: mover, ocultar y ensanchar los bloques',
+  organizeHint: 'Movelos con las flechas o arrastrándolos, ocultalos o ponelos a lo ancho. La instancia y JUGAR siempre quedan arriba.',
+  organizeDone: 'Listo',
+  organizeReset: 'Restablecer',
+  blockUp: 'Subir {block}',
+  blockDown: 'Bajar {block}',
+  blockHide: 'Ocultar {block}',
+  blockShow: 'Mostrar {block}',
+  blockWide: 'Poner {block} a lo ancho',
+  blockNarrow: 'Volver {block} al ancho normal',
+  blockHiddenTag: 'Oculto',
+  blockEmptyTag: 'Sin datos por ahora',
 };

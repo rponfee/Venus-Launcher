@@ -26,8 +26,9 @@ function seed(now) {
     ...extra,
   });
   const profiles = [
-    profile(ME, 'Ringo', 'Ringo', { friend_code: 'VENUS-R1NG0X', banner: 'venus', badges: ['founder', 'early'], status_text: 'Armando la base del server', bio: 'Constructor de castillos y granjas de hierro. Siempre con ganas de un survival nuevo.' }),
-    profile('mock-tomas', 'TomiCraft', 'Tomás', { banner: 'ocean', badges: ['supporter'], status_text: 'Bedwars toda la noche', bio: 'Main bedwars. Si me ves conectado, sumate.' }),
+    // card_style (3.1): burbujas de chat personalizadas para ver en Mensajes
+    profile(ME, 'Ringo', 'Ringo', { friend_code: 'VENUS-R1NG0X', banner: 'venus', badges: ['founder', 'early'], status_text: '🔥 Armando la base del server', bio: 'Constructor de castillos y granjas de hierro. Siempre con ganas de un survival nuevo.', card_style: { bubble: { style: 'round', color: '#3b1450' }, theme: { id: 'space' } } }),
+    profile('mock-tomas', 'TomiCraft', 'Tomás', { banner: 'ocean', badges: ['supporter'], status_text: 'Bedwars toda la noche', bio: 'Main bedwars. Si me ves conectado, sumate.', card_style: { bubble: { style: 'pixel', color: '#7df9ff' }, entry: 'spark', guestbook: true } }),
     profile('mock-luli', 'Luli_mc', 'Luli', { banner: 'cherry', mc_name: 'Luli_mc' }),
     profile('mock-nico', 'NicoRedstone', 'Nico', { banner: 'redstone', badges: ['dev'], status_text: 'Haciendo una CPU en redstone' }),
     profile('mock-sofi', 'SofiBuilds', 'Sofi', { banner: 'amethyst', badges: ['creator'] }),

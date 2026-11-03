@@ -245,4 +245,19 @@ export default {
   block_news: 'Minecraft news',
   block_tips: 'Tips',
   railLabel: 'Overview',
+
+  // Organize (customizable Home: order, hidden and full-width blocks)
+  organize: 'Organize',
+  organizeTitle: 'Organize the Home page: move, hide and widen the blocks',
+  organizeHint: 'Move them with the arrows or by dragging, hide them or make them full width. The instance and PLAY always stay at the top.',
+  organizeDone: 'Done',
+  organizeReset: 'Reset',
+  blockUp: 'Move {block} up',
+  blockDown: 'Move {block} down',
+  blockHide: 'Hide {block}',
+  blockShow: 'Show {block}',
+  blockWide: 'Make {block} full width',
+  blockNarrow: 'Set {block} back to normal width',
+  blockHiddenTag: 'Hidden',
+  blockEmptyTag: 'No data yet',
 };

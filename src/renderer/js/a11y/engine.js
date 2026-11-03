@@ -1,8 +1,10 @@
-// Motor visual compartido por Apariencia (color de acento) y Accesibilidad (daltonismo y alto contraste).
-// Calcula las variables de color de :root y transforma los colores fijos de todas las hojas de estilo
-// (restyle.js). Cada color de la interfaz se clasifica una sola vez segun el tema original:
+// Motor visual compartido por Apariencia (color de acento, paleta propia y tema claro) y Accesibilidad
+// (daltonismo y alto contraste). Calcula las variables de color de :root y transforma los colores fijos de
+// todas las hojas de estilo (restyle.js). Cada color de la interfaz se clasifica una sola vez segun el tema
+// original (oscuro):
 //   accent  -> familia naranja/oro de Venus (se re-ancla al acento elegido)
-//   neutral -> fondos, bordes y textos calidos (se tiñen con el tono del acento)
+//   neutral -> fondos, bordes y textos calidos (se tiñen con el tono del acento; con el tema claro o una
+//              paleta propia se re-anclan entre el fondo y el texto nuevos)
 //   good / warn / bad / info -> estados (se cambian por paletas distinguibles en los modos de daltonismo)
 import * as C from './color.js';
 import { setMapper, mapValue } from './restyle.js';
@@ -39,8 +41,69 @@ const FALLBACK_VARS = {
   '--info': '#5aa7f0',
 };
 
+// Tema claro (html[data-scheme="light"]): los mismos valores que la regla de styles/a11y.css, que es la que
+// pinta; estos son la base sobre la que se calcula el acento, la paleta propia, el daltonismo y el alto
+// contraste (la prueba a11y/test/light-palette.test.js verifica que las dos copias coincidan y el contraste).
+export const LIGHT_VARS = {
+  '--bg-0': '#f4ece2',
+  '--bg-1': '#faf5ee',
+  '--surface': '#fffaf3',
+  '--surface-2': '#f7eee2',
+  '--surface-3': '#eee2d2',
+  '--surface-4': '#e2d2bd',
+  '--surface-raised': '#fffdf9',
+  '--card-bg': 'linear-gradient(180deg, rgba(255, 252, 247, 0.9), rgba(255, 248, 240, 0.9))',
+  '--card-bg-flat': 'rgba(255, 250, 243, 0.85)',
+  '--field-bg': 'rgba(255, 255, 255, 0.72)',
+  '--well-bg': 'rgba(120, 82, 44, 0.07)',
+  '--hover-bg': 'rgba(120, 82, 44, 0.08)',
+  '--scrim': 'rgba(64, 42, 24, 0.5)',
+  '--border': 'rgba(94, 58, 22, 0.13)',
+  '--border-2': 'rgba(94, 58, 22, 0.22)',
+  '--border-3': 'rgba(94, 58, 22, 0.36)',
+  '--text': '#2b1d12',
+  '--text-2': '#4e3a2a',
+  '--muted': '#6e5945',
+  '--faint': '#86715c',
+  '--accent': '#e8891c',
+  '--accent-hi': '#9a4e08',
+  '--accent-lo': '#c96f10',
+  '--accent-deep': '#8a4210',
+  '--accent-ink': '#2b1405',
+  '--accent-wash': 'rgba(232, 137, 28, 0.14)',
+  '--accent-line': 'rgba(232, 137, 28, 0.45)',
+  '--accent-glow': 'rgba(232, 137, 28, 0.28)',
+  '--cream': '#6e3808',
+  '--good': '#1f9a45',
+  '--good-wash': 'rgba(31, 154, 69, 0.12)',
+  '--good-line': 'rgba(31, 154, 69, 0.4)',
+  '--good-text': '#176b32',
+  '--warn': '#c98400',
+  '--warn-wash': 'rgba(201, 132, 0, 0.14)',
+  '--warn-line': 'rgba(201, 132, 0, 0.45)',
+  '--warn-text': '#7a5000',
+  '--bad': '#d23b32',
+  '--bad-wash': 'rgba(210, 59, 50, 0.1)',
+  '--bad-line': 'rgba(210, 59, 50, 0.4)',
+  '--bad-text': '#a0281f',
+  '--info': '#2b7fd0',
+  '--info-wash': 'rgba(43, 127, 208, 0.1)',
+  '--info-line': 'rgba(43, 127, 208, 0.4)',
+  '--info-text': '#1c5d9c',
+  '--shadow': '0 10px 30px rgba(70, 45, 20, 0.16)',
+  '--shadow-s': '0 4px 14px rgba(70, 45, 20, 0.12)',
+  '--focus-ring-color': '#c96f10',
+};
+
 export const BASE_ACCENT = '#f29a2e';
 const BASE_LCH = C.toOklch(C.parseColor(BASE_ACCENT));
+const LIGHT_LCH = C.toOklch(C.parseColor(LIGHT_VARS['--accent']));
+// Extremos del tema original entre los que se ubica cada neutro fijo (fondo mas oscuro y texto principal)
+const DARK_BG_LCH = C.toOklch(C.parseColor(FALLBACK_VARS['--bg-0']));
+const DARK_TEXT_LCH = C.toOklch(C.parseColor(FALLBACK_VARS['--text']));
+// Brillo legible del acento: sobre fondo oscuro tiene que ser claro; sobre fondo claro, medio (los textos
+// de acento salen mas oscuros por proporcion)
+const ACCENT_RANGE = { dark: [0.62, 0.9], light: [0.55, 0.75] };
 
 // Amarillos de "aviso" con un tono casi igual al dorado del acento: se reconocen por valor exacto.
 const WARN_SET = new Set(['#fab219', '#ffd36b', '#ffd98a', '#ffe2a3', '#c98f12']);
@@ -92,8 +155,10 @@ const VAR_ROLES = {
   '--modrinth-wash': 'bg',
 };
 
+const COLOR_RE = /url\((?:[^()"']|"[^"]*"|'[^']*')*\)|(#[0-9a-fA-F]{3,8}\b|rgba?\([^()]*\))/g;
+
 const state = {
-  theme: null, // { target, hueK, neutralScale, tint }
+  theme: null, // { scheme, accent: { target, hueK, neutralScale } | null, tint, palette, neutral }
   cvd: 'none',
   cvdStrength: 0.5,
   hc: false,
@@ -110,11 +175,12 @@ const listeners = new Set();
 
 // ---------- API ----------
 
-// theme: { accent: '#rrggbb', tint: true } o null para el tema original de Venus
+// theme: { accent: '#rrggbb' | null, tint: true, scheme: 'dark' | 'light', palette: { bg, surface, text, border, accent } }
+// o null para el tema original de Venus. accent null (o el de Venus) = sin cambiar la familia naranja/oro.
+// palette: colores en hex o null (null = el del esquema); el texto tiene que llegar ya legible (appearance.js).
 export function setTheme(theme) {
-  const c = theme && C.isHexColor(theme.accent) ? C.parseColor(theme.accent) : null;
-  const next = c && C.toHex(c) !== BASE_ACCENT ? prepareTheme(c, theme.tint !== false) : null;
-  const key = next ? `${C.toHex(c)}|${next.tint}` : '';
+  const next = theme ? prepareTheme(theme) : null;
+  const key = next ? JSON.stringify([next.scheme, next.accent?.target, next.tint, next.palette]) : '';
   if (key !== themeKey) {
     themeKey = key;
     state.theme = next;
@@ -142,13 +208,25 @@ export function onApply(fn) {
   return () => listeners.delete(fn);
 }
 
-// Acento ajustado para que se lea bien sobre el fondo oscuro (lo que realmente se aplica)
-export function legibleAccent(hex) {
+// Acento ajustado para que se lea bien sobre el fondo (lo que realmente se aplica): claro sobre el tema
+// oscuro, medio sobre el tema claro (light = true)
+export function legibleAccent(hex, light = false) {
   const c = C.parseColor(hex);
-  if (!c) return BASE_ACCENT;
+  if (!c) return light ? LIGHT_VARS['--accent'] : BASE_ACCENT;
   const lch = C.toOklch(c);
-  const l = C.clamp(lch.l, 0.62, 0.9);
+  const [lo, hi] = ACCENT_RANGE[light ? 'light' : 'dark'];
+  const l = C.clamp(lch.l, lo, hi);
   return l === lch.l ? C.toHex(c) : C.toHex(C.fromOklch({ ...lch, l }));
+}
+
+// Esquema que esta aplicando el motor ('dark' | 'light')
+export function currentScheme() {
+  return state.theme?.scheme || 'dark';
+}
+
+// Variables de color base de un esquema (copia): para mostrar los valores "de Venus" en el editor
+export function baseTokens(scheme = currentScheme()) {
+  return { ...readBaseVars(scheme) };
 }
 
 // Aplica ya (sin esperar al siguiente cuadro): util al iniciar para evitar un parpadeo
@@ -158,16 +236,43 @@ export function applyNow() {
 }
 
 // ---------- Preparacion ----------
-function prepareTheme(c, tint) {
-  const lch = C.toOklch(c);
-  lch.l = C.clamp(lch.l, 0.62, 0.9);
-  // Las luces del tema original "giran" hacia el amarillo y las sombras hacia el rojo (pixel art).
-  // Con otros tonos se gira hacia el lado mas corto al amarillo, un poco mas suave.
-  const toYellow = C.hueDelta(lch.h, 100);
-  const dir = toYellow >= 0 ? 1 : -1;
-  const hueK = lch.c < 0.03 ? 0 : (Math.abs(toYellow) < 60 ? 1 : 0.6) * dir;
-  const neutralScale = C.clamp(lch.c / BASE_LCH.c, 0, 1.15);
-  return { target: lch, hueK, neutralScale, tint };
+function prepareTheme(theme) {
+  const scheme = theme.scheme === 'light' ? 'light' : 'dark';
+  const palette = cleanPalette(theme.palette);
+  const accentHex = palette?.accent || (C.isHexColor(theme.accent) ? theme.accent : null);
+  let accent = null;
+  if (accentHex && accentHex.toLowerCase() !== BASE_ACCENT) {
+    const lch = C.toOklch(C.parseColor(accentHex));
+    const [lo, hi] = ACCENT_RANGE[scheme];
+    lch.l = C.clamp(lch.l, lo, hi);
+    // Las luces del tema original "giran" hacia el amarillo y las sombras hacia el rojo (pixel art).
+    // Con otros tonos se gira hacia el lado mas corto al amarillo, un poco mas suave.
+    const toYellow = C.hueDelta(lch.h, 100);
+    const dir = toYellow >= 0 ? 1 : -1;
+    const hueK = lch.c < 0.03 ? 0 : (Math.abs(toYellow) < 60 ? 1 : 0.6) * dir;
+    const neutralScale = C.clamp(lch.c / BASE_LCH.c, 0, 1.15);
+    accent = { target: lch, hueK, neutralScale };
+  }
+  const base = readBaseVars(scheme);
+  // Los neutros fijos de las hojas (pensados para el tema oscuro) se ubican entre el fondo y el texto nuevos
+  let neutral = null;
+  if (scheme === 'light' || palette?.bg || palette?.text || palette?.surface) {
+    const toBg = C.toOklch(C.parseColor(palette?.bg || base['--bg-0']));
+    const toText = C.toOklch(C.parseColor(palette?.text || base['--text']));
+    neutral = { toBg, toText };
+  }
+  return { scheme, accent, tint: theme.tint !== false, palette, neutral };
+}
+
+function cleanPalette(p) {
+  if (!p || typeof p !== 'object') return null;
+  const out = {};
+  let any = false;
+  for (const k of ['bg', 'surface', 'text', 'border', 'accent']) {
+    out[k] = C.isHexColor(p[k]) ? String(p[k]).toLowerCase() : null;
+    if (out[k]) any = true;
+  }
+  return any ? out : null;
 }
 
 function buildStatus(pal) {
@@ -176,7 +281,7 @@ function buildStatus(pal) {
   return out;
 }
 
-function readBaseVars() {
+function readDarkVars() {
   if (baseVars) return baseVars;
   const out = { ...FALLBACK_VARS };
   try {
@@ -193,6 +298,67 @@ function readBaseVars() {
     }
   } catch {
     /* se usa el respaldo */
+  }
+  return out;
+}
+
+// Base de cada esquema: el oscuro sale de main.css; el claro son LIGHT_VARS sobre esa base (lo que el
+// claro no redefine queda como en el oscuro).
+function readBaseVars(scheme) {
+  const dark = readDarkVars();
+  return scheme === 'light' ? { ...dark, ...LIGHT_VARS } : dark;
+}
+
+// ---------- Paleta propia: variables derivadas de los colores elegidos ----------
+const hex = (c) => C.toHex(c);
+const alpha = (c, a) => C.rgba(c, a);
+function stepL(c, d) {
+  const s = C.toOklch(c);
+  return C.fromOklch({ l: C.clamp(s.l + d), c: s.c, h: s.h });
+}
+function mixOk(a, b, t) {
+  const x = C.toOklch(a);
+  const y = C.toOklch(b);
+  return C.fromOklch({ l: x.l + (y.l - x.l) * t, c: x.c + (y.c - x.c) * t, h: x.h + C.hueDelta(x.h, y.h) * t });
+}
+
+function paletteVars(p, base) {
+  const out = {};
+  const bg = C.parseColor(p.bg || base['--bg-0']);
+  const surface = C.parseColor(p.surface || base['--surface']);
+  const text = C.parseColor(p.text || base['--text']);
+  const dir = C.toOklch(text).l >= C.toOklch(surface).l ? 1 : -1; // hacia donde "suben" las superficies
+  if (p.bg) {
+    out['--bg-0'] = hex(bg);
+    out['--bg-1'] = hex(stepL(bg, dir * 0.03));
+    out['--field-bg'] = alpha(bg, 0.6);
+    out['--well-bg'] = alpha(bg, 0.5);
+    out['--scrim'] = alpha(bg, 0.66);
+  }
+  if (p.surface) {
+    const s2 = stepL(surface, dir * 0.04);
+    out['--surface'] = hex(surface);
+    out['--surface-2'] = hex(s2);
+    out['--surface-3'] = hex(stepL(surface, dir * 0.08));
+    out['--surface-4'] = hex(stepL(surface, dir * 0.13));
+    out['--surface-raised'] = hex(stepL(surface, dir * 0.05));
+    out['--card-bg'] = `linear-gradient(180deg, ${alpha(s2, 0.82)}, ${alpha(surface, 0.82)})`;
+    out['--card-bg-flat'] = alpha(surface, 0.7);
+  }
+  if (p.text) {
+    out['--text'] = hex(text);
+    out['--text-2'] = hex(mixOk(text, surface, 0.18));
+    out['--muted'] = hex(mixOk(text, surface, 0.36));
+    out['--faint'] = hex(mixOk(text, surface, 0.46));
+    out['--hover-bg'] = alpha(text, 0.06);
+    const accent = C.parseColor(p.accent || base['--accent']);
+    out['--cream'] = hex(mixOk(text, accent, 0.3));
+  }
+  if (p.border) {
+    const b = C.parseColor(p.border);
+    out['--border'] = alpha(b, 0.14);
+    out['--border-2'] = alpha(b, 0.26);
+    out['--border-3'] = alpha(b, 0.42);
   }
   return out;
 }
@@ -234,13 +400,22 @@ function reanchor(s, base, target, hueK, alpha) {
   return C.fromOklch({ l, c: chroma, h }, alpha);
 }
 
-function themeColor(c, cls) {
-  const t = state.theme;
-  const s = C.toOklch(c);
-  if (cls === 'accent') return reanchor(s, BASE_LCH, t.target, t.hueK, c.a);
-  // neutros: mismo brillo, tono del acento, croma segun lo saturado del acento
-  const h = t.target.h + C.hueDelta(BASE_LCH.h, s.h) * t.hueK * 0.5;
-  return C.fromOklch({ l: s.l, c: s.c * t.neutralScale, h }, c.a);
+// Tinte de los neutros: mismo brillo, tono del acento, croma segun lo saturado del acento
+function tintColor(c, s) {
+  const a = state.theme.accent;
+  const h = a.target.h + C.hueDelta(BASE_LCH.h, s.h) * a.hueK * 0.5;
+  return C.fromOklch({ l: s.l, c: s.c * a.neutralScale, h }, c.a);
+}
+
+// Un neutro pensado para el tema oscuro, ubicado entre el fondo y el texto nuevos (tema claro o paleta propia)
+function neutralColor(c, s) {
+  const { toBg, toText } = state.theme.neutral;
+  const t = C.clamp((s.l - DARK_BG_LCH.l) / (DARK_TEXT_LCH.l - DARK_BG_LCH.l), -0.1, 1.1);
+  const k = C.clamp(t);
+  const l = toBg.l + (toText.l - toBg.l) * t;
+  const chroma = toBg.c + (toText.c - toBg.c) * k;
+  const h = toBg.h + C.hueDelta(toBg.h, toText.h) * k;
+  return C.fromOklch({ l: C.clamp(l), c: chroma, h }, c.a);
 }
 
 function statusColor(c, cls) {
@@ -264,35 +439,93 @@ function roleOf(prop) {
   return 'other';
 }
 
-function contrastColor(c, ctx) {
+// Colores de acento y de estado fijos en las hojas (pensados para fondo oscuro) sobre el tema claro:
+// los textos y bordes se oscurecen para que se lean; los fondos traslucidos quedan como estan.
+function lightLegible(c, ctx) {
   const role = roleOf(ctx?.prop);
   const a = c.a ?? 1;
+  const s = C.toOklch(c);
   if (role === 'text') {
-    const s = C.toOklch(c);
-    // texto oscuro (sobre botones de color) mas oscuro; texto gris mas claro; texto de color un poco mas claro sin perder el tono
-    const l = s.l < 0.3 ? s.l * 0.55 : s.c < 0.06 ? 1 - (1 - s.l) * 0.4 : Math.max(s.l, Math.min(0.93, s.l + 0.07));
-    return C.fromOklch({ l, c: s.c, h: s.h }, a < 1 ? Math.max(a, 0.9) : 1);
+    if (s.l <= 0.52) return c;
+    return C.fromOklch({ l: 0.46, c: Math.min(s.c, 0.16), h: s.h }, a);
   }
   if (role === 'border') {
-    const s = C.toOklch(c);
-    const l = s.l < 0.5 ? Math.min(1, s.l + 0.2) : s.l;
-    return C.fromOklch({ l, c: s.c, h: s.h }, a < 1 ? Math.min(1, a * 2.6 + 0.14) : 1);
+    if (s.l <= 0.6) return c;
+    return C.fromOklch({ l: 0.58, c: Math.min(s.c, 0.16), h: s.h }, a < 1 ? Math.min(1, a * 1.6) : 1);
   }
-  if (role === 'bg' && !ctx?.gradient && a < 1) {
-    const { l } = C.toOklch(c);
-    if (l < 0.32 && a > 0.3) return { ...c, a: Math.max(a, 0.96) }; // superficies traslucidas -> opacas
-    if (l > 0.55 && a < 0.25) return { ...c, a: Math.min(0.45, a * 2) }; // resaltados (hover, wash) mas visibles
+  if (role === 'other' && a >= 1 && !ctx?.gradient && s.l > 0.7) {
+    // iconos y detalles con color pleno: un poco mas oscuros, sin llegar a texto
+    return C.fromOklch({ l: 0.62, c: s.c, h: s.h }, a);
   }
   return c;
 }
 
+function contrastColor(c, ctx) {
+  const role = roleOf(ctx?.prop);
+  const a = c.a ?? 1;
+  const light = state.theme?.scheme === 'light';
+  if (role === 'text') {
+    const s = C.toOklch(c);
+    let l;
+    if (light) {
+      // sobre fondo claro: textos oscuros aun mas oscuros, grises mas oscuros, colores un poco mas oscuros
+      l = s.l < 0.3 ? s.l * 0.7 : s.c < 0.06 ? s.l * 0.6 : Math.min(s.l, Math.max(0.3, s.l - 0.07));
+    } else {
+      // texto oscuro (sobre botones de color) mas oscuro; texto gris mas claro; texto de color un poco mas claro sin perder el tono
+      l = s.l < 0.3 ? s.l * 0.55 : s.c < 0.06 ? 1 - (1 - s.l) * 0.4 : Math.max(s.l, Math.min(0.93, s.l + 0.07));
+    }
+    return C.fromOklch({ l, c: s.c, h: s.h }, a < 1 ? Math.max(a, 0.9) : 1);
+  }
+  if (role === 'border') {
+    const s = C.toOklch(c);
+    const l = light ? (s.l > 0.5 ? Math.max(0, s.l - 0.2) : s.l) : s.l < 0.5 ? Math.min(1, s.l + 0.2) : s.l;
+    return C.fromOklch({ l, c: s.c, h: s.h }, a < 1 ? Math.min(1, a * 2.6 + 0.14) : 1);
+  }
+  if (role === 'bg' && !ctx?.gradient && a < 1) {
+    const { l } = C.toOklch(c);
+    if (light) {
+      if (l > 0.68 && a > 0.3) return { ...c, a: Math.max(a, 0.96) }; // superficies traslucidas -> opacas
+      if (l < 0.45 && a < 0.25) return { ...c, a: Math.min(0.45, a * 2) }; // resaltados mas visibles
+    } else {
+      if (l < 0.32 && a > 0.3) return { ...c, a: Math.max(a, 0.96) }; // superficies traslucidas -> opacas
+      if (l > 0.55 && a < 0.25) return { ...c, a: Math.min(0.45, a * 2) }; // resaltados (hover, wash) mas visibles
+    }
+  }
+  return c;
+}
+
+// ctx.token: el color es una variable base del esquema (ya expresada en los colores finales): no se re-ancla
+// entre fondo y texto ni se corrige para el tema claro, solo se tiñe o cambia de acento.
 function mapColor(c, ctx) {
   const cls = classify(c);
+  const th = state.theme;
   let out = c;
-  if (state.theme && (cls === 'accent' || (cls === 'neutral' && state.theme.tint))) out = themeColor(out, cls);
+  if (th) {
+    if (cls === 'accent') {
+      if (th.accent) out = reanchor(C.toOklch(out), ctx?.token && th.scheme === 'light' ? LIGHT_LCH : BASE_LCH, th.accent.target, th.accent.hueK, c.a);
+    } else if (cls === 'neutral') {
+      const s = C.toOklch(out);
+      if (th.neutral && !ctx?.token) out = neutralColor(out, s);
+      else if (th.accent && th.tint) out = tintColor(out, s);
+    }
+  }
   if (statusLch && statusLch[cls]) out = statusColor(out, cls);
+  if (th?.scheme === 'light' && cls && cls !== 'neutral' && !ctx?.token) out = lightLegible(out, ctx);
   if (state.hc) out = contrastColor(out, ctx);
   return out === c ? null : out;
+}
+
+// Como mapValue de restyle.js, pero para las variables base (ctx.token)
+function mapToken(value, name) {
+  if (!/#|rgb/i.test(value)) return value;
+  const ctx = { prop: name, gradient: /gradient\(/i.test(value), token: true };
+  return String(value).replace(COLOR_RE, (m, color) => {
+    if (!color) return m;
+    const c = C.parseColor(color);
+    if (!c) return m;
+    const out = mapColor(c, ctx);
+    return out ? C.toCss(out) : m;
+  });
 }
 
 // ---------- Aplicar ----------
@@ -308,8 +541,9 @@ function schedule() {
 
 function apply() {
   const root = document.documentElement;
-  const active = Boolean(state.theme) || Boolean(statusLch) || state.hc;
-  root.classList.toggle('ap-themed', Boolean(state.theme));
+  const th = state.theme;
+  const active = Boolean(th && (th.accent || th.scheme === 'light' || th.palette)) || Boolean(statusLch) || state.hc;
+  root.classList.toggle('ap-themed', Boolean(th?.accent));
   root.classList.toggle('ax-hc', state.hc);
   root.classList.toggle('ax-shapes', state.shapes);
   for (const k of Object.keys(SIM)) root.classList.toggle(`ax-cvd-${k}`, state.cvd === k);
@@ -319,9 +553,13 @@ function apply() {
     setMapper(active ? mapColor : null, { now: true });
     const next = new Set();
     if (active) {
-      for (const [name, value] of Object.entries(readBaseVars())) {
-        const v = mapValue(value, name);
-        if (v !== value) {
+      const base = readBaseVars(th?.scheme || 'dark');
+      const over = th?.palette ? paletteVars(th.palette, base) : {};
+      // Con el tema claro las variables se escriben siempre: asi ganan a los espejos de las hojas
+      const force = th?.scheme === 'light';
+      for (const [name, value] of Object.entries(base)) {
+        const v = over[name] !== undefined ? over[name] : mapToken(value, name);
+        if (force || v !== value) {
           root.style.setProperty(name, v);
           next.add(name);
         }
