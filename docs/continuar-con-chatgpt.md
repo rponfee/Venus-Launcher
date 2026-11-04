@@ -42,6 +42,7 @@ node scripts/i18n-check.js --summary
 node --test $(find src web/app/test -name "*.test.js" -not -path "*/hostile/*") supabase/functions/payments/tests/payments.test.ts supabase/functions/voice-turn/tests/voice-turn.test.ts supabase/functions/badge/tests/badge.test.ts supabase/functions/push-notify/tests/push-notify.test.ts supabase/functions/tiktok-token/tests/handler.test.ts
 ```
 
+- **`npm ci` borra `node_modules`:** corrélo solo si nada más está usando la carpeta, porque rompe las pruebas y el Electron que estén corriendo.
 - **Ver la interfaz:** `VENUS_DATA_DIR=<temp> VENUS_DEVSHOT=<carpeta> VENUS_SKIP_ONBOARDING=1 VENUS_DEVSHOT_WAIT=2500 VENUS_DEVSHOT_ROUTES="ruta;;otra" ./node_modules/.bin/electron.cmd .` Deja capturas y un `console.log`, que debe quedar vacío (ver `docs/arquitectura.md` §9). Datos falsos: `VENUS_REWARDS_FAKE=demo|premium|new`, y mirá los `fake.js` de cada página.
 - **Empaquetar y probar:** `npx electron-builder --win --x64 --dir "-c.directories.output=<temp>" --publish never`, después `node scripts/check-package.js <temp>/win-unpacked/resources/app.asar` y `node scripts/smoke-packaged.js "<temp>/win-unpacked/Venus Launcher.exe" --tamper`.
 - **Mod:** `mod/venus-badge/gradlew clean build` (4 variantes; hacen falta JDK 17 y 21 además del que corre Gradle).
