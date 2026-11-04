@@ -1,5 +1,5 @@
 -- 0036_extensiones.sql · Venus 3.4 · Catálogo de extensiones de la comunidad.
--- Guía: docs/extensiones.md · Por dentro: docs/wip/extensiones-34.md. Depende de 0012 y 0014 (moderación, admin, esquema
+-- Guía: docs/extensiones.md · Por dentro: docs/implementacion/extensiones.md. Depende de 0012 y 0014 (moderación, admin, esquema
 -- private). No depende de 0028 a 0035. Idempotente.
 --
 --   * community_extensions: una fila por id de extensión, con su dueño y su estado. El nombre y la descripción públicos
@@ -29,7 +29,7 @@ create table if not exists public.community_extensions (
 create index if not exists community_extensions_owner on public.community_extensions (owner);
 create index if not exists community_extensions_status on public.community_extensions (status, name);
 alter table public.community_extensions enable row level security;
-revoke all on public.community_extensions from anon, authenticated;
+revoke all on public.community_extensions from public, anon, authenticated;
 
 create table if not exists public.community_extension_versions (
   id uuid primary key default gen_random_uuid(),
@@ -52,7 +52,7 @@ create index if not exists community_extension_versions_status on public.communi
 create index if not exists community_extension_versions_submitter on public.community_extension_versions (submitted_by, submitted_at desc);
 create index if not exists community_extension_versions_sha on public.community_extension_versions (sha256) where status = 'blocked';
 alter table public.community_extension_versions enable row level security;
-revoke all on public.community_extension_versions from anon, authenticated;
+revoke all on public.community_extension_versions from public, anon, authenticated;
 
 -- ---------- Validación (la misma que hace el launcher en extensions/manifest.js) ----------
 create or replace function private.extension_permissions() returns text[]

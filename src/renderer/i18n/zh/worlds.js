@@ -378,4 +378,7 @@ export default {
   deletedText: "你可以从回收站中找回它。",
   deletedWithBackup: "已先保存了一份备份。",
   deleteFailed: "无法删除世界",
+  autoBackup: "自动",
+  autoBackupHint: "由启动器自动创建。较新的备份产生后会被清理；手动备份不会被自动删除。",
+  autoBackupsSetup: "自动备份",
 };

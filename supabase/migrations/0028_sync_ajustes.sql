@@ -1,5 +1,5 @@
 -- 0028_sync_ajustes.sql · Venus 3.2 · Sincronizar ajustes y temas entre PCs.
--- Guía: docs/wip/datos-32.md. Se aplica después de 0027. Idempotente.
+-- Guía: docs/implementacion/datos.md. Se aplica después de 0027. Idempotente.
 --
 --   * settings_sync: una fila por usuario con el JSON de los ajustes que viajan y una versión que sube con cada guardado.
 --     El launcher manda solo su lista blanca (apariencia, looks, decoración, menú, inicio, sonidos), con la fecha de cada
@@ -20,7 +20,7 @@ create table if not exists public.settings_sync (
 );
 alter table public.settings_sync enable row level security;
 -- Todo pasa por las funciones de abajo: nadie lee ni escribe la tabla directo
-revoke all on public.settings_sync from anon, authenticated;
+revoke all on public.settings_sync from public, anon, authenticated;
 
 -- { data, version, updatedAt } o { data: null, version: 0 } si todavía no se subió nada
 create or replace function public.settings_sync_get() returns jsonb

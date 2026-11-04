@@ -355,4 +355,7 @@ export default {
   tasksClearDoneText_one: "Zostanie usunięte {count} zrobione zadanie.",
   tasksClearDoneText_other: "Zrobione zadania do usunięcia: {count}.",
   tasksFull: "Osiągnięto limit 100 zadań: usuń jedno, aby dodać kolejne.",
+  copyLink: "Kopiuj link",
+  copyLinkPack: "Link do paczki modów skopiowany",
+  copyLinkLocal: "Link skopiowany: działa tylko na tym komputerze",
 };

@@ -1,17 +1,21 @@
 'use strict';
-// Escribe src/main/core/build-config.json con las claves que no van al repositorio (hoy, la API key de CurseForge, que
-// sus términos prohíben compartir). Lo corre el workflow Build antes de compilar, con el secreto VENUS_CURSEFORGE_API_KEY
-// de GitHub Actions. Sin el secreto no escribe nada y el catálogo de CurseForge queda apagado. Nunca imprime la clave.
-// También sirve para compilar en la PC: VENUS_CURSEFORGE_API_KEY=... node scripts/write-build-config.js
+// Configuracion de cada build: CurseForge y los identificadores publicos de YouTube y TikTok.
+// Nunca imprime valores. Los identificadores de las aplicaciones no son tokens de cuentas ni secretos OAuth.
 const fs = require('fs');
 const path = require('path');
 
 const OUT = path.join(__dirname, '..', 'src', 'main', 'core', 'build-config.json');
 const key = String(process.env.VENUS_CURSEFORGE_API_KEY || '').trim();
+const out = {};
+if (key) out.curseforgeApiKey = key;
+for (const [field, name] of [['youtubeClientId', 'VENUS_YOUTUBE_CLIENT_ID'], ['tiktokClientKey', 'VENUS_TIKTOK_CLIENT_KEY']]) {
+  const value = String(process.env[name] || '').trim();
+  if (value) out[field] = value;
+}
 
 fs.rmSync(OUT, { force: true });
+if (Object.keys(out).length) fs.writeFileSync(OUT, `${JSON.stringify(out)}\n`);
 if (key) {
-  fs.writeFileSync(OUT, `${JSON.stringify({ curseforgeApiKey: key })}\n`);
   console.log('CurseForge: clave cargada en este build.');
 } else {
   const text = 'CurseForge: sin clave. Este build sale sin el catálogo de CurseForge (falta el secreto VENUS_CURSEFORGE_API_KEY).';

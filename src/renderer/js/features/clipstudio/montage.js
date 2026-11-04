@@ -258,6 +258,7 @@ export function openMontage({ items = [], sharedMap = {}, onSaved } = {}) {
       const instanceId = targetInstance(usable());
       const job = await api.invoke('clipstudio:montageOpen', { instanceId, segments: plan.segments.map((s) => ({ path: s.path, start: s.start, length: s.trimmed ? s.length : null })) });
       jobId = job.jobId;
+      if (signal.cancelled) return;
       const total = Math.max(0.1, plan.total);
       const needEncoder = job.mode === 'encode' || useTitle;
       if (needEncoder) {
@@ -274,6 +275,8 @@ export function openMontage({ items = [], sharedMap = {}, onSaved } = {}) {
         setProgress(0, C('montageStepTitle'));
         await encodeTitleCard(encoder, { title: titleText.trim().slice(0, TITLE_MAX), subtitle: weekLabel(now), signal });
         if (signal.cancelled) return;
+        // El siguiente tramo toma su inicio de los cuadros ya escritos.
+        await encoder.flush();
       }
       if (job.mode === 'copy') {
         if (encoder) {
@@ -313,6 +316,8 @@ export function openMontage({ items = [], sharedMap = {}, onSaved } = {}) {
     } finally {
       off?.();
       encoder?.close();
+      if (jobId) await api.invoke('clipstudio:cancel', jobId).catch(() => {});
+      jobId = null;
       running = null;
       done();
       if (m.el.isConnected) {

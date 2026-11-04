@@ -13,6 +13,7 @@ function createTimelapse(deps) {
   const now = deps.now || Date.now;
   let session = null; // { instanceId, cfg, used, lastAt, busy, frames, folder, stopped }
   let timer = null;
+  let starting = null; // identifica el inicio pendiente para descartar respuestas de una partida anterior
 
   function view() {
     if (!session) return { active: false };
@@ -48,6 +49,7 @@ function createTimelapse(deps) {
     cur.busy = true;
     try {
       const free = await Promise.resolve(deps.freeBytes(cur.instanceId)).catch(() => null);
+      if (session !== cur) return { action: 'skip' };
       const res = logic.decide({ now: now(), lastAt: cur.lastAt, everyMs: cur.cfg.every * 1000, used: cur.used, capBytes: cur.cfg.capMb * 1048576, free, folder, busy: false });
       if (res.action === 'full' || res.action === 'noDisk') {
         stopBecause(cur, res.action === 'full' ? 'full' : 'noDisk');
@@ -56,8 +58,12 @@ function createTimelapse(deps) {
       if (res.action !== 'capture') return res;
       cur.lastAt = now();
       const shot = await deps.grab(cur.instanceId);
-      if (session !== cur || logic.isBlankFrame(shot?.data?.byteLength, shot?.width, shot?.height)) return { action: 'skip' };
+      if (session !== cur || logic.folderForActivity(deps.activityOf(cur.instanceId)) !== folder || logic.isBlankFrame(shot?.data?.byteLength, shot?.width, shot?.height)) return { action: 'skip' };
       const buf = shot.data;
+      if (cur.used + buf.byteLength > cur.cfg.capMb * 1048576) {
+        stopBecause(cur, 'full');
+        return { action: 'full' };
+      }
       await deps.write(cur.instanceId, folder, deps.stamp(), buf);
       cur.used += buf.byteLength;
       cur.frames += 1;
@@ -75,12 +81,18 @@ function createTimelapse(deps) {
 
   // Empezo una partida (no silenciosa) de esa instancia. Si ya hay otra andando, sigue la que empezo ultimo.
   async function start(instanceId) {
+    const request = { instanceId };
+    starting = request;
     const cfg = logic.normalizeConfig(await deps.config(instanceId));
+    if (starting !== request) return view();
     if (!cfg.enabled) {
+      starting = null;
       if (session?.instanceId === instanceId) stop(instanceId);
       return view();
     }
     const used = await Promise.resolve(deps.usage(instanceId)).catch(() => 0);
+    if (starting !== request) return view();
+    starting = null;
     session = { instanceId, cfg, used: Number(used) || 0, lastAt: 0, busy: false, frames: 0, folder: null, stopped: null };
     stopTimer();
     timer = setInterval(() => {
@@ -92,6 +104,7 @@ function createTimelapse(deps) {
   }
 
   function stop(instanceId) {
+    if (!instanceId || starting?.instanceId === instanceId) starting = null;
     if (!session || (instanceId && session.instanceId !== instanceId)) return;
     session = null;
     stopTimer();

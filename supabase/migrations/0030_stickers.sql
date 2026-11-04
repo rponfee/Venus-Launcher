@@ -1,5 +1,5 @@
 -- 0030_stickers.sql · Venus 3.3 · Stickers y emojis propios de Mensajes.
--- Guía: docs/wip/mensajes-voz-33.md. Se aplica después de 0027. Idempotente.
+-- Guía: docs/implementacion/mensajes-voz.md. Se aplica después de 0027. Idempotente.
 --
 --   * user_stickers: los stickers de cada cuenta. Cada uno tiene un nombre (sirve como :nombre: en el texto) y un archivo
 --     en el bucket. Hasta 30 por cuenta, 100 con Premium. Sin acceso directo: todo por RPC security definer.
@@ -25,7 +25,7 @@ create table if not exists public.user_stickers (
 );
 create index if not exists user_stickers_user on public.user_stickers (user_id, created_at desc);
 alter table public.user_stickers enable row level security;
-revoke all on public.user_stickers from anon, authenticated;
+revoke all on public.user_stickers from public, anon, authenticated;
 
 -- ---------- Ayudantes ----------
 -- Tope de la cuenta: 30, o 100 con Premium
@@ -36,11 +36,15 @@ $$;
 
 -- Lo que pide la política de subida: cuenta sin baneo ni silencio y lugar en la carpeta (también frena archivos sueltos)
 create or replace function private.sticker_can_upload(p_user uuid) returns boolean
-language sql stable security definer set search_path = '' as $$
-  select public.moderation_social_block(p_user) is null
+language plpgsql volatile security definer set search_path = '' as $$
+begin
+  if p_user is null or p_user is distinct from auth.uid() then return false; end if;
+  -- Dos subidas simultáneas de la misma cuenta revisan el cupo de a una.
+  perform pg_advisory_xact_lock(hashtext('stickers-upload:' || p_user::text));
+  return public.moderation_social_block(p_user) is null
      and (select count(*) from storage.objects o
-           where o.bucket_id = 'stickers' and (storage.foldername(o.name))[1] = p_user::text) < private.sticker_max(p_user)
-$$;
+           where o.bucket_id = 'stickers' and (storage.foldername(o.name))[1] = p_user::text) < private.sticker_max(p_user);
+end $$;
 
 create or replace function private.sticker_json(s public.user_stickers) returns jsonb
 language sql stable set search_path = '' as $$

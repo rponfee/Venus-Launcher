@@ -397,4 +397,7 @@ export default {
   deletedText: "Você pode recuperá-lo na lixeira.",
   deletedWithBackup: "Antes, um backup foi salvo.",
   deleteFailed: "Não foi possível excluir o mundo",
+  autoBackup: "Automático",
+  autoBackupHint: "Criado automaticamente pelo launcher. É excluído quando chegam backups mais recentes; os backups manuais nunca são excluídos automaticamente.",
+  autoBackupsSetup: "Backups automáticos",
 };

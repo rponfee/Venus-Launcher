@@ -1,7 +1,7 @@
 'use strict';
 // Identificadores de las aplicaciones de YouTube y TikTok. Sin ellos, el camino directo no se muestra y solo queda el que
 // abre el navegador. Como la clave de CurseForge: en desarrollo salen de las variables de entorno y en el instalador, de
-// core/build-config.json (lo escribe scripts/write-build-config.js al compilar). Pasos para el dueño: docs/wip/clips-33.md.
+// core/build-config.json (lo escribe scripts/write-build-config.js al compilar). Pasos para el dueño: docs/implementacion/clips.md.
 //   VENUS_YOUTUBE_CLIENT_ID (cliente OAuth de tipo "App de escritorio") · VENUS_YOUTUBE_CLIENT_SECRET (opcional: Google
 //   lo marca como opcional y aclara que en escritorio no es confidencial) · VENUS_TIKTOK_CLIENT_KEY
 const { devEnv } = require('../../core/app-config');

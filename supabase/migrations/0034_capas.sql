@@ -1,5 +1,5 @@
 -- 0034_capas.sql · Venus 3.4 · Capas de Venus en el juego.
--- Guía: docs/wip/capas-34.md. Se aplica después de 0021 (shop_items, mc_verified) y 0012 (moderation_social_block). Idempotente.
+-- Guía: docs/implementacion/capas.md. Se aplica después de 0021 (shop_items, mc_verified) y 0012 (moderation_social_block). Idempotente.
 --
 --   * Capas: ítems de shop_items con kind = 'cape' que se compran con shop_buy, como el resto de la tienda. data.cape es
 --     el id de la textura, una de la lista fija que viene dentro del mod (mod/venus-badge: Capes.java): nunca una URL ni
@@ -29,10 +29,10 @@ create table if not exists public.user_capes (
   equipped_at timestamptz not null default now()
 );
 alter table public.user_capes enable row level security;
-revoke all on public.user_capes from anon, authenticated;
+revoke all on public.user_capes from public, anon, authenticated;
 
 -- ---------- Tienda ----------
--- Las texturas las dibuja mod/venus-badge/make-capes.js. Para sumar una: docs/wip/capas-34.md.
+-- Las texturas las dibuja mod/venus-badge/make-capes.js. Para sumar una: docs/implementacion/capas.md.
 insert into public.shop_items (id, kind, price, premium_only, sort, data) values
   ('cape_dawn', 'cape', 1000, false, 400, '{"cape":"dawn"}'),
   ('cape_nebula', 'cape', 1500, false, 401, '{"cape":"nebula"}'),

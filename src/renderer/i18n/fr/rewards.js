@@ -270,4 +270,13 @@ export default {
   item_frame_orbit: "Cadre Orbite",
   item_frame_halloween: "Cadre Halloween",
   item_frame_xmas: "Cadre Noël",
+  kind_cape: "Capes en jeu",
+  item_cape_dawn: "Cape Aube",
+  item_cape_nebula: "Cape Nébuleuse",
+  item_cape_aurora: "Cape Aurore",
+  item_cape_magma: "Cape Magma",
+  item_cape_orbit: "Cape Orbite",
+  hist_challenge: "Récompense de défi",
+  hist_pass: "Récompense du Venus Pass",
+  hist_pass_refund: "Remboursement du Venus Pass",
 };

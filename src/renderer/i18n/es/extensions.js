@@ -97,9 +97,9 @@ export default {
   safeModeForced: 'Se abrió el launcher con --venus-safe-mode: ninguna extensión corre en esta sesión.',
 
   catalogSwitch: 'Consultar el catálogo de extensiones',
-  catalogSwitchText: 'Pide a Venus la lista de extensiones, las actualizaciones y la lista de bloqueadas. Si está apagado, no se conecta.',
+  catalogSwitchText: "Consulta el catálogo y las actualizaciones disponibles. La comprobación de extensiones bloqueadas se autoriza por separado.",
   catalogOptTitle: 'El catálogo es una conexión opcional',
-  catalogOptText: 'Para verlo, el launcher le pide a Venus la lista de extensiones aprobadas, las actualizaciones y la lista de bloqueadas, que apaga las que resultaron peligrosas. Se puede apagar en Ajustes > Privacidad.',
+  catalogOptText: "Para mostrarlo, el launcher consulta a Venus las extensiones aprobadas y sus actualizaciones. Podés apagar el catálogo en Ajustes → Privacidad. Los bloqueos tienen su propia autorización.",
   catalogEnable: 'Activar el catálogo',
   signInTitle: 'Iniciá sesión en Venus',
   signInText: 'El catálogo y los envíos necesitan tu cuenta de Venus.',
@@ -160,7 +160,7 @@ export default {
   adminNoteLabel: 'Motivo (lo ve quien la envió)',
   adminNotePlaceholder: 'Qué hay que cambiar',
   adminApproveConfirm: '¿Aprobar «{name}» versión {version}? Queda disponible para toda la comunidad.',
-  adminBlockConfirm: 'Se apaga en todos los launchers que consulten el catálogo. ¿Bloquear «{name}»?',
+  adminBlockConfirm: "Se desactiva en los launchers cuando reciben la lista de bloqueadas. ¿Bloquear «{name}»?",
   adminDone: 'Listo',
   adminActionFailed: 'No se pudo hacer',
   adminReviewTitle: 'Contenido de {name} {version}',
@@ -175,4 +175,7 @@ export default {
   adminErr_not_found: 'Esa versión ya no existe.',
   adminErr_bad_action: 'Acción no válida.',
   adminErr_note_required: 'Escribí el motivo.',
+  blocklistTitle: "Comprobar extensiones bloqueadas",
+  blocklistText: "Con tu permiso, Venus consulta solo la lista de bloqueadas al abrir y cada 4 horas, aunque el catálogo esté apagado. No manda qué extensiones tenés. Sin conexión, usa la última lista guardada; una prohibición nueva llega al volver a conectarte. Si lo apagás, deja de recibir bloqueos nuevos.",
+  blocklistAllow: "Permitir la comprobación",
 };

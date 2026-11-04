@@ -101,3 +101,15 @@ VENUS_DEVSHOT_ROUTES="messages|import('./js/features/profile-editor.js').then((m
 ```
 
 `demo: 'premium'` o `'free'` (cuenta sin Premium, con candados). En modo capturas, *Guardar* no habla con el servidor y *Copiar imagen* / *Guardar PNG* no tocan el portapapeles ni abren el diálogo.
+
+## Integración social de 4.5.0
+
+Implementada en la rama, sin publicar; producción continúa hasta 0027. Las tablas y RPC completas se conservan en [Clanes y comunidades](implementacion/clanes-comunidades.md), [Capas](implementacion/capas.md) y [Mensajes y voz](implementacion/mensajes-voz.md).
+
+- **Tag del clan:** `features/clans/tag.js` se integra en la tarjeta social. No implica compartir estadísticas. El ranking público del clan requiere `clan_prefs.share_playtime` y `ranking_prefs.share`, ambos activos; el primero es un consentimiento separado, apagado por defecto. El total exige dos participantes y queda visible a cuentas con sesión, sin garantía de anonimato.
+- **Consentimiento:** `clan_me()` devuelve `sharePlaytime` en la raíz, incluso sin clan; `clan_share_playtime(p_share)` devuelve el nuevo booleano. La preferencia pertenece a la cuenta, se conserva al cambiar de clan y afecta horas ya informadas de la semana.
+- **Capas:** 0034 usa `user_capes`, `cape_equip`, `cape_mine` y `badge_capes`; no guarda la capa en `profiles.equipped` ni reemplaza `profile_customize`. Hay una capa por cuenta Venus para sus cuentas Minecraft verificadas. Las oficiales tienen prioridad; otros jugadores necesitan el mod Venus. La caché del mod puede demorar un cambio hasta 30 min.
+- **Stickers:** 0030 guarda archivos públicos por URL. No convertir la privacidad de la conversación en una promesa de privacidad del archivo. El texto de avisos de sticker/GIF se genera por `social/preview.js`.
+- **Dispositivos:** `cloud.signOut()` cierra solo la sesión local. La PWA conserva la suya y sus avisos hasta salir o revocar sus permisos allí.
+
+Minecraft real, Realtime con dos cuentas, permisos efectivos de SQL nuevo y celulares siguen pendientes de la [validación final](estado-4.5.0.md).

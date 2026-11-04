@@ -243,3 +243,24 @@ test('un error del servidor al arrancar deja reintentar', async (t) => {
   await store.start();
   assert.equal(store.state, 'ready');
 });
+
+test('una lectura que falló sin red se reintenta al volver a la conversación', async (t) => {
+  const { store, fake, backend } = await setup();
+  t.after(() => store.stop());
+  const chatId = fake.ids.CONV_LUNA;
+  const chat = store.chat(chatId);
+  const original = chat.myLastRead;
+  const confirmed = new Date().toISOString();
+  let calls = 0;
+  backend.markRead = async () => {
+    if (++calls === 1) throw new Error('sin red');
+    return confirmed;
+  };
+  store.markRead(chatId);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(chat.myLastRead, original);
+  store.markRead(chatId);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(calls, 2);
+  assert.equal(chat.myLastRead, confirmed);
+});

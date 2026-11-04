@@ -10,6 +10,7 @@ const LANGS = ['pt', 'fr', 'de', 'it', 'nl', 'pl', 'ru', 'uk', 'tr', 'ja', 'ko',
 // Textos que cambiaron en es/en desde la 3.1.0: los otros idiomas tienen una versión vieja. Sacalos después de traducir.
 const STALE = {
   'renderer/overlay': ['perfNoFps'],
+  'renderer/whatsnew': ['title', 'kicker', 'kickerIntro', 'button', 'cmdTitle', 'cmdKeywords', 'intro_title', 'intro_text', 'intro_b1', 'intro_b2', 'intro_b3'],
 };
 function load(file) {
   if (!fs.existsSync(file)) return null;

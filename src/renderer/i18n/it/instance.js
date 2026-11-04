@@ -337,4 +337,7 @@ export default {
   tasksClearDoneText_one: "Verrà eliminata {count} attività completata.",
   tasksClearDoneText_other: "Verranno eliminate {count} attività completate.",
   tasksFull: "Hai raggiunto il massimo di 100 attività: eliminane una per aggiungerne un'altra.",
+  copyLink: "Copia link",
+  copyLinkPack: "Link del modpack copiato",
+  copyLinkLocal: "Link copiato: funziona solo su questo PC",
 };

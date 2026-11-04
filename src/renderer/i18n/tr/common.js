@@ -171,4 +171,9 @@ export default {
   streamerOnText: "Kodlar, adresler, arkadaş adları ve mesajlar sen kapatana kadar gizli kalır.",
   streamerOff: "Yayıncı modu kapatıldı",
   streamerSaveError: "Yayıncı modu değiştirilemedi",
+  messageSticker: "Çıkartma",
+  messageGif: "GIF",
+  net_wikiTitle: "Minecraft Wiki",
+  net_wikiText: "İstediğinde oyun içi paneldeki tariflerden minecraft.wiki'ye istek gönderilmesine izin verir.",
+  net_integrationsNote: "Discord sunucu bildirimleri ve ayar eşitlemesi kendi ayarlarından ayrı ayrı etkinleştirilir. Sen açana kadar kapalı kalırlar.",
 };

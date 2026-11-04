@@ -170,4 +170,9 @@ export default {
   streamerOnText: "끌 때까지 코드, 주소, 친구 이름, 메시지가 숨겨져 있어요.",
   streamerOff: "스트리머 모드를 껐어요",
   streamerSaveError: "스트리머 모드를 바꾸지 못했어요",
+  messageSticker: "스티커",
+  messageGif: "GIF",
+  net_wikiTitle: "Minecraft 위키",
+  net_wikiText: "오버레이의 제작법에서 요청할 때 minecraft.wiki에 연결하도록 허용합니다.",
+  net_integrationsNote: "Discord 서버 알림과 설정 동기화는 각각의 설정에서 별도로 켭니다. 직접 켜기 전까지는 꺼져 있습니다.",
 };

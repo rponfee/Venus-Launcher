@@ -7,7 +7,7 @@
 // Canales: obs:status() -> estado · obs:test({ host, port, password? }) -> { ok, version, scenes, current, streaming, recording } o error con code
 //   obs:setPassword(texto | null)
 // Evento: obs:state (lo mismo que obs:status) · obs:streamer { on } (cambio el modo streamer: la interfaz relee los ajustes)
-// Ajustes: settings.obs (obs/logic.js). Guia: docs/wip/clips-33.md.
+// Ajustes: settings.obs (obs/logic.js). Guia: docs/implementacion/clips.md.
 const settings = require('../core/settings');
 const secure = require('../core/secure');
 const game = require('../core/game');
@@ -89,9 +89,9 @@ function clearGrace() {
 
 // Sin conexion no se sabe que hace OBS: se espera un rato (puede volver) y recien ahi se da por terminado
 function startGrace() {
-  clearGrace();
-  if (!cfg.streamerOwned) return;
+  if (graceTimer || !cfg.streamerOwned) return;
   graceTimer = setTimeout(() => {
+    graceTimer = null;
     info.streaming = false;
     info.recording = false;
     applyStreamer();
@@ -155,7 +155,6 @@ async function connect() {
     const hello = await c.connect();
     if (gen !== generation) return c.close();
     attempt = 0;
-    clearGrace();
     info.version = hello.obsWebSocketVersion;
     c.on('event', onEvent);
     c.on('close', () => {
@@ -167,6 +166,7 @@ async function connect() {
     });
     const [scenes, outputs] = await Promise.all([c.sceneList(), c.outputs()]);
     if (gen !== generation) return c.close();
+    clearGrace();
     info.scenes = scenes.scenes;
     info.current = scenes.current;
     info.streaming = outputs.streaming;

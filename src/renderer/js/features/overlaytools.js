@@ -1,5 +1,5 @@
 // Recetas, wiki, contadores y asistente en el overlay: lo que le toca a la ventana principal del launcher (el resto esta
-// en js/overlay/ y src/main/modules/overlay.js; ver docs/wip/overlay-32.md).
+// en js/overlay/ y src/main/modules/overlay.js; ver docs/implementacion/overlay.md).
 //   startup()  -> le pasa al overlay los eventos del asistente (el asistente solo le habla a esta ventana), abre las
 //                 pantallas que pide un panel del overlay y suma a Ajustes > Privacidad la conexion opcional de la wiki.
 import { h, icon, switchEl, fail } from '../ui.js';

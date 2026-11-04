@@ -1,5 +1,7 @@
 # Guía de Venus Launcher
 
+> Esta guía incluye funciones implementadas en la **rama 4.5.0, todavía sin publicar**. Las funciones nuevas de nube requieren migraciones y despliegues pendientes. Consultá el [estado de integración y las pruebas pendientes](estado-4.5.0.md).
+
 Todo lo que podés hacer con Venus Launcher, función por función: cómo se usa y qué necesita. Después de los primeros pasos, las funciones siguen el orden del menú de la izquierda (**Jugar**, **Contenido**, **En línea** y **Herramientas**); al final están el **Asistente IA**, las herramientas de cada instancia, los **Ajustes** (el engranaje de abajo a la izquierda), el [menú lateral y el modo mini](#menú-lateral-y-modo-mini) y los atajos.
 
 **Qué necesita cada cosa.** La mayoría de las funciones andan solas. Algunas piden algo más, y lo vas a ver indicado así:
@@ -24,6 +26,8 @@ Tocá tu cuenta abajo a la izquierda (o andá a **Ajustes → Cuenta y nube**). 
 ### Cuenta de Venus
 
 En **Ajustes → Cuenta y nube → Cuenta de Venus** creá tu cuenta con un nombre de usuario, email y contraseña. Si el servidor pide confirmar el email, te llega un código: escribilo en el launcher. Ahí mismo ves tu **código de amigo** (`VENUS-XXXXXX`), cambiás tu nombre visible o la contraseña, y si te olvidaste la contraseña tocá **¿Olvidaste tu contraseña?** para recibir un código.
+
+**Cerrar sesión** afecta únicamente a este dispositivo. La sesión del celular o de otra PC sigue abierta hasta que cierres sesión allí.
 
 ## Jugar
 
@@ -76,6 +80,10 @@ Mientras jugás, Venus muestra encima del juego quién habla en el Voice Chat y 
 - **Alt+Shift+O** (se puede cambiar) lo muestra u oculta mientras jugás. **Probar overlay** manda avisos de ejemplo.
 - Anda con cualquier versión y loader. En pantalla completa exclusiva puede no verse: jugá en ventana maximizada o sin bordes. Detalles: [overlay.md](overlay.md).
 
+En 4.5.0, los paneles de **recetas, contadores y asistente** se abren con sus atajos configurables. Mientras un panel está abierto podés interactuar con él; al cerrarlo se restaura el comportamiento habitual del overlay. La vuelta del foco con Minecraft real sigue pendiente de validación.
+
+Las recetas se leen de archivos locales del juego y de mods compatibles; no incluyen todas las recetas dinámicas ni las de datapacks del mundo. **Abrir la wiki** pide un permiso aparte, apagado por defecto, y abre Minecraft Wiki en el navegador. Los contadores usan estadísticas locales del mundo; el asistente requiere cuenta, plan y el mismo permiso de IA que en el launcher. No se lee la pantalla ni se envían capturas para responder. [Paneles y límites](implementacion/overlay.md).
+
 ### Versiones e instancias
 
 Una **instancia** es una instalación independiente de Minecraft, con su versión, su loader y sus propios mods, mundos y ajustes.
@@ -94,6 +102,12 @@ La página de cada instancia tiene las pestañas **Resumen** (tiempo jugado, esp
 - Necesita: nada. Carátulas, etiquetas, favoritos y notas quedan en tu PC, dentro de la carpeta de cada instancia.
 
 Si la instancia ya se verificó hace poco y no cambió nada, arranca rápido sin revisar todo por internet. **Reparar** revisa todos los archivos.
+
+En la rama 4.5.0 también podés darle a cada instancia su **fondo, color y música**, elegir qué grupos de ajustes de Minecraft compartir entre instancias y guardar **sets de mods** para cambiar entre combinaciones. Los ajustes compartidos se aplican antes de jugar; las teclas se separan según el formato de la versión. Un set activa o desactiva los mods que ya tenés: no descarga los que faltan. Aplicarlo crea una instantánea para Deshacer. Al duplicar una instancia se conservan sus sets y se descarta el Deshacer de la original.
+
+Los enlaces **`venus://`** abren acciones de Venus con confirmación cuando corresponde; no instalan ni ejecutan contenido por sí solos. Tanto el instalador como la edición portable mantienen el registro automático del protocolo. La portable puede escribir esa asociación en el registro de Windows y respeta una asociación ajena.
+
+En los cambios de una actualización de mods podés leer el **changelog** y, si tenés un plan de IA, pedir una explicación. Esto envía el texto del changelog al proveedor de IA. [Detalles y límites de estas funciones](implementacion/instancias.md).
 
 ### Importar desde el launcher oficial
 
@@ -121,6 +135,8 @@ La pestaña **Capturas y clips** de la página junta todas tus capturas y clips,
 
 Desde **Mapa** (en Mundos o en la pestaña Mundos de una instancia) ves el mapa desde arriba: arrastrá para moverte, usá la rueda para acercar, elegí la dimensión (Superficie, Nether, End o las de mods y data packs), mirá las coordenadas del bloque bajo el cursor (clic para copiarlas), la aparición y los jugadores. **Renderizar todo** dibuja el mundo completo y podés **exportar la vista como PNG**. Funciona con mundos de la 1.2 en adelante; los más viejos se indican como no compatibles.
 
+**Marcadores (rama 4.5.0).** Guardá puntos con nombre, color y coordenadas por mundo y dimensión. Podés importar o compartir un código con los marcadores elegidos. El máximo es de 1000 por mundo y 200 por código; no son una posición en vivo del jugador. [Formato y límites](implementacion/overlay.md).
+
 ### Skins
 
 En **Skins** (menú Jugar) mirás tu skin en 3D, explorás el catálogo, guardás las tuyas en una biblioteca y cambiás la skin y la capa de tu cuenta de Minecraft con la API oficial de Mojang.
@@ -133,6 +149,8 @@ En **Skins** (menú Jugar) mirás tu skin en 3D, explorás el catálogo, guardá
 - **Capa**: elegí cuál de las capas de tu cuenta se ve, o **Sin capa**.
 - Para cambiar la skin o la capa, primero tiene que cargarse tu perfil de Minecraft; si no carga, tocá **Reintentar**. Los cambios se ven en el juego la próxima vez que entres a un mundo o a un servidor.
 - Necesita: nada para la vista previa y la biblioteca, que funcionan sin internet (también con una cuenta sin conexión o sin cuenta). Para cambiar la skin o la capa, una cuenta de Microsoft con Minecraft: Java Edition; si la sesión venció, la página te ofrece volver a iniciar sesión. Con el modo sin conexión activado (**Ajustes → Descargas y almacenamiento**) no se conecta a nada.
+
+**Capas de Venus (rama 4.5.0).** Se equipan desde Skins y usan una cuenta de Minecraft verificada y el mod de Venus. Otros jugadores necesitan ese mod para verlas. No reemplazan una capa oficial de Mojang ni son una capa oficial: si hay una oficial, tiene prioridad. Amanecer cuesta 1000 Venus Points; Nebulosa y Aurora, 1500 cada una; Magma, 2500; Órbita está incluida solo con Premium. [Funcionamiento y requisitos](implementacion/capas.md).
 
 ### Editor de skins
 
@@ -148,6 +166,12 @@ En **Skins → Editor de skins** creás una skin de 64×64 (clásica o slim) des
 - **Compartir**: link para compartir, **A un amigo** (le llega un aviso con **Ver**) o **Destacar en mi perfil** (hasta 3 capturas).
 - **Describir con IA** (opcional, con tu plan de Venus y con confirmación): describe hasta 20 capturas por vez para encontrarlas por lo que muestran.
 - Se guardan dentro de cada instancia, en `screenshots/`, `clips/` y `recordings/`, así que también aparecen en Mundos. La repetición instantánea viene apagada (usa CPU y memoria) y solo corre con el juego abierto. Detalles: [clips.md](clips.md).
+
+**Estudio de clips (rama 4.5.0).** El montaje reúne tus clips de la semana; podés elegir una duración de 30 segundos, 1, 2 o 5 minutos, o sin tope. Requiere WebCodecs y usa los WebM grabados por Venus. El timelapse toma capturas a intervalos, con un límite de espacio configurable, y empieza apagado.
+
+La integración opcional con **OBS** controla una instancia mediante su WebSocket en la PC o la red local. La subida a **YouTube o TikTok** necesita configuración y autorización del proveedor: YouTube parte de privado y TikTok deja un borrador para terminar en su app. El camino directo no está validado con proveedores reales; si exige un secreto adicional, queda pendiente un flujo aprobado. No se distribuyen secretos en el launcher.
+
+La **galería** publica clips para otras cuentas de Venus, con me gusta y denuncias. Quitar una publicación no invalida una URL firmada que alguien ya tenga. Los límites de tamaño de la nube siguen vigentes. [Guía técnica, configuración y límites](clips.md).
 
 ### Música
 
@@ -209,6 +233,8 @@ Contá qué querés jugar ("mods de tecnología para jugar con amigos en la 1.20
 
 - Necesita: **Amigos jugando** necesita cuenta de Venus.
 
+**Reseñas y votos (rama 4.5.0).** Los servidores destacados admiten una reseña por cuenta, de 1 a 5 estrellas y hasta 300 caracteres, y un voto cada 24 horas. Requieren cuenta de Venus; el contenido puede denunciarse y moderarse. Dependen del servicio de destacados y de la migración nueva.
+
 ### Servidores locales
 
 Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, Fabric, Quilt, Forge, NeoForge, Mohist, Youer, Velocity o Waterfall. El asistente de **Crear servidor** tiene tres pasos: el tipo; la versión, el puerto y la memoria; y el mundo y los jugadores (modo de juego, dificultad, semilla...). Al final hay que aceptar el EULA de Minecraft. Cada servidor tiene las pestañas **Consola** (comandos con historial y autocompletado), **Jugadores** (operadores, lista blanca, baneos), **Propiedades** (todas las de `server.properties` explicadas, con editor del MOTD), **Reglas** (gamerules), **Mundo** (importar desde una instancia, copias de seguridad, regenerar, data packs), **Mods y plugins**, **Red** y **Ajustes** (memoria, Java, iniciar con el launcher, reinicio si se cae, reinicios y copias programadas). Los proxies (Velocity y Waterfall) tienen una pestaña **Proxy** que explica cómo conectarlos.
@@ -216,6 +242,10 @@ Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, F
 **Jugar en este servidor** abre tu instancia y entra directo. Con **Servidor espejo** (en esta página o en las herramientas de una instancia) creás un servidor con el mismo loader y los mismos mods que una instancia (sin los que son solo de cliente).
 
 - Necesita: aceptar el EULA. La automatización funciona mientras Venus está abierto.
+
+**Control remoto y Discord (rama 4.5.0).** Desde la ficha de un servidor local podés activar el control desde un celular en la misma red privada, abrir el QR y consultar estado, jugadores y consola o enviar órdenes. El acceso se apaga al vencer o al cerrar el launcher; podés cambiar el código o expulsar un dispositivo. Usa HTTP local sin cifrar: quien tenga el enlace de acceso puede controlar ese servidor mientras siga habilitado. No abre puertos en Internet.
+
+Los avisos opcionales por **webhook de Discord** informan eventos del servidor y nombres de jugadores. Tienen su propio interruptor; no envían la consola, rutas ni direcciones IP. [Uso, canales y límites](implementacion/servidores.md).
 
 ### Jugar con amigos sin abrir puertos
 
@@ -240,6 +270,8 @@ Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, F
 - Invitá a un amigo desde Mensajes con **Invitar a voz**: si no estás en una sala, se crea una privada.
 - Necesita: cuenta de Venus y micrófono. Pulsar para hablar funciona con el launcher en primer plano; dentro del juego usá el atajo global.
 
+En 4.5.0, **Soundboard** ofrece sonidos incluidos y permite agregar hasta ocho sonidos propios de hasta 5 segundos y 200 KB. Los efectos de voz se procesan en tu PC y viajan por la misma llamada de voz. La prueba de efecto se escucha localmente. Micrófono, soundboard y efectos entre dos PC reales siguen pendientes de validación. [Detalles](implementacion/mensajes-voz.md).
+
 ### Mensajes y amigos
 
 - **Agregar amigo** con su código `VENUS-XXXXXX` o su nombre de usuario. Las solicitudes llegan a la pestaña **Solicitudes** y el menú te avisa.
@@ -252,6 +284,12 @@ Creá servidores de Minecraft en tu PC: Vanilla, Paper, Purpur, Folia, Spigot, F
 - **Mi perfil**: banner, estado (en línea, ausente, ocupado o invisible), mensaje de estado (con emoji y, si querés, vencimiento), nombre de Minecraft y privacidad. Podés bloquear a alguien y dejar de compartir tu actividad en **Ajustes → Privacidad**.
 - Si tu cuenta está silenciada o suspendida por moderación, Mensajes te lo avisa (con la fecha hasta la que dura) y no te deja escribir.
 - Necesita: cuenta de Venus.
+
+**Stickers y traducción (rama 4.5.0).** Podés subir stickers de hasta 256 KB y 320 píxeles: 30 por cuenta o 100 con Premium. Se guardan en un bucket público; quien tenga su dirección puede verlos. Los avisos del sistema y del overlay muestran una etiqueta de sticker o GIF, sin presentar la URL como mensaje.
+
+La traducción de mensajes requiere tu plan de IA y un consentimiento previo para enviar el texto al proveedor. Podés activarla por conversación, quitar el permiso y borrar las traducciones guardadas desde Privacidad. No cambia el mensaje original. [Contratos y límites](implementacion/mensajes-voz.md).
+
+La **app para celular** de 4.5.0 está preparada como web instalable para amigos, mensajes, clips y avisos. Su publicación y las pruebas en Android/iPhone siguen pendientes; no permite jugar Minecraft ni usar Voice Chat. Los avisos push son opcionales. Cerrar sesión en el launcher deja abierta la del celular. [Alcance y publicación pendiente](implementacion/app-celular.md).
 
 ### Perfiles
 
@@ -282,6 +320,18 @@ En **Ajustes → Privacidad → Avisos** elegís qué te avisa el launcher:
 - Un amigo entra a un servidor (con **Unirme**) o a un mundo: como mucho una vez cada 10 minutos por amigo, y podés silenciar a quien quieras.
 - Un servidor favorito vuelve a estar en línea, se llena o se vacía: se revisan cada 5 minutos solo con el launcher abierto. Los favoritos del perfil vienen apagados; los marcás con la campana o los prendés en el panel.
 - Mientras jugás, los avisos solo aparecen en el overlay del juego (se puede cambiar).
+
+### Competir
+
+En la rama 4.5.0, **Competir** muestra rankings semanales entre amigos que aceptaron compartir estadísticas. El permiso empieza apagado. Las medidas salen de partidas y mundos locales, por lo que no constituyen un sistema de competición verificado.
+
+Podés desafiar a un amigo y consultar eventos y torneos. Un desafío válido paga 25 Venus Points, sin multiplicador Premium ni XP del pase: hasta tres premios por semana y uno contra el mismo amigo. Cada participante debe informar al menos diez minutos en el plazo. Los recordatorios de eventos requieren que Venus esté abierto. [Reglas completas](implementacion/competir.md).
+
+### Clanes y comunidades
+
+Los **clanes** agrupan jugadores con una etiqueta común. Compartir horas con el ranking del clan requiere un **permiso separado**, apagado por defecto, además del permiso de Competir. El total queda visible para cuentas con sesión y exige al menos dos miembros que hayan aceptado; con dos personas puede deducirse la contribución de la otra. Cuenta horas de la semana incluso anteriores al ingreso y la preferencia sigue vigente al cambiar de clan.
+
+Las **comunidades** tienen canales de texto y voz con roles y moderación. La lectura y escritura dependen de la pertenencia y los permisos del canal; requieren cuenta de Venus. Estas funciones están implementadas en la rama y necesitan la migración 0033 pendiente. [Reglas, permisos y límites](implementacion/clanes-comunidades.md).
 
 ## Herramientas
 
@@ -318,6 +368,8 @@ La memoria de Minecraft en una sola tarjeta:
 
 En **Opciones avanzadas** están el recolector de Java (explicado en criollo), argumentos extra, prioridad del proceso, tamaño de ventana y qué hace el launcher al iniciar el juego. A la derecha ves **Tu PC** (con una prueba de rendimiento de la CPU) y un monitor en vivo de la RAM y la CPU del juego. **Optimizar una instancia** abre la herramienta Optimizar.
 
+**Historial (rama 4.5.0).** Guarda localmente mediciones de CPU y RAM de las partidas y FPS cuando el mod de Venus los informa. **Registrar rendimiento** permite apagar el muestreo; empieza activo. La medición periódica puede tener un costo, especialmente en Windows. La ausencia de FPS no equivale a cero FPS. [Retención y precisión](implementacion/datos.md).
+
 ### Caja de herramientas
 
 **Herramientas** (menú Herramientas) junta cuentas útiles para jugar. Todo se calcula en tu PC, sin conexión:
@@ -348,6 +400,16 @@ Cuando no podés iniciar sesión o algo no descarga, Venus te dice si el problem
 - **El panel completo** está en **Ajustes → Descargas y almacenamiento → Estado de los servicios → Comprobar** y en la paleta de comandos (**Ctrl+K**). Muestra cada servicio con su estado (**Responde**, **Lento** o **No responde**), cuánto tardó y qué hacer. También detecta si falla solo el DNS de tu red, si un antivirus, un proxy o la hora de Windows rompen las conexiones seguras y si tu red bloquea todos los servicios del juego. Si Cloudflare (la prueba neutral de tu conexión) no contesta pero los servicios sí, no culpa a tu conexión. El resultado se reusa 20 segundos y después podés **Volver a comprobar**.
 - Con el **modo sin conexión** activado no consulta nada y te ofrece ir a desactivarlo.
 - Privacidad: nunca consulta en segundo plano, solo cuando abrís el panel o justo después de un error al iniciar sesión. Hace un pedido corto a cada servicio, sin datos tuyos.
+
+### Visor de semillas
+
+En la rama 4.5.0 podés explorar biomas y estructuras de una semilla antes de crear el mundo, y copiarla para crear una instancia o completar el campo Semilla de un servidor. Se calcula en la PC. La cobertura cambia según versión y dimensión: algunas estructuras y el punto de aparición son aproximados. La comparación con cubiomes es una referencia técnica; **todavía no se verificó contra Minecraft real**. Consultá la [tabla de cobertura](implementacion/semillas.md) antes de depender de una ubicación.
+
+### Extensiones
+
+Las extensiones de la comunidad agregan tarjetas y herramientas. Antes de instalar, Venus muestra los permisos del paquete; podés desactivarlo o quitarlo. El catálogo y la descarga de la lista de extensiones bloqueadas son **dos conexiones opcionales independientes**, apagadas por defecto.
+
+Si aceptás consultar la lista de bloqueadas, Venus la actualiza al abrir y cada cuatro horas. No envía el inventario de extensiones instaladas y conserva la última lista para usar sin conexión. Si no aceptás o no hay red, no puede conocer bloqueos nuevos. El aislamiento reduce el acceso de una extensión, pero no garantiza que su contenido sea correcto o confiable. [Guía de extensiones](extensiones.md) y [contratos y límites](implementacion/extensiones.md).
 
 ## Asistente IA
 
@@ -454,6 +516,14 @@ El engranaje de abajo a la izquierda. Cada sección tiene su enlace directo (por
 - **Descargas y almacenamiento**: medidor de descargas en vivo, pausa, límite de velocidad, descargas simultáneas y **modo sin conexión**; **descargas programadas** (una franja horaria, por ejemplo de 02:00 a 08:00, aunque cruce la medianoche: fuera de ella las descargas quedan en pausa y adentro se reanudan solas; **Bajar ahora** levanta la pausa por 2 horas y **Volver a la franja** la respeta de nuevo; mientras hay tareas esperando, el panel de tareas muestra "Descargas en espera" con el mismo botón; una pausa que pusiste vos desde Descargas no se toca); **estado de los servicios** (¿es tu conexión o un servicio caído?); uso del disco por categoría; **unificar archivos repetidos** (los mods y packs iguales de varias instancias pasan a ocupar lugar una sola vez, también en automático) y limpieza con vista previa (caché, versiones y Java que no usa nadie, descargas incompletas). La limpieza borra para siempre lo que se puede volver a descargar, y pide confirmación.
 - **Datos**: dónde se guarda todo (podés moverlo a otra carpeta o disco, con reinicio), cuánto ocupa cada cosa, vaciar la caché y el modo portable.
 - **Acerca de**: versión, información para copiar, **Novedades de Venus 2.0** (el recorrido de lo nuevo, también con Ctrl+K) y créditos. Venus no se actualiza solo por ahora: las versiones nuevas se instalan a mano.
+
+### Datos, copias y modo familia en 4.5.0
+
+Las **copias automáticas de mundos** empiezan apagadas. Elegís las instancias, frecuencia y cantidad de copias; se hacen con las instancias detenidas y Venus abierto. El **modo familia** permite configurar horarios y límites con un PIN local. No sustituye controles del sistema operativo: puede evitarse iniciando Minecraft por otro launcher, cambiando la hora o alterando sus archivos. El cierre de Minecraft al llegar al límite todavía necesita prueba real.
+
+**Llevar todo a otra PC** exporta una selección de instancias, mundos, servidores y ajustes. Importar evita reemplazar contenido existente; los ajustes requieren una selección y confirmación aparte. Cuentas, tokens y rutas locales se excluyen, y hay filtros de secretos en configuraciones, pero no una garantía de detectar toda información sensible dentro de archivos de terceros. Revisá lo que compartís.
+
+**Sincronizar ajustes y temas** requiere cuenta y un permiso propio, apagado por defecto. Solo viajan los campos de apariencia admitidos, looks, menú e Inicio; no tus cuentas, rutas, PIN familiar ni permisos de privacidad. Discord y sincronización conservan sus propios interruptores, y el aviso de conexiones informa esa separación. [Datos, retención y límites](implementacion/datos.md).
 
 ## Menú lateral y modo mini
 

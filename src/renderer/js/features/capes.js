@@ -1,6 +1,6 @@
 // Capas de Venus en el juego. El mod (mod/venus-badge) las dibuja; acá está lo que muestra el launcher: la vista previa plana
 // de la textura, el aviso y el ajuste de la tienda (pages/rewards.js compra y equipa) y la capa puesta para el visor de
-// skins. Reglas: supabase/migrations/0034_capas.sql · guía: docs/wip/capas-34.md.
+// skins. Reglas: supabase/migrations/0034_capas.sql · guía: docs/implementacion/capas.md.
 import { h, icon, switchEl } from '../ui.js';
 import { store } from '../store.js';
 import { t } from '../i18n.js';

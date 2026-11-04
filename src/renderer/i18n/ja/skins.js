@@ -165,4 +165,5 @@ export default {
   saveToLibraryFailed: 'スキンをライブラリに保存できませんでした',
   reasonCatalogDamaged: 'このスキンのファイルが見つからないか、壊れています。Venus Launcherを再インストールして復元してください。',
   exploreCatalog: 'カタログを見る',
+  venusCape: "Venusのマント",
 };

@@ -337,4 +337,7 @@ export default {
   tasksClearDoneText_one: "{count} erledigte Aufgabe wird gelöscht.",
   tasksClearDoneText_other: "{count} erledigte Aufgaben werden gelöscht.",
   tasksFull: "Du hast das Maximum von 100 Aufgaben erreicht: Lösche eine, um eine andere hinzuzufügen.",
+  copyLink: "Link kopieren",
+  copyLinkPack: "Modpack-Link kopiert",
+  copyLinkLocal: "Link kopiert: Funktioniert nur auf diesem PC",
 };

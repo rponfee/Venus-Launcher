@@ -9,7 +9,7 @@ Mod de cliente que dibuja el planeta de Venus Launcher antes del nombre de los j
 | `neoforge-1.21.1` | NeoForge | 1.21, 1.21.1 | 21 | Mojang | ModDevGradle |
 | `forge-1.20.1` | Forge | 1.20.1 | 17 | Mojang (SRG al jugar) | ModDevGradle (`legacyforge`) |
 
-Venus Launcher lo instala y lo quita solo (Ajustes → General → Venus en el juego). Cómo funciona, qué manda al servidor y cómo se despliega: [docs/insignia.md](../../docs/insignia.md). Capas y FPS: [docs/wip/capas-34.md](../../docs/wip/capas-34.md).
+Venus Launcher lo instala y lo quita solo (Ajustes → General → Venus en el juego). Cómo funciona, qué manda al servidor y cómo se despliega: [docs/insignia.md](../../docs/insignia.md). Capas y FPS: [docs/implementacion/capas.md](../../docs/implementacion/capas.md).
 
 ```bash
 ./gradlew build   # build/libs/venus-badge-<versión>+mc<minecraft>-<loader>.jar, con las pruebas de la lógica común

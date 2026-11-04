@@ -29,6 +29,7 @@ function windowBranding() {
 
 // Capturas de desarrollo (scripts/devshot.js): perfil temporal propio para poder correr varias a la vez.
 const DEVSHOT = Boolean(process.env.VENUS_DEVSHOT);
+const SMOKE_TEST = process.env.VENUS_SMOKE_TEST === '1' && Boolean(process.env.VENUS_DATA_DIR);
 if (DEVSHOT) app.setPath('userData', path.join(os.tmpdir(), `venus-devshot-${process.pid}`));
 
 function resolveDataDir() {
@@ -110,7 +111,7 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   // En capturas de desarrollo la ventana no roba el foco (el usuario puede estar usando la PC)
   // y los clics reales la atraviesan, para que no cambien de pagina durante las capturas.
-  mainWindow.once('ready-to-show', () => (DEVSHOT ? mainWindow.showInactive() : mainWindow.show()));
+  mainWindow.once('ready-to-show', () => (DEVSHOT || SMOKE_TEST ? mainWindow.showInactive() : mainWindow.show()));
   if (DEVSHOT && !process.env.VENUS_DEVSHOT_KEEP) mainWindow.setIgnoreMouseEvents(true);
   mainWindow.on('maximize', () => mainWindow.webContents.send('window:maximized', true));
   mainWindow.on('unmaximize', () => mainWindow.webContents.send('window:maximized', false));
@@ -195,14 +196,18 @@ if (!DEVSHOT && !app.requestSingleInstanceLock()) {
     instances.setTrash((p) => shell.trashItem(p));
     servers.setTrash((p) => shell.trashItem(p));
 
+    // Solo la página del launcher recibe permisos, nunca los marcos de las extensiones.
+    const { isAppPage, isPermissionRequester } = require('./core/permissions');
+    const rendererFile = path.join(__dirname, '..', 'renderer', 'index.html');
     // Microfono para el Voice Chat; el resto de permisos se deniega.
     const allowed = new Set(['media', 'clipboard-sanitized-write', 'notifications', 'fullscreen', 'display-capture']);
-    session.defaultSession.setPermissionRequestHandler((wc, permission, cb) => cb(allowed.has(permission)));
-    session.defaultSession.setPermissionCheckHandler((wc, permission) => allowed.has(permission));
+    session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) => cb(allowed.has(permission) && isPermissionRequester(wc, details, rendererFile)));
+    session.defaultSession.setPermissionCheckHandler((wc, permission, _origin, details) => allowed.has(permission) && isPermissionRequester(wc, details, rendererFile));
     // Compartir pantalla en el Voice Chat: la pantalla principal (Electron no muestra selector propio salvo
     // el del sistema en macOS) y, en Windows, el sonido del equipo si la pagina pide audio (loopback).
     session.defaultSession.setDisplayMediaRequestHandler(
       (request, callback) => {
+        if (!isAppPage(request.frame?.url, rendererFile) || request.frame !== mainWindow?.webContents.mainFrame) return callback({});
         let answered = false;
         const reply = (streams) => {
           if (answered) return;

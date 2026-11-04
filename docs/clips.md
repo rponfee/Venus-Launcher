@@ -1,4 +1,6 @@
-# Clips y capturas (Venus 3.0)
+# Clips y capturas
+
+> La captura existente se amplía con el estudio de clips de la rama **4.5.0, sin publicar**. Contratos detallados: [montaje, timelapse, subida, OBS y galería](implementacion/clips.md). [Estado y validaciones pendientes](estado-4.5.0.md).
 
 Grabación del juego, repetición instantánea, capturas de pantalla, galería con editor rápido y compartir. Sin dependencias nuevas: todo con `desktopCapturer` + `MediaRecorder` de Electron y un lector/escritor de WebM propio.
 
@@ -144,3 +146,36 @@ node --test "src/main/modules/capture/test/"     # WebM, buffer en disco, grabac
 Las líneas de `gamelog.test.js` de 1.19 en adelante son reales (de los logs de un jugador, con el nombre cambiado); las de versiones anteriores siguen el formato conocido porque no había logs de esas versiones a mano.
 
 Prueba de punta a punta (sin Minecraft): un script de Electron que abre una ventana propia animada titulada "Minecraft 1.21.1 · Venus Launcher", registra `capture.js`, simula `game.status()`/`'state'`, manda líneas de log falsas por `game.events 'log'` y llama a `capture:saveReplay`, `capture:screenshot`, `capture:startRecording`/`stopRecording` y `capture:saveExport`; después carga cada WebM en un `<video>` y revisa duración, tamaño y que se pueda adelantar.
+
+## Estudio de clips de 4.5.0
+
+| Función | Datos, canales y límites |
+|---|---|
+| Montaje de la semana | `clipstudio:probe` y trabajos `montage*`: clips WebM de Venus; copia de cuadros si son compatibles o recodificación con WebCodecs. Duraciones de 30 s, 1/2/5 min o sin tope. No es un editor general de formatos arbitrarios. |
+| Timelapse | `clipstudio:timelapse*`; apagado por defecto. Intervalo de 5 s a 2 min y espacio de 256 MB a 5 GB; configuración en `.venus/timelapse.json`, cuadros en `<instancia>/timelapse/`. Se detiene al alcanzar el límite o faltar espacio. |
+| Subida | `clipupload:status/connect/cancelConnect/revoke/upload/cancel`. OAuth en navegador; tokens cifrados en main. YouTube parte de privado, TikTok envía al borrador. El camino de navegador permite continuar sin subida directa configurada. |
+| OBS | `obs:status/test/setPassword`; apagado por defecto, `127.0.0.1:4455`, host limitado a esta PC o LAN. Contraseña cifrada; nunca vuelve al renderer. |
+| Galería | RPC de 0032 sobre clips compartidos: cinco publicaciones por día, 200 me gusta y diez denuncias por día. Usa el bucket privado `clips` y sus links firmados; siguen los 50 MB por archivo. |
+
+Los vídeos se escriben primero como `.part` y se terminan antes de mostrarlos. La galería exige sesión; despublicar u ocultar no revoca una URL firmada ya emitida. Moderar/borrar una publicación no garantiza borrar el objeto de Storage: SQL no elimina el archivo físico. El panel informa ese límite.
+
+### Configuración de subida
+
+El build agrega únicamente estos identificadores públicos, además de la configuración previa de CurseForge:
+
+| Variable del build | Campo de configuración |
+|---|---|
+| `VENUS_YOUTUBE_CLIENT_ID` | `youtubeClientId` |
+| `VENUS_TIKTOK_CLIENT_KEY` | `tiktokClientKey` |
+
+No distribuir `client_secret` en el launcher ni agregarlo al workflow. Si el proveedor lo exige y el flujo actual no puede completarse con los identificadores públicos, **la subida directa no está lista hasta contar con un flujo aprobado y probado**. TikTok mantiene sus credenciales confidenciales exclusivamente del lado de `tiktok-token` en Supabase; requiere sesión Venus y aprobación de la app por el proveedor. La configuración y las condiciones históricamente revisadas están en el [documento técnico](implementacion/clips.md); deben revalidarse antes de publicar.
+
+Los permisos de captura se instalan desde `capture/host.js` usando `core/permissions.js`: página exacta del recorder, sin subframes; display media valida el marco solicitante. Las extensiones ya no envuelven esos handlers.
+
+### Evidencia y pendientes
+
+El informe final del frente registra **182/182 pruebas locales** con DOM/WebCodecs/proveedores simulados o retorno OAuth local. Esa corrida focalizada no prueba Electron/WebCodecs real; la integración principal los comprobó después como se detalla abajo. Minecraft, OBS y OAuth/subidas reales siguen pendientes. La galería requiere 0032, todavía pendiente en producción; tampoco se publicaron los cambios por consolidar esta documentación.
+
+### Actualización de la integración principal
+
+Con imágenes propias se ejecutó WebCodecs real: 60 PNG de 320×180 generaron un WebM de 2 s, reproducido con salto a 1 s. El montaje por copia de dos segmentos produjo 4 s y salto a 3 s. Ambas pruebas de Electron dejaron consola vacía; los artefactos están en `shots-encoder-valid/` y `shots-montage/`, bajo `%TEMP%/venus-codex-review-20261103/`. No son pruebas con Minecraft, OBS ni proveedores OAuth reales. [Evidencia consolidada](estado-4.5.0.md).

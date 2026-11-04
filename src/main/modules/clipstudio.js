@@ -2,7 +2,7 @@
 // Estudio de clips: Montaje de la semana y Timelapse de tu mundo. La interfaz elige y codifica (WebCodecs, en
 // features/clipstudio/); aca se leen y se escriben los WebM (clipstudio/webmjoin.js y job.js) y se sacan las imagenes del
 // timelapse (clipstudio/timelapse.js, con la captura de modules/capture.js: solo la ventana del juego, nunca la pantalla).
-// Todo lo que sale va a <instancia>/clips/ y lo ve la galeria como cualquier clip. Guia: docs/wip/clips-33.md.
+// Todo lo que sale va a <instancia>/clips/ y lo ve la galeria como cualquier clip. Guia: docs/implementacion/clips.md.
 //
 // Canales:
 //   clipstudio:probe([rutas]) -> [{ path, ok, codec, width, height, audio, duration }]

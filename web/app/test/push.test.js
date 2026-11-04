@@ -155,3 +155,11 @@ test('fuera de un toque nadie pide permiso', () => {
   assert.equal([...src.matchAll(/requestPermission\(/g)].length, 1);
   assert.match(fs.readFileSync(path.join(root, 'js/screens/inbox.js'), 'utf8'), /onclick: onTap\(\(\) => push\.enable\(\)/);
 });
+
+test('si falla el registro no queda activado solo en el navegador', async () => {
+  const w = world({ rpcError: { code: 'PGRST202', message: 'función no disponible' } });
+  const push = await w.make();
+  await assert.rejects(() => push.enable());
+  assert.equal(w.state.sub, null);
+  assert.equal((await push.status()).enabled, false);
+});

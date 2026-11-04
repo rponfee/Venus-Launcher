@@ -5,7 +5,7 @@
 //   1.13 a 1.20.4   data/minecraft/recipes, result: { item, count } o result: 'id' (horno)
 //   1.20.5 a 1.21.1 result: { id, count }; 1.21 cambia la carpeta a data/minecraft/recipe
 //   1.21.2+         ingredientes como texto: 'minecraft:stick', '#minecraft:planks' o una lista
-// Probado con los .jar reales de 1.20.1, 1.21.11 y 26.1.2 (ver docs/wip/overlay-32.md).
+// Probado con los .jar reales de 1.20.1, 1.21.11 y 26.1.2 (ver docs/implementacion/overlay.md).
 // Receta normalizada:
 //   { id, kind: 'shaped'|'shapeless'|'cooking'|'stonecutting'|'smithing'|'other', station, width?, height?,
 //     slots: [{ items: [id], tags: [id] } | null], result: { id, count }, time? (ticks), xp? }

@@ -597,11 +597,12 @@ export class Store {
     const last = chat.lastMessage;
     const behind = last && last.senderId !== this.userId && !last.local && ts(last.at) > ts(chat.myLastRead);
     if (!had && !behind) return;
-    chat.myLastRead = new Date(this.now()).toISOString();
+    const readAt = new Date(this.now()).toISOString();
     this.backend
       .markRead(chatId)
       .then((at) => {
-        if (at) chat.myLastRead = at;
+        const confirmed = at || readAt;
+        if (ts(confirmed) > ts(chat.myLastRead)) chat.myLastRead = confirmed;
         this.refreshInbox();
       })
       .catch(() => {});

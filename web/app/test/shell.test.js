@@ -124,3 +124,15 @@ test('el almacén local borra todo al salir', async () => {
   await idb.clear();
   assert.equal(await idb.get('sb-prueba'), null);
 });
+
+test('las cabeceras y redirecciones raíz se limitan a /app y conservan la CSP', () => {
+  const rootHeaders = read('../_headers');
+  const rules = rootHeaders.split(/\r?\n/).filter((line) => line.startsWith('/'));
+  assert.deepEqual(rules, ['/app/*']);
+  assert.equal(/Content-Security-Policy: (.+)/.exec(rootHeaders)[1], /Content-Security-Policy: (.+)/.exec(read('_headers'))[1]);
+  const redirects = read('../_redirects').split(/\r?\n/).map((line) => line.trim()).filter((line) => line && !line.startsWith('#'));
+  assert.deepEqual(redirects, ['/app  /app/  301']);
+  const config = read('../../supabase/config.toml');
+  assert.match(config, /\[functions\.push-notify\]\s+verify_jwt\s*=\s*false/);
+  assert.match(config, /\[functions\.stripe-webhook\]\s+verify_jwt\s*=\s*false/);
+});

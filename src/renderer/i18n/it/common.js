@@ -171,4 +171,9 @@ export default {
   streamerOnText: "Codici, indirizzi, nomi degli amici e messaggi restano nascosti finché non la spegni.",
   streamerOff: "Modalità streamer disattivata",
   streamerSaveError: "Impossibile cambiare la modalità streamer",
+  messageSticker: "Adesivo",
+  messageGif: "GIF",
+  net_wikiTitle: "Wiki di Minecraft",
+  net_wikiText: "Consente richieste a minecraft.wiki dalle ricette dell'overlay quando le richiedi.",
+  net_integrationsNote: "Le notifiche dei server su Discord e la sincronizzazione delle impostazioni si attivano separatamente nelle rispettive impostazioni. Restano disattivate finché non le abiliti.",
 };

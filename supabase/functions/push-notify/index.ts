@@ -1,4 +1,4 @@
-// Edge Function "push-notify": avisos Web Push de la app del celular, sin contenido. Guía: docs/wip/app-celular-34.md.
+// Edge Function "push-notify": avisos Web Push de la app del celular, sin contenido. Guía: docs/implementacion/app-celular.md.
 // Se despliega sin verificación de JWT (supabase functions deploy push-notify --no-verify-jwt): la llama la base con un
 // secreto propio y la app le pide la clave pública sin sesión. Sin dependencias: habla con PostgREST con fetch.
 // Secretos: VENUS_PUSH_SECRET (el mismo de private.push_configure), VENUS_VAPID_PUBLIC y VENUS_VAPID_PRIVATE

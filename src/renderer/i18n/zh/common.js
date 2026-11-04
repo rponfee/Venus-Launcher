@@ -170,4 +170,9 @@ export default {
   streamerOnText: "代码、地址、好友名字和消息会一直隐藏，直到你关闭。",
   streamerOff: "主播模式已关闭",
   streamerSaveError: "无法更改主播模式",
+  messageSticker: "贴纸",
+  messageGif: "GIF",
+  net_wikiTitle: "Minecraft Wiki",
+  net_wikiText: "允许在你主动使用覆盖层配方中的相关功能时连接 minecraft.wiki。",
+  net_integrationsNote: "Discord 服务器通知和设置同步需在各自的设置中单独开启，默认保持关闭。",
 };

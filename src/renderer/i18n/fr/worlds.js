@@ -397,4 +397,7 @@ export default {
   deletedText: "Vous pouvez le récupérer depuis la corbeille.",
   deletedWithBackup: "Une sauvegarde a été enregistrée auparavant.",
   deleteFailed: "Impossible de supprimer le monde",
+  autoBackup: "Automatique",
+  autoBackupHint: "Créée automatiquement par le lanceur. Elle est supprimée à l’arrivée de sauvegardes plus récentes ; les sauvegardes manuelles ne sont jamais supprimées automatiquement.",
+  autoBackupsSetup: "Sauvegardes automatiques",
 };

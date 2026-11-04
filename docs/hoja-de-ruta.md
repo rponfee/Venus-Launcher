@@ -1,8 +1,10 @@
 # Hoja de ruta: de la 3.0.10 en adelante
 
-Lo que viene después de la 3.0.10, decidido el 3 de noviembre de 2026. Son 73 funciones, repartidas en cuatro versiones para que cada una salga completa y probada. Quedaron afuera a propósito: tipografía propia (`.ttf`), CSS propio, generación con IA de skins y de imágenes (tienen costo por uso), servidores 24/7 pagos y modpacks con ingresos para creadores.
+Lo que viene después de la 3.0.10, decidido el 3 de noviembre de 2026. Son 73 funciones, originalmente repartidas en cuatro grupos; los grupos históricos 3.2–3.4 se reúnen ahora en la rama 4.5.0. Su implementación no implica publicación ni validación externa completa. Quedaron afuera a propósito: tipografía propia (`.ttf`), CSS propio, generación con IA de skins y de imágenes (tienen costo por uso), servidores 24/7 pagos y modpacks con ingresos para creadores.
 
-Estado: ☐ pendiente · ◐ en curso · ☑ lista.
+Estado: ☐ pendiente · ☑ implementada. En el grupo histórico 3.1 indica entrega publicada; en los grupos 3.2–3.4 indica implementación en la rama 4.5.0, todavía sin publicar.
+
+**Actualización del 3 de noviembre de 2026:** el dueño eligió 4.5.0 para reunir los grupos originalmente llamados 3.2, 3.3 y 3.4. Las 35 funciones están escritas en esa rama, todavía sin publicar. Las 35 filas se marcan ☑ **IMPLEMENTADAS en rama 4.5.0, sin publicar**. Esa marca no certifica servicios reales, migraciones aplicadas ni pruebas externas. Ver [estado de integración](estado-4.5.0.md) y [documentación permanente](implementacion/README.md).
 
 ## 3.1 — Venus Pass y personalización
 
@@ -69,51 +71,51 @@ Pase de temporada, aparte de la tienda de cosméticos: se compra con Mercado Pag
 
 | # | Función | Estado |
 |---|---|---|
-| 7 | Fondo, color y música por instancia | ☐ |
-| 32 | Ajustes compartidos entre instancias | ☐ |
-| 33 | Sets de mods | ☐ |
-| 38 | Links `venus://` | ☐ |
-| 40 | Copias automáticas de mundos | ☐ |
-| 41 | Historial de rendimiento | ☐ |
-| 44 | Modo familia | ☐ |
-| 45 | Llevar todo a otra PC | ☐ |
-| 46 | Sincronizar ajustes y temas entre PCs | ☐ |
-| 48 | Recetas y wiki en el overlay | ☐ |
-| 51 | Marcadores en el Mapa del mundo | ☐ |
-| 52 | Contadores en pantalla | ☐ |
-| 56 | Traducción automática de mensajes (con el plan de IA del usuario) | ☐ |
-| 72 | Changelog explicado por IA (con el plan de IA del usuario) | ☐ |
-| 73 | Control remoto del servidor local desde el celular | ☐ |
-| 74 | Avisos del servidor por Discord | ☐ |
+| 7 | Fondo, color y música por instancia | ☑ Implementada · 4.5.0 sin publicar |
+| 32 | Ajustes compartidos entre instancias | ☑ Implementada · 4.5.0 sin publicar |
+| 33 | Sets de mods | ☑ Implementada · 4.5.0 sin publicar |
+| 38 | Links `venus://` | ☑ Implementada · 4.5.0 sin publicar |
+| 40 | Copias automáticas de mundos | ☑ Implementada · 4.5.0 sin publicar |
+| 41 | Historial de rendimiento | ☑ Implementada · 4.5.0 sin publicar |
+| 44 | Modo familia | ☑ Implementada · 4.5.0 sin publicar |
+| 45 | Llevar todo a otra PC | ☑ Implementada · 4.5.0 sin publicar |
+| 46 | Sincronizar ajustes y temas entre PCs | ☑ Implementada · 4.5.0 sin publicar |
+| 48 | Recetas y wiki en el overlay | ☑ Implementada · 4.5.0 sin publicar |
+| 51 | Marcadores en el Mapa del mundo | ☑ Implementada · 4.5.0 sin publicar |
+| 52 | Contadores en pantalla | ☑ Implementada · 4.5.0 sin publicar |
+| 56 | Traducción automática de mensajes (con el plan de IA del usuario) | ☑ Implementada · 4.5.0 sin publicar |
+| 72 | Changelog explicado por IA (con el plan de IA del usuario) | ☑ Implementada · 4.5.0 sin publicar |
+| 73 | Control remoto del servidor local desde el celular | ☑ Implementada · 4.5.0 sin publicar |
+| 74 | Avisos del servidor por Discord | ☑ Implementada · 4.5.0 sin publicar |
 
 ## 3.3 — Social y clips
 
 | # | Función | Estado |
 |---|---|---|
-| 55 | Stickers y emojis propios | ☐ |
-| 57 | Soundboard en Voice Chat | ☐ |
-| 58 | Efectos de voz | ☐ |
-| 59 | Rankings entre amigos | ☐ |
-| 60 | Desafíos entre amigos | ☐ |
-| 63 | Calendario de eventos y torneos | ☐ |
-| 64 | Montaje de la semana | ☐ |
-| 65 | Timelapse de tu mundo | ☐ |
-| 66 | Subir clips a YouTube o TikTok | ☐ |
-| 67 | Integración con OBS | ☐ |
-| 69 | Asistente en el overlay | ☐ |
-| 75 | Reseñas y votos de servidores destacados | ☐ |
+| 55 | Stickers y emojis propios | ☑ Implementada · 4.5.0 sin publicar |
+| 57 | Soundboard en Voice Chat | ☑ Implementada · 4.5.0 sin publicar |
+| 58 | Efectos de voz | ☑ Implementada · 4.5.0 sin publicar |
+| 59 | Rankings entre amigos | ☑ Implementada · 4.5.0 sin publicar |
+| 60 | Desafíos entre amigos | ☑ Implementada · 4.5.0 sin publicar |
+| 63 | Calendario de eventos y torneos | ☑ Implementada · 4.5.0 sin publicar |
+| 64 | Montaje de la semana | ☑ Implementada · 4.5.0 sin publicar |
+| 65 | Timelapse de tu mundo | ☑ Implementada · 4.5.0 sin publicar |
+| 66 | Subir clips a YouTube o TikTok | ☑ Implementada · 4.5.0 sin publicar |
+| 67 | Integración con OBS | ☑ Implementada · 4.5.0 sin publicar |
+| 69 | Asistente en el overlay | ☑ Implementada · 4.5.0 sin publicar |
+| 75 | Reseñas y votos de servidores destacados | ☑ Implementada · 4.5.0 sin publicar |
 
 ## 3.4 — Las grandes
 
 | # | Función | Estado |
 |---|---|---|
-| 31 | Capas de Venus visibles en el juego | ☐ |
-| 50 | Visor de semillas | ☐ |
-| 61 | Clanes | ☐ |
-| 62 | Comunidades estilo Discord | ☐ |
-| 68 | Galería pública de clips | ☐ |
-| 77 | App para celular | ☐ |
-| 78 | Extensiones de la comunidad | ☐ |
+| 31 | Capas de Venus visibles en el juego | ☑ Implementada · 4.5.0 sin publicar |
+| 50 | Visor de semillas | ☑ Implementada · 4.5.0 sin publicar |
+| 61 | Clanes | ☑ Implementada · 4.5.0 sin publicar |
+| 62 | Comunidades estilo Discord | ☑ Implementada · 4.5.0 sin publicar |
+| 68 | Galería pública de clips | ☑ Implementada · 4.5.0 sin publicar |
+| 77 | App para celular | ☑ Implementada · 4.5.0 sin publicar |
+| 78 | Extensiones de la comunidad | ☑ Implementada · 4.5.0 sin publicar |
 
 ## Aparte, propuestas como tareas propias
 

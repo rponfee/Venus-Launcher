@@ -326,4 +326,7 @@ export default {
   tasksClearDone: "完了済みを削除",
   tasksClearDoneText_other: "完了済みのタスク{count}件を削除します。",
   tasksFull: "タスクは最大100件です。追加するには、どれかを削除してください。",
+  copyLink: "リンクをコピー",
+  copyLinkPack: "Modパックのリンクをコピーしました",
+  copyLinkLocal: "リンクをコピーしました。このPCでのみ使えます",
 };

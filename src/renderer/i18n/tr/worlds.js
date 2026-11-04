@@ -397,4 +397,7 @@ export default {
   deletedText: "Geri dönüşüm kutusundan geri alabilirsin.",
   deletedWithBackup: "Önce bir yedek kaydedildi.",
   deleteFailed: "Dünya silinemedi",
+  autoBackup: "Otomatik",
+  autoBackupHint: "Başlatıcı tarafından otomatik oluşturulur. Daha yeni yedekler geldiğinde silinir; elle oluşturulanlar kendiliğinden silinmez.",
+  autoBackupsSetup: "Otomatik yedekler",
 };

@@ -171,4 +171,9 @@ export default {
   streamerOnText: "Codes, adresses, noms des amis et messages restent masqués jusqu’à la désactivation.",
   streamerOff: "Mode streamer désactivé",
   streamerSaveError: "Impossible de changer le mode streamer",
+  messageSticker: "Autocollant",
+  messageGif: "GIF",
+  net_wikiTitle: "Wiki Minecraft",
+  net_wikiText: "Autorise les requêtes vers minecraft.wiki depuis les recettes de la surcouche lorsque vous les demandez.",
+  net_integrationsNote: "Les notifications de serveur sur Discord et la synchronisation des paramètres s’activent séparément dans leurs réglages. Elles restent désactivées tant que vous ne les activez pas.",
 };

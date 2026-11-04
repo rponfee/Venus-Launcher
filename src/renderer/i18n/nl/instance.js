@@ -337,4 +337,7 @@ export default {
   tasksClearDoneText_one: "{count} afgeronde taak wordt verwijderd.",
   tasksClearDoneText_other: "{count} afgeronde taken worden verwijderd.",
   tasksFull: "Je zit aan het maximum van 100 taken: verwijder er een om een andere toe te voegen.",
+  copyLink: "Link kopiëren",
+  copyLinkPack: "Modpacklink gekopieerd",
+  copyLinkLocal: "Link gekopieerd: werkt alleen op deze pc",
 };

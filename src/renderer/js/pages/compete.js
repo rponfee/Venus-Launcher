@@ -1,6 +1,6 @@
 // Competir (#/compete[/rankings|challenges|events] · #/compete/events/<id> abre ese evento): rankings entre amigos,
 // desafíos con Venus Points y el calendario de eventos y torneos. Lo que corre sin abrir la página (envíos, avisos y
-// recordatorios) está en features/compete.js; reglas y RPC en 0031_competencia.sql · guía: docs/wip/competir-33.md.
+// recordatorios) está en features/compete.js; reglas y RPC en 0031_competencia.sql · guía: docs/implementacion/competir.md.
 import { h, icon, mount, emptyState } from '../ui.js';
 import { t } from '../i18n.js';
 import { navigate } from '../app.js';
@@ -22,7 +22,7 @@ function head() {
 }
 
 export default {
-  ns: ['compete'],
+  ns: ['compete', 'clans'],
   css: ['pages/compete'],
   async render(root, params = []) {
     const b = await competeBackend();

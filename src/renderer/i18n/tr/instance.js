@@ -337,4 +337,7 @@ export default {
   tasksClearDoneText_one: "{count} tamamlanmış görev silinecek.",
   tasksClearDoneText_other: "{count} tamamlanmış görev silinecek.",
   tasksFull: "100 görev sınırına ulaştın: yenisini eklemek için birini sil.",
+  copyLink: "Bağlantıyı kopyala",
+  copyLinkPack: "Mod paketi bağlantısı kopyalandı",
+  copyLinkLocal: "Bağlantı kopyalandı: yalnızca bu PC'de çalışır",
 };

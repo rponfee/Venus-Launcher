@@ -224,3 +224,57 @@ test('si la base no responde, 503 y sin avisos', async () => {
   assert.equal(res.status, 503);
   assert.equal(calls.length, 1);
 });
+
+test('GET sin configurar conserva CORS para que la app pueda leer el 503', async () => {
+  const { handler } = world({ publicKey: '', privateKey: '' });
+  const res = await handler(new Request('https://proyecto.example/functions/v1/push-notify'));
+  assert.equal(res.status, 503);
+  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+});
+
+test('una lectura de cuerpo interrumpida devuelve 400 sin tocar la base', async () => {
+  const { handler, calls } = world(await newKeys());
+  const req = post(good);
+  Object.defineProperty(req, 'body', { value: new ReadableStream({ start(controller) { controller.error(new Error('lectura interrumpida')); } }) });
+  assert.equal((await handler(req)).status, 400);
+  assert.equal(calls.length, 0);
+});
+
+test('el límite del cuerpo cuenta bytes UTF-8 y cancela la lectura al superarlo', async () => {
+  const { handler, calls } = world(await newKeys());
+  let cancelled = false;
+  const req = post(good);
+  Object.defineProperty(req, 'body', { value: new ReadableStream({
+    start(controller) { controller.enqueue(new TextEncoder().encode('á'.repeat(201))); },
+    cancel() { cancelled = true; },
+  }) });
+  assert.equal((await handler(req)).status, 413);
+  assert.equal(cancelled, true);
+  assert.equal(calls.length, 0);
+});
+
+test('una respuesta incompleta de la base devuelve 503 sin envíos', async () => {
+  const keys = await newKeys();
+  for (const claim of [{}, { allowed: true, subs: null }]) {
+    const { handler, calls } = world(keys, { claims: [claim] });
+    assert.equal((await handler(post(good))).status, 503);
+    assert.equal(calls.length, 1);
+  }
+});
+
+test('la consulta a la base vence y no vuelca detalles del error al registro', async () => {
+  const keys = await newKeys();
+  const logs: string[] = [];
+  let calls = 0;
+  const handler = createPushHandler({ secret: SECRET, vapidPublic: keys.publicKey, vapidPrivate: keys.privateKey,
+    subject: 'mailto:test@example.invalid', supabaseUrl: 'https://proyecto.example', serviceKey: 'solo-prueba', timeoutMs: 10,
+    log: (message) => logs.push(message), fetch: (async (_input, init) => {
+      calls++;
+      assert.equal(init?.redirect, 'error');
+      return new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('detalle-simulado-privado')), { once: true }));
+    }) as typeof fetch,
+  });
+  assert.equal((await handler(post(good))).status, 503);
+  assert.equal(calls, 1);
+  assert.deepEqual(logs, ['no se pudo consultar la base']);
+});

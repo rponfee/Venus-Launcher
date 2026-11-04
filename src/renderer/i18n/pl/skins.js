@@ -177,4 +177,5 @@ export default {
   saveToLibraryFailed: 'Nie udało się zapisać skórki w twojej bibliotece',
   reasonCatalogDamaged: 'Brakuje pliku tej skórki albo jest uszkodzony. Zainstaluj ponownie Venus Launcher, aby go przywrócić.',
   exploreCatalog: 'Przeglądaj katalog',
+  venusCape: "Peleryna Venus",
 };

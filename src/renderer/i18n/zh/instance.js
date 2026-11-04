@@ -326,4 +326,7 @@ export default {
   tasksClearDone: "删除已完成",
   tasksClearDoneText_other: "将删除 {count} 个已完成的待办。",
   tasksFull: "待办已达到 100 个上限：删除一个再添加。",
+  copyLink: "复制链接",
+  copyLinkPack: "已复制整合包链接",
+  copyLinkLocal: "已复制链接：仅在这台电脑上有效",
 };

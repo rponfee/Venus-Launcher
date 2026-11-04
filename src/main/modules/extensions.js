@@ -1,5 +1,5 @@
 'use strict';
-// Extensiones de la comunidad (módulo "extensions"). Guía de autores: docs/extensiones.md · Por dentro: docs/wip/extensiones-34.md.
+// Extensiones de la comunidad (módulo "extensions"). Guía de autores: docs/extensiones.md · Por dentro: docs/implementacion/extensiones.md.
 // El código de una extensión es hostil por definición: corre en un iframe sandbox de origen opaco (features/extensions/
 // frame.js), servido por el protocolo venus-ext:// con una CSP sin red ni inline, y solo habla con el launcher por el
 // puente de postMessage. Este módulo valida los paquetes, los guarda y sirve sus archivos.
@@ -67,32 +67,10 @@ function protocolContext() {
   return { servable: (id) => registry.servable(id), takeToken, read: (id, rel) => registry.read(id, rel) };
 }
 
-// Lo que pide un marco de extensión.
-const fromExtension = (details, origin) => [details?.requestingUrl, details?.requestingOrigin, origin].some((u) => String(u || '').startsWith(`${SCHEME}:`));
-
-// main.js le concede a toda la ventana notificaciones, micrófono y demás, sin mirar quién pide. Una extensión no tiene
-// ninguno de esos permisos: se envuelven los manejadores de cada sesión, sin cambiar lo que deciden para el launcher.
-function denyPermissions(app) {
-  app.on('session-created', (ses) => {
-    const setRequest = ses.setPermissionRequestHandler.bind(ses);
-    const setCheck = ses.setPermissionCheckHandler.bind(ses);
-    ses.setPermissionRequestHandler = (fn) =>
-      setRequest(
-        fn &&
-          ((wc, permission, callback, details) => {
-            if (fromExtension(details)) return callback(false);
-            return fn(wc, permission, callback, details);
-          }),
-      );
-    ses.setPermissionCheckHandler = (fn) => setCheck(fn && ((wc, permission, origin, details) => (fromExtension(details, origin) ? false : fn(wc, permission, origin, details))));
-  });
-}
-
-function preReady({ app }) {
+function preReady() {
   const { protocol } = require('electron');
   // Sin secure ni corsEnabled: el marco no es un contexto seguro (menos API del navegador a mano) y no hay fetch.
   protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: false, supportFetchAPI: false, corsEnabled: false, bypassCSP: false, stream: false, allowServiceWorkers: false } }]);
-  denyPermissions(app);
 }
 
 function registerProtocol() {
@@ -235,7 +213,10 @@ function register({ app, handle, send, getWindow }) {
     'extensions:install',
     guarded(async (stageId, opts = {}) => {
       const st = stages.get(stageId);
-      if (!st) throw new ExtensionError('stage_expired', '');
+      if (!st || Date.now() - st.at >= STAGE_TTL) {
+        stages.delete(stageId);
+        throw new ExtensionError('stage_expired', '');
+      }
       const view = await registry.install(st.pkg, { accepted: opts?.accepted, homeCard: opts?.homeCard === true, source: st.source });
       stages.delete(stageId);
       changed();

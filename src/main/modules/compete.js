@@ -1,5 +1,5 @@
 'use strict';
-// Competir (docs/wip/competir-33.md): el proceso principal solo calcula lo que hay para compartir en los rankings, porque
+// Competir (docs/implementacion/competir.md): el proceso principal solo calcula lo que hay para compartir en los rankings, porque
 // necesita leer el disco. Los rankings, los desafíos y los eventos van directo de la interfaz a Supabase (0031_competencia).
 //
 // Canales:

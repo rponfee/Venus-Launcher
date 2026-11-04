@@ -259,4 +259,13 @@ export default {
   item_frame_orbit: "オービットフレーム",
   item_frame_halloween: "ハロウィンフレーム",
   item_frame_xmas: "クリスマスフレーム",
+  kind_cape: "ゲーム内マント",
+  item_cape_dawn: "夜明けのマント",
+  item_cape_nebula: "星雲のマント",
+  item_cape_aurora: "オーロラのマント",
+  item_cape_magma: "マグマのマント",
+  item_cape_orbit: "軌道のマント",
+  hist_challenge: "チャレンジ報酬",
+  hist_pass: "Venus Passの報酬",
+  hist_pass_refund: "Venus Passの払い戻し",
 };

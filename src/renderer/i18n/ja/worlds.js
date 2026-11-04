@@ -378,4 +378,7 @@ export default {
   deletedText: "ごみ箱から復元できます。",
   deletedWithBackup: "事前にバックアップを保存しました。",
   deleteFailed: "ワールドを削除できませんでした",
+  autoBackup: "自動",
+  autoBackupHint: "ランチャーが自動で作成したバックアップです。新しいバックアップの作成に伴い削除されます。手動バックアップが自動で削除されることはありません。",
+  autoBackupsSetup: "自動バックアップ",
 };

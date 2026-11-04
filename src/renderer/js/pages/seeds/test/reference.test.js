@@ -1,7 +1,7 @@
 // El port contra datos que no salen de el:
 //  - los hashes publicados en tests.c de cubiomes (testGeneration, b6_hashes): 4096 semillas por version, un punto por semilla
 //  - golden.json: lo que calcula cubiomes en C en biomas, estructuras, fortalezas, aparicion y slime chunks
-// De donde sale cada cosa y como regenerarla: reference/build.txt y docs/wip/semillas-34.md
+// De donde sale cada cosa y como regenerarla: reference/build.txt y docs/implementacion/semillas.md
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

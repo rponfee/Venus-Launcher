@@ -169,4 +169,5 @@ export default {
   saveToLibraryFailed: 'Görünüm kitaplığına kaydedilemedi',
   reasonCatalogDamaged: 'Bu görünümün dosyası eksik veya bozuk. Geri yüklemek için Venus Launcher’ı yeniden kur.',
   exploreCatalog: 'Kataloğa göz at',
+  venusCape: "Venus pelerini",
 };

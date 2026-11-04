@@ -169,4 +169,5 @@ export default {
   saveToLibraryFailed: 'Der Skin konnte nicht in deiner Bibliothek gespeichert werden',
   reasonCatalogDamaged: 'Die Datei dieses Skins fehlt oder ist beschädigt. Installiere Venus Launcher neu, um sie wiederherzustellen.',
   exploreCatalog: 'Katalog durchstöbern',
+  venusCape: "Venus-Umhang",
 };

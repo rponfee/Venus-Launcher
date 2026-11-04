@@ -223,7 +223,7 @@ export const cloud = {
 
   async signOut() {
     if (!client) return;
-    const { error } = (await client.auth.signOut()) || {};
+    const { error } = (await client.auth.signOut({ scope: 'local' })) || {};
     // sin red el servidor no se entera, pero en este equipo la sesion se cierra igual
     if (error) {
       console.warn('[cloud] cerrar sesión', error.message);

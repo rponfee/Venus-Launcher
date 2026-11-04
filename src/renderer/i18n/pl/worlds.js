@@ -435,4 +435,7 @@ export default {
   deletedText: "Możesz go odzyskać z kosza.",
   deletedWithBackup: "Wcześniej zapisano kopię zapasową.",
   deleteFailed: "Nie udało się usunąć świata",
+  autoBackup: "Automatyczna",
+  autoBackupHint: "Utworzona samodzielnie przez launcher. Jest usuwana, gdy powstają nowsze kopie; ręczne kopie nigdy nie są usuwane automatycznie.",
+  autoBackupsSetup: "Automatyczne kopie zapasowe",
 };

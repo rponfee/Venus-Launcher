@@ -166,6 +166,22 @@ Las reglas visuales completas (tokens, componentes, layout y checklist antes de 
 - Venus Points (0021: `points_me`, `points_daily_claim`, `achievement_claim`, `shop_buy`, `referral_my_code`, `referral_claim`), temas de la comunidad (0022: `theme_list`, `theme_publish`, `theme_use`, `theme_delete`) e insignia (0019: `badge_challenge`, `badge_mine`, `badge_remove`; el mod usa `badge_styles` con la anon key). Verificar una cuenta de Minecraft con Mojang: Edge Functions `badge` y `mcverify` (las llama el proceso principal; ver [insignia.md](insignia.md) y [venus-points.md](venus-points.md)).
 - Perfil y social de la 3.1 (`0027_perfil_social.sql`; se aplica después de 0025 y 0026): columna `profiles.status_until` (vencimiento del estado: `profile_public` y el listado de amigos mandan `statusText` vacío si venció) y RPC `profile_set_status(p_emoji, p_text, p_until)`; `profile_customize` y `profile_public` reemplazadas (`cardStyle.theme/bubble/entry/song/guestbook` y `showcase.skinPose/skinBg/rareBadges`; `song` solo para los amigos y el dueño); tablas `profile_guestbook`, `profile_gifts` y `profile_reports` con RLS y sin acceso directo (todo por RPC `security definer`: `guestbook_list`, `guestbook_post`, `guestbook_delete`, `guestbook_set`, `gift_send`, `gifts_received`, `profile_report`, y `admin_profile_reports` / `admin_profile_report_close` con `admin_guard()`); `points_ledger.reason` admite `gift_in` y `gift_out`; marcos `frame_pulse`, `frame_orbit`, `frame_halloween` y `frame_xmas` en `shop_items`; bucket `profile-audio` (arriba). Ver [perfiles.md](perfiles.md). Las otras migraciones de la 3.1 son 0025 (pagos y permisos, [pagos.md](pagos.md)) y 0026 (Venus Pass, [venus-pass.md](venus-pass.md)).
 
+**Integración 4.5.0.** El código local incluye 0028–0036; la integración principal verificó producción solo hasta **0027**. No asumir que una RPC nueva esté desplegada. El cierre de sesión del launcher usa `cloud.signOut()` con `scope: 'local'`: no cierra las sesiones de otros dispositivos. Las credenciales del escritorio siguen en `secure`; la PWA guarda su propia sesión en IndexedDB, con alternativa en memoria si el almacenamiento falla.
+
+| Migración pendiente | Contratos nuevos | Referencia completa |
+|---|---|---|
+| 0028 | Preferencias sincronizadas por cuenta, lista de campos admitidos y marcas por clave | [Datos](implementacion/datos.md) |
+| 0029 | Reseñas, votos y denuncias de servidores destacados | [Servidores](implementacion/servidores.md) |
+| 0030 | Stickers propios y bucket público `stickers` | [Mensajes y voz](implementacion/mensajes-voz.md) |
+| 0031 | Rankings, desafíos y calendario; conserva el motivo contable `challenge` | [Competir](implementacion/competir.md) |
+| 0032 | Galería, me gusta y moderación sobre clips compartidos | [Clips](implementacion/clips.md) |
+| 0033 | Clanes, permiso `clan_prefs.share_playtime`, comunidades y canales | [Clanes y comunidades](implementacion/clanes-comunidades.md) |
+| 0034 | `cape_equip`, `cape_mine`, `badge_capes` y cosméticos de capa | [Capas](implementacion/capas.md) |
+| 0035 | Suscripciones push, bandeja móvil y persistencia de `media-share` | [App para celular](implementacion/app-celular.md) |
+| 0036 | Catálogo moderado, paquetes privados y lista de bloqueadas | [Extensiones](implementacion/extensiones.md) |
+
+Los contratos de las tablas enlazadas incluyen permisos, errores y cuotas. La prueba conjunta de las migraciones y la verificación real de Realtime siguen pendientes. Reemplazar `social_send_signal` debe conservar la persistencia de `media-share` incorporada en 0035; reemplazar `points_ledger_reason_check` debe conservar `challenge`. No agregar `net` a los esquemas expuestos de la API.
+
 ## 6. Contratos entre módulos
 
 Estos son los nombres que usa cada módulo hoy. Quien consume algo de otro módulo lo hace con `import()` dinámico o `require` dentro de `try/catch` y tiene un camino alternativo si falta. Los agregados a un contrato tienen que ser compatibles hacia atrás (parámetros opcionales nuevos, campos extra en las respuestas).
@@ -227,6 +243,20 @@ Estos son los nombres que usa cada módulo hoy. Quien consume algo de otro módu
 | `../social/logic.js` | Lógica pura de lo social de la 3.1 (sin DOM): `joinedMembers(prev, next, { selfId, initial })` (quién entró a la sala de voz: `voice/ui-room.js` pide su estilo con `fetchStyle` y pone 1,5 s `vc-entry vc-entry-<fx>` más la etiqueta `voice.entryJoined`; nada con movimiento reducido), `canPostGuestbook`, `mergeGuestbook`, `oldestGuestbookAt`, `newGifts`, `latestGiftAt`, `hasNewGiftIn`, `shouldAutoplaySong`, `volumeStep`, `ENTRY_EFFECT_MS` (1500), `GUESTBOOK_PAGE` (10) | — | perfiles |
 
 Ayudantes de social reutilizables en `js/social/profile-ui.js`: `openProfile(userId)` (se completa con `profile_public`), `openMyProfile()` (abre el editor de perfil), `previewProfile(profile)`, `fetchPublicProfile`, `forgetPublicProfile`, `profileCard(perfil, { full, preview })`, `joinFriend(friend)`, `inviteToVoice(friend)`, `presenceDot`, `headImg`, `headWithDot`, `badgeChips`, `profileCard`, `activityBlock`, `statusMenu`, `popMenu` (cargan solos su CSS y sus textos).
+
+**Features incorporadas para 4.5.0.** Sus contratos completos se conservan en [implementacion/](implementacion/README.md).
+
+| Área | Integración entre módulos |
+|---|---|
+| Instancias | Apariencia por instancia, `sharedoptions`, `modsets`, `deeplink` y `modchangelog`; los sets conservan sus entradas al duplicar, pero se limpia `lastApply`. |
+| Datos | Programación de copias, `perfhistory`, `family` y `portability` en main; sincronización de ajustes desde la interfaz con la sesión de `cloud` y `store.setSettings`. |
+| Overlay | `features/overlaytools.js` conecta paneles, rutas y eventos del asistente; recetas y estadísticas se leen localmente. |
+| Social | Stickers y traducción, soundboard y efectos; `social/preview.js` ofrece texto de aviso para stickers/GIF, sin mostrar su URL como mensaje. |
+| Competir y clanes | `features/compete.js` recoge progreso solo con permiso; `features/clans/sharing.js` gestiona el permiso de horas del clan desde Clanes y Competir. |
+| Clips | `features/clipstudio/` coordina montaje, timelapse, subida y OBS; la galería usa RPC y archivos compartidos. |
+| Extensiones | `pages/home.js` entrega el contenedor a `mountHomeCards(host)`; no depende de observar `#main` ni de buscar `.hm-foot`. Catálogo y blocklist tienen permisos distintos. |
+| Semillas | Cálculo local en `pages/seeds/gen/`; la tabla de cobertura distingue resultados exactos respecto de la referencia y aproximados. No implica validación con el juego. |
+| PWA | `web/app/` usa la misma cuenta y las RPC sociales, sin latido de presencia de escritorio. Su sesión y permiso de push son propios del dispositivo. |
 
 ### 6.2 `social` y `voice`
 
@@ -450,6 +480,21 @@ Todos se llaman con `api.invoke(canal, ...args)`; los eventos se escuchan con `a
 - `downloads:scheduleStatus()` → `{ enabled, from, to, inWindow, allowed, override, nextChangeAt, pausedBySchedule, overrideUntil, paused }`, `downloads:scheduleNow()` (**Bajar ahora**: levanta la pausa por 2 horas), `downloads:scheduleReset()` (vuelve a la franja). Evento `downloads:schedule` con lo mismo al cambiar.
 - Lee `settings.downloads.schedule` (hora local; `to < from` cruza la medianoche; iguales = todo el día; lógica pura `inWindow`, `nextChange` y `decide` en `downloadschedule/window.js`). Cada minuto, al arrancar y al cambiar el ajuste: fuera de la franja `http.pause()` (y anota `pausedBySchedule`); adentro `http.resume()` **solo si la pausa la puso el módulo**. Una pausa manual desde Descargas no se toca; si el usuario reanuda a mano fuera de la franja (`http.events 'stats'`), vale como "Bajar ahora". El indicador "Descargas en pausa" de la barra de título lo sigue mostrando `app.js` (`downloads:stats`). Exports: `status`, `check`, `downloadNow`, `reset`, `OVERRIDE_MS`, `CHECK_MS`.
 
+**Familias IPC de 4.5.0.** Esta tabla orienta; los documentos enlazados conservan cada firma, respuesta, evento, error y límite. Los nombres abreviados de sus tablas heredan el prefijo indicado.
+
+| Familia | Responsabilidad | Contrato |
+|---|---|---|
+| `sharedoptions:*`, `modsets:*`, `deeplink:ready` / `deeplink:open`, `modchangelog:*` | Ajustes de Minecraft, selección de mods, enlaces externos y explicación de novedades | [Instancias](implementacion/instancias.md) |
+| `worldbackups:*`, `perfhistory:*`, `family:*`, `portability:*` | Copias programadas, mediciones, límites familiares y transferencia entre PC | [Datos](implementacion/datos.md) |
+| `overlay:*`, `recipes:*`, `mapviewer:markers*` / `markerSave` / `markerDelete` | Paneles, recetas y marcadores; `overlay:assistantEvent` y evento `overlay:route` | [Overlay](implementacion/overlay.md) |
+| `serverremote:*`, `serverdiscord:*` | Control HTTP LAN y avisos opcionales por webhook | [Servidores](implementacion/servidores.md) |
+| Traducción y soundboard | Consentimiento, caché cifrada, importación y reproducción; efectos en la cadena de audio de voz | [Mensajes y voz](implementacion/mensajes-voz.md) |
+| `compete:collect`, `compete:commit`, `compete:reset` | Lectura local, confirmación de reportes aceptados y punto de partida | [Competir](implementacion/competir.md) |
+| `clipstudio:*`, `clipupload:*`, `obs:*` | Trabajos de vídeo, conexión/cancelación OAuth y OBS | [Clips](implementacion/clips.md) |
+| `extensions:*` | Inspección, instalación, permisos aceptados, sesión de marco, almacenamiento y bloqueos | [Extensiones](implementacion/extensiones.md) |
+
+Clanes, comunidades, reseñas, galería, capas y catálogo consumen RPC desde la interfaz; no crear un IPC paralelo para duplicar esas llamadas. Los tokens OAuth, la contraseña de OBS y el webhook de Discord no regresan al renderer.
+
 ### 6.4 Exports del proceso principal para otros módulos
 
 | `require('./...')` | Funciones |
@@ -522,6 +567,8 @@ Usan `game.addBeforeLaunch`: performance (memoria automática y Java elegido a m
 
 Ajustes: secciones `general`, `appearance`, `ingame` (En el juego: overlay, grabación y música), `a11y`, `cloud`, `privacy`, `ai`, `plan`, `java`, `storage`, `data`, `about` (una desconocida abre `general`). Alias: `account`, `accounts`, `venus`, `nube`, `cuenta` → `cloud`; `language`, `idioma` → `general`; `accessibility`, `accesibilidad` → `a11y`; `theme`, `apariencia` → `appearance`; `claude`, `ia`, `assistant`, `mcp` → `ai`; `plans`, `planes`, `billing`, `subscription`, `suscripcion` → `plan`; `discord`, `privacidad`, `notify`, `avisos` → `privacy`; `overlay`, `juego`, `game`, `music`, `musica`, `spotify`, `capture`, `clips`, `capturas` → `ingame`; `themes`, `temas` → `appearance`; `premium` → `plan`; `downloads`, `descargas` → `storage`; `cache`, `datos`, `folder` → `data`; `updates` → `about`. Anclas (llevan a la tarjeta y enfocan su campo): `general/language`, `general/play`, `cloud/accounts`, `cloud/venus`, `privacy/activity`, `privacy/discord`, `ai/status`, `ai/mcp`, `ai/mcpservers`, `ai/privacy`, `plan/plans`, `plan/premium`, `ingame/overlay`, `ingame/capture`, `ingame/music`, `appearance/themes`, `privacy/notify`, `java/venus`, `java/system`, `java/versions`, `storage/downloads`, `storage/schedule` (Descargas programadas), `storage/services` (Estado de los servicios), `storage/disk`, `data/folder`, `data/cache`, `data/portable`. Para mandar a resolver algo: `settings/cloud` (sin sesión de Venus), `settings/plan` u `openPlans()` de `features/plans.js` (sin plan, cuota agotada o para cambiar de plan), `settings/ai` (IA desactivada). Ajustes no tiene campos para claves, proyectos de Supabase ni servidores: CurseForge, Discord, TURN y bore usan lo que trae el launcher (`core/app-config.js`).
 
+**Rutas de 4.5.0:** `#/compete`, `#/clans`, `#/communities`, `#/seeds[/<semilla>]` y `#/extensions`. Las nuevas herramientas de instancias, servidores, Rendimiento, Clips y Ajustes se integran en sus páginas existentes. La PWA vive en `/app/` del sitio web y no es una ruta del router de Electron. El enlace publicado definitivo sigue pendiente de confirmación.
+
 ### 6.6 Señales entre amigos (`social.sendSignal` / `social.onSignal`)
 
 Viajan por el buzón privado `inbox:<userId>` con la RPC `social_send_signal`: solo entre amigos aceptados, el servidor pone el remitente, el tipo cumple `^[A-Za-z_][A-Za-z0-9_.:-]{0,39}$` y el `payload` es un objeto de hasta 4 KB. Los tipos que empiezan con `_` son internos de social (por ejemplo `_typing`).
@@ -533,6 +580,8 @@ Viajan por el buzón privado `inbox:<userId>` con la RPC `social_send_signal`: s
 | `join-world` | `{ address, kind: 'world' o 'server', name, mcVersion, loader, from, fromMc }` | `openWorldToFriends` y `serverNetPanel` · `netplay.startup()` (social no la muestra por su cuenta) |
 | `party-invite` · `party-accept` · `party-decline` · `party-leave` · `party-kick` · `party-ready` · `party-state` · `party-play` · `party-end` | `{ v: 1, party, ... }` (forma de cada una en [grupos.md](grupos.md); las valida `features/party/logic.js` → `parseSignal`) | Líder ↔ miembros e invitados · `party.startup()` |
 | `media-share` | `{ url, kind: 'screenshot' o 'clip', name }` (solo links https firmados del Storage del proyecto) | Visor de Clips → **A un amigo** · `capture.startup()` (aviso con **Ver**) |
+
+**Señales nuevas:** `compete-update` pide volver a consultar los desafíos; `clan-update` refresca el estado social del clan. Son avisos, no autoridad para cambiar datos ni permisos: la RPC vuelve a validar la sesión. El soundboard usa el canal de voz existente; sus mensajes y topes están en [Mensajes y voz](implementacion/mensajes-voz.md). 0035 conserva la señal `media-share` y además registra los clips recibidos para la PWA.
 
 ### 6.7 Reglas transversales
 
@@ -560,6 +609,12 @@ Viajan por el buzón privado `inbox:<userId>` con la RPC `social_send_signal`: s
 **wallpapers** (`modules/wallpapers.js`)
 
 - Los fondos animados no van en el paquete (`!src/renderer/assets/wallpapers/*.mp4`). `wallpapers:status()` → `{ [id]: { size, path } }`; `wallpapers:ensure(id)` → `{ path }`, con el evento `wallpapers:progress { id, percent }`. Los baja a `cache/wallpapers` desde la página de fondos, con GitHub de respaldo, y comprueba el SHA-256 de `wallpapers/videos.json`. Si se cambia un video: `node scripts/gen-wallpaper-videos.js --verify`, después de subirlo a la página.
+
+**Permisos y operaciones de 4.5.0.** `core/permissions.js` valida las páginas locales autorizadas con `isAppPage(url, file)` e `isPermissionRequester(wc, details, file)`. Los handlers directos de `main.js` y `capture/host.js` exigen la página solicitante esperada, rechazan subframes y solo usan `wc.getURL()` como alternativa cuando `details.isMainFrame === true`. La captura de pantalla comprueba también identidad y URL del marco solicitante. `extensions.js` ya no envuelve esos handlers mediante `denyPermissions` / `session-created`.
+
+El inicio remoto se serializa por servidor y puede cancelarse antes de terminar; la sesión/token se vuelve a comprobar después de esperas antes de ejecutar una orden o entregar estado. Importar una transferencia calcula espacio sobre las entradas seleccionadas y validadas del archivo, incluyendo metadatos y ajustes. Los paquetes inspeccionados de extensiones vencen a los 15 minutos. Las regresiones locales benignas no certifican aislamiento completo ni reemplazan pruebas de integración reales.
+
+El registro de `venus://` se mantiene también en portable por decisión del dueño. Al desinstalar, `build/installer.nsh` compara `shell/open/command` con el ejecutable de esa copia antes de quitar la clave; no la borra al actualizar ni si apunta a otra instalación o portable. El cambio está en código: compilación y prueba NSIS pendientes. La explicación de conexiones incluye wiki; Discord y sincronización conservan sus controles propios. La descarga de blocklist necesita `extensions.blocklist === true` y funciona independientemente del catálogo: 4 segundos después de iniciar y cada 4 horas, además de recuperar conexión/configuración; la caché local sigue aplicándose sin red.
 
 ## 7. Dueños, ajustes y archivos de datos
 
@@ -620,6 +675,8 @@ Viajan por el buzón privado `inbox:<userId>` con la RPC `social_send_signal`: s
 
 (Rutas relativas a `src/renderer/js/`, `src/renderer/styles/` o `src/main/` según corresponda. "css" = los archivos de `styles/pages/` o `styles/features/` con el nombre de la página o feature. Cada módulo puede crear subcarpetas auxiliares con su nombre.)
 
+**Dueños de 4.5.0:** instancias (`sharedoptions`, `modsets`, `deeplink`, `modchangelog`), datos (`perfhistory`, `family`, `portability` y features de datatools), overlay (`recipes` y paneles), servidores (`serverremote`, `serverdiscord`), social (stickers, traducción, soundboard y efectos), competir/clanes/comunidades, clips (`clipstudio`, `clipupload`, `obs`), capas (mod y skins), semillas (generador local), extensiones y PWA (`web/app`, `push-notify`). Las rutas exactas por frente y sus pruebas figuran en [implementacion/](implementacion/README.md). La validación de permisos de navegador pertenece a core/main/capture, no a extensiones.
+
 ### 7.2 Claves de ajustes (`data/settings.json`)
 
 Cada módulo lee su clave con sus propios valores por defecto (no hace falta tocar `core/settings.js`). Desde la interfaz: `store.setSettings(patch)`; desde el proceso principal: `settings.set(patch)` (merge profundo). Las claves de versiones viejas (`github`, `autoUpdate`, `peer`, `cloud`, `ai.model`, `ai.provider`, `ai.upgradeUrl`, `netplay.boreHost`, `discord.clientId`, `voice.turn`) se conservan en el archivo pero ya no se usan: el proyecto de Supabase sale de `core/cloud-defaults.js` y las claves y servidores externos de `core/app-config.js`. Lo mismo vale para `music` y `data/music.json`, de la sección Música que se sacó: quedan en disco y nada los lee.
@@ -666,6 +723,25 @@ Cada módulo lee su clave con sus propios valores por defecto (no hace falta toc
 | `recap` | recap | `{ period ('week', 'month' o 'all'; por defecto 'all'), format ('landscape' o 'portrait'; por defecto 'landscape'), showName (false) }` (última elección del diálogo Tu resumen de Venus; se guarda al cerrarlo y solo si el usuario cambió algo: mostrar "Desde siempre" porque el período guardado no tiene partidas no cuenta) |
 
 Secretos (`core/secure`, en `data/secure.json` cifrado): `assistant.mcpToken.<id>` y `assistant.mcpEnv.<id>` (token y variables de entorno de cada servidor MCP del asistente), `mcp.secret` (secreto del servidor MCP local y del puente), `mcp.entitlement` (último plan verificado para MCP, para no cortar sin conexión) y, desde la interfaz (prefijo `ui:`), la sesión de Supabase (`ui:sb.venus-auth*`) y la cola de mensajes sin enviar `ui:social.outbox.<userId>`. Los secretos de versiones anteriores (`ai.apiKey`, `curseforge.apiKey`, `netplay.boreSecret`, `ui:voice.turnCredential`) ya no se leen. En `localStorage` solo hay comodidades de cada usuario: `sv-history-<serverId>` (historial de la consola de servidores) y `venus.a11y.palette.recent` (comandos recientes).
+
+**Ajustes de 4.5.0 (no confundir preferencias locales con permisos de nube):**
+
+| Clave | Valor inicial y uso |
+|---|---|
+| `backups.schedule` | `enabled: false`; frecuencia por horas/día/semana, cada 6 horas, conservar 5; selección de instancias y opción al cerrar juego. |
+| `perfhistory.enabled` | Activo salvo `false`; apaga el muestreo periódico desde Rendimiento → Historial. |
+| `settingsSync` | `enabled: false`; lista admitida de apariencia/looks/menú/Inicio, marcas por clave y cuenta. No sincroniza permisos ni rutas. |
+| `privacy.wiki` | `false`; consentimiento para abrir Minecraft Wiki. |
+| `overlay.panelShortcuts` | Atajos de paneles; contadores y FPS se integran con los widgets del overlay. |
+| `socialplus` | `translateConsent` y `translateChats`; consentimiento antes de enviar mensajes a IA. |
+| `voice.voiceEffect` | `'none'`; procesamiento local de voz. |
+| `compete` | `share: false`, avisos vistos y eventos recordados. El permiso de clan está en `clan_prefs.share_playtime` de la nube y también empieza en `false`. |
+| `clans.seen` | Hasta 100 invitaciones avisadas. No almacena el consentimiento de compartir horas. |
+| `extensions.catalog` / `extensions.blocklist` | Dos booleanos independientes, ambos `false`; el segundo exige consentimiento explícito. |
+| `obs` | `enabled: false`, host `127.0.0.1`, puerto `4455`, escenas y control del modo streamer. Contraseña en `secure`. |
+| `discordNotify` del servidor | Habilitación y eventos en `venus-server.json`; webhook cifrado por separado. |
+
+PIN familiar, tokens OAuth y suscripciones push no van en ajustes sincronizables. Formas completas y límites: [Datos](implementacion/datos.md), [Overlay](implementacion/overlay.md), [Social](implementacion/mensajes-voz.md), [Clips](implementacion/clips.md) y [Capas](implementacion/capas.md).
 
 ### 7.3 Carpeta de datos
 
@@ -715,6 +791,22 @@ La raíz es `%APPDATA%\.venuslauncher` (Windows), `VENUS_DATA_DIR` si está defi
 | `skin-favorites.json` | skins | Skins favoritas del catálogo: `{ version: 1, ids: [...] }` (escritura atómica y en serie; también lee el `{ ids }` de la 1.0.11) |
 | `capture-ai.json` | capture | Descripciones de capturas hechas con IA (solo cuando el usuario lo pide), para buscarlas por lo que muestran |
 
+**Archivos agregados para 4.5.0 (relativos a la carpeta de datos):**
+
+| Ruta / almacén | Contenido y retención |
+|---|---|
+| `data/sharedoptions.json` | Grupos compartidos y teclas separadas por formato moderno/antiguo. |
+| `data/perfhistory/AAAA-MM.json` | Mediciones locales: cada 10 s, hasta 240 puntos por partida, 90 días; topes de 2 MB por mes y 8 MB en total. |
+| `data/family.json` | Hash de PIN, reglas y consumo local; fuera de exportación y sincronización. No es una barrera de seguridad del sistema operativo. |
+| `data/settings-before-import-<fecha>.json` | Respaldo de ajustes antes de importar una transferencia. |
+| `data/compete.json` | Punto de partida por cuenta para estadísticas locales; se reinicia al cambiar de cuenta o permiso. |
+| `soundboard/` | Índice y sonidos propios; máximo ocho de 5 s / 200 KB. |
+| `extensions/registry.json`, `extensions/<id>/package/`, `storage.json` | Registro, caché de bloqueos, paquetes y almacenamiento acotado por extensión. |
+| `secure` | Webhooks, caché de traducción y secretos de integración según módulo; `obs.password`, `clipupload.youtube`, `clipupload.tiktok`. |
+| IndexedDB de la PWA | Sesión de ese dispositivo y preferencias de avisos. Si falla, la sesión usa memoria; al salir se limpia la copia local. |
+
+Una transferencia excluye cuentas, secretos reconocibles y rutas del equipo, pero el filtrado de configuraciones no puede garantizar eliminar todos los secretos de archivos arbitrarios. Los tamaños, formato ZIP64 y límites por entrada están en [Datos](implementacion/datos.md).
+
 ### 7.4 Carpeta interna `.venus/` de cada instancia
 
 | Ruta | Dueño | Qué es |
@@ -736,6 +828,10 @@ La raíz es `%APPDATA%\.venuslauncher` (Windows), `VENUS_DATA_DIR` si está defi
 
 Además, `modtranslate` genera el paquete `resourcepacks/venus-auto-translations` (y lo activa en `options.txt`), `ingame` genera `resourcepacks/venus-launcher` antes de cada partida (1.13 en adelante; lo activa en `options.txt` después de los paquetes integrados y antes de los del jugador, lo reescribe solo si cambió su contenido —archivo `.venus-pack`— y lo saca de `options.txt` y lo borra si se apaga `ingame.pack`), performance guarda `options.txt.venus.bak` antes de mezclar opciones y la cuarentena, el historial y las copias nunca se exportan ni se comparten (6.7).
 
+**Agregados de 4.5.0:** `.venus/modsets.json` conserva sets y el puntero `lastApply`; al duplicar se borra este último porque la instantánea pertenece a la original. `.venus/sharedoptions-backup.txt` guarda el respaldo de ajustes compartidos y `.venus/timelapse.json` su configuración por instancia. Los cuadros de timelapse van en `<instancia>/timelapse/`, fuera de packs e instantáneas; el vídeo terminado, en `clips/`.
+
+Fuera de `.venus/`: `<mundo>/venus-markers.json` almacena hasta 1000 marcadores; `<carpeta del juego>/venus/perf.json` recibe FPS del mod cada 2 s, se considera vencido a los 10 s y no es una medición del launcher. No prometer FPS si ese archivo no existe o está vencido.
+
 ### 7.5 Campos de la 3.1 en `venus-instance.json`
 
 Los campos de siempre están en 6.7 (**Metadatos de la instancia**). Desde la 3.1 se suman estos, que `core/instances.update` normaliza y valida con `modules/instancemeta/meta.js`, venga el parche de donde venga (interfaz, asistente o MCP):
@@ -749,6 +845,8 @@ Los campos de siempre están en 6.7 (**Metadatos de la instancia**). Desde la 3.
 | `notes` | `{ text, tasks: [{ id, text, done }] }` o `null` | `text` hasta 20 000 caracteres; hasta 100 tareas de hasta 200 caracteres con `id` único (`[a-z0-9]{4,32}`; si falta o se repite, se genera). |
 
 `create` inicializa `cover: null, coverAt: null, tags: [], favorite: false, notes: { text: '', tasks: [] }`. `duplicate` copia `cover` (el `cover.png` viaja con la carpeta), `tags` y `notes`; el favorito no. Archivo nuevo dentro de la carpeta de la instancia: `cover.png` (640×360, lo genera `modules/instancemeta.js` y se borra del todo al quitarlo o reemplazarlo, sin papelera). Como el resto de `venus-instance.json`, nada de esto se exporta ni se comparte (6.7).
+
+**Campos de 4.5.0:** `look: { color?, background?, music? } | null` y `sharedOptions: boolean`, validados en `instancemeta/meta.js`. Las rutas de imagen/vídeo/audio son locales y absolutas; no rutas de red. [Instancias](implementacion/instancias.md) conserva las formas exactas y las restricciones de copia/exportación.
 
 ## 8. Reglas generales
 
@@ -783,3 +881,7 @@ VENUS_DEVSHOT=<carpeta> VENUS_DATA_DIR=<carpeta-temporal-propia> VENUS_SKIP_ONBO
 - Revisar las capturas (que se vea bien a 1300×820) y que `console.log` no tenga errores de tu módulo.
 - La lógica que no depende de Electron se prueba con Node puro (por ejemplo `src/main/modules/crash/test/run-tests.js`, `node src/main/modules/assistant/selftest.js`, `node --test "src/main/modules/billing/test/*.test.js"`, lo mismo con `admin/test`, `mcp/test`, `recap/test`, `skins/test`, `mcimport/test` y `svcstatus/test`, o las pruebas de `supabase/functions/ai-assistant/tests/`). Las de la 2.0: `node --test "src/main/modules/nowplaying/test/" "src/main/modules/overlay/test/" "src/main/modules/capture/test/" "src/main/modules/rewards/test/" "src/main/modules/ingame/test/*.test.js" "src/renderer/js/features/party/test/*.test.js" "src/renderer/js/features/profile-editor/test/" "src/renderer/js/features/themes/test/*.test.js" "src/renderer/js/pages/skins/editor/test/*.test.js"` y en `mod/venus-badge` `./gradlew test`. Las de recap, skins, mcimport y svcstatus también corren pasando solo la carpeta (`node --test "src/main/modules/skins/test/"`), porque cada una trae un `test/index.js`.
 - Las de la 3.1: `node --test "src/renderer/js/a11y/test/*.test.js" "src/renderer/js/features/themes/test/*.test.js" "src/renderer/js/features/decor/test/*.test.js" "src/renderer/js/features/navcustom/test/*.test.js" "src/renderer/js/pages/home/test/*.test.js" "src/renderer/js/pages/versions/test/*.test.js" "src/renderer/js/pages/tools/test/" "src/renderer/js/pages/pass/test/*.test.js" "src/renderer/js/features/profile-editor/test/" "src/renderer/js/social/test/" "src/main/modules/instancemeta/test/" "src/main/modules/shortcuts/test/" "src/main/modules/mcnews/test/" "src/main/modules/downloadschedule/test/" "src/main/modules/overlay/test/"`. Ayudas para capturas: `VENUS_MCNEWS_FAKE=<versión>` (el aviso de versión nueva a los 3 s, sin consultar nada), `VENUS_REWARDS_FAKE` también para `#/pass`, y desde la consola de la interfaz `window.dispatchEvent(new CustomEvent('venus:season', { detail: { id: 'halloween' } }))`, `window.dispatchEvent(new CustomEvent('venus:ui-sound', { detail: { id: 'whoosh' } }))`, `(await import('./js/features/tools/recap.js')).previewRecap()` y `import('./js/features/navcustom.js').then((m) => m.setMini(true))`. Para ver Mis instancias sin instalar nada: un `VENUS_DATA_DIR` temporal con `instances/<id>/venus-instance.json` (la lista solo lee ese archivo).
+
+### Evidencia de integración de 4.5.0
+
+El [estado consolidado](estado-4.5.0.md) atribuye las corridas a sus ejecutores: 1538 pruebas Node (1537 pass, 0 fail, 1 skip opt-in de medios Windows), Gradle con 29 tareas y cuatro JAR, 20 rutas más 12 adicionales por idioma ES/EN con consola vacía, PWA con worker/caché sin red, codificación y reproducción WebM reales con medios propios, y overlay con recetas sintéticas/asistente falso. Las 1282 comprobaciones SQL se ejecutaron en PostgreSQL 17.11 temporal con rollback y fixtures parciales de Supabase; el [informe completo](implementacion/revision-sql-0028-0036.md) conserva comandos y límites. Este cierre documental no repitió esas pruebas. Paquete, NSIS y servicios/dispositivos reales siguen pendientes.

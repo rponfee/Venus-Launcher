@@ -1,5 +1,5 @@
 // Capas de Venus: lógica pura (sin DOM ni imports). La lista es la misma que trae el mod (mod/venus-badge: Capes.java): solo se
-// muestra y se vende lo que el mod puede dibujar. Guía: docs/wip/capas-34.md.
+// muestra y se vende lo que el mod puede dibujar. Guía: docs/implementacion/capas.md.
 export const CAPE_IDS = ['dawn', 'nebula', 'aurora', 'magma', 'orbit'];
 
 /** El id de la textura de un ítem de la tienda, o null si no es una capa conocida. */

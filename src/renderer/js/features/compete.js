@@ -1,4 +1,4 @@
-// Competir (docs/wip/competir-33.md): lo que corre con el launcher abierto aunque no se abra la página. Manda lo jugado si
+// Competir (docs/implementacion/competir.md): lo que corre con el launcher abierto aunque no se abra la página. Manda lo jugado si
 // el usuario prendió compartir (apagado de entrada), avisa de los desafíos (al recibir, al aceptar y al terminar) y de lo
 // anotado en el calendario, 15 minutos antes. Reglas y RPC: supabase/migrations/0031_competencia.sql.
 //   startup(), competeBackend() -> { fake, signedIn, userId, onAuth, rpc, friends }, errText(err)

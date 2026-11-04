@@ -267,4 +267,13 @@ export default {
   item_frame_orbit: "궤도 테두리",
   item_frame_halloween: "할로윈 테두리",
   item_frame_xmas: "크리스마스 테두리",
+  kind_cape: "게임 내 망토",
+  item_cape_dawn: "새벽 망토",
+  item_cape_nebula: "성운 망토",
+  item_cape_aurora: "오로라 망토",
+  item_cape_magma: "마그마 망토",
+  item_cape_orbit: "궤도 망토",
+  hist_challenge: "도전 보상",
+  hist_pass: "Venus Pass 보상",
+  hist_pass_refund: "Venus Pass 환불",
 };

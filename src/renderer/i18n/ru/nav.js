@@ -45,4 +45,9 @@ export default {
   resetMenu: "Сбросить",
   done: "Готово",
   menuSaveFailed: "Не удалось сохранить меню",
+  compete: "Соревнования",
+  clans: "Кланы",
+  communities: "Сообщества",
+  seeds: "Просмотр сидов",
+  extensions: "Расширения",
 };

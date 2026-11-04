@@ -1,5 +1,7 @@
 # Edge Functions de Venus Launcher
 
+> La rama 4.5.0 está en integración, sin publicar. Producción fue verificada solo hasta la migración 0027. Las instrucciones siguientes preparan operaciones futuras. `admin`, `ai-assistant` y `billing` desplegadas difieren del repo: reconciliar antes de desplegar. [Estado](../../docs/estado-4.5.0.md).
+
 | Función | Para qué | Migraciones que necesita | Documentación |
 |---|---|---|---|
 | `ai-assistant` | Puerta de la IA del launcher: verifica la sesión, aplica el plan del usuario (modelos, esfuerzos, preguntas por día y por semana y presupuesto mensual) y llama a Claude (Anthropic, principal) con la clave del servidor; si Anthropic falla por un problema del proveedor, pasa el pedido a ChatGPT (OpenAI, secundario). | `supabase/migrations/0007_ai.sql`, después `0008_ai_plans.sql` y, para el respaldo, `0011_ai_providers.sql` | [docs/backend-ia.md](../../docs/backend-ia.md) |
@@ -7,6 +9,11 @@
 | `voice-turn` | Claves temporales del servidor TURN del Voice Chat (coturn con `use-auth-secret`), solo para sesiones de Venus: el launcher las pide al iniciar sesión y antes de entrar a una sala. Se despliega con la verificación de JWT activada. Secretos: `TURN_SECRET` (obligatorio, el `static-auth-secret` de coturn), `TURN_URLS` y `TURN_TTL_SECONDS` (opcionales). Sin `TURN_SECRET` responde una lista vacía y la voz sigue con STUN. | ninguna | [docs/voice-turn.md](../../docs/voice-turn.md) |
 | `badge` | Anota una cuenta de Minecraft en la insignia de Venus: con la sesión de Venus y un desafío de `badge_challenge`, le pregunta a Mojang (`hasJoined`) si esa cuenta entró con ese desafío y, si sí, la anota. El token de Minecraft nunca llega al servidor. Se despliega con la verificación de JWT activada. Sin secretos propios. Las consultas del mod no pasan por acá: van a la función SQL `badge_lookup` (PostgREST), que no gasta invocaciones. | `supabase/migrations/0019_insignia.sql` (después de 0012) | [docs/insignia.md](../../docs/insignia.md) |
 | `mcverify` | Verifica con Mojang que una cuenta de Minecraft es de quien llama (el mismo desafío y la misma comprobación que `badge`, con `../badge/handler.ts`) y la registra en `mc_verified` con `mc_verify_record`: así se pagan las invitaciones de Venus Points. Responde `{ uuid, name, rewarded }`. Se despliega con la verificación de JWT activada y lleva `badge/handler.ts` (el import `../badge/` se resuelve al empaquetar). Sin secretos propios. | `0019_insignia.sql` y `0021_puntos.sql` | [docs/venus-points.md](../../docs/venus-points.md) |
+
+| Función nueva de 4.5.0 | Autenticación y configuración | Documentación |
+|---|---|---|
+| `tiktok-token` | JWT y sesión de Venus; `TIKTOK_CLIENT_KEY` y `TIKTOK_CLIENT_SECRET` solo en Supabase. Intercambia/renueva tokens para la app aprobada; el launcher distribuye solo el client key público. | [Clips](../../docs/implementacion/clips.md) |
+| `push-notify` | GET ofrece VAPID pública; POST comprueba el secreto del disparo y usa service role para reclamar destinos. `verify_jwt = false` en config local; requiere 0035. | [App para celular](../../docs/implementacion/app-celular.md) |
 
 ## Antes de empezar
 
@@ -91,3 +98,15 @@ Las funciones SQL no se ejecutan en estas pruebas: probalas una vez en un proyec
 | `policy.ts` | Política fija del servidor que va primero en el system de cada pedido. |
 | `config.ts` | Constantes: protocolos, modelos que acepta el protocolo, herramientas permitidas y su nivel de permiso, límites, CORS. |
 | `tests/` | Pruebas con `node:test` (incluye `fake-db.ts`, `owner-plans.ts` y `fake-openai-sdk.ts`, que son solo para las pruebas). No se despliegan (no las importa `index.ts`). |
+
+## Integración pendiente: push y subidas de 4.5.0
+
+No se desplegaron estas funciones como parte de la revisión. El informe de la PWA registra 83 pruebas locales de PWA/push; el de clips, 182 entre sus módulos. No son pruebas de Deno desplegado, proveedores ni celulares.
+
+Para **push**, los secretos del servidor son `VENUS_VAPID_PUBLIC`, `VENUS_VAPID_PRIVATE` y `VENUS_PUSH_SECRET`; `VENUS_PUSH_SUBJECT` es opcional. `generar-claves.mjs` prepara los valores, que no deben copiarse al repo ni al chat. `private.push_configure` fija el endpoint y el secreto del disparo en Vault. El procedimiento y las cabeceras web están en la [guía permanente](../../docs/implementacion/app-celular.md). No aplicar `db push` para seleccionar una sola migración ni exponer el esquema `net`.
+
+El servidor acota los pedidos y los destinos: cuerpo de hasta 400 bytes, cinco suscripciones por cuenta, 30 avisos por hora y enfriamiento de dos minutos por clave. Envía Web Push **sin contenido**; el service worker consulta después la bandeja con la sesión local y respeta la preferencia de vistas previas. Los proveedores de push reciben el endpoint y los metadatos de entrega. Cerrar sesión en un dispositivo no cierra la sesión de los otros.
+
+Para **subidas**, `scripts/write-build-config.js` incorpora solamente `youtubeClientId` y `tiktokClientKey` desde sus dos variables públicas. No distribuir secretos OAuth ni configurar uno de YouTube en el workflow. Si el proveedor exige un secreto que el flujo público actual no resuelve, **la subida directa queda pendiente de un flujo aprobado y probado**. TikTok mantiene su secreto en esta función, no en el instalador; publicación directa y aprobación del proveedor no deben darse por obtenidas.
+
+La revisión SQL, las guardas de los escenarios y la falta de ejecución del ensayo estructural se conservan en [revision-sql-0028-0036.md](../../docs/implementacion/revision-sql-0028-0036.md).

@@ -1,4 +1,4 @@
-// Clanes y comunidades: lógica pura compartida, sin DOM (docs/wip/clanes-comunidades-34.md). La validación es para avisar antes
+// Clanes y comunidades: lógica pura compartida, sin DOM (docs/implementacion/clanes-comunidades.md). La validación es para avisar antes
 // de mandar: el que decide siempre es el servidor (0033_clanes_comunidades.sql).
 export const CLAN_LIMITS = { nameMin: 3, nameMax: 30, tagMin: 2, tagMax: 5, description: 300, members: 50 };
 export const COMMUNITY_LIMITS = { nameMin: 3, nameMax: 40, description: 500, members: 500, channels: 20, owned: 3, channelName: 30, message: 2000 };

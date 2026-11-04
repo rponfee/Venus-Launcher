@@ -224,6 +224,7 @@ const memo = { view: 'recent' };
 export function galleryPanel() {
   let rows = [];
   let more = false;
+  let offset = 0;
   let loading = false;
   let token = 0;
   let alive = true;
@@ -258,7 +259,7 @@ export function galleryPanel() {
 
   async function toggleLike(clip, card) {
     const next = toggledLike(clip);
-    replace(clip, next, card);
+    card = replace(clip, next, card, true);
     try {
       const res = await rpc('gallery_like', { p_id: clip.id, p_like: next.liked });
       replace(next, { ...next, liked: res?.liked === true, likes: Number(res?.likes) || 0, likesWeek: Number(res?.likesWeek) || 0 }, card);
@@ -268,11 +269,15 @@ export function galleryPanel() {
     }
   }
 
-  function replace(from, to, card) {
+  function replace(from, to, card, pending = false) {
     const i = rows.indexOf(from);
     if (i < 0) return;
     rows[i] = to;
-    if (card.isConnected) card.replaceWith(clipCard(to));
+    const nextCard = clipCard(to);
+    const button = nextCard.querySelector('.cs-gl-like');
+    if (button) button.disabled = pending;
+    if (card?.isConnected) card.replaceWith(nextCard);
+    return nextCard;
   }
 
   async function unpublish(clip) {
@@ -339,9 +344,9 @@ export function galleryPanel() {
 
   async function fetchPage(offset) {
     const url = projectUrl();
-    if (memo.view === 'mine') return { list: ownClips(await rpc('gallery_mine'), url), more: false };
+    if (memo.view === 'mine') return { list: ownClips(await rpc('gallery_mine'), url), more: false, nextOffset: 0 };
     const data = await rpc('gallery_list', { p_sort: memo.view === 'week' ? 'week' : 'recent', p_offset: offset, p_limit: PAGE_SIZE });
-    return { list: visibleClips(data?.items, url), more: data?.more === true };
+    return { list: visibleClips(data?.items, url), more: data?.more === true, nextOffset: offset + (Array.isArray(data?.items) ? data.items.length : 0) };
   }
 
   async function load(force = false) {
@@ -361,6 +366,7 @@ export function galleryPanel() {
       const page = await fetchPage(0);
       if (!alive || my !== token) return;
       rows = page.list;
+      offset = page.nextOffset;
       more = page.more;
       drawRows();
     } catch (err) {
@@ -371,16 +377,21 @@ export function galleryPanel() {
   }
 
   async function loadMore(btn) {
+    if (loading || !more) return;
+    loading = true;
+    const my = token;
     const done = setBusy(btn);
     try {
-      const page = await fetchPage(rows.length);
-      if (!alive) return;
+      const page = await fetchPage(offset);
+      if (!alive || my !== token) return;
       rows = rows.concat(page.list);
+      offset = page.nextOffset;
       more = page.more;
       drawRows();
     } catch (err) {
-      fail(C('galleryLoadFailed'), errText(err));
+      if (alive && my === token) fail(C('galleryLoadFailed'), errText(err));
     } finally {
+      if (my === token) loading = false;
       done();
     }
   }

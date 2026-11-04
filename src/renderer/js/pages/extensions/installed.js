@@ -3,7 +3,7 @@ import { h, icon, mount, switchEl, confirmDialog, ok, fail, setBusy, emptyState,
 import { api } from '../../store.js';
 import { t } from '../../i18n.js';
 import { navigate } from '../../app.js';
-import { extensionsState, onExtensions, refreshExtensions, availableUpdates, catalogAllowed } from '../../features/extensions.js';
+import { extensionsState, onExtensions, refreshExtensions, availableUpdates, catalogAllowed, setExtensionEnabled } from '../../features/extensions.js';
 import { openInstallDialog } from '../../features/extensions/install-dialog.js';
 import { permRow, neverBlock, permTitle } from '../../features/extensions/perms.js';
 import { downloadAndInstall } from './catalog.js';
@@ -81,7 +81,7 @@ function row(ext, safeMode) {
         h('div', { class: 'small muted ellipsis', title: ext.author }, t('extensions.byAuthor', { author: ext.author })),
         ext.description ? h('div', { class: 'small text-2 xt-item-desc' }, ext.description) : null,
       ),
-      switchEl(ext.enabled, (on) => act(() => api.invoke('extensions:setEnabled', ext.id, on), 'extensions.saveFailed'), t('extensions.enabledSwitch', { name: ext.name })),
+      switchEl(ext.enabled, (on) => act(() => setExtensionEnabled(ext.id, on), 'extensions.saveFailed'), t('extensions.enabledSwitch', { name: ext.name })),
     ),
     h(
       'div',

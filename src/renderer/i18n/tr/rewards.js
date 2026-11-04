@@ -262,4 +262,13 @@ export default {
   item_frame_orbit: "Yörünge çerçevesi",
   item_frame_halloween: "Cadılar Bayramı çerçevesi",
   item_frame_xmas: "Noel çerçevesi",
+  kind_cape: "Oyun içi pelerinler",
+  item_cape_dawn: "Şafak Pelerini",
+  item_cape_nebula: "Bulutsu Pelerini",
+  item_cape_aurora: "Kutup Işığı Pelerini",
+  item_cape_magma: "Magma Pelerini",
+  item_cape_orbit: "Yörünge Pelerini",
+  hist_challenge: "Meydan okuma ödülü",
+  hist_pass: "Venus Pass ödülü",
+  hist_pass_refund: "Venus Pass iadesi",
 };

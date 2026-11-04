@@ -378,4 +378,7 @@ export default {
   deletedText: "휴지통에서 복구할 수 있어요.",
   deletedWithBackup: "먼저 백업을 저장해 두었어요.",
   deleteFailed: "월드를 삭제하지 못했어요",
+  autoBackup: "자동",
+  autoBackupHint: "런처가 자동으로 만든 백업입니다. 새 백업이 쌓이면 삭제되며, 수동 백업은 자동으로 삭제되지 않습니다.",
+  autoBackupsSetup: "자동 백업",
 };

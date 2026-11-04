@@ -109,8 +109,13 @@ self.addEventListener('fetch', (event) => {
 });
 
 // ---------- Avisos ----------
-function withTimeout(promise, ms) {
-  return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
+async function withTimeout(promise, ms) {
+  let timer;
+  try {
+    return await Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), ms); })]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 const isIos = () => /iphone|ipad|ipod/i.test(self.navigator.userAgent) || (self.navigator.platform === 'MacIntel' && self.navigator.maxTouchPoints > 1);

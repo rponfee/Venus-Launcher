@@ -30,7 +30,7 @@ export default {
   shareToggleSub: 'Apagado no se manda nada. Sirve para los rankings y para aceptar desafíos.',
   shareNeedsAccount: 'Necesitás iniciar sesión con tu cuenta de Venus.',
   shareSends: 'Se manda a Venus cuánto jugaste en esta PC, y los diamantes y bloques minados, los mobs matados y las muertes de tus mundos, como totales de la semana.',
-  shareSees: 'Lo ven solo tus amigos de Venus, en el ranking y en los desafíos que aceptes.',
+  shareSees: "Tus amigos de Venus ven tus números en el ranking entre amigos y en los desafíos que aceptes. Tus horas solo se suman al ranking público de tu clan si activás además su permiso separado.",
   shareNotSent: 'No se manda en qué mundos ni en qué servidores jugaste. Lo que jugaste antes de prender esto no se cuenta.',
   shareOtherPc: 'Tu cuenta comparte desde otra PC. Prendelo acá para sumar también lo que jugás en esta.',
   shareActive: 'Estás compartiendo tus números con tus amigos',

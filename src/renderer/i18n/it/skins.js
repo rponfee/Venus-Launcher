@@ -169,4 +169,5 @@ export default {
   saveToLibraryFailed: 'Impossibile salvare la skin nella tua libreria',
   reasonCatalogDamaged: 'Il file di questa skin manca o è danneggiato. Reinstalla Venus Launcher per recuperarlo.',
   exploreCatalog: 'Esplora il catalogo',
+  venusCape: "Mantello Venus",
 };

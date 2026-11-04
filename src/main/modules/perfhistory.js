@@ -9,6 +9,7 @@
 const os = require('os');
 const path = require('path');
 const paths = require('../core/paths');
+const settings = require('../core/settings');
 const game = require('../core/game');
 const instances = require('../core/instances');
 const { readFps } = require('./perfhistory/fps');
@@ -57,6 +58,10 @@ async function sampleAll() {
   if (st.sampling) return; // pidusage tarda mas de lo normal: no se pisan
   st.sampling = true;
   try {
+    if ((await settings.get()).perfhistory?.enabled === false) {
+      for (const s of st.live.values()) s.partial = true;
+      return;
+    }
     const cpus = os.cpus().length || 1;
     for (const s of [...st.live.values()]) await sampleOne(s, cpus);
   } finally {
@@ -66,7 +71,7 @@ async function sampleAll() {
 
 async function persist(s, { crashed = false, partial = false } = {}) {
   if (!s.samples.length) return false;
-  await st.store.save(summarize({ ...s, end: Date.now(), crashed, partial }));
+  await st.store.save(summarize({ ...s, end: Date.now(), crashed, partial: partial || s.partial === true }));
   return true;
 }
 

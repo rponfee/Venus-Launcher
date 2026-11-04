@@ -1,6 +1,6 @@
 // Clanes (#/clans[/mine|browse|ranking] · #/clans/view/<id> abre el perfil de un clan): tu clan, el buscador de clanes abiertos
 // y el ranking semanal. Lo que corre sin abrir la página (invitaciones y número del menú) está en features/clans.js.
-// Reglas y RPC: 0033_clanes_comunidades.sql · guía: docs/wip/clanes-comunidades-34.md.
+// Reglas y RPC: 0033_clanes_comunidades.sql · guía: docs/implementacion/clanes-comunidades.md.
 import { h, icon, mount, emptyState, skeleton, setBusy, ok, fail, fmtAgo, fmtDate, debounce } from '../ui.js';
 import { t } from '../i18n.js';
 import { navigate } from '../app.js';
@@ -10,6 +10,7 @@ import { emblemBadge, forgetClanTags, tagChip } from '../features/clans/tag.js';
 import { normalizeCode, rankingNotice, shiftWeek, weekOf } from '../features/clans/logic.js';
 import { backToBrowse, clanProfile, hoursText } from './clans/profile.js';
 import { openClanForm } from './clans/forms.js';
+import { clanSharingCard } from '../features/clans/sharing.js';
 
 const C = (key, vars) => t(`clans.${key}`, vars);
 const TABS = [{ id: 'mine', icon: 'shield' }, { id: 'browse', icon: 'search' }, { id: 'ranking', icon: 'trophy' }];
@@ -246,7 +247,8 @@ export default {
     const viewing = params[0] === 'view' && params[1] ? params[1] : null;
     let current = viewing ? 'browse' : VIEWS[params[0]] ? params[0] : 'mine';
     const tabBar = h('div', { class: 'tabs cl-tabs', role: 'tablist', 'aria-label': C('tabsLabel') });
-    const host = h('div', { class: 'cl-panel', role: 'tabpanel', tabindex: '-1' });
+    let host = h('div', { class: 'cl-panel', role: 'tabpanel', tabindex: '-1' });
+    const sharing = clanSharingCard({ b, onChanged: () => select(current) });
     function drawTabs() {
       mount(tabBar, TABS.map((tab) => h('button', {
         type: 'button',
@@ -268,6 +270,9 @@ export default {
     });
     function select(id) {
       current = id;
+      // Desconectar el panel anterior: sus respuestas pendientes ya no pueden pisar la pestaña elegida.
+      host = h('div', { class: 'cl-panel', role: 'tabpanel', tabindex: '-1' });
+      mount(root, head(), sharing, tabBar, host);
       drawTabs();
       VIEWS[id](host, { b });
       try {
@@ -276,12 +281,13 @@ export default {
         /* sin historial */
       }
     }
-    mount(root, head(), tabBar, host);
+    mount(root, head(), sharing, tabBar, host);
     if (viewing) {
       drawTabs();
       viewClan(host, viewing, { b });
     } else select(current);
     const user = b.userId();
-    return b.onAuth?.(() => { if (b.userId() !== user) navigate('clans'); }) || null;
+    const offAuth = b.onAuth?.(() => { if (b.userId() !== user) navigate('clans'); });
+    return () => { sharing.destroy(); offAuth?.(); };
   },
 };

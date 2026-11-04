@@ -1,6 +1,6 @@
 // Edge Function "tiktok-token": el intercambio de tokens de TikTok para la subida de clips del launcher. TikTok pide que
 // esas llamadas salgan de un servidor con el client_secret, que nunca puede ir en el instalador. Solo pasa la llamada:
-// no guarda ni registra ningun token. Pide sesion de Venus para no ser un relevo abierto. Guia: docs/wip/clips-33.md.
+// no guarda ni registra ningun token. Pide sesion de Venus para no ser un relevo abierto. Guia: docs/implementacion/clips.md.
 //   POST { action: 'exchange', code, codeVerifier, redirectUri } | { action: 'refresh', refreshToken } | { action: 'revoke', token }
 const TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const REVOKE_URL = 'https://open.tiktokapis.com/v2/oauth/revoke/';

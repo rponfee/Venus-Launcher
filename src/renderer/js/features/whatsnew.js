@@ -1,20 +1,15 @@
-// Novedades de Venus 3.0: un recorrido de pantallas con lo nuevo (perfiles y rangos, banners con GIF, logros, misiones,
-// audio, clips, personalización e insignia en más loaders) y, al final, lo que se quitó o cambió. Cada pantalla tiene
-// un botón que lleva a esa función. Se muestra solo la primera vez que se abre la 3.0 (settings.whatsnew.seen), nunca
-// durante la bienvenida obligatoria ni en las capturas automáticas (VENUS_SKIP_ONBOARDING / VENUS_DEVSHOT). Quien ya vio
-// el recorrido de la 3.0.0 ve solo la pantalla de cambios.
-// Contrato: startup() (idempotente: comando "Novedades de Venus 3.0" en Ctrl+K y el aviso automático),
-//           openWhatsNew({ start?, only? }) -> Promise (si ya está abierto le pasa el foco),
-//           whatsNewButton({ className? }) -> Element (botón para Ajustes → Acerca de).
+// Novedades de Venus 4.5: recorrido de instancias, juego, social, clips y conexiones opcionales.
+// Se muestra una vez por versión, después de la bienvenida; también se abre desde Ajustes → Acerca de.
+// startup(), openWhatsNew({ start?, only? }) y whatsNewButton({ className? }).
 import { h, icon, mount, modal, ensureCss, registerIcons, reducedMotion } from '../ui.js';
 import { store } from '../store.js';
 import { t, loadNs, has } from '../i18n.js';
 import { navigate } from '../app.js';
 
 const NS = 'whatsnew';
-export const TOUR_VERSION = '3.1.0';
-const FULL_TOUR_VERSION = '3.1.0'; // quien ya vio esta versión del recorrido no lo vuelve a ver entero
-const CHANGES_SLIDE = 'v3changes';
+export const TOUR_VERSION = '4.5.0';
+const FULL_TOUR_VERSION = '4.5.0'; // quien ya vio esta versión del recorrido no lo vuelve a ver entero
+const CHANGES_SLIDE = 'v45changes';
 
 registerIcons({
   wnBrush: '<path d="m14.622 17.897-10.68-2.913"/><path d="M18.376 2.622a1 1 0 1 1 3.002 3.002L17.36 9.643a.5.5 0 0 0 0 .707l.944.944a2.41 2.41 0 0 1 0 3.408l-.944.944a.5.5 0 0 1-.707 0L8.354 7.348a.5.5 0 0 1 0-.707l.944-.944a2.41 2.41 0 0 1 3.408 0l.944.944a.5.5 0 0 0 .707 0z"/><path d="M9 8c-1.804 2.71-3.97 3.46-6.583 3.948a.507.507 0 0 0-.302.819l7.32 8.883a1 1 0 0 0 1.185.204C12.735 20.405 16 16.792 16 15"/>',
@@ -41,23 +36,13 @@ async function tryOpen(candidates, fallback) {
 
 const SLIDES = [
   { id: 'intro', icon: 'sparkles' },
-  // Venus 3.1
-  { id: 'v31pass', art: 'rewards', icon: 'rocket', go: () => navigate('pass') },
-  { id: 'v31look', art: 'themes', icon: 'palette', go: () => navigate('settings/appearance') },
-  { id: 'v31home', art: 'overlay', icon: 'home', go: () => navigate('home') },
-  { id: 'v31profile', art: 'profiles', icon: 'user', go: () => tryOpen([[() => import('./profile-editor.js'), ['openProfileEditor']]], 'messages') },
-  { id: 'v31instances', art: 'party', icon: 'layers', go: () => navigate('versions') },
-  { id: 'v31tools', art: 'clips', icon: 'wrench', go: () => navigate('tools') },
-  // Venus 3.0
-  { id: 'v3profile', art: 'profiles', icon: 'user', go: () => tryOpen([[() => import('./profile-editor.js'), ['openProfileEditor']]], 'messages') },
-  { id: 'v3gif', art: 'themes', icon: 'image', go: () => tryOpen([[async () => { const m = await import('./profile-editor.js'); return { open: () => m.openProfileEditor({ tab: 'banner' }) }; }, ['open']]], 'messages') },
-  { id: 'v3ach', art: 'rewards', icon: 'trophy', go: () => navigate('achievements') },
-  { id: 'v3missions', art: 'rewards', icon: 'target', go: () => navigate('achievements/missions') },
-  { id: 'v3audio', art: 'music', icon: 'mic', go: () => navigate('voice') },
-  { id: 'v3clips', art: 'clips', icon: 'camera', go: () => navigate('clips') },
-  { id: 'v3ui', art: 'themes', icon: 'sliders', go: () => navigate('settings/appearance') },
-  { id: 'v3badge', art: 'badge', icon: 'wnBadge', go: () => navigate('settings/general/play') },
-  { id: CHANGES_SLIDE, art: 'intro', icon: 'info', go: () => navigate('settings/updates') },
+  { id: 'v45instances', art: 'party', icon: 'layers', go: () => navigate('versions') },
+  { id: 'v45play', art: 'overlay', icon: 'gamepad', go: () => navigate('settings/ingame') },
+  { id: 'v45social', art: 'profiles', icon: 'users', go: () => navigate('communities') },
+  { id: 'v45clips', art: 'clips', icon: 'camera', go: () => navigate('clips') },
+  { id: 'v45worlds', art: 'badge', icon: 'globe', go: () => navigate('seeds') },
+  { id: 'v45connected', art: 'themes', icon: 'puzzle', go: () => navigate('extensions') },
+  { id: CHANGES_SLIDE, art: 'intro', icon: 'info', go: () => navigate('settings/privacy') },
 ];
 
 // "2.0.0", "2.0.0-beta.1" o "v2.1" -> [2, 0, 0]
@@ -90,7 +75,7 @@ const i = (cls, ...kids) => h('i', { class: cls.split(' ').filter(Boolean).map((
 function art(id) {
   const scene = (...kids) => h('div', { class: `wn-art wn-art-${id}`, 'aria-hidden': 'true' }, h('div', { class: 'wn-glow' }), ...kids);
   if (id === 'intro') {
-    return scene(i('orbit'), i('orbit orbit-2'), h('img', { class: 'wn-logo', src: 'assets/logo-256.png', alt: '' }), h('span', { class: 'wn-ver' }, '3.1'), i('spark s1'), i('spark s2'), i('spark s3'));
+    return scene(i('orbit'), i('orbit orbit-2'), h('img', { class: 'wn-logo', src: 'assets/logo-256.png', alt: '' }), h('span', { class: 'wn-ver' }, '4.5'), i('spark s1'), i('spark s2'), i('spark s3'));
   }
   if (id === 'music') {
     return scene(

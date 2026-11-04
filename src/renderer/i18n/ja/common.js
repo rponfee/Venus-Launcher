@@ -170,4 +170,9 @@ export default {
   streamerOnText: "オフにするまで、コード、アドレス、フレンド名、メッセージは非表示のままです。",
   streamerOff: "配信者モードをオフにしました",
   streamerSaveError: "配信者モードを変更できませんでした",
+  messageSticker: "スタンプ",
+  messageGif: "GIF",
+  net_wikiTitle: "Minecraft Wiki",
+  net_wikiText: "レシピのオーバーレイから、操作に応じてminecraft.wikiにアクセスすることを許可します。",
+  net_integrationsNote: "サーバーのDiscord通知と設定の同期は、それぞれの設定で個別に有効にします。有効にするまでは動作しません。",
 };

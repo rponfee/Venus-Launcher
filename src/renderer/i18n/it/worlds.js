@@ -397,4 +397,7 @@ export default {
   deletedText: "Puoi recuperarlo dal cestino.",
   deletedWithBackup: "Prima è stato salvato un backup.",
   deleteFailed: "Impossibile eliminare il mondo",
+  autoBackup: "Automatico",
+  autoBackupHint: "Creato automaticamente dal launcher. Viene eliminato quando arrivano backup più recenti; quelli manuali non vengono mai eliminati da soli.",
+  autoBackupsSetup: "Backup automatici",
 };

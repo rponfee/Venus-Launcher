@@ -240,7 +240,7 @@ test('sin espacio: avisa cuánto hace falta y no escribe nada', async () => {
     const f = path.join(tmp('mal'), 'grande.venusbackup');
     const manifest = JSON.stringify({ format: 'venusbackup', version: 1, instances: [{ key: 'i1', name: 'A', mcVersion: '1.21.1', loader: 'vanilla', content: { files: 1, bytes: 5000 } }], servers: [] });
     await craft(f, [['manifest.json', manifest], ['instances/i1/meta.json', '{}'], ['instances/i1/files/a.bin', 'x'.repeat(5000)]]);
-    await assert.rejects(archive.importBackup(f, { instances: true }, { instances, servers, settings }), (err) => err.code === 'noSpace' && err.needed === 5000 && err.free === 1);
+    await assert.rejects(archive.importBackup(f, { instances: true }, { instances, servers, settings }), (err) => err.code === 'noSpace' && err.needed === 5002 && err.free === 1);
     assert.deepEqual(fs.readdirSync(paths.instances()), []);
   } finally {
     fs.promises.statfs = orig;

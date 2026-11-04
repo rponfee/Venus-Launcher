@@ -179,4 +179,9 @@ export default {
   streamerOnText: "Códigos, direcciones, nombres de amigos y mensajes quedan ocultos hasta que lo apagues.",
   streamerOff: "Modo streamer desactivado",
   streamerSaveError: "No se pudo cambiar el modo streamer",
+  messageSticker: "Sticker",
+  messageGif: "GIF",
+  net_wikiTitle: "Wiki de Minecraft",
+  net_wikiText: "Permite consultar minecraft.wiki desde las recetas del overlay cuando lo pedís.",
+  net_integrationsNote: "Los avisos de servidores por Discord y la sincronización de ajustes se activan por separado en sus ajustes. Siguen apagados hasta que los habilites.",
 };

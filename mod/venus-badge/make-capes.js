@@ -3,7 +3,7 @@
 //   node make-capes.js   (desde mod/venus-badge)
 // Deja un PNG de 64x32 por capa en src/main/resources/assets/venusbadge/textures/cape/ (lo que dibuja el mod) y los mismos
 // PNG como data: en src/renderer/js/features/capes/textures.js (la vista previa de la tienda). Siempre sale lo mismo: el
-// azar tiene semilla. Para sumar una capa: docs/wip/capas-34.md.
+// azar tiene semilla. Para sumar una capa: docs/implementacion/capas.md.
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');

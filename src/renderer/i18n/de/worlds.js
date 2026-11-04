@@ -397,4 +397,7 @@ export default {
   deletedText: "Du kannst sie aus dem Papierkorb wiederherstellen.",
   deletedWithBackup: "Vorher wurde ein Backup gespeichert.",
   deleteFailed: "Die Welt konnte nicht gelöscht werden",
+  autoBackup: "Automatisch",
+  autoBackupHint: "Vom Launcher selbstständig erstellt. Wird gelöscht, wenn neuere Sicherungen vorliegen; manuelle Sicherungen werden nie automatisch gelöscht.",
+  autoBackupsSetup: "Automatische Sicherungen",
 };

@@ -65,8 +65,9 @@ function checkRunAsNode() {
 async function checkApp(exe, tmp) {
   const port = await freePort();
   const child = spawn(exe, [`--remote-debugging-port=${port}`, `--user-data-dir=${path.join(tmp, 'user-data')}`], {
-    env: { ...process.env, VENUS_DATA_DIR: path.join(tmp, 'venus-data') },
+    env: { ...process.env, VENUS_DATA_DIR: path.join(tmp, 'venus-data'), VENUS_SMOKE_TEST: '1' },
     stdio: 'ignore',
+    windowsHide: true,
   });
   let exited = null;
   child.once('exit', (code) => (exited = code ?? -1));
@@ -148,8 +149,9 @@ async function checkApp(exe, tmp) {
 async function loads(exe, tmp, name) {
   const port = await freePort();
   const child = spawn(exe, [`--remote-debugging-port=${port}`, `--user-data-dir=${path.join(tmp, `user-data-${name}`)}`], {
-    env: { ...process.env, VENUS_DATA_DIR: path.join(tmp, `venus-data-${name}`) },
+    env: { ...process.env, VENUS_DATA_DIR: path.join(tmp, `venus-data-${name}`), VENUS_SMOKE_TEST: '1' },
     stdio: 'ignore',
+    windowsHide: true,
   });
   let exited = null;
   child.once('exit', (code) => (exited = code ?? -1));

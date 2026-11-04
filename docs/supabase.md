@@ -1,5 +1,7 @@
 # Conectar Venus Launcher con Supabase
 
+> **Estado al 3 de noviembre de 2026:** la integración principal verificó `list_migrations` solo hasta **0027**. Los cambios 0028–0036 corresponden a la rama **4.5.0, sin publicar**. Documentar un comando no significa haberlo ejecutado. [Estado y evidencia](estado-4.5.0.md).
+
 Las funciones en línea usan un proyecto de [Supabase](https://supabase.com): la cuenta de Venus, amigos y mensajes privados, Voice Chat, modpacks compartidos por código, la nube de mundos, las capturas y clips compartidos, los servidores destacados y el backend de la IA. El proyecto va fijo dentro del launcher (`src/main/core/cloud-defaults.js`): los usuarios no configuran nada, solo inician sesión en **Ajustes → Cuenta y nube**. Si el servicio no responde, esas secciones muestran "El servicio no está disponible en este momento" y el detalle técnico queda en la consola.
 
 Pasos, en orden: crear el proyecto (1), aplicar las migraciones (2), configurar la autenticación y los emails (3), revisar Realtime y Storage (4), conectar el launcher (5) y, si vas a usar la IA con la cuenta de Venus, desplegar el backend (6). La sección 7 explica cómo editar los servidores destacados.
@@ -20,7 +22,7 @@ Aplicá **en orden** todos los archivos de `supabase/migrations/`:
 - Desde el panel: **SQL Editor → New query**, pegá cada archivo y ejecutalo (0001, 0002, ... hasta la última).
 - O con la [Supabase CLI](https://supabase.com/docs/guides/cli): `supabase login`, `supabase link --project-ref <ref>` (si te pide inicializar la carpeta, `supabase init` primero) y después `supabase db push`.
 
-Las migraciones se pueden volver a ejecutar **solo todas juntas y en orden**, de 0001 a la última: usan `if not exists`, recrean las políticas y no pisan datos cargados. **Nunca vuelvas a aplicar una sola**: las más nuevas reemplazan funciones y políticas de las anteriores (por ejemplo, 0012 y 0014 cambian funciones de 0002, y 0008 las de 0007), y reaplicar una vieja sola las deja en su versión vieja sin ningún error (por ejemplo, 0002 sola apaga los silencios y baneos del panel). Para corregir una función, agregá una migración nueva. Todas activan **RLS** en sus tablas, y las escrituras sensibles van por funciones `security definer`.
+Aplicá únicamente las migraciones pendientes y en el orden previsto, después de verificar el esquema y ensayar la integración. **No se da por probada la idempotencia del conjunto ni corresponde reaplicar una migración vieja aislada**: las nuevas reemplazan funciones y políticas previas y una anterior puede restaurar contratos obsoletos sin error. Las correcciones futuras deben agregarse en una migración nueva. Las tablas nuevas usan RLS y las escrituras sensibles, RPC con identidad y permisos validados. El ensayo 0028–0036 preparado aplica cada una una sola vez y termina en rollback; no prueba doble aplicación.
 
 | Migración | Módulo | Qué crea | Necesita |
 |---|---|---|---|
@@ -47,6 +49,24 @@ Las migraciones se pueden volver a ejecutar **solo todas juntas y en orden**, de
 
 En el proyecto de Venus (`dzchklzaxyygbvfpagvx`), cada migración quedó registrada con su versión (fecha y hora UTC) y un nombre `venus_<número>_<nombre>`, distinto del nombre del archivo. Por ejemplo, `0011_ai_providers.sql` es `20261028003925_venus_0011_ai_providers`, `0012_admin.sql` es `20261028004214_venus_0012_admin` y `0014_security.sql` es `20261028024946_venus_0014_security`.
 
+### Migraciones preparadas para 4.5.0, pendientes en producción
+
+| Archivo | Qué incorpora | Contratos y límites |
+|---|---|---|
+| `0028_sync_ajustes.sql` | Ajustes de apariencia por cuenta, versión optimista y objeto de hasta 64 KB | [Datos](implementacion/datos.md) |
+| `0029_resenas_servidores.sql` | Reseñas, votos, denuncias y moderación de servidores destacados | [Servidores](implementacion/servidores.md) |
+| `0030_stickers.sql` | Stickers por cuenta y cuotas de subida serializadas por usuario | [Mensajes y voz](implementacion/mensajes-voz.md) |
+| `0031_competencia.sql` | Rankings consentidos, desafíos, eventos e inscripciones; motivo `challenge` | [Competir](implementacion/competir.md) |
+| `0032_galeria_clips.sql` | Publicaciones, me gusta y denuncias; validación de URL y vencimiento de clips | [Clips](implementacion/clips.md) |
+| `0033_clanes_comunidades.sql` | Clanes, comunidades, canales y `clan_prefs.share_playtime`, separado y apagado por defecto | [Clanes y comunidades](implementacion/clanes-comunidades.md) |
+| `0034_capas.sql` | Ítems de capa, elección por cuenta y consulta pública por UUID Minecraft verificado | [Capas](implementacion/capas.md) |
+| `0035_app_celular.sql` | Push opcional, bandeja móvil y clips recibidos; conserva `media-share` | [App para celular](implementacion/app-celular.md) |
+| `0036_extensiones.sql` | Catálogo moderado, versiones inmutables y blocklist pública | [Extensiones](implementacion/extensiones.md) |
+
+La [revisión SQL permanente](implementacion/revision-sql-0028-0036.md) conserva el inventario de **183 funciones / 32 tablas**, las correcciones por migración, ACL/RLS y los **57 escenarios legítimos preparados**. Su checker textual y generador pasaron; **el SQL estructural y los escenarios todavía no se ejecutaron**, según ese informe.
+
+El preflight preparado consulta solo catálogos y termina en rollback. El ensayo estructural crea objetos y modifica catálogos dentro de una transacción: no es una lectura, aunque termine en rollback. Los escenarios completos requieren la base local descartable sin usuarios que especifica el informe: usan listados globales y fixtures, sustituyen push/Realtime durante la transacción y protegen el estado de secuencias. Esas guardas no deben quitarse ni tomarse como evidencia de permisos efectivos o concurrencia ya probados.
+
 ## 3. Autenticación y emails
 
 En **Authentication → Providers → Email** (o **Sign In / Providers**):
@@ -71,9 +91,11 @@ El campo del launcher acepta códigos de 6 a 10 dígitos (Supabase manda 6 por d
 - El proyecto necesita **Realtime Authorization** (canales privados) y `realtime.send`, como trae Supabase hospedado. El launcher se une a esos canales como privados, así que no hace falta cambiar los ajustes de acceso público de Realtime. En un Supabase propio viejo sin `realtime.send`, las señales y el "escribiendo..." se desactivan solos y el resto sigue andando.
 - El latido de presencia (cada 60 s) genera un evento de Realtime por minuto para cada amigo conectado: cuenta para la cuota de mensajes de Realtime de tu plan.
 
+Para 4.5.0, 0033 incorpora mensajes de comunidades con lectura condicionada por pertenencia, bloqueos y moderación. 0035 agrega persistencia de recibidos a `media-share` y disparadores de avisos; los cambios posteriores de `social_send_signal` deben conservarla. La PWA no mantiene el latido de presencia del escritorio. La entrega efectiva entre dos sesiones y los avisos de navegador siguen pendientes de prueba real.
+
 ### Storage
 
-Los buckets se crean desde las migraciones, todos **privados** (salvo `profile-media` de 0020 y `profile-audio` de 0027, públicos por URL) y con rutas `<userId>/...` (cada usuario solo lee y escribe en su carpeta):
+Los buckets se crean desde las migraciones, todos **privados** (salvo `profile-media` de 0020, `profile-audio` de 0027 y, en la rama 4.5.0, `stickers` de 0030, públicos por URL) y con rutas `<userId>/...` (cada usuario solo lee y escribe en su carpeta):
 
 | Bucket | Migración | Límite por archivo | Tipos | Para qué |
 |---|---|---|---|---|
@@ -85,6 +107,14 @@ Los buckets se crean desde las migraciones, todos **privados** (salvo `profile-m
 **Límite de tamaño del proyecto:** en la configuración de Storage del proyecto (**Storage → Settings** o **Project Settings → Storage**), el límite global por archivo (*Upload file size limit*) tiene que ser de **50 MB o más**: si es menor, Supabase rechaza las partes de 45 MB de la nube de mundos y los clips grandes. En el plan gratuito, 50 MB es el máximo por archivo; por eso el launcher parte los mundos. Revisá también el espacio total que incluye tu plan.
 
 **Cuotas (0014):** las controla el trigger `venus_storage_quota` en **cada** escritura de `storage.objects` (subir, pisar, copiar o mover), también cuando Storage guarda como service role una subida con URL firmada, y de a una por usuario, así que las subidas en paralelo no pasan juntas. Al firmar o probar el permiso el tamaño todavía no se conoce; el real se controla al guardar el archivo (si no entra, Storage borra lo subido y el launcher ve "cuota llena"). Las políticas solo controlan la carpeta. Los archivos de `screenshots` y `clips` no se pueden mover ni pisar (no tienen política de UPDATE; el launcher nunca lo necesita). Para cambiar la cuota de 2 GB o los 500 y 100 archivos, editá `private.storage_quota_before()` en una migración nueva.
+
+| Bucket de 4.5.0 | Migración | Límite por archivo | Acceso y finalidad |
+|---|---|---|---|
+| `stickers` | 0030 | 256 KB; PNG/WebP/GIF | Público por URL; 30 archivos por cuenta, 100 con Premium. La conversación no hace privado el archivo. |
+| `extension-packages` | 0036 | 5 MB; paquete ZIP | Privado; versiones inmutables, sin UPDATE/DELETE del cliente. Aprobación administrativa y comprobación de hash al instalar/revisar. |
+| `clips` existente | 0032 usa 0005 | Mantiene 50 MB | La galería publica referencias firmadas; despublicar no revoca un enlace previo ni borra el archivo por sí solo. |
+
+Estas migraciones y sus políticas aún no están aplicadas en producción. Los topes de descompresión de una extensión se controlan también en el launcher: 20 MB en total, 8 MB por archivo y 200 entradas.
 
 ## 5. Conectar el launcher
 
@@ -126,3 +156,13 @@ La tabla `featured_servers` alimenta **Multijugador → Destacados** y los desta
 | `active` | `false` lo oculta sin borrarlo. |
 
 El launcher pide hasta 60 servidores activos, los guarda 10 minutos en memoria y una copia en su caché para usar sin conexión. Si la tabla está vacía o la nube no está configurada, usa la lista que trae incluida (los mismos 14 servidores de la carga inicial).
+
+## Preparación operativa de 4.5.0
+
+- **Migraciones:** 0028–0036, en orden, con la validación indicada arriba. Para una aplicación selectiva aprobada de 0035, usar su SQL explícito; `supabase db push` intentaría aplicar también otras pendientes. No agregar `net` a “Exposed schemas”.
+- **Push:** `push-notify` usa GET público para VAPID y POST autenticado por un secreto entre base y función. El archivo local configura `verify_jwt = false`; no significa que POST sea libre. VAPID y el secreto del disparo quedan del lado servidor. El payload Web Push es vacío; el service worker consulta la bandeja con la sesión del dispositivo.
+- **TikTok:** `tiktok-token` verifica la sesión y guarda la credencial confidencial solo en Supabase. El launcher distribuye únicamente `tiktokClientKey`; YouTube, `youtubeClientId`. Sin flujo aprobado cuando el proveedor exige un secreto adicional, no dar la subida directa por lista.
+- **Web:** publicar `web/` con las reglas de `web/_headers` y `web/_redirects`, HTTPS y `/app/`; validar luego Android/iPhone, login y avisos. La URL definitiva no se da por publicada.
+- **Funciones existentes:** se informó que `admin`, `ai-assistant` y `billing` desplegadas difieren del repo. Reconciliarlas antes de cualquier despliegue; no sobrescribirlas con esta consolidación.
+
+Preparación completa en [Edge Functions](../supabase/functions/README.md), [web](../web/LEEME.md) y [estado de integración](estado-4.5.0.md). Ningún paso se ejecutó por escribir estas instrucciones.

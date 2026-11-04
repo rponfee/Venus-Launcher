@@ -1,7 +1,7 @@
 'use strict';
 // Compila el mod de la insignia de Venus (mod/venus-badge) y copia los .jar a src/main/modules/ingame/mods, donde
 // los busca el launcher (modules/ingame/badgemod.js). En las releases lo hace .github/workflows/mod.yml.
-// Necesita Java 25 o más nuevo para Gradle y Loom (el mod sale para Java 21). Uso:  node scripts/build-badge-mod.js
+// Necesita Java 25 o más nuevo para Gradle y Loom (los jars del mod usan Java 17 o 21 según Minecraft). Uso:  node scripts/build-badge-mod.js
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');

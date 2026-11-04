@@ -1,6 +1,6 @@
 # Página web de Venus Launcher
 
-Esta carpeta es la página lista para subir a cualquier hosting estático: `index.html`, `fondos.html` (la galería de fondos), `assets/` (logo y capturas del launcher) y `fondos/` (los fondos, que se generan aparte: ver más abajo).
+Esta carpeta es la página lista para subir a cualquier hosting estático: `index.html`, `fondos.html` (la galería de fondos), `assets/` (logo y capturas del launcher), `app/` (PWA para celular, preparada para 4.5.0) y `fondos/` (los fondos, que se generan aparte: ver más abajo).
 
 ## CurseForge
 
@@ -24,7 +24,7 @@ Funcionan porque, desde la 1.0.13, los archivos de cada release se llaman siempr
 
 Además, la página consulta la API de GitHub para mostrar la versión, el tamaño y la fecha de la última release. Si una release tuviera los archivos con otro nombre, ajusta los links sola.
 
-**Para publicar una versión:** compilá con `npm run dist` y creá la release `v<versión>` en GitHub con los cuatro archivos de `dist\`: `VenusLauncher-Setup.exe`, `VenusLauncher-Portable.exe`, `VenusLauncher-Setup.exe.blockmap` y `latest.yml`. Hasta que exista la release `v1.0.13`, los links fijos devuelven "not found", porque la 1.0.11 tiene los archivos con el nombre viejo; mientras tanto la página, con la API, apunta a los archivos de la 1.0.11.
+**Para publicar una versión:** coordinar la release del launcher, los cambios de nube y el sitio con el dueño. La rama 4.5.0 todavía no está publicada; los links `latest` continúan apuntando a la última release existente. No crear una release ni desplegar como parte de una comprobación documental.
 
 ## Lo que se actualiza solo (con la página en un hosting)
 
@@ -49,3 +49,17 @@ En `index.html`, buscá `LANZAMIENTO`: `Date.UTC(2026, 10, 8, 3, 0, 0)` es el 8 
 - **Netlify Drop:** entrá a https://app.netlify.com/drop y arrastrá esta carpeta.
 - **Cloudflare Pages** o **GitHub Pages:** subí la carpeta como sitio estático.
 - Después, poné la dirección en la descripción del repositorio de GitHub y en el Discord.
+
+## App para celular: preparación de 4.5.0
+
+`web/app/` es una PWA sin framework para amigos, mensajes, clips recibidos y avisos opcionales. No ejecuta Minecraft ni ofrece Voice Chat. Está implementada en la rama; **su publicación y la validación en dispositivos reales siguen pendientes**. [Contrato, archivos, RPC y límites](../docs/implementacion/app-celular.md).
+
+Al publicar todo `web/`, la ruta es `https://<sitio>/app/`. El hosting debe aplicar **los archivos de la raíz** `web/_headers` y `web/_redirects`: cabeceras para `/app/*` y redirección exacta `/app → /app/` (301). Las reglas dentro de `web/app/` no reemplazan las de la raíz en ese despliegue. En otro hosting hay que reproducirlas; no modificar globalmente la portada ni la galería.
+
+Requiere HTTPS, la configuración de Supabase de la app y, para recibidos/push, la migración 0035 y `push-notify`. No usar `supabase db push` para aplicar selectivamente 0035: también intentaría otras pendientes. No agregar `net` a los esquemas expuestos. VAPID y el secreto del disparo se configuran en Supabase; no hay un secreto privado embebido en la web. El login usa códigos por email, sin necesitar URL de retorno OAuth.
+
+La sesión se conserva en IndexedDB, con alternativa en memoria si falla. **Cerrar sesión afecta solo a ese dispositivo**; salir del launcher no cierra el celular. El service worker mantiene la app disponible según su caché, pero los datos de nube y avisos requieren conexión. El push llega vacío y el worker obtiene contenido autenticado si corresponde; la app no añade el latido de presencia del escritorio.
+
+El informe final registra **83/83 pruebas locales** y sintaxis **30/30**. Tras recuperar ICU, la integración principal completó la prueba de navegador Chromium/Electron 44: worker activated, controlando la página, 33 archivos en caché, carga HTML/login sin red y siete capturas a 410×870, tema claro/español, backend falso y `console.json: []`. Artefactos: `%TEMP%/venus-codex-review-20261103/pwa-browser/`. Quedan pendientes instalación, teclado, áreas seguras, login y Web Push reales en Android/iPhone, además de las políticas del hosting publicado.
+
+El pie de `index.html` incluye **App para celular**, un enlace relativo a `app/`. Se muestra con el sitio principal después de la cuenta regresiva existente, o con `#previa` al revisarlo localmente. Publicá `app/` junto con el sitio para que funcione; este cambio local no demuestra que ya esté desplegado. [Estado de integración](../docs/estado-4.5.0.md).

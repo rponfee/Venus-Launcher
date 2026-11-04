@@ -241,3 +241,34 @@ test('escenas: la de cerrar no se pone si queda otro juego abierto', () => {
   assert.equal(logic.sceneFor('open', { sceneOnOpen: '' }), null);
   assert.equal(logic.sceneFor('otro', cfg), null);
 });
+
+
+test('cerrar antes de Hello termina la conexion y descarta mensajes tardios', async () => {
+  let socket;
+  class Silent {
+    constructor() { socket = this; }
+    close() {}
+    send() { assert.fail('un cliente cerrado no debe identificarse'); }
+  }
+  const c = new ObsClient({ WebSocketImpl: Silent });
+  const pending = c.connect();
+  c.close();
+  await assert.rejects(pending, { code: 'closed' });
+  socket.onmessage({ data: JSON.stringify({ op: OP.Hello, d: {} }) });
+  socket.onmessage({ data: JSON.stringify({ op: OP.Identified, d: {} }) });
+  assert.equal(c.identified, false);
+});
+
+test('si el socket se cierra al enviar Identify, connect rechaza', async () => {
+  let socket;
+  class Closing {
+    constructor() { socket = this; }
+    close() {}
+    send() { throw new Error('socket cerrado'); }
+  }
+  const c = new ObsClient({ WebSocketImpl: Closing });
+  const pending = c.connect();
+  socket.onmessage({ data: JSON.stringify({ op: OP.Hello, d: {} }) });
+  await assert.rejects(pending, { code: 'refused' });
+  c.close();
+});

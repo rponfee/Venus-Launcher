@@ -21,6 +21,7 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
   let hasMore = false;
   let live = false;
   let destroyed = false;
+  let sending = false;
   let unknownAuthor = false;
   const box = h('div', { class: 'cm-msgs', role: 'log', 'aria-live': 'polite', 'aria-label': C('chatLog', { name: channel.name }), tabindex: '0' });
   const older = h('button', { class: 'btn sm ghost cm-older', type: 'button', hidden: true }, icon('history'), C('olderMessages'));
@@ -130,15 +131,20 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
   });
 
   async function submit() {
-    const check = validateMessage(input.value);
+    if (destroyed || sending || isMuted(community.mutedUntil) || !community.myRole) return;
+    const draft = input.value;
+    const check = validateMessage(draft);
     if (!check.ok) {
       if (input.value.trim()) fail(C('actionError'), C(`err_${check.error}`));
       return;
     }
+    sending = true;
     const done = setBusy(send);
     try {
       const m = await b.rpc('community_send', { p_channel: channel.id, p_body: check.value });
-      input.value = '';
+      if (destroyed) return;
+      // Mientras llega la respuesta se puede escribir el siguiente mensaje: no borrar ese borrador.
+      if (input.value === draft) input.value = '';
       resize();
       if (m?.id) {
         remember([m]);
@@ -146,10 +152,14 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
         draw({ keepBottom: true });
       }
     } catch (err) {
-      fail(C('sendError'), errText(err));
+      if (!destroyed) fail(C('sendError'), errText(err));
     } finally {
       done();
-      input.focus();
+      sending = false;
+      if (!destroyed) {
+        drawMute();
+        if (document.activeElement === send && !input.disabled) input.focus();
+      }
     }
   }
   send.addEventListener('click', submit);
@@ -171,8 +181,8 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
   function drawMute() {
     const muted = isMuted(community.mutedUntil);
     banner.hidden = !muted;
-    input.disabled = muted;
-    send.disabled = muted;
+    input.disabled = muted || !community.myRole;
+    send.disabled = input.disabled || sending;
     if (muted) mount(banner, icon('volumeX'), h('span', {}, C('mutedUntil', { date: `${fmtDate(Date.parse(community.mutedUntil))} ${fmtTime(Date.parse(community.mutedUntil))}` })));
   }
 
@@ -188,11 +198,13 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
 
   const stop = b.watchChannel(channel.id, {
     onStatus: (status) => {
+      if (destroyed) return;
       const was = live;
       live = status === 'SUBSCRIBED';
       if (live && !was) loadLatest(); // lo que llegó mientras no estaba conectado
     },
     onRow: (row) => {
+      if (destroyed) return;
       const m = messageFromRow(row, { people, isBlocked: b.isBlocked });
       if (!m) return;
       if (!m.author) unknownAuthor = true;

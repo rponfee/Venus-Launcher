@@ -397,4 +397,7 @@ export default {
   deletedText: "Je kunt de wereld terughalen uit de prullenbak.",
   deletedWithBackup: "Er is eerst een back-up opgeslagen.",
   deleteFailed: "De wereld kon niet worden verwijderd",
+  autoBackup: "Automatisch",
+  autoBackupHint: "Door de launcher zelf gemaakt. Wordt verwijderd zodra er nieuwere back-ups zijn; handmatige back-ups worden nooit vanzelf verwijderd.",
+  autoBackupsSetup: "Automatische back-ups",
 };

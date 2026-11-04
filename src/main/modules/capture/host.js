@@ -4,6 +4,8 @@
 // de getDisplayMedia, asi no toca los de la ventana principal (Voice Chat). La ventana elegida para capturar se
 // decide aca (fuente de desktopCapturer); la pagina nunca elige otra.
 const path = require('path');
+const { isAppPage, isPermissionRequester } = require('../../core/permissions');
+const RECORDER_FILE = path.join(__dirname, '..', '..', '..', 'renderer', 'recorder.html');
 const { EventEmitter } = require('events');
 
 const PARTITION = 'venus-capture';
@@ -38,9 +40,10 @@ class RecorderHost extends EventEmitter {
     if (!this.sessionReady) {
       this.sessionReady = true;
       const allowed = new Set(['media', 'display-capture']);
-      ses.setPermissionRequestHandler((wc, permission, cb) => cb(allowed.has(permission)));
-      ses.setPermissionCheckHandler((wc, permission) => allowed.has(permission));
+      ses.setPermissionRequestHandler((wc, permission, cb, details) => cb(allowed.has(permission) && isPermissionRequester(wc, details, RECORDER_FILE)));
+      ses.setPermissionCheckHandler((wc, permission, _origin, details) => allowed.has(permission) && isPermissionRequester(wc, details, RECORDER_FILE));
       ses.setDisplayMediaRequestHandler((request, callback) => {
+        if (!isAppPage(request.frame?.url, RECORDER_FILE) || request.frame !== this.win?.webContents.mainFrame) return callback({});
         const cur = this.current;
         try {
           if (!cur?.source) return callback({});

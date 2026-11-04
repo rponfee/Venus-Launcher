@@ -165,4 +165,5 @@ export default {
   saveToLibraryFailed: '无法将皮肤保存到你的皮肤库',
   reasonCatalogDamaged: '此皮肤文件缺失或已损坏。请重新安装 Venus Launcher 以恢复。',
   exploreCatalog: '浏览目录',
+  venusCape: "Venus 披风",
 };

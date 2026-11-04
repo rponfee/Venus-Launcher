@@ -212,16 +212,23 @@ function describe(manifest, { existingInstances = [], existingServers = [] } = {
   return { instances, servers };
 }
 
-// Bytes que ocupa lo elegido, con los mismos criterios que al escribirlo
-function neededBytes(manifest, options) {
-  let total = 0;
+// Bytes de las entradas validadas que se extraerán, incluidos metadatos y ajustes. Los contadores del manifiesto
+// son informativos: no alcanzan para comprobar el espacio disponible.
+function neededBytes(manifest, options, list) {
+  const areas = new Map();
   for (const i of manifest.instances) {
-    if (options.instances) total += i.content.bytes;
-    if (options.worlds) total += i.worlds.reduce((a, w) => a + w.bytes, 0);
-    if (options.media) total += i.media.bytes;
+    const selected = new Set();
+    if (options.instances && i.content.files > 0) selected.add('files');
+    if (options.worlds && i.worlds.length > 0) selected.add('saves');
+    if (options.media && i.media.files > 0) selected.add('media');
+    if (selected.size) selected.add('meta');
+    areas.set(`instance/${i.key}`, selected);
   }
-  if (options.servers) total += manifest.servers.reduce((a, s) => a + s.content.bytes, 0);
-  return total;
+  if (options.servers) for (const s of manifest.servers) areas.set(`server/${s.key}`, new Set(['meta', 'files']));
+  return list.reduce((total, { entry, info }) => {
+    const selected = info.area === 'settings' ? options.settings && manifest.settings : areas.get(`${info.kind}/${info.key}`)?.has(info.area);
+    return total + (selected ? entry.size : 0);
+  }, 0);
 }
 
 async function freeBytes(dir) {
@@ -246,7 +253,7 @@ async function importBackup(file, rawOptions, deps) {
   try {
     const { manifest, valid, entries } = await inspect(file, { tempDir: staging });
     const free = await freeBytes(paths.root());
-    const needed = neededBytes(manifest, options);
+    const needed = neededBytes(manifest, options, valid.list);
     if (free !== null && needed * SAFETY_MARGIN > free) throw Object.assign(new BackupError('noSpace'), { needed, free });
 
     const byKey = new Map();

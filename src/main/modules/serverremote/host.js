@@ -138,9 +138,16 @@ function createRemoteHost({ ip, port = 0, backend, strings = () => ({}), ttlMs =
     return c;
   }
 
+  // Un pedido puede esperar mientras cambia el código, se corta el acceso o vence la sesión.
+  function stillAuthorized(req, res) {
+    if (stopped || now() >= expiresAt) throw new sec.RemoteError('expired', 410);
+    return checkToken(req, res, sec.cleanIp(req.socket.remoteAddress));
+  }
+
   async function apiState(req, res) {
     const after = /^\d{1,12}$/.test(String(req.headers[AFTER_HEADER] ?? '')) ? Number(req.headers[AFTER_HEADER]) : 0;
     const snap = await backend.snapshot();
+    if (!stillAuthorized(req, res)) return;
     json(res, 200, {
       server: { name: snap.name, type: snap.typeName, version: snap.version, state: snap.state, busy: Boolean(snap.busy), startedAt: snap.startedAt || null },
       players: (snap.players || []).map((p) => ({ name: p.name, since: p.since || null })),
@@ -154,6 +161,7 @@ function createRemoteHost({ ip, port = 0, backend, strings = () => ({}), ttlMs =
   async function apiAction(req, res, client) {
     if (!/^application\/json(;|$)/i.test(String(req.headers['content-type'] ?? ''))) throw new sec.RemoteError('bad_type', 415);
     const parsed = sec.parseAction(await readBody(req, MAX_BODY));
+    if (!stillAuthorized(req, res)) return;
     await backend.action({ ...parsed, device: client.device });
     json(res, 200, { ok: true });
   }

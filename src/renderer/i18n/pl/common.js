@@ -173,4 +173,9 @@ export default {
   streamerOnText: "Kody, adresy, nazwy znajomych i wiadomości pozostają ukryte, dopóki go nie wyłączysz.",
   streamerOff: "Tryb streamera wyłączony",
   streamerSaveError: "Nie udało się zmienić trybu streamera",
+  messageSticker: "Naklejka",
+  messageGif: "GIF",
+  net_wikiTitle: "Minecraft Wiki",
+  net_wikiText: "Zezwala na żądania do minecraft.wiki z przepisów w nakładce, gdy o nie poprosisz.",
+  net_integrationsNote: "Powiadomienia serwera na Discordzie i synchronizację ustawień włącza się osobno w ich ustawieniach. Pozostają wyłączone, dopóki ich nie włączysz.",
 };

@@ -177,4 +177,5 @@ export default {
   saveToLibraryFailed: 'Не вдалося зберегти скін у бібліотеку',
   reasonCatalogDamaged: 'Файл цього скіна відсутній або пошкоджений. Перевстановіть Venus Launcher, щоб відновити його.',
   exploreCatalog: 'Відкрити каталог',
+  venusCape: "Плащ Venus",
 };

@@ -45,4 +45,9 @@ export default {
   resetMenu: "Resetten",
   done: "Klaar",
   menuSaveFailed: "Het menu kon niet worden opgeslagen",
+  compete: "Competitie",
+  clans: "Clans",
+  communities: "Community's",
+  seeds: "Seedviewer",
+  extensions: "Extensies",
 };

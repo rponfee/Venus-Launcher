@@ -1,6 +1,6 @@
 # Venus Points, invitaciones, logros, tienda y Venus Premium
 
-Puntos que se ganan con el premio diario, los logros y las invitaciones, y se gastan en cosméticos para el perfil (marcos, efectos del nombre, estilos de la insignia y títulos). Premium es tener un plan de Venus vigente: duplica lo que se gana y trae cosméticos incluidos.
+Puntos que se ganan con el premio diario, los logros y las invitaciones, y se gastan en cosméticos para el perfil (marcos, efectos del nombre, estilos de la insignia y títulos). Premium es tener un plan de Venus vigente: aplica los multiplicadores de cada regla y trae cosméticos incluidos. El premio de desafíos de 4.5.0 no se duplica.
 
 | Parte | Dónde |
 |---|---|
@@ -123,3 +123,29 @@ Con `VENUS_DEVSHOT` y sin empaquetar, `VENUS_REWARDS_FAKE=<escenario>` usa datos
 ## Venus Pass (3.1)
 
 Los premios en puntos del pase entran a `points_ledger` con `reason = 'pass'` (`ref` = temporada:nivel:pista) y una devolución los descuenta con `'pass_refund'`. Los regalos entre amigos usan `'gift_in'` y `'gift_out'`. La XP del pase se calcula a partir de este libro: ver [venus-pass.md](venus-pass.md).
+
+## Desafíos y capas en la rama 4.5.0
+
+Implementados en la rama, **sin publicar ni aplicar 0031/0034 en producción**. [Estado de integración](estado-4.5.0.md).
+
+### Desafíos entre amigos
+
+0031 agrega el motivo `challenge` al libro de puntos. Un desafío válido paga **25 Venus Points**, sin multiplicador Premium y sin XP del Venus Pass. El límite es de tres premios por semana, uno contra el mismo amigo (hasta 75 puntos por semana). Ambos participantes deben informar al menos diez minutos durante el plazo; los estados de empate, abandono y actividad insuficiente se detallan en [Competir](implementacion/competir.md).
+
+Las estadísticas provienen del launcher y mundos locales; no son una prueba independiente de lo jugado. El límite de premios se controla en el servidor. Toda migración posterior que reemplace `points_ledger_reason_check` debe conservar `challenge` y los motivos anteriores.
+
+### Capas de Venus
+
+Precios confirmados por el dueño para 4.5.0:
+
+| Capa | Venus Points / requisito |
+|---|---|
+| Amanecer | 1000 |
+| Nebulosa | 1500 |
+| Aurora | 1500 |
+| Magma | 2500 |
+| Órbita | Incluida solo con Premium |
+
+0034 agrega los ítems y `user_capes`; `cape_equip` valida compra o Premium y `badge_capes` entrega solo identificadores de texturas incluidas en el mod, hasta 100 UUID por consulta. Requiere Minecraft verificado y el mod Venus; no sustituye capas oficiales. No modifica los motivos contables ni `profiles.equipped`. [RPC, caché y límites](implementacion/capas.md).
+
+El build del mod terminó con cuatro JAR, según la integración principal. Eso no demuestra renderizado de capas/elytra en Minecraft; esa prueba sigue pendiente.

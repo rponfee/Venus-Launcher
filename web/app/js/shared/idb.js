@@ -8,20 +8,33 @@
   const OPEN_MS = 3000;
   const memory = new Map();
   let opening = null;
+  let unavailable = false;
 
   function open() {
-    if (!root.indexedDB) return Promise.resolve(null);
+    if (!root.indexedDB || unavailable) return Promise.resolve(null);
     if (opening) return opening;
     const attempt = new Promise((resolve) => {
       let req;
+      let timer;
+      let settled = false;
+      const finish = (db) => {
+        if (settled) {
+          db?.close(); // una apertura tardía no puede reemplazar la sesión en memoria
+          return;
+        }
+        settled = true;
+        clearTimeout(timer);
+        unavailable = !db; // hasta recargar: no mezclar datos persistidos viejos con la memoria
+        resolve(db);
+      };
       try {
         req = root.indexedDB.open(DB, 1);
       } catch {
-        resolve(null);
+        finish(null);
         return;
       }
       // Safari a veces no contesta nunca: la app no se puede quedar colgada esperando
-      const timer = setTimeout(() => resolve(null), OPEN_MS);
+      timer = setTimeout(() => finish(null), OPEN_MS);
       req.onupgradeneeded = () => req.result.createObjectStore(STORE);
       req.onsuccess = () => {
         clearTimeout(timer);
@@ -31,18 +44,12 @@
           db.close();
           opening = null;
         };
-        resolve(db);
+        finish(db);
       };
-      req.onerror = () => {
-        clearTimeout(timer);
-        resolve(null);
-      };
-      req.onblocked = () => {
-        clearTimeout(timer);
-        resolve(null);
-      };
+      req.onerror = () => finish(null);
+      req.onblocked = () => finish(null);
     }).then((db) => {
-      if (!db) opening = null; // la próxima vez se vuelve a probar
+      if (!db) opening = null;
       return db;
     });
     opening = attempt;

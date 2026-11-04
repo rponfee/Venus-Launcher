@@ -9,6 +9,7 @@ import { navigate } from '../../app.js';
 import { discordButton } from '../../community.js';
 import { sectionHead, card, toggleRow, note, iconList, arrowFocus, extLink, embedPanel } from './shared.js';
 import { isStreamer, setStreamer } from '../../features/streamer.js';
+import { NET_KEYS } from '../../features/netprefs.js';
 import { normalizeBreaks, EVERY_OPTIONS, LIMIT_OPTIONS } from '../tools/breaks.js';
 
 const AFTER_LAUNCH = [
@@ -376,7 +377,8 @@ export function renderPrivacy(body, ctx) {
   };
   const optional = card(
     { title: t('common.net_cardTitle'), iconName: 'wifi', sub: t('common.net_cardSub'), anchor: 'connections' },
-    ['autoUpdates', 'news', 'featuredServers', 'playerHeads'].map((key) =>
+    // La wiki tiene su propia tarjeta y ancla más abajo (overlaytools).
+    NET_KEYS.filter((key) => key !== 'wiki').map((key) =>
       toggleRow({ title: t(`common.net_${key}Title`), sub: t(`common.net_${key}Text`), checked: store.settings?.privacy?.[key] === true, onChange: setNet(key) })),
   );
 
@@ -402,6 +404,7 @@ export function renderPrivacy(body, ctx) {
     body,
     sectionHead('privacy', 'shieldCheck'),
     optional,
+    h('p', { class: 'cfg-text small muted' }, t('common.net_integrationsNote')),
     streamer,
     card(
       { title: t('settings.privActivityTitle'), iconName: 'activity', anchor: 'activity' },

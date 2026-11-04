@@ -15,7 +15,7 @@ const PROTOCOL = 'venus';
 // apunta a la copia temporal que se borra al cerrar) y solo si ningún otro programa ya tiene el protocolo, así no
 // le saca los links a una instalada. Las capturas (VENUS_DEVSHOT) nunca lo registran: pisarían el del launcher real.
 function registerProtocol(app) {
-  if (process.env.VENUS_DEVSHOT) return false;
+  if (process.env.VENUS_DEVSHOT || (process.env.VENUS_SMOKE_TEST === '1' && process.env.VENUS_DATA_DIR)) return false;
   try {
     const portable = process.env.PORTABLE_EXECUTABLE_FILE;
     if (portable) {

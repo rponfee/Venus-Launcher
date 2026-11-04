@@ -1,5 +1,5 @@
 -- 0033_clanes_comunidades.sql · Clanes (tag, perfil, ranking y logros propios) y comunidades con canales fijos de texto y voz.
--- Guía: docs/wip/clanes-comunidades-34.md. Se aplica después de 0027. No necesita 0031: sin sus tablas el ranking de clanes da
+-- Guía: docs/implementacion/clanes-comunidades.md. Se aplica después de 0027. No necesita 0031: sin sus tablas el ranking de clanes da
 -- cero y lo dice (available: false); las lee con SQL dinámico. Idempotente.
 --
 --   * Clanes: una cuenta en un solo clan (la clave de clan_members es user_id), 50 miembros y un clan creado por cuenta mientras
@@ -7,7 +7,8 @@
 --     solicitud que aprueba un oficial. Si se va el último, el clan se disuelve. El líder pasa el liderazgo antes de irse; si se
 --     borra su cuenta lo toma el oficial (o el miembro) más antiguo.
 --   * Ranking y logros del clan: se calculan al pedirlos con miembros, antigüedad y las horas de 0031 de quienes eligieron
---     compartir (ranking_prefs.share), sin baneados. Sin puntos ni dinero. Con menos de 2 miembros compartiendo las horas dan
+--     compartir con amigos (ranking_prefs.share) Y aportar al clan (clan_prefs.share_playtime, apagado de entrada), sin baneados.
+--     El permiso del clan es separado y no cambia el de amigos. Sin puntos ni dinero. Con menos de 2 miembros compartiendo las horas dan
 --     cero: Competir promete que los números de cada uno los ven solo sus amigos, y una suma de una sola persona los mostraría.
 --   * Comunidades: hasta 3 por cuenta y 500 miembros; dueño, moderador y miembro. Públicas (se buscan y se entra) o por código.
 --     Hasta 20 canales fijos. Expulsar deja afuera hasta que un moderador lo deshaga (community_bans). El silencio
@@ -122,6 +123,13 @@ language sql immutable set search_path = '' as $$
 $$;
 
 -- ---------- 2) Tablas ----------
+-- Permiso por cuenta para aportar horas a los totales públicos del clan: no se hereda de compartir con amigos.
+create table if not exists public.clan_prefs (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  share_playtime boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.clans (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 3 and 30),
@@ -261,7 +269,7 @@ create unique index if not exists group_reports_once on public.group_reports (re
 do $$
 declare t text;
 begin
-  foreach t in array array['clans', 'clan_members', 'clan_invites', 'clan_requests', 'communities', 'community_members', 'community_bans',
+  foreach t in array array['clan_prefs', 'clans', 'clan_members', 'clan_invites', 'clan_requests', 'communities', 'community_members', 'community_bans',
                            'community_mutes', 'community_channels', 'community_messages', 'group_reports'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from public, anon, authenticated', t);
@@ -350,6 +358,7 @@ begin
            coalesce(sum((select sum(w.minutes) from public.ranking_weekly w where w.user_id = m.user_id)), 0)::bigint
       from public.clan_members m
       join public.ranking_prefs p on p.user_id = m.user_id and p.share
+      join public.clan_prefs cp on cp.user_id = m.user_id and cp.share_playtime
      where m.clan_id = $1 and public.moderation_social_block(m.user_id) is distinct from 'user_banned'
   $q$ into v_sharing, v_week, v_total using p_clan, p_week;
   if v_sharing < 2 then
@@ -512,7 +521,18 @@ begin
   return private.clan_json(v_clan, me);
 end $$;
 
--- Lo mío: clan (o null), invitaciones que recibí y solicitudes que mandé.
+-- Permiso explícito, independiente del de amigos. Apagarlo también está permitido con una cuenta baneada.
+create or replace function public.clan_share_playtime(p_share boolean) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare me uuid := auth.uid();
+begin
+  if me is null then raise exception 'not_authenticated' using errcode = '42501'; end if;
+  insert into public.clan_prefs (user_id, share_playtime) values (me, coalesce(p_share, false))
+  on conflict (user_id) do update set share_playtime = excluded.share_playtime, updated_at = now();
+  return jsonb_build_object('sharePlaytime', coalesce(p_share, false));
+end $$;
+
+-- Lo mío: permiso para aportar horas, clan (o null), invitaciones recibidas y solicitudes enviadas.
 create or replace function public.clan_me() returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -522,6 +542,7 @@ begin
   if me is null then raise exception 'not_authenticated' using errcode = '42501'; end if;
   select m.clan_id into v_clan from public.clan_members m where m.user_id = me;
   return jsonb_build_object(
+    'sharePlaytime', coalesce((select p.share_playtime from public.clan_prefs p where p.user_id = me), false),
     'clan', case when v_clan is not null then private.clan_json(v_clan, me) end,
     'invites', (select coalesce(jsonb_agg(jsonb_build_object('clan', private.clan_card(i.clan_id), 'invitedBy', private.group_person(i.invited_by), 'at', i.created_at) order by i.created_at desc), '[]'::jsonb)
                   from public.clan_invites i where i.user_id = me and i.created_at > now() - interval '7 days'),
@@ -574,6 +595,8 @@ declare
   me uuid := private.group_writer();
   v_clan uuid := private.clan_mine(me, array['leader', 'officer']);
 begin
+  perform 1 from public.clans c where c.id = v_clan for update;
+  if private.clan_mine(me, array['leader', 'officer']) is distinct from v_clan then raise exception 'forbidden' using errcode = '42501'; end if;
   if p_user is null or not private.are_friends(me, p_user) then raise exception 'not_friends' using errcode = '22023'; end if;
   if public.moderation_social_block(p_user) = 'user_banned' then raise exception 'target_banned' using errcode = '22023'; end if;
   if exists (select 1 from public.clan_members m where m.user_id = p_user) then raise exception 'target_in_clan' using errcode = '22023'; end if;
@@ -624,7 +647,8 @@ declare
   me uuid := private.group_me();
   v_open boolean;
 begin
-  select c.is_open into v_open from public.clans c where c.id = p_clan;
+  perform pg_advisory_xact_lock(hashtext('clan-user:' || me::text));
+  select c.is_open into v_open from public.clans c where c.id = p_clan for update;
   if not found or private.clan_leader_blocks(p_clan, me) then raise exception 'not_found' using errcode = '22023'; end if;
   if not v_open then raise exception 'not_open' using errcode = '22023'; end if;
   if exists (select 1 from public.clan_members m where m.user_id = me) then raise exception 'already_in_clan' using errcode = '22023'; end if;
@@ -734,10 +758,14 @@ declare
   v_clan uuid := private.clan_mine(me, array['leader']);
   v_target text := private.clan_role_of(v_clan, p_user);
 begin
+  -- Revisa los roles después de bloquear las dos pertenencias, en orden fijo.
+  perform 1 from public.clan_members m where m.clan_id = v_clan and m.user_id in (me, p_user) order by m.user_id for update;
+  if private.clan_mine(me, array['leader']) is distinct from v_clan then raise exception 'forbidden' using errcode = '42501'; end if;
+  v_target := private.clan_role_of(v_clan, p_user);
   if p_role not in ('officer', 'member') then raise exception 'bad_role' using errcode = '22023'; end if;
   if v_target is null then raise exception 'not_in_clan' using errcode = '22023'; end if;
   if v_target = 'leader' then raise exception 'forbidden' using errcode = '42501'; end if;
-  update public.clan_members m set role = p_role where m.user_id = p_user;
+  update public.clan_members m set role = p_role where m.user_id = p_user and m.clan_id = v_clan and m.role <> 'leader';
   return jsonb_build_object('ok', true);
 end $$;
 
@@ -749,11 +777,15 @@ declare
   v_clan uuid := private.clan_mine(me, array['leader']);
   v_target text := private.clan_role_of(v_clan, p_user);
 begin
+  -- Revisa los roles después de bloquear las dos pertenencias, en orden fijo.
+  perform 1 from public.clan_members m where m.clan_id = v_clan and m.user_id in (me, p_user) order by m.user_id for update;
+  if private.clan_mine(me, array['leader']) is distinct from v_clan then raise exception 'forbidden' using errcode = '42501'; end if;
+  v_target := private.clan_role_of(v_clan, p_user);
   if v_target is null then raise exception 'not_in_clan' using errcode = '22023'; end if;
   if p_user = me then raise exception 'forbidden' using errcode = '42501'; end if;
   if public.moderation_social_block(p_user) = 'user_banned' then raise exception 'target_banned' using errcode = '22023'; end if;
-  update public.clan_members m set role = 'officer' where m.user_id = me;
-  update public.clan_members m set role = 'leader' where m.user_id = p_user;
+  update public.clan_members m set role = 'officer' where m.user_id = me and m.clan_id = v_clan;
+  update public.clan_members m set role = 'leader' where m.user_id = p_user and m.clan_id = v_clan;
   return jsonb_build_object('ok', true);
 end $$;
 
@@ -774,6 +806,7 @@ begin
       select m.clan_id, count(*)::integer as sharing, case when count(*) >= 2 then coalesce(sum(w.minutes), 0) else 0 end::bigint as minutes
         from public.clan_members m
         join public.ranking_prefs p on p.user_id = m.user_id and p.share
+        join public.clan_prefs cp on cp.user_id = m.user_id and cp.share_playtime
         left join public.ranking_weekly w on w.user_id = m.user_id and w.week = $1
        where public.moderation_social_block(m.user_id) is distinct from 'user_banned'
        group by m.clan_id $s$
@@ -866,6 +899,8 @@ end $$;
 create or replace function private.community_add_member(p_community uuid, p_user uuid) returns void
 language plpgsql security definer set search_path = '' as $$
 begin
+  -- Comparte el candado de community_create para el tope por cuenta.
+  perform pg_advisory_xact_lock(hashtext('community-user:' || p_user::text));
   perform 1 from public.communities c where c.id = p_community for update;
   if not found or private.community_owner_blocks(p_community, p_user) then raise exception 'not_found' using errcode = '22023'; end if;
   if exists (select 1 from public.community_bans b where b.community_id = p_community and b.user_id = p_user) then raise exception 'banned_here' using errcode = '22023'; end if;
@@ -994,6 +1029,9 @@ create or replace function public.community_transfer(p_community uuid, p_user uu
 language plpgsql security definer set search_path = '' as $$
 declare me uuid := private.group_me();
 begin
+  perform pg_advisory_xact_lock(hashtext('community-user:' || p_user::text));
+  perform 1 from public.communities c where c.id = p_community for update;
+  perform 1 from public.community_members m where m.community_id = p_community and m.user_id in (me, p_user) order by m.user_id for update;
   perform private.community_need(p_community, me, array['owner']);
   if private.community_role(p_community, p_user) is null then raise exception 'not_member_target' using errcode = '22023'; end if;
   if p_user = me then raise exception 'forbidden' using errcode = '42501'; end if;
@@ -1138,6 +1176,8 @@ declare
   me uuid := private.group_me();
   v_target text;
 begin
+  perform 1 from public.communities c where c.id = p_community for update;
+  perform 1 from public.community_members m where m.community_id = p_community and m.user_id in (me, p_user) order by m.user_id for update;
   perform private.community_need(p_community, me, array['owner']);
   if p_role not in ('moderator', 'member') then raise exception 'bad_role' using errcode = '22023'; end if;
   v_target := private.community_role(p_community, p_user);
@@ -1245,6 +1285,7 @@ declare
 begin
   select * into ch from public.community_channels c where c.id = p_channel;
   if not found then raise exception 'not_found' using errcode = '22023'; end if;
+  perform 1 from public.communities c where c.id = ch.community_id for update;
   perform private.community_need(ch.community_id, me, array['owner', 'moderator']);
   if ch.kind = 'text' and (select count(*) from public.community_channels c where c.community_id = ch.community_id and c.kind = 'text') <= 1 then
     raise exception 'last_text_channel' using errcode = '22023';

@@ -29,6 +29,7 @@ export function openUpload(item) {
   let status = null; // de clipupload:status
   let uploading = null; // { jobId }
   let connecting = false;
+  let confirming = false;
   const titleIn = h('input', { class: 'input', type: 'text', maxlength: TITLE_MAX.youtube, value: defaultTitle(item), 'aria-label': C('uploadTitleLabel') });
   const descIn = h('textarea', { class: 'input cs-textarea', rows: 3, maxlength: DESC_MAX, 'aria-label': C('uploadDescLabel') });
   descIn.value = C('uploadDefaultDesc');
@@ -80,7 +81,7 @@ export function openUpload(item) {
             class: provider === p ? 'active' : '',
             'aria-pressed': String(provider === p),
             onclick: () => {
-              if (uploading) return;
+              if (uploading || connecting || confirming) return;
               provider = p;
               titleIn.maxLength = TITLE_MAX[p];
               draw();
@@ -111,8 +112,10 @@ export function openUpload(item) {
 
   // ---------- Directo ----------
   async function connect(btn) {
+    if (uploading || connecting || confirming) return;
     const done = setBusy(btn);
     connecting = true;
+    lock();
     try {
       toast('info', C('connectOpening'), C('connectOpeningText'), 6000);
       await api.invoke('clipupload:connect', provider);
@@ -123,6 +126,7 @@ export function openUpload(item) {
     } finally {
       connecting = false;
       done();
+      if (m.el.isConnected) draw();
     }
   }
 
@@ -145,6 +149,7 @@ export function openUpload(item) {
   }
 
   async function upload(btn) {
+    if (uploading || connecting || confirming) return;
     const title = titleIn.value.trim();
     if (provider === 'youtube' && !title) {
       titleIn.focus();
@@ -152,15 +157,27 @@ export function openUpload(item) {
       return;
     }
     const where = C(provider === 'youtube' ? `uploadNoticeYoutube_${privacy}` : 'uploadNoticeTiktok');
-    if (!(await confirmDialog(C('uploadConfirmTitle', { name: C(`provider_${provider}`) }), C('uploadConfirmText', { file: item.file, size: fmtBytes(item.size || 0), where }), { okText: C('uploadOk') }))) return;
+    const request = { provider, path: item.path, title, description: descIn.value.trim(), privacy };
+    confirming = true;
+    lock();
+    let confirmed;
+    try {
+      confirmed = await confirmDialog(C('uploadConfirmTitle', { name: C(`provider_${provider}`) }), C('uploadConfirmText', { file: item.file, size: fmtBytes(item.size || 0), where }), { okText: C('uploadOk') });
+    } finally {
+      confirming = false;
+      lock();
+    }
+    if (!confirmed || !m.el.isConnected) return;
     const jobId = `up${Date.now().toString(36)}${++seq}`;
     uploading = { jobId };
+    lock();
     const done = setBusy(btn);
     progress.hidden = false;
     bar.firstChild.style.width = '0%';
     barText.textContent = '';
     try {
-      const res = await api.invoke('clipupload:upload', { jobId, provider, path: item.path, title, description: descIn.value.trim(), privacy });
+      const res = await api.invoke('clipupload:upload', { jobId, ...request });
+      uploading = null;
       m.close();
       showDone(res);
     } catch (err) {
@@ -173,6 +190,7 @@ export function openUpload(item) {
       uploading = null;
       progress.hidden = true;
       done();
+      if (m.el.isConnected) draw();
     }
   }
 
@@ -210,10 +228,17 @@ export function openUpload(item) {
     );
   }
 
+  function lock() {
+    for (const el of m.el.querySelector('.cs-up').querySelectorAll('button, input, textarea, select')) {
+      if (el !== cancelBtn) el.disabled = Boolean(uploading || connecting || confirming);
+    }
+  }
+
   function draw() {
     drawTabs();
     drawManual();
     drawDirect();
+    lock();
   }
 
   async function loadStatus() {

@@ -4,7 +4,7 @@
 
 Mientras se juega, Venus muestra encima del juego el **Voice Chat** (quién está en la sala, quién habla, quién está silenciado o sin sonido), los **mensajes** que llegan, **avisos** (del launcher, de amigos y grupos, de los servidores locales, logros y Venus Points), **capturas, clips y grabación** y **la canción que suena**. Cada widget se activa o no, se ubica en una grilla de 3×3 o en una posición libre arrastrándolo, y tiene tamaño, opacidad y tema propios.
 
-**Cómo funciona:** no toca el juego. Es una ventana de Electron transparente, siempre encima (nivel `screen-saver`), sin foco, fuera de la barra de tareas y de Alt+Tab, y que deja pasar los clics (`setIgnoreMouseEvents(true, { forward: true })`), puesta exactamente sobre el área de juego de la ventana de Minecraft. Por eso anda con **cualquier versión y loader** (vanilla, Fabric, Forge, NeoForge, Quilt, OptiFine, versiones viejas con LWJGL 2...).
+**Cómo funciona:** no toca el juego. Es una ventana de Electron transparente, siempre encima (nivel `screen-saver`), sin foco en su modo habitual, fuera de la barra de tareas y de Alt+Tab, y que deja pasar los clics (`setIgnoreMouseEvents(true, { forward: true })`), puesta exactamente sobre el área de juego de la ventana de Minecraft. Por eso anda con **cualquier versión y loader** (vanilla, Fabric, Forge, NeoForge, Quilt, OptiFine, versiones viejas con LWJGL 2...).
 
 **Límite conocido: pantalla completa exclusiva.** Si el juego toma la pantalla en modo exclusivo, Windows no compone ninguna otra ventana encima y el overlay no se ve. En Windows 10/11 la "pantalla completa" de Minecraft muchas veces pasa por la composición del escritorio (optimizaciones de pantalla completa) y el overlay sí se ve, pero no está garantizado. Lo seguro es jugar en ventana (maximizada) o en ventana sin bordes (por ejemplo con el mod Borderless Mining). La tarjeta de Ajustes lo dice siempre como consejo y, si el ayudante detecta que el área de juego ocupa todo el monitor, muestra un aviso con F11.
 
@@ -137,3 +137,23 @@ node --test "src/main/modules/overlay/test/"        # 32 pruebas: config, evento
 ```
 
 Con capturas de desarrollo (`scripts/devshot.js`), `VENUS_OVERLAY_FAKE_PID=<pid>` (solo con `VENUS_DEVSHOT` y sin empaquetar) trata la ventana de ese proceso como si fuera el juego: sirve con cualquier ventana propia (por ejemplo un formulario de PowerShell). Desde la consola de la interfaz: `venus.invoke('overlay:test', [...])`, `venus.invoke('overlay:edit', true)`.
+
+## 8. Paneles, contadores y marcadores de 4.5.0
+
+Implementados en la rama, sin publicar. [Contrato completo](implementacion/overlay.md): conserva las tablas de comandos del puente, eventos, canales, atajos, archivos y límites.
+
+| Función | Comportamiento y límite |
+|---|---|
+| Paneles interactivos | Recetas y asistente activan temporalmente interacción y foco; cerrar restaura el modo del overlay. Los atajos se configuran mediante `overlay:setPanelShortcut`; la vuelta de foco con Minecraft real sigue pendiente. |
+| Recetas | Lectura local de JSON del juego desde 1.12 y hasta 500 JAR de mods; sin datapacks del mundo, JAR anidados ni recetas creadas por código. Las condiciones del mod no se evalúan. |
+| Wiki | `privacy.wiki`, apagado por defecto y visible en el aviso de conexiones. El principal construye una dirección de Minecraft Wiki a partir del ítem; abre el navegador. |
+| Contadores | Las estadísticas de mundos locales se revisan cada 5 s y cambian cuando el juego guarda. En multijugador no hay archivo de bloques; las muertes dependen de los mensajes reconocidos del registro. |
+| Marcadores | `venus-markers.json` del mundo: hasta 1000; código compartible de hasta 200 y 12 000 caracteres. Datos validados y nombres presentados como texto. |
+| Asistente | Mismos permisos, plan, conversación y confirmaciones del launcher. `features/overlaytools.js` transmite eventos a través de `overlay:assistantEvent`; no habilita modificar una instancia en ejecución. |
+| FPS | El mod escribe `venus/perf.json` cada 2 s en una partida sin pausa; a los 10 s el dato vence. Ausencia o vencimiento se muestran sin inventar una medición. |
+
+Stickers y GIF usan un texto de aviso específico en vez de su URL. La compilación de cuatro variantes del mod fue informada como exitosa, pero no valida el overlay ni los FPS en Minecraft. Estado general y comprobaciones externas: [estado-4.5.0.md](estado-4.5.0.md).
+
+### Evidencia de integración del 3 de noviembre de 2026
+
+Capturas ES/EN en ventana oculta con JAR de recetas sintético propio y asistente falso. La integración principal revisó recetas ES y asistente EN y los informó correctos: consola principal vacía, sin log adicional de errores del overlay. Artefactos: `shots-overlay-es/` y `shots-overlay-en/`, bajo `%TEMP%/venus-codex-review-20261103/`. No valida superposición ni foco con Minecraft real. [Detalle permanente](implementacion/overlay.md).

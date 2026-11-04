@@ -10,7 +10,7 @@ import { h, icon, modal, switchEl, setPlayerHeads, fail } from '../ui.js';
 import { store } from '../store.js';
 import { t, loadNs } from '../i18n.js';
 
-export const NET_KEYS = ['autoUpdates', 'news', 'featuredServers', 'playerHeads'];
+export const NET_KEYS = ['autoUpdates', 'news', 'featuredServers', 'playerHeads', 'wiki'];
 const N = (key, vars) => t(`common.net_${key}`, vars);
 
 export const netAllowed = (key) => store.settings?.privacy?.[key] === true;
@@ -58,6 +58,7 @@ async function ask() {
     h('p', {}, N('askIntro')),
     NET_KEYS.map((k) => row(k, choice[k], (on) => { choice[k] = on; })),
     row('discord', discord, (on) => { discord = on; }),
+    h('p', { class: 'muted small' }, N('integrationsNote')),
     h('p', { class: 'muted small' }, N('askFoot')));
   let dialog;
   const ok = h('button', { type: 'button', class: 'btn primary' }, N('askSave'));

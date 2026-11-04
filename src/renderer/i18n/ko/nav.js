@@ -45,4 +45,9 @@ export default {
   resetMenu: "초기화",
   done: "완료",
   menuSaveFailed: "메뉴를 저장하지 못했어요",
+  compete: "경쟁",
+  clans: "클랜",
+  communities: "커뮤니티",
+  seeds: "시드 뷰어",
+  extensions: "확장 프로그램",
 };

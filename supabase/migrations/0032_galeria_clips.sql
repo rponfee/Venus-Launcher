@@ -1,5 +1,5 @@
 -- 0032_galeria_clips.sql · Venus 3.4 · Galería pública de clips con likes.
--- Guía: docs/wip/clips-33.md. Se aplica después de 0005, 0012, 0014 y 0027 (usa shared_media, moderation_social_block,
+-- Guía: docs/implementacion/clips.md. Se aplica después de 0005, 0012, 0014 y 0027 (usa shared_media, moderation_social_block,
 -- admin_guard, admin_log y friendships). Idempotente.
 --
 --   * Publicar un clip que el usuario ya compartió (shared_media): título de hasta 80 caracteres, solo el dueño y hasta 5 por
@@ -33,7 +33,7 @@ create table if not exists public.clip_gallery (
 create index if not exists clip_gallery_recent on public.clip_gallery (created_at desc) where not hidden;
 create index if not exists clip_gallery_owner on public.clip_gallery (owner, created_at desc);
 alter table public.clip_gallery enable row level security;
-revoke all on public.clip_gallery from anon, authenticated;
+revoke all on public.clip_gallery from public, anon, authenticated;
 
 create table if not exists public.clip_gallery_likes (
   clip_id uuid not null references public.clip_gallery (id) on delete cascade,
@@ -44,7 +44,7 @@ create table if not exists public.clip_gallery_likes (
 create index if not exists clip_gallery_likes_week on public.clip_gallery_likes (clip_id, created_at desc);
 create index if not exists clip_gallery_likes_user on public.clip_gallery_likes (user_id, created_at desc);
 alter table public.clip_gallery_likes enable row level security;
-revoke all on public.clip_gallery_likes from anon, authenticated;
+revoke all on public.clip_gallery_likes from public, anon, authenticated;
 
 -- La denuncia guarda el título y el dueño: si el clip se borra, queda de qué se trataba
 create table if not exists public.clip_gallery_reports (
@@ -64,7 +64,7 @@ create unique index if not exists clip_gallery_reports_open on public.clip_galle
 create index if not exists clip_gallery_reports_reporter on public.clip_gallery_reports (reporter, created_at desc);
 create index if not exists clip_gallery_reports_status on public.clip_gallery_reports (status, created_at desc);
 alter table public.clip_gallery_reports enable row level security;
-revoke all on public.clip_gallery_reports from anon, authenticated;
+revoke all on public.clip_gallery_reports from public, anon, authenticated;
 
 -- ---------- Ayudantes ----------
 -- Link firmado del Storage para esa ruta exacta del bucket clips (<dueño>/<uuid>.<extensión>)
@@ -152,7 +152,7 @@ declare
   me uuid := private.gallery_me();
   v_hidden boolean;
 begin
-  select g.hidden into v_hidden from public.clip_gallery g where g.id = p_id and g.owner = me;
+  select g.hidden into v_hidden from public.clip_gallery g where g.id = p_id and g.owner = me for update;
   if not found then return false; end if;
   if v_hidden then raise exception 'hidden_by_admin' using errcode = '22023'; end if;
   update public.clip_gallery_reports r set status = 'closed', closed_at = now() where r.clip_id = p_id and r.status = 'open';
@@ -211,8 +211,8 @@ declare me uuid := private.gallery_me();
 begin
   return coalesce((select jsonb_agg(jsonb_build_object(
       'id', g.id, 'mediaId', g.media_id, 'title', g.title, 'thumb', g.thumb, 'at', g.created_at, 'expiresAt', g.expires_at,
-      'url', case when g.expires_at > now() then m.url end,
-      'expired', g.expires_at <= now() or m.expires_at <= now() or m.url is null,
+      'url', case when g.expires_at > now() and m.expires_at > now() and private.gallery_url_ok(m.url, m.path) then m.url end,
+      'expired', g.expires_at <= now() or m.expires_at <= now() or m.url is null or not private.gallery_url_ok(m.url, m.path),
       'hidden', g.hidden, 'hiddenReason', g.hidden_reason,
       'likes', (select count(*) from public.clip_gallery_likes l where l.clip_id = g.id),
       'likesWeek', (select count(*) from public.clip_gallery_likes l where l.clip_id = g.id and l.created_at > now() - interval '7 days'))
@@ -294,8 +294,10 @@ declare
 begin
   perform public.admin_guard();
   select coalesce(jsonb_agg(jsonb_build_object(
-      'id', g.id, 'title', g.title, 'thumb', g.thumb, 'url', m.url, 'at', g.created_at, 'expiresAt', g.expires_at,
-      'expired', g.expires_at <= now() or m.expires_at <= now() or m.url is null,
+      'id', g.id, 'title', g.title, 'thumb', g.thumb,
+      'url', case when g.expires_at > now() and m.expires_at > now() and private.gallery_url_ok(m.url, m.path) then m.url end,
+      'at', g.created_at, 'expiresAt', g.expires_at,
+      'expired', g.expires_at <= now() or m.expires_at <= now() or m.url is null or not private.gallery_url_ok(m.url, m.path),
       'hidden', g.hidden, 'hiddenReason', g.hidden_reason,
       'likes', (select count(*) from public.clip_gallery_likes l where l.clip_id = g.id),
       'author', private.gallery_author(g.owner),

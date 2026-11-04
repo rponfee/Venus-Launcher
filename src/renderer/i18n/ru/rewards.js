@@ -268,4 +268,13 @@ export default {
   item_frame_orbit: "Рамка «Орбита»",
   item_frame_halloween: "Хэллоуинская рамка",
   item_frame_xmas: "Рождественская рамка",
+  kind_cape: "Плащи в игре",
+  item_cape_dawn: "Плащ рассвета",
+  item_cape_nebula: "Плащ туманности",
+  item_cape_aurora: "Плащ северного сияния",
+  item_cape_magma: "Магмовый плащ",
+  item_cape_orbit: "Орбитальный плащ",
+  hist_challenge: "Приз за испытание",
+  hist_pass: "Награда Venus Pass",
+  hist_pass_refund: "Возврат за Venus Pass",
 };

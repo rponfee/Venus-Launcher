@@ -326,4 +326,7 @@ export default {
   tasksClearDone: "완료 항목 삭제",
   tasksClearDoneText_other: "완료한 할 일 {count}개가 삭제돼요.",
   tasksFull: "할 일은 최대 100개예요. 하나를 지우고 추가하세요.",
+  copyLink: "링크 복사",
+  copyLinkPack: "모드팩 링크를 복사했습니다",
+  copyLinkLocal: "링크를 복사했습니다. 이 PC에서만 작동합니다",
 };

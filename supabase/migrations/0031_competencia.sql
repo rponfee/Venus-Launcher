@@ -1,5 +1,5 @@
 -- 0031_competencia.sql · Competir: rankings entre amigos, desafíos con Venus Points y calendario de eventos.
--- Guía: docs/wip/competir-33.md. Se aplica después de 0027 (motivos de points_ledger, private.are_friends, admin_guard). Idempotente.
+-- Guía: docs/implementacion/competir.md. Se aplica después de 0027 (motivos de points_ledger, private.are_friends, admin_guard). Idempotente.
 --
 --   * Rankings: lo informa cada PC (ranking_report), así que sirve para jugar entre amigos, no como competencia oficial.
 --     Semanas de lunes a domingo (UTC). Compartir es opcional (ranking_prefs.share, apagado de entrada): sin compartir no
@@ -577,6 +577,8 @@ declare
 begin
   if me is null then raise exception 'not_authenticated' using errcode = '42501'; end if;
   if public.moderation_social_block(me) = 'user_banned' then raise exception 'user_banned' using errcode = '42501'; end if;
+  -- El tope por cuenta también se comparte entre eventos distintos.
+  perform pg_advisory_xact_lock(hashtext('event-signups:' || me::text));
   select * into e from public.calendar_events x where x.id = p_id for update; -- el cupo se revisa de a uno
   if not found then raise exception 'not_found' using errcode = '22023'; end if;
   if exists (select 1 from public.calendar_signups s where s.event_id = p_id and s.user_id = me) then return private.event_json(e, me); end if;

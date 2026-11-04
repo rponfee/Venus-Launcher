@@ -173,4 +173,9 @@ export default {
   streamerOnText: "Коды, адреса, имена друзей и сообщения скрыты, пока вы его не выключите.",
   streamerOff: "Режим стримера выключен",
   streamerSaveError: "Не удалось изменить режим стримера",
+  messageSticker: "Стикер",
+  messageGif: "GIF",
+  net_wikiTitle: "Вики Minecraft",
+  net_wikiText: "Разрешает обращения к minecraft.wiki из рецептов оверлея по вашему запросу.",
+  net_integrationsNote: "Уведомления серверов в Discord и синхронизация настроек включаются отдельно в своих настройках. По умолчанию они выключены.",
 };

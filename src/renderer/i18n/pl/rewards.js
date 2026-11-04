@@ -276,4 +276,13 @@ export default {
   item_frame_orbit: "Ramka Orbita",
   item_frame_halloween: "Ramka Halloween",
   item_frame_xmas: "Świąteczna ramka",
+  kind_cape: "Peleryny w grze",
+  item_cape_dawn: "Peleryna Świt",
+  item_cape_nebula: "Peleryna Mgławica",
+  item_cape_aurora: "Peleryna Zorza",
+  item_cape_magma: "Peleryna Magma",
+  item_cape_orbit: "Peleryna Orbita",
+  hist_challenge: "Nagroda za wyzwanie",
+  hist_pass: "Nagroda z Venus Pass",
+  hist_pass_refund: "Zwrot za Venus Pass",
 };

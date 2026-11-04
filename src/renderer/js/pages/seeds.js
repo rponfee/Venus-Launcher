@@ -76,11 +76,13 @@ export default {
     // ---------- Semilla ----------
     let seedTimer = 0;
     function readSeed() {
+      clearTimeout(seedTimer);
       st.text = seedInput.value;
       session.text = st.text;
       const parsed = parseSeed(st.text);
       seedInput.setAttribute('aria-invalid', parsed ? 'false' : 'true');
       if (!parsed) {
+        st.parsed = null;
         seedInfo.textContent = T('seedEmpty');
         return;
       }
@@ -117,6 +119,7 @@ export default {
         class: 'btn ghost',
         type: 'button',
         onclick: () => {
+          readSeed();
           if (st.parsed !== null) copyText(String(st.parsed), T('seedCopied'));
         },
       },
@@ -328,6 +331,7 @@ export default {
     // El launcher no puede crear un mundo de un jugador con semilla: se pega en el juego. El asistente de servidores tiene su
     // propio campo, pero no se puede abrir con la semilla ya puesta.
     function openUseSeed() {
+      readSeed();
       if (st.parsed === null) return;
       const v = versionByKey(st.version);
       const seed = String(st.parsed);
@@ -397,6 +401,8 @@ export default {
     // ---------- Armado ----------
     function applyWorld() {
       if (st.parsed === null) return;
+      // El identificador de una estructura puede repetirse en otra semilla con coordenadas distintas.
+      lastNear = null;
       map.setWorld({ seed: st.parsed, version: st.version, dim: st.dim, y: st.y });
     }
 

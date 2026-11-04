@@ -1,5 +1,5 @@
 -- 0029_resenas_servidores.sql · Venus 3.2 · Reseñas y votos de los servidores destacados.
--- Guía: docs/wip/servidores-32.md. Depende de 0006 (featured_servers), 0012 y 0014 (moderación y admin) y 0020 (perfiles).
+-- Guía: docs/implementacion/servidores.md. Depende de 0006 (featured_servers), 0012 y 0014 (moderación y admin) y 0020 (perfiles).
 -- Idempotente.
 --
 --   * Reseñas (featured_server_reviews): una por usuario y servidor, de 1 a 5 estrellas y hasta 300 caracteres. La edita
@@ -29,7 +29,7 @@ create index if not exists featured_server_reviews_listing on public.featured_se
 create index if not exists featured_server_reviews_user on public.featured_server_reviews (user_id, created_at desc);
 create index if not exists featured_server_reviews_hidden on public.featured_server_reviews (created_at desc) where hidden;
 alter table public.featured_server_reviews enable row level security;
-revoke all on public.featured_server_reviews from anon, authenticated;
+revoke all on public.featured_server_reviews from public, anon, authenticated;
 
 create table if not exists public.featured_server_votes (
   server_id uuid not null references public.featured_servers (id) on delete cascade,
@@ -40,7 +40,7 @@ create table if not exists public.featured_server_votes (
 );
 create index if not exists featured_server_votes_user on public.featured_server_votes (user_id);
 alter table public.featured_server_votes enable row level security;
-revoke all on public.featured_server_votes from anon, authenticated;
+revoke all on public.featured_server_votes from public, anon, authenticated;
 
 create table if not exists public.featured_review_reports (
   id uuid primary key default gen_random_uuid(),
@@ -57,7 +57,7 @@ create table if not exists public.featured_review_reports (
 create index if not exists featured_review_reports_open on public.featured_review_reports (created_at desc) where status = 'open';
 create index if not exists featured_review_reports_reporter on public.featured_review_reports (reporter, created_at desc);
 alter table public.featured_review_reports enable row level security;
-revoke all on public.featured_review_reports from anon, authenticated;
+revoke all on public.featured_review_reports from public, anon, authenticated;
 
 -- ---------- Auxiliares (fuera de la API) ----------
 -- Quién puede opinar: una cuenta con sesión, que no sea anónima y sin baneo (ni silencio, salvo p_allow_muted).

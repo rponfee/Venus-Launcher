@@ -45,4 +45,9 @@ export default {
   resetMenu: "Sıfırla",
   done: "Tamam",
   menuSaveFailed: "Menü kaydedilemedi",
+  compete: "Yarış",
+  clans: "Klanlar",
+  communities: "Topluluklar",
+  seeds: "Tohum görüntüleyici",
+  extensions: "Uzantılar",
 };

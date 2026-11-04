@@ -1,0 +1,23 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const paths = require('../paths');
+test('duplicar conserva los sets sin heredar el Deshacer de la original', async (t) => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'venus-duplicate-'));
+  t.after(() => fs.rm(tmp, { recursive: true, force: true }));
+  paths.setRoot(tmp);
+  const instances = require('../instances');
+  const source = await instances.create({ name: 'Original', mcVersion: '1.21.1' });
+  const data = { version: 1, sets: [{ id: 'demo', name: 'Demo', entries: [] }], lastApply: { snapshotId: 'previous', name: 'Demo' } };
+  const original = path.join(source.dir, '.venus', 'modsets.json');
+  await fs.mkdir(path.dirname(original), { recursive: true });
+  await fs.writeFile(original, JSON.stringify(data));
+  const copy = await instances.duplicate(source.id, { name: 'Copy', worlds: false });
+  const saved = JSON.parse(await fs.readFile(path.join(copy.dir, '.venus', 'modsets.json'), 'utf8'));
+  assert.deepEqual(saved.sets, data.sets);
+  assert.equal(saved.lastApply, null);
+  assert.deepEqual(JSON.parse(await fs.readFile(original, 'utf8')), data);
+});

@@ -1,4 +1,4 @@
-// Clanes y comunidades (docs/wip/clanes-comunidades-34.md): lo que corre con el launcher abierto aunque no se abra la página.
+// Clanes y comunidades (docs/implementacion/clanes-comunidades.md): lo que corre con el launcher abierto aunque no se abra la página.
 // Mira las invitaciones y solicitudes pendientes, avisa de las nuevas y pone el número en el menú. Reglas y RPC: 0033_clanes_comunidades.sql.
 //   startup(), getMine() -> { data, error }, onMine(fn) -> off, loadMine({ force? }), tellFriend(userId)
 import { store } from '../store.js';

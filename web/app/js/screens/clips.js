@@ -37,6 +37,13 @@ export function openViewer(ctx, item, url) {
     ),
     stage,
   );
+  dlg.addEventListener('close', () => {
+    if (isClip) {
+      mediaEl.pause();
+      mediaEl.removeAttribute('src');
+      mediaEl.load();
+    }
+  }, { once: true });
   dlg.addEventListener('cancel', (e) => {
     e.preventDefault();
     close();
@@ -105,6 +112,7 @@ export function clipsScreen(ctx, route) {
       toast(tr(errorKey(err)), 'bad');
       return;
     }
+    if (destroyed) return;
     if (!url) {
       toast(tr('clip_gone'), 'bad');
       return;

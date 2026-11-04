@@ -171,4 +171,9 @@ export default {
   streamerOnText: "Codes, adressen, vriendennamen en berichten blijven verborgen tot je hem uitzet.",
   streamerOff: "Streamermodus uitgeschakeld",
   streamerSaveError: "De streamermodus kon niet worden gewijzigd",
+  messageSticker: "Sticker",
+  messageGif: "GIF",
+  net_wikiTitle: "Minecraft Wiki",
+  net_wikiText: "Staat verzoeken aan minecraft.wiki toe vanuit de overlayrecepten wanneer je daar om vraagt.",
+  net_integrationsNote: "Discord-servermeldingen en synchronisatie van instellingen worden afzonderlijk ingeschakeld in hun instellingen. Ze blijven uit totdat je ze inschakelt.",
 };

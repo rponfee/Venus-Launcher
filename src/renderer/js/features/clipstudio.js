@@ -1,6 +1,6 @@
 // Estudio de clips: montaje, timelapse, subir clips, OBS y galeria publica. Lo que corre con el launcher abierto aunque no se
 // abra la pagina de Clips: las tarjetas de Ajustes (OBS, timelapse y cuentas para subir) y el aviso de que OBS cambio el modo
-// streamer. Las ventanas estan en features/clipstudio/ y la galeria en pages/clips/gallery.js. Guia: docs/wip/clips-33.md.
+// streamer. Las ventanas estan en features/clipstudio/ y la galeria en pages/clips/gallery.js. Guia: docs/implementacion/clips.md.
 //   startup()
 import { h, icon, ensureCss, mount, fail, ok, confirmDialog, setBusy } from '../ui.js';
 import { store, api } from '../store.js';

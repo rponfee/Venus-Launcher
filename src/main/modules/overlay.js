@@ -20,7 +20,7 @@
 // Eventos a la interfaz: overlay:state (lo mismo que status, sin config ni defaults), overlay:config (la
 // configuracion normalizada cada vez que cambia, por ejemplo al mover un widget en el modo edicion) y overlay:route
 // (un panel pidio abrir una pantalla del launcher).
-// La pagina del overlay (renderer/overlay.html) habla solo por su preload (overlay/preload.js). Paneles: docs/wip/overlay-32.md.
+// La pagina del overlay (renderer/overlay.html) habla solo por su preload (overlay/preload.js). Paneles: docs/implementacion/overlay.md.
 const { t } = require('../core/i18n');
 const config = require('./overlay/config');
 const events = require('./overlay/events');

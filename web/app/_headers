@@ -1,5 +1,5 @@
 # Cabeceras de Netlify. Este archivo solo se aplica si web/app se publica como un sitio aparte (Netlify lee el _headers de la
-# raíz de lo publicado). Si se publica web/ entera, las mismas reglas van en web/_headers con /app/* (ver docs/wip/app-celular-34.md).
+# raíz de lo publicado). Si se publica web/ entera, las mismas reglas van en web/_headers con /app/* (ver docs/implementacion/app-celular.md).
 /*
   Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://dzchklzaxyygbvfpagvx.supabase.co https://*.klipy.com; media-src https://dzchklzaxyygbvfpagvx.supabase.co; font-src 'self'; connect-src 'self' https://dzchklzaxyygbvfpagvx.supabase.co wss://dzchklzaxyygbvfpagvx.supabase.co; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
