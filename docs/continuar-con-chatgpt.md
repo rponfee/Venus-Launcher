@@ -64,7 +64,7 @@ De las 73 de la hoja de ruta, 38 ya salieron en la 3.1.0. Estas son las otras 35
 | Capas | Capas de Venus en el juego; FPS informados por el mod | 0034 | `capas-34.md` | Terminado |
 | Extensiones | Extensiones de la comunidad en sandbox | 0036 | `extensiones-34.md`, `docs/extensiones.md` | Terminado |
 | Clips | Montaje de la semana; timelapse; subir a YouTube o TikTok; OBS; galería pública | 0032 | `clips-33.md` | **Verificá: quedó en curso** |
-| Clanes y comunidades | Clanes; comunidades con canales de texto y voz | 0033 | `clanes-comunidades-34.md` | **Verificá: quedó en curso** |
+| Clanes y comunidades | Clanes; comunidades con canales de texto y voz | 0033 | `clanes-comunidades-34.md` | Terminado |
 | Visor de semillas | Biomas y estructuras antes de crear el mundo | | `semillas-34.md` | **Verificá: quedó en curso** |
 | App para celular | PWA en `web/app` con amigos, mensajes, clips y avisos; Edge Function `push-notify` | 0035 | `app-celular-34.md` | **Verificá: quedó en curso** |
 
@@ -86,6 +86,7 @@ Lo marcado "Terminado" significa que pasó las pruebas de quien lo hizo, **no** 
 4. **Probar las migraciones juntas:** 0028 a 0036, en orden y en una sola transacción con rollback. Competir cambió la 0031 después de su corrida completa: repetila entera. Ninguna debe pisar `points_ledger_reason_check` sin conservar `challenge`.
 5. **Pendientes que dejaron anotados:**
    - **Extensiones, decisión importante:** con el catálogo apagado, una extensión recién bloqueada no se entera y sigue andando. Proponeme una solución.
+   - **Clanes, decisión importante:** Competir promete que las horas compartidas las ven "solo tus amigos" (`compete.shareSees`), pero el ranking de clanes le muestra a cualquiera con sesión la suma de horas del clan. Con 2 miembros compartiendo, cada uno deduce las horas del otro. Resolvelo antes de aplicar la 0033: ajustar el texto o pedir un permiso aparte.
    - Extensiones: `denyPermissions` envuelve los manejadores de `main.js` por el evento `session-created`; lo ideal es que `main.js` mire `details.requestingUrl`. Las tarjetas de Inicio se insertan antes de `.hm-foot`, porque `pages/home.js` no tiene gancho.
    - Stickers: el aviso del sistema y el overlay muestran la dirección del sticker como texto, igual que un GIF; sale de `social.js`.
    - Sets de mods: en una instancia duplicada, Deshacer no sirve.
