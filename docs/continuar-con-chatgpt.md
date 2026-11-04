@@ -66,7 +66,7 @@ De las 73 de la hoja de ruta, 38 ya salieron en la 3.1.0. Estas son las otras 35
 | Clips | Montaje de la semana; timelapse; subir a YouTube o TikTok; OBS; galería pública; Edge Function `tiktok-token` | 0032 | `clips-33.md` | Terminado |
 | Clanes y comunidades | Clanes; comunidades con canales de texto y voz | 0033 | `clanes-comunidades-34.md` | Terminado |
 | Visor de semillas | Biomas y estructuras antes de crear el mundo | | `semillas-34.md` | Terminado: 0 diferencias contra cubiomes en C, sin comparar con el juego |
-| App para celular | PWA en `web/app` con amigos, mensajes, clips y avisos; Edge Function `push-notify` | 0035 | `app-celular-34.md` | **Verificá: quedó en curso** |
+| App para celular | PWA en `web/app` con amigos, mensajes, clips y avisos; Edge Function `push-notify` | 0035 | `app-celular-34.md` | Terminado: el service worker final no corrió en un navegador |
 
 Lo marcado "Terminado" significa que pasó las pruebas de quien lo hizo, **no** que esté probado en el mundo real.
 
@@ -77,11 +77,15 @@ Lo marcado "Terminado" significa que pasó las pruebas de quien lo hizo, **no** 
 - Servicios reales: webhook de Discord, IA con un plan real, subida a YouTube o TikTok, OBS, Realtime con dos sesiones, un pago real del Venus Pass (la temporada 1 arranca el 2026-11-10).
 - Las migraciones 0028 a 0036 juntas y en orden; cada una se probó sola con rollback.
 - El instalador NSIS real con `build/installer.nsh`, que quita el protocolo `venus://` al desinstalar.
+- El visor de semillas contra el juego: se comparó con cubiomes compilado en C, con 0 diferencias en 240 semillas, y con coordenadas publicadas. La validación de estructuras y el punto de aparición son aproximados.
+- El service worker final de la PWA en un navegador, y `push-notify/index.ts` en Deno (las pruebas corren `handler.ts` en Node).
 
 ## Qué falta, en este orden
 
-1. **Ver dónde estamos.** Traé la rama, mirá `git status`, corré los chequeos y las pruebas de arriba, y contame en dos líneas cómo está. Arreglá lo que esté roto.
-2. **Terminar lo que quedó en curso.** Compará cada grupo marcado "Verificá" con lo pedido en `docs/wip/` y con `docs/hoja-de-ruta.md`. Mirá también el "Informe final" que falta en cada caso: si un documento promete algo que el código no hace, completalo o decilo.
+1. **Ver dónde estamos.** Traé la rama, mirá `git status`, corré los chequeos y las pruebas de arriba, y contame en dos líneas cómo está. Arreglá lo que esté roto. Ojo con dos cosas:
+   - `node_modules/electron/dist` puede estar incompleto (sin `icudtl.dat`), y así Electron no arranca. Se arregla con `npm ci`, con la ventana de desarrollo cerrada.
+   - Puede haber pendientes de esta lista ya avanzados en cambios sin commitear. El respaldo de todo eso al 3 de noviembre está en la rama `venus-3.2-respaldo`. No los rehagas ni los pises: revisalos.
+2. **Comprobar lo terminado.** Todos los grupos están escritos. Compará cada uno con su documento de `docs/wip/` y con `docs/hoja-de-ruta.md`: si un documento promete algo que el código no hace, completalo o decilo.
 3. **Revisión de seguridad con ojos nuevos,** sobre el código y no sobre los informes: `src/main/modules/serverremote*` (HTTP en la red local), `deeplink*` (links de afuera), `portability*` (importar archivos), `extensions*` (código de terceros), `src/renderer/js/social/stickers.js`, `web/app/` y todas las RPC de las migraciones 0028 a 0036 (permisos, RLS, topes, quién puede llamar qué).
 4. **Probar las migraciones juntas:** 0028 a 0036, en orden y en una sola transacción con rollback. Competir cambió la 0031 después de su corrida completa: repetila entera. Ninguna debe pisar `points_ledger_reason_check` sin conservar `challenge`.
 5. **Pendientes que dejaron anotados:**
@@ -94,6 +98,9 @@ Lo marcado "Terminado" significa que pasó las pruebas de quien lo hizo, **no** 
    - Conexiones: la wiki (`privacy.wiki`), Discord y la sincronización tienen interruptor propio y no figuran en el aviso de `features/netprefs.js`.
    - Portable: ahora registra `venus://` en el registro de Windows, cosa que antes no hacía. Decime si está bien.
    - `pages/skins` sigue diciendo "Sin capa" aunque el visor muestre la de Venus.
+   - App para celular: `cloud.signOut()` usa el alcance global y también cierra la sesión del celular; sería `signOut({ scope: 'local' })`, sin probar. Falta un link a la app desde Ajustes o la web. Aplicá la 0035 por el SQL Editor y no con `supabase db push`, que intentaría aplicar también las otras pendientes (el documento dice que se puede: corregilo). Nunca agregues `net` a "Exposed schemas" en Supabase. Sumá `[functions.push-notify]` con `verify_jwt = false` a `supabase/config.toml`, y el aviso de que el service worker final quedó sin probar a `app-celular-34.md`.
+   - Clips: borrar en admin deja el archivo en el bucket, porque desde SQL no se puede borrar un objeto de Storage. Para subir directo faltan las variables en `scripts/write-build-config.js` y `build.yml` (el cambio exacto está en `clips-33.md`).
+   - Semillas: si `openCreateWizard` de `pages/servers/create.js` aceptara `seed`, el asistente de servidores se abriría con la semilla cargada.
    - Precios de las capas: Amanecer 1000, Nebulosa 1500, Aurora 1500, Magma 2500 y Órbita solo Premium. Los eligió la IA; confirmalos conmigo.
 6. **CI.** Sumá a la línea de `node --test` de `.github/workflows/build.yml` las carpetas de prueba nuevas (compará con `find src supabase web -type d \( -name test -o -name tests \)`), y `assets/venusbadge/textures/cape/dawn.png` al paso "Revisar los .jar" de `mod.yml`. Ese push lo hago yo.
 7. **Traducir** a los 12 idiomas con los scripts de arriba y dejá `node scripts/i18n-check.js --summary` en 0 claves faltantes. La lista `STALE` de `scripts/tr-extract.js` tiene los textos que cambiaron desde la 3.1.0.
@@ -106,8 +113,8 @@ Lo marcado "Terminado" significa que pasó las pruebas de quien lo hizo, **no** 
 
 Recordámelo cuando haga falta, sin pedirme las claves por chat:
 - Cargar `VENUS_CURSEFORGE_API_KEY` en GitHub y la clave de KLIPY en el panel de admin.
-- Generar las claves VAPID y autorizar las URL de redirección de la app del celular (`docs/wip/app-celular-34.md`).
-- Credenciales de YouTube y TikTok, si quiero subida directa.
+- Publicar la app del celular: claves con `node supabase/functions/push-notify/generar-claves.mjs`, disparo con `private.push_configure`, `web/_headers` y `web/_redirects` (pasos en `docs/wip/app-celular-34.md`). No hace falta autorizar URL de redirección.
+- Credenciales de YouTube y TikTok, si quiero subida directa. TikTok además pide `TIKTOK_CLIENT_KEY` y `TIKTOK_CLIENT_SECRET` en Supabase, desplegar `tiktok-token` y que aprueben la app (`docs/wip/clips-33.md`).
 - Probar lo que necesita dos cuentas o un celular: la lista de "Nunca se probó".
 - Activar en Supabase la protección contra contraseñas filtradas, si la quiero.
 - Pendientes viejos: decidir sobre las cuentas offline (o exigir cuenta Microsoft con el juego), firma del instalador (SignPath o Azure) y la app de Azure con el formulario de Mojang.
