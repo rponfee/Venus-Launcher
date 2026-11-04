@@ -104,7 +104,7 @@ export default {
   acc_nether: 'Nether: fortresses and bastions share a position; which one appears is estimated with the same criteria as other structures.',
   acc_end: 'End: biomes are exact up to 1:16. Further out a fast, approximate calculation is used. End cities are not shown.',
   acc_versions: 'Versions after 1.21.4: calculated with the 1.21.4 table. Structure positions published for 1.21.11 match; biomes could not be checked.',
-  acc_limits: 'Large Biomes, Amplified worlds, data packs and mods are not taken into account. On the edges between biomes the game can give a different result, depending on the order it generates chunks.',
+  acc_limits: 'Large Biomes, Amplified worlds, data packs and mods are not taken into account. At a few points the game can give a different biome, depending on the order it generates chunks.',
   acc_source: 'Checked against cubiomes compiled from C and against published seed coordinates, not against the running game. The details are in the project documentation.',
 
   // Biomes

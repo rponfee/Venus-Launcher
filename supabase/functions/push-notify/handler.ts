@@ -47,13 +47,21 @@ export function createPushHandler(deps: PushDeps) {
   };
 
   async function rpc(name: string, args: unknown): Promise<unknown> {
-    const res = await http(`${deps.supabaseUrl}/rest/v1/rpc/${name}`, {
-      method: 'POST',
-      headers: { apikey: deps.serviceKey, authorization: `Bearer ${deps.serviceKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify(args),
-    });
-    if (!res.ok) throw new Error(`${name}: ${res.status}`);
-    return await res.json();
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), timeoutMs);
+    try {
+      const res = await http(`${deps.supabaseUrl}/rest/v1/rpc/${name}`, {
+        method: 'POST',
+        headers: { apikey: deps.serviceKey, authorization: `Bearer ${deps.serviceKey}`, 'content-type': 'application/json' },
+        body: JSON.stringify(args),
+        signal: abort.signal,
+        redirect: 'error',
+      });
+      if (!res.ok) throw new Error('db_unavailable');
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   // 'ok' | 'gone' | 'fail'
@@ -79,8 +87,8 @@ export function createPushHandler(deps: PushDeps) {
       if (res.ok) return 'ok';
       log(`el servicio de push respondió ${res.status} (${host})`);
       return 'fail';
-    } catch (err) {
-      log(`no se pudo llegar al servicio de push (${host}): ${(err as Error)?.name ?? 'error'}`);
+    } catch {
+      log(`no se pudo llegar al servicio de push (${host})`);
       return 'fail';
     } finally {
       clearTimeout(timer);
@@ -90,15 +98,42 @@ export function createPushHandler(deps: PushDeps) {
   return async function handle(req: Request): Promise<Response> {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     if (req.method === 'GET') {
-      if (!deps.vapidPublic || !(await signingKey())) return fail(503, 'not_configured');
+      if (!deps.vapidPublic || !(await signingKey())) return json(503, { error: { code: 'not_configured' } }, CORS);
       return json(200, { publicKey: deps.vapidPublic }, { ...CORS, 'cache-control': 'public, max-age=300' });
     }
     if (req.method !== 'POST') return fail(405, 'bad_request');
 
     if (!(await sameSecret(req.headers.get('x-venus-push-secret') ?? '', deps.secret))) return fail(401, 'unauthorized');
 
-    const raw = await req.text();
-    if (raw.length > MAX_BODY) return fail(413, 'bad_request');
+    // El límite se aplica a los bytes mientras se lee, antes de acumular el cuerpo.
+    const reader = req.body?.getReader();
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    try {
+      if (reader) {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          size += value.byteLength;
+          if (size > MAX_BODY) {
+            void reader.cancel().catch(() => {});
+            return fail(413, 'bad_request');
+          }
+          chunks.push(value);
+        }
+      }
+    } catch {
+      return fail(400, 'bad_request');
+    } finally {
+      reader?.releaseLock();
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    const raw = new TextDecoder().decode(bytes);
     let body: { user?: unknown; kind?: unknown; key?: unknown };
     try {
       body = JSON.parse(raw);
@@ -119,21 +154,25 @@ export function createPushHandler(deps: PushDeps) {
     let claim: Claim;
     try {
       claim = (await rpc('push_claim', { p_user: user, p_kind: kind, p_key: key })) as Claim;
-    } catch (err) {
-      log(`no se pudo consultar la base: ${(err as Error)?.message ?? 'error'}`);
+    } catch {
+      log('no se pudo consultar la base');
       return fail(503, 'db_unavailable');
     }
-    if (!claim?.allowed) return json(200, { ok: true, sent: 0, skipped: claim?.reason ?? 'unknown' });
+    if (!claim || typeof claim.allowed !== 'boolean' || (claim.allowed && !Array.isArray(claim.subs))) {
+      log('respuesta inesperada de la base');
+      return fail(503, 'db_unavailable');
+    }
+    if (!claim.allowed) return json(200, { ok: true, sent: 0, skipped: claim?.reason ?? 'unknown' });
 
-    const subs = (claim.subs ?? []).filter((s) => endpointOk(s?.endpoint));
+    const subs = (claim.subs ?? []).filter((s) => typeof s?.id === 'string' && endpointOk(s?.endpoint)).slice(0, 5);
     const topic = await pushTopic(`${kind}:${key}`);
     const results = await Promise.all(subs.map(async (s) => ({ id: s.id, result: await sendOne(signing, s.endpoint, topic) })));
     const gone = results.filter((r) => r.result === 'gone').map((r) => r.id);
     if (gone.length) {
       try {
         await rpc('push_drop', { p_ids: gone });
-      } catch (err) {
-        log(`no se pudieron borrar los vencidos: ${(err as Error)?.message ?? 'error'}`);
+      } catch {
+        log('no se pudieron borrar los vencidos');
       }
     }
     const sent = results.filter((r) => r.result === 'ok').length;

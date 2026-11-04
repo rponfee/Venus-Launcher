@@ -44,3 +44,6 @@ test-results.tap
 
 # Mod de la insignia: lo compilan scripts/build-badge-mod.js y .github/workflows/mod.yml (no va al repo)
 src/main/modules/ingame/mods/*.jar
+
+# Traducciones en curso (scripts/tr-extract.js)
+.tr/

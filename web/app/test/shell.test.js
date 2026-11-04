@@ -45,6 +45,8 @@ test('el service worker no intercepta otros dominios ni cachea la API', () => {
   assert.match(sw, /!shellUrls\.has\(/);
   assert.ok(!/supabase\.co/.test(sw));
   assert.equal([...sw.matchAll(/cache\.put\(/g)].length, 1);
+  // Solo refreshShell escribe en la caché, y solo lo que cambió
+  assert.ok(sw.includes("old?.headers.get('etag') !== tag"));
 });
 
 test('la CSP es estricta y es la misma en el HTML y en _headers', () => {

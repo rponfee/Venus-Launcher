@@ -61,7 +61,7 @@ No se copió nada de Mojang: ni datos, ni texturas, ni código. Las tablas son l
 | Punto de aparición | **Aproximado** | Es la estimación de `getSpawn`. La página lo dice |
 | Slime chunks | Exacto | Misma fórmula del juego |
 
-- **Empates (MC-241546)**: el juego arranca la búsqueda del bioma desde el resultado anterior de ese hilo, y en un empate el resultado depende del orden de generación. El mapa busca sin esa pista, como `genBiomes` de cubiomes a 1:4. Medido en 8 semillas: la pista cambia 153 de 524.288 celdas (0,03 %), todas en bordes entre biomas. En esas celdas no se puede saber qué va a dar el juego.
+- **Empates (MC-241546)**: el juego arranca la búsqueda del bioma desde el resultado anterior de ese hilo, y en un empate el resultado depende del orden de generación. El mapa busca sin esa pista, como `genBiomes` de cubiomes a 1:4. Medido en 8 semillas: la pista cambia 153 de 524.288 celdas (0,03 %). En celdas como esas no se puede saber qué va a dar el juego.
 - **Dudosas**: si la validación descarta una estructura solo por el terreno, o una ciudad antigua cuyo punto de control queda una celda arriba del Abismo, se muestra apagada en lugar de esconderla. Motivo: las listas públicas mostraron estructuras reales que la validación de cubiomes descarta (ver abajo). Esa regla es propia, no está comparada contra nada y no se sabe cuántas dudosas existen de verdad.
 - **Sin tener en cuenta**: Biomas grandes, mundos Amplificados, datapacks y mods. Ciudades del End: no se portaron (hace falta el ruido de terreno del End); en el End solo se ven los biomas. Tampoco se muestran naufragios, portales en ruinas ni ruinas oceánicas, que no estaban pedidos.
 
@@ -79,11 +79,22 @@ Compilación: la PC no tiene gcc, clang ni cl en el PATH y Visual Studio no tien
 
 Comparación completa (`compare.js`), una sola vez, sobre las 7 versiones:
 
-RESULTADOS_COMPARE
+| Qué | Cantidad | Diferencias |
+|---|---|---|
+| Semillas | 240 (16 especiales: 0, -1, 2^48, los extremos de 64 bits y otras; 224 al azar) | |
+| Celdas de bioma (Overworld en 4 alturas, Nether, End a 1:4, 1:16 y lejos, puntos lejanos y con paso) | 119.562.240 | 0 |
+| Regiones de estructuras (11 tipos del Overworld, fortaleza del Nether y bastión) | 2.161.920 | 0 |
+| Intentos comparados en posición, biomas y terreno | 1.939.145 | 0 |
+| Estructuras válidas entre esos intentos | 379.467 | 0 |
+| Fortalezas (las 128 en 16 semillas, las 3 primeras en las demás) | 19.040 | 0 |
+| Puntos de aparición (estimado y final) | 1.680 | 0 |
+| Slime chunks | 1.228.800 | 0 |
+
+Las áreas se comparan por un hash encadenado celda por celda (el de `tests.c`), así que una sola celda distinta cambia el resultado. Las estructuras, una por una. Después de esta corrida solo se agregó `doubtful()`, que no toca nada de lo comparado, y el resumen de abajo se vuelve a comprobar en cada prueba.
 
 Hubo una sola diferencia durante el trabajo y era del script de comparación, no del port: trataba la escala 1:4 de `genBiomes` como un paso de 4 celdas.
 
-Lo que queda en el repo es un resumen: `reference/golden.json` (4 semillas, RESUMEN_GOLDEN), que corre con las pruebas de siempre.
+Lo que queda en el repo es un resumen: `reference/golden.json` (4 semillas, 1.260 casos: 1.992.704 celdas, 608 ventanas de estructuras y 334 fortalezas), que corre con las pruebas de siempre.
 
 ### 3. Coordenadas publicadas
 
@@ -116,13 +127,30 @@ Es lo más cerca del juego que se pudo llegar. Se buscaron listas públicas de s
 node --test "src/renderer/js/pages/seeds/test/"
 ```
 
-CANT_PRUEBAS. Son lentas por los hashes publicados (4096 semillas por versión): tardan unos 40 s. Para regenerar la referencia: `pages/seeds/test/reference/build.txt`. Nada de `test/` entra al paquete (`!src/**/test/**`).
+29 pruebas. Son lentas por los hashes publicados (4096 semillas por versión): tardan unos 40 s con la PC libre y llegaron a 6 minutos con la CPU saturada. Para regenerar la referencia: `pages/seeds/test/reference/build.txt`. Nada de `test/` entra al paquete (`!src/**/test/**`).
 
 ## Rendimiento
 
 Medido en un Ryzen 7 5700G (16 hilos lógicos):
 
-RESULTADOS_RENDIMIENTO
+Mientras se medía había otros agentes trabajando en la misma PC, con la CPU al 100 % buena parte del tiempo. Por eso hay valores con la PC libre y con la PC saturada, y conviene leerlos como órdenes de magnitud.
+
+| Qué | Tiempo |
+|---|---|
+| Un pedazo de 128 × 128 en el Overworld, PC libre (Node) | 66 a 79 ms, unos 4,5 µs por muestra |
+| El mismo pedazo en un Worker de la app, PC saturada | mediana de 168 a 279 ms |
+| Un pedazo del Nether | 5 ms |
+| Un pedazo del End | 1 a 11 ms hasta 1:16; unos 63 ms más lejos |
+| Preparar una semilla | 0,46 ms Overworld, 0,14 ms Nether, 0,2 ms End |
+| Decodificar una tabla de biomas | 0,6 ms |
+| Una región de estructura | de 1 a 26 µs; monumento, 115 µs |
+| Las 128 fortalezas | unos 3 s, de a 6 por vez, sin frenar el mapa |
+| Punto de aparición | 3 ms |
+| Vista completa en la app a 1300 × 820, 1 píxel = 8 bloques, PC saturada | 2,2 a 2,3 s con 4 Workers |
+| Primera vista gruesa en la app | unos 0,2 a 0,3 s (dos mediciones válidas; las otras no servían porque el color de fondo no coincidía con el de la prueba) |
+| Arrastrar el mapa mientras calcula, PC saturada | mediana de 7 ms por cuadro, p95 de 15 a 18 ms, peor cuadro de 42 a 104 ms |
+
+No se midió en una PC lenta.
 
 Por qué rinde así: lo caliente no usa BigInt (solo preparar la semilla). En el ruido, cambiar el `switch` de gradientes por una tabla dejó el clima en un tercio (de 6,8 a 2,4 µs), porque los índices son al azar y el procesador falla casi todos los saltos. En la búsqueda del bioma, la distancia va sin saltos y corta antes de tiempo.
 
@@ -130,7 +158,7 @@ Cómo reparte el trabajo: hasta 4 Workers (núcleos menos 2). Primero una vista 
 
 ## Tamaño
 
-Tablas: 475.931 bytes en total (entre 90,6 y 98,2 KB cada una, en base64). Cada una se carga solo si se elige esa versión. Ocupan unos 110 KB de memoria por tabla una vez armadas. `reference/golden.json` y el resto de `test/` no se empaquetan.
+Tablas: unos 476 KB en total (entre 90 y 98 KB cada una, en base64). Cada una se carga solo si se elige esa versión. Ocupan unos 110 KB de memoria por tabla una vez armadas. `reference/golden.json` y el resto de `test/` no se empaquetan.
 
 ## Textos
 

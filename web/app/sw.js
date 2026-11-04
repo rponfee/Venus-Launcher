@@ -43,6 +43,8 @@ const SHELL = [
 
 const { idb, notify, session, texts, config } = self.VenusApp;
 const LAST_KEY = 'notify.last';
+const CHECKED_KEY = 'shell.checked';
+const CHECK_MS = 6 * 3600 * 1000;
 const PREVIEW_KEY = 'prefs.preview';
 const tr = () => texts.translator(texts.pickLang(self.navigator.language));
 const shellUrls = new Set(SHELL.map((path) => new URL(path, self.registration.scope).href));
@@ -55,39 +57,55 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('venus-app-') && k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
+
+// La cáscara se actualiza sola, sin depender de cambiar VERSION al publicar: como mucho una vez cada 6 horas se pregunta por
+// cada archivo y solo se reescribe el que cambió (nada de escribir 30 archivos en el celular cada vez que se abre). Se escribe
+// recién con todo en la mano, así un corte de red no deja mezclados archivos de dos versiones.
+let refreshing = false;
+async function refreshShell() {
+  if (refreshing) return;
+  refreshing = true;
+  try {
+    const last = Number(await idb.get(CHECKED_KEY).catch(() => 0)) || 0;
+    if (Date.now() - last < CHECK_MS) return;
+    const cache = await caches.open(VERSION);
+    const changed = [];
+    for (const path of SHELL) {
+      const url = new URL(path, self.registration.scope).href;
+      const res = await fetch(url, { cache: 'no-cache' });
+      if (!res.ok) return;
+      const tag = res.headers.get('etag');
+      const old = await cache.match(url);
+      if (!tag || old?.headers.get('etag') !== tag) changed.push([url, res]);
+    }
+    for (const [url, res] of changed) await cache.put(url, res);
+    await idb.set(CHECKED_KEY, Date.now()).catch(() => {});
+  } catch {
+    // sin red: será la próxima vez que se abra
+  } finally {
+    refreshing = false;
+  }
+}
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  // Navegar: primero la red, sin red la cáscara. El HTML no lleva datos.
+  const scopePath = new URL(self.registration.scope).pathname;
+  // Abrir la app: la cáscara al toque, con o sin red. El HTML no lleva datos.
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('./', { cacheName: VERSION })));
+    if (url.pathname !== scopePath && url.pathname !== `${scopePath}index.html`) return;
+    event.waitUntil(refreshShell());
+    event.respondWith(caches.match(new URL('./', self.registration.scope).href, { cacheName: VERSION }).then((hit) => hit || fetch(request)));
     return;
   }
   if (!shellUrls.has(url.origin + url.pathname)) return;
-  // Cáscara: sale al toque de la caché y se actualiza por detrás.
-  event.respondWith(
-    caches.open(VERSION).then(async (cache) => {
-      const cached = await cache.match(url.origin + url.pathname);
-      const refresh = fetch(request)
-        .then((res) => {
-          if (res.ok) cache.put(url.origin + url.pathname, res.clone());
-          return res;
-        })
-        .catch(() => cached);
-      if (cached) {
-        event.waitUntil(refresh);
-        return cached;
-      }
-      return refresh;
-    }),
-  );
+  event.respondWith(caches.match(url.origin + url.pathname, { cacheName: VERSION }).then((hit) => hit || fetch(request)));
 });
 
 // ---------- Avisos ----------
@@ -111,9 +129,15 @@ async function fetchInbox() {
   }
 }
 
+// Cache Storage y las ventanas son del origen entero: los avisos solo miran la PWA.
+async function appWindows() {
+  return (await self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+    .filter((c) => c.url.startsWith(self.registration.scope));
+}
+
 async function onPush() {
   const inbox = await fetchInbox();
-  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const windows = await appWindows();
   for (const client of windows) client.postMessage({ type: 'inbox' });
   // Con la app a la vista alcanza con lo que se ve adentro. Safari igual exige mostrar algo en cada aviso.
   if (!isIos() && windows.some((c) => c.visibilityState === 'visible' && c.focused)) return;
@@ -144,8 +168,8 @@ self.addEventListener('notificationclick', (event) => {
   const hash = notify.safeHash(event.notification.data?.hash);
   event.waitUntil(
     (async () => {
-      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      const open = windows.find((c) => c.url.startsWith(self.registration.scope));
+      const windows = await appWindows();
+      const open = windows[0];
       if (open) {
         await open.focus();
         open.postMessage({ type: 'navigate', hash });
@@ -171,7 +195,8 @@ self.addEventListener('pushsubscriptionchange', (event) => {
         const key = Uint8Array.from(atob(clean + '='.repeat((4 - (clean.length % 4)) % 4)), (c) => c.charCodeAt(0));
         sub = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
       }
-      await client.rpc('push_subscribe', { p_endpoint: sub.endpoint });
+      const { error } = await client.rpc('push_subscribe', { p_endpoint: sub.endpoint });
+      if (error) throw error;
       if (event.oldSubscription && event.oldSubscription.endpoint !== sub.endpoint) {
         await client.rpc('push_unsubscribe', { p_endpoint: event.oldSubscription.endpoint });
       }

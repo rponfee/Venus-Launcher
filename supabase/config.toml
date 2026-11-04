@@ -5,3 +5,7 @@ project_id = "dzchklzaxyygbvfpagvx"
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+# GET publica VAPID; POST verifica x-venus-push-secret dentro de la función.
+[functions.push-notify]
+verify_jwt = false

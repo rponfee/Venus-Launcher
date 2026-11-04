@@ -1,0 +1,7 @@
+# Solo la PWA: la web y la galería conservan sus políticas.
+/app/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://dzchklzaxyygbvfpagvx.supabase.co https://*.klipy.com; media-src https://dzchklzaxyygbvfpagvx.supabase.co; font-src 'self'; connect-src 'self' https://dzchklzaxyygbvfpagvx.supabase.co wss://dzchklzaxyygbvfpagvx.supabase.co; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

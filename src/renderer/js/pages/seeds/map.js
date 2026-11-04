@@ -61,6 +61,7 @@ export class SeedMap {
     this.hover = null;
     this.drag = null;
     this.raf = 0;
+    this.resizeRaf = 0;
     this.closed = false;
     this.dpr = 1;
     this.cssW = 0;
@@ -88,7 +89,11 @@ export class SeedMap {
     this.pop = h('div', { class: 'sd-pop-slot' });
     this.el = h('div', { class: 'sd-stage' }, this.canvas, this.tools, this.scaleEl, this.busyEl, this.pop);
     this.bind();
-    this.resizeObserver = new ResizeObserver(() => this.resize());
+    // En el cuadro siguiente: redibujar dentro del aviso puede dar un error de bucle en el ResizeObserver
+    this.resizeObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(this.resizeRaf);
+      this.resizeRaf = requestAnimationFrame(() => this.resize());
+    });
     this.resizeObserver.observe(this.el);
   }
 
@@ -218,6 +223,7 @@ export class SeedMap {
 
   // ---------- Dibujo ----------
   resize() {
+    if (this.closed) return;
     const w = this.el.clientWidth;
     const hgt = this.el.clientHeight;
     if (!w || !hgt) return;
@@ -759,6 +765,7 @@ export class SeedMap {
   destroy() {
     this.closed = true;
     cancelAnimationFrame(this.raf);
+    cancelAnimationFrame(this.resizeRaf);
     clearTimeout(this.summaryTimer);
     clearTimeout(this.hoverTimer);
     this.resizeObserver?.disconnect();

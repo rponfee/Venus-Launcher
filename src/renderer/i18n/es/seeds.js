@@ -104,7 +104,7 @@ export default {
   acc_nether: 'Nether: la fortaleza y el bastión comparten posición; cuál aparece se estima con el mismo criterio de las estructuras.',
   acc_end: 'End: biomas exactos hasta 1:16. Más lejos se usa un cálculo rápido y aproximado. No se muestran las ciudades del End.',
   acc_versions: 'Versiones posteriores a 1.21.4: se calculan con la tabla de 1.21.4. Las posiciones de estructuras publicadas para 1.21.11 coinciden; los biomas no se pudieron comprobar.',
-  acc_limits: 'No se tienen en cuenta Biomas grandes, mundos Amplificados, datapacks ni mods. En los bordes entre biomas el juego puede dar otro resultado, según el orden en que genera los chunks.',
+  acc_limits: 'No se tienen en cuenta Biomas grandes, mundos Amplificados, datapacks ni mods. En unos pocos puntos el juego puede dar otro bioma, según el orden en que genera los chunks.',
   acc_source: 'Se comprobó contra cubiomes compilado en C y contra coordenadas publicadas de semillas, no contra el juego abierto. El detalle está en la documentación del proyecto.',
 
   // Biomas

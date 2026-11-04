@@ -186,12 +186,6 @@ async function wipeLocal() {
   return async () => {
     await V.idb.clear().catch(() => {});
     try {
-      localStorage.clear();
-      sessionStorage.clear();
-    } catch {
-      /* almacenamiento bloqueado */
-    }
-    try {
       const reg = swAllowed && 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
       for (const n of (await reg?.getNotifications()) || []) n.close();
       await navigator.clearAppBadge?.();

@@ -49,7 +49,7 @@ El ícono sale de `src/renderer/assets/logo.png` (640 px), el mismo logo de `web
 
 **Sin clave en el repositorio.** La página pide la clave pública a `GET /functions/v1/push-notify`. Si cambia, la app se vuelve a suscribir sola.
 
-**Service worker.** Script clásico, no módulo, para funcionar en todos los navegadores con Web Push. Solo intercepta GET del mismo origen de la lista `SHELL`; Supabase y KLIPY ni pasan por él.
+**Service worker.** Script clásico, no módulo, para funcionar en todos los navegadores con Web Push. Solo intercepta GET del mismo origen de la lista `SHELL`; Supabase y KLIPY ni pasan por él. La cáscara abre siempre desde la caché y se actualiza sola: al abrir, como mucho cada 6 horas, pregunta por cada archivo y reescribe solo lo que cambió (por `ETag`, que Netlify manda), todo junto al final para no dejar dos versiones mezcladas. **No hace falta cambiar `VERSION` al publicar**; se cambia solo para forzar una caché nueva. Por eso una versión nueva puede tardar hasta 6 horas y una apertura más en verse.
 
 ## 4. Cómo funciona un aviso
 

@@ -45,7 +45,14 @@ export function createPush({ client, config, idb, deps = {} }) {
   }
 
   // Si el service worker no llega a estar listo, no se queda esperando para siempre
-  const registration = () => Promise.race([nav.serviceWorker.ready, new Promise((_, reject) => setTimeout(() => reject(unavailable()), READY_MS))]);
+  async function registration() {
+    let timer;
+    try {
+      return await Promise.race([nav.serviceWorker.ready, new Promise((_, reject) => { timer = setTimeout(() => reject(unavailable()), READY_MS); })]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 
   async function subscribed() {
     return (await registration()).pushManager.getSubscription();
@@ -87,7 +94,13 @@ export function createPush({ client, config, idb, deps = {} }) {
         sub = null;
       }
       if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
-      await save(sub);
+      try {
+        await save(sub);
+      } catch (err) {
+        // No mostrar «activado» si la base no pudo registrar este navegador.
+        await sub.unsubscribe().catch(() => {});
+        throw err;
+      }
     },
 
     async disable() {
