@@ -1,7 +1,8 @@
 'use strict';
 // Widget de rendimiento del overlay (3.1): RAM y CPU del proceso del juego, ping del servidor en el que esta
-// jugando y tiempo de sesion, cada 2 segundos. Sin FPS: no se pueden medir desde afuera del juego.
-//   createSampler({ pid, startedAt, getAddress, onSample, ... }) -> { stop() }
+// jugando y tiempo de sesion, cada 2 segundos. Los FPS no se pueden medir desde afuera del juego: los informa el mod
+// Venus Badge con un archivo (perfhistory/fps.js) y llegan por getFps; sin el mod no hay FPS.
+//   createSampler({ pid, startedAt, getAddress, getFps, onSample, ... }) -> { stop() }
 // En Windows abre un ayudante de PowerShell que queda vivo (Get-Process cada 2 s, sin WMI: barato) y escribe una
 // linea JSON por muestra; en otros sistemas usa pidusage. El ping se mide con el Server List Ping de Multijugador
 // (modules/serverlist) cada 10 s, solo si se sabe a que servidor entro (core/game activity).
@@ -74,14 +75,16 @@ function parseHelperLine(line) {
   };
 }
 
-// Medidas crudas -> evento del contrato 1 ({ kind: 'perf', ram (MB), cpu (%), ping (ms), session (s) }).
-function buildSample({ mem, cpu, ping, startedAt, now = Date.now() }) {
+// Medidas crudas -> evento del contrato 1 ({ kind: 'perf', fps?, ram (MB), cpu (%), ping (ms), session (s) }).
+function buildSample({ mem, cpu, ping, fps, startedAt, now = Date.now() }) {
   const ram = Number.isFinite(mem) && mem >= 0 ? Math.round(mem / 1048576) : null;
   const c = Number.isFinite(cpu) && cpu >= 0 ? Math.min(100, Math.round(cpu * 10) / 10) : null;
   const p = Number.isFinite(ping) && ping >= 0 ? Math.round(ping) : null;
   const started = Number(startedAt);
   const session = Number.isFinite(started) && started > 0 ? Math.max(0, Math.floor((now - started) / 1000)) : null;
-  return { kind: 'perf', ram, cpu: c, ping: p, session };
+  const out = { kind: 'perf', ram, cpu: c, ping: p, session };
+  if (Number.isFinite(fps) && fps >= 0) out.fps = Math.round(fps);
+  return out;
 }
 
 // Ping del servidor con lo que usa Multijugador (Server List Ping). Devuelve ms o null.
@@ -103,10 +106,11 @@ async function pingServer(address) {
 }
 
 /**
- * Muestras cada 2 s del juego `pid`. getAddress() -> direccion del servidor actual o null; onSample(evento).
+ * Muestras cada 2 s del juego `pid`. getAddress() -> direccion del servidor actual o null; getFps() -> FPS o null;
+ * onSample(evento).
  * Opcionales para las pruebas: platform, spawnFn, pingFn, usage (pidusage), now, interval.
  */
-function createSampler({ pid, startedAt, parentPid, getAddress, onSample, platform = process.platform, spawnFn = spawn, pingFn = pingServer, usage, now = Date.now, interval = INTERVAL_MS }) {
+function createSampler({ pid, startedAt, parentPid, getAddress, getFps, onSample, platform = process.platform, spawnFn = spawn, pingFn = pingServer, usage, now = Date.now, interval = INTERVAL_MS }) {
   if (!Number.isInteger(pid) || pid <= 0) return null;
   let stopped = false;
   let child = null;
@@ -119,7 +123,8 @@ function createSampler({ pid, startedAt, parentPid, getAddress, onSample, platfo
     const address = typeof getAddress === 'function' ? getAddress() : null;
     const fresh = address && ping.address === address && now() - ping.at < PING_STALE_MS ? ping.ms : null;
     try {
-      onSample?.(buildSample({ mem: last.mem, cpu: last.cpu, ping: fresh, startedAt, now: now() }));
+      const fps = typeof getFps === 'function' ? getFps() : null;
+      onSample?.(buildSample({ mem: last.mem, cpu: last.cpu, ping: fresh, fps, startedAt, now: now() }));
     } catch (err) {
       console.warn('[overlay] muestra de rendimiento', err?.message || err);
     }

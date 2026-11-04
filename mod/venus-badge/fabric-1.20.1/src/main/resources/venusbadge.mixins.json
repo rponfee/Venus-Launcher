@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "com.venuslauncher.badge.mixin",
   "compatibilityLevel": "JAVA_17",
-  "client": ["PlayerEntityRendererMixin", "PlayerListHudMixin"],
+  "client": ["AbstractClientPlayerEntityMixin", "PlayerEntityRendererMixin", "PlayerListHudMixin"],
   "injectors": {
     "defaultRequire": 1
   }

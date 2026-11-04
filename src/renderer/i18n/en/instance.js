@@ -38,6 +38,9 @@ export default {
 
   // Actions
   manage: 'Manage',
+  copyLink: 'Copy link',
+  copyLinkPack: 'Modpack link copied',
+  copyLinkLocal: 'Link copied: it only works on this PC',
   openFolder: 'Open folder',
   openFolderFailed: 'Could not open the folder',
   rename: 'Rename',

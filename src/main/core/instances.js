@@ -368,11 +368,13 @@ async function duplicate(id, { name, worlds = true } = {}) {
     window: src.window,
     modrinth: src.modrinth,
     icon: src.icon,
-    // La caratula (cover.png va en la copia), las etiquetas y las notas se conservan; favorito no.
+    // La caratula (cover.png va en la copia), las etiquetas, las notas, el aspecto y los ajustes compartidos se conservan; favorito no.
     cover: src.cover || null,
     coverAt: src.coverAt || null,
     tags: src.tags || [],
     notes: src.notes || null,
+    look: src.look || null,
+    sharedOptions: src.sharedOptions === true,
   });
 }
 

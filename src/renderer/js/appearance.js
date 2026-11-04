@@ -42,6 +42,7 @@ import {
   cleanLabel,
 } from './a11y/appearance-logic.js';
 import * as looksCodec from './features/themes/looks.js';
+import { mergeLook } from './features/instancelook/logic.js';
 
 export { PRESETS, APPEARANCE_DEFAULTS, BRANDING_DEFAULTS };
 
@@ -68,6 +69,29 @@ let scheme = 'dark';
 let seasonAnnounced;
 let minuteTimer = 0;
 const rotation = { timer: 0, key: '' };
+// Aspecto pasajero de una instancia (features/instancelook.js): se dibuja encima de ap y nunca se guarda.
+let instanceLook = null;
+let shownCache = { base: null, look: null, value: null };
+
+// Lo que se ve: ap con el aspecto de la instancia encima. ap siempre son los ajustes del usuario.
+function shown() {
+  if (!instanceLook) return ap;
+  if (shownCache.base !== ap || shownCache.look !== instanceLook) shownCache = { base: ap, look: instanceLook, value: mergeLook(ap, instanceLook) };
+  return shownCache.value;
+}
+
+// Pone (o saca, con null) el aspecto de una instancia: un parche de apariencia con lo que cambia ese momento.
+// Los ajustes globales no se tocan: al sacarlo vuelve exactamente lo que había.
+export function setInstanceLook(look) {
+  instanceLook = look || null;
+  bgError = false;
+  music.userPaused = false;
+  if (!started) return;
+  applyTheme();
+  applyBackground();
+  updateMusic();
+  emit();
+}
 
 // ---------- Ajustes ----------
 function fromStore() {
@@ -140,7 +164,7 @@ function requestLiveWallpaper(id) {
   clearTimeout(live.timer);
   if (live.files[id]?.path || live.downloads.has(id) || live.errors.has(id)) return;
   live.timer = setTimeout(() => {
-    if (currentWallpaperId() === id && !ap.lite) startLiveDownload(id);
+    if (shown().background === 'wallpaper' && shown().wallpaperId === id && !ap.lite) startLiveDownload(id);
   }, 500);
 }
 
@@ -290,12 +314,12 @@ function gameRunning() {
 // ---------- Aplicar: color, esquema y paleta ----------
 // Fondo sobre el que se comprueba la legibilidad del texto de la paleta: el elegido o el del esquema
 function paletteBaseBg(sch = scheme) {
-  return ap.palette.bg || engine.baseTokens(sch)['--bg-0'];
+  return shown().palette.bg || engine.baseTokens(sch)['--bg-0'];
 }
 
 // Paleta lista para el motor (texto corregido si no se lee) y el hex corregido, si hizo falta
 function effectivePalette(sch = scheme) {
-  return legiblePalette(ap.palette, paletteBaseBg(sch));
+  return legiblePalette(shown().palette, paletteBaseBg(sch));
 }
 
 function applyTheme() {
@@ -304,7 +328,7 @@ function applyTheme() {
   if (scheme === 'light') root.setAttribute('data-scheme', 'light');
   else root.removeAttribute('data-scheme');
   const { palette } = effectivePalette(scheme);
-  const color = palette.accent || accentColor();
+  const color = palette.accent || accentColor(shown());
   const isDefault = color.toLowerCase() === PRESETS[0].color;
   const plain = isDefault && scheme === 'dark' && !paletteActive(palette);
   engine.setTheme(plain ? null : { accent: isDefault ? null : color, tint: ap.tint, scheme, palette: paletteActive(palette) ? palette : null });
@@ -447,9 +471,10 @@ function makeMedia(url, video) {
 function applyBackground() {
   const host = document.querySelector('.space-bg');
   if (!host) return;
-  const wallpaper = ap.background === 'wallpaper' ? getWallpaper(ap.wallpaperId) : null;
-  const shown = wallpaper ? wallpaperMedia(wallpaper) : null;
-  const url = shown?.url || (ap.background === 'image' && ap.bgFile ? fileUrl(ap.bgFile) : '');
+  const look = shown();
+  const wallpaper = look.background === 'wallpaper' ? getWallpaper(look.wallpaperId) : null;
+  const media = wallpaper ? wallpaperMedia(wallpaper) : null;
+  const url = media?.url || (look.background === 'image' && look.bgFile ? fileUrl(look.bgFile) : '');
   if (wallpaper?.video && !ap.lite) requestLiveWallpaper(wallpaper.id);
   const want = Boolean(url) && !bgError;
   let layer = host.querySelector('.ap-bg');
@@ -464,13 +489,13 @@ function applyBackground() {
   }
   if (layer.dataset.src !== url) {
     layer.dataset.src = url;
-    const media = makeMedia(url, shown ? shown.video : isVideo(ap.bgFile));
-    media.classList.toggle('ap-bg-soft', Boolean(shown?.soft));
-    media.addEventListener(
+    const el = makeMedia(url, media ? media.video : isVideo(look.bgFile));
+    el.classList.toggle('ap-bg-soft', Boolean(media?.soft));
+    el.addEventListener(
       'error',
       () => {
         if (layer.dataset.src !== url) return;
-        if (shown?.video && live.files[wallpaper.id]) {
+        if (media?.video && live.files[wallpaper.id]) {
           // El video ya no está (se limpió la caché, por ejemplo): se vuelve a bajar.
           live.files[wallpaper.id].path = null;
           applyBackground();
@@ -484,10 +509,10 @@ function applyBackground() {
       },
       { once: true },
     );
-    mount(layer, media, h('div', { class: 'ap-bg-dim' }));
+    mount(layer, el, h('div', { class: 'ap-bg-dim' }));
   }
-  layer.style.setProperty('--ap-bg-dim', String(ap.bgDim / 100));
-  layer.style.setProperty('--ap-bg-blur', `${ap.bgBlur}px`);
+  layer.style.setProperty('--ap-bg-dim', String(look.bgDim / 100));
+  layer.style.setProperty('--ap-bg-blur', `${look.bgBlur}px`);
   updateVideo();
 }
 
@@ -585,14 +610,14 @@ function applyBranding() {
 
 // ---------- Aplicar: musica ----------
 function musicShouldPlay() {
-  const m = ap.music;
+  const m = shown().music;
   if (!m.enabled || !m.file || music.userPaused || music.error) return false;
   if (m.pauseInGame && (gameRunning() || music.voiceRoom)) return false;
   return true;
 }
 
 function targetVolume() {
-  return Math.pow(ap.music.volume / 100, 1.6);
+  return Math.pow(shown().music.volume / 100, 1.6);
 }
 
 function fadeTo(target, after) {
@@ -629,7 +654,7 @@ function releaseAudio() {
 }
 
 function updateMusic() {
-  const m = ap.music;
+  const m = shown().music;
   if (!m.enabled || !m.file) {
     if (music.audio) fadeTo(0, releaseAudio);
     music.error = false;
@@ -672,7 +697,7 @@ export function musicPlaying() {
 }
 
 export function toggleMusicPause() {
-  if (!ap.music.enabled || !ap.music.file) return;
+  if (!shown().music.enabled || !shown().music.file) return;
   music.userPaused = musicPlaying();
   updateMusic();
   emit();

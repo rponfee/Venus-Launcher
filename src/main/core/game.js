@@ -11,6 +11,7 @@ const tasks = require('./tasks');
 const { t, getLanguage } = require('./i18n');
 
 const events = new EventEmitter();
+events.setMaxListeners(50);
 const running = new Map(); // instanceId -> { child, pid, startedAt, logs, state, quiet }
 // A file operation may need the source stopped for its full duration. Claim before
 // the first await; start() checks the same lease before preparing any game files.

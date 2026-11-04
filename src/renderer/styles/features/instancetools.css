@@ -1,0 +1,81 @@
+/* ============================================================
+   Herramientas de la instancia: aspecto por instancia, links venus://,
+   sets de mods, ajustes compartidos y "¿Qué cambia?".
+   Prefijo de clases: .it-   (todo con tokens de main.css)
+   ============================================================ */
+
+/* ---------- Aspecto de la instancia ---------- */
+.it-look { gap: var(--sp-4); }
+.it-look-lead { margin: 0; }
+.it-look-saved { max-width: 340px; }
+.it-look-part { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.it-seg { align-self: flex-start; max-width: 100%; flex-wrap: wrap; }
+.it-swatches { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.it-swatch { position: relative; display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--control-h-sm); padding: 4px 12px 4px 8px; border: 1px solid var(--border-2); border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; transition: border-color var(--dur-fast) var(--ease-out); }
+.it-swatch:hover { border-color: var(--border-3); color: var(--text); }
+.it-swatch.active { border-color: var(--accent); background: var(--accent-wash); color: var(--cream); }
+.it-swatch:focus-visible, .it-swatch-custom:focus-within { outline: 3px solid var(--accent-hi); outline-offset: 2px; }
+.it-swatch-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
+.it-swatch-none { background: repeating-conic-gradient(var(--surface-4) 0 25%, transparent 0 50%) 50% / 8px 8px; }
+.it-color-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
+.it-wallpapers { max-height: 220px; }
+.it-look-shade { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-3); }
+.it-slider { gap: 4px; }
+.it-look-file { align-items: center; gap: var(--sp-2); min-width: 0; }
+.it-look-thumb { width: 56px; height: 32px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.it-look-notice { margin-bottom: var(--sp-3); background: var(--surface-2); }
+
+/* ---------- Links venus:// ---------- */
+.it-link { gap: var(--sp-3); }
+.it-link-lead { margin: 0; line-height: 1.55; }
+.it-link-rows { display: grid; gap: 6px; padding: var(--sp-3); border: 1px solid var(--border-2); border-radius: var(--radius); background: var(--well-bg); }
+.it-link-row { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: var(--sp-2); align-items: baseline; font-size: var(--fs-sm); }
+.it-link-label { color: var(--muted); }
+.it-link-value { font-weight: 600; overflow-wrap: anywhere; }
+.it-link-raw { display: block; padding: 6px 8px; border-radius: 6px; background: var(--surface-3); font-size: var(--fs-xs); overflow-wrap: anywhere; color: var(--text-2); }
+
+/* ---------- Sets de mods ---------- */
+.it-sets { gap: var(--sp-3); }
+.it-sets-lead { margin: 0; }
+.it-set-list { gap: 2px; }
+.it-set-row .btn { flex-shrink: 0; }
+.it-set-new { gap: var(--sp-2); }
+.it-set-editor { gap: var(--sp-3); }
+.it-set-tools { gap: var(--sp-2); align-items: center; }
+.it-set-tools .input-icon { min-width: 180px; }
+.it-set-mods { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2px var(--sp-3); max-height: 320px; overflow-y: auto; overscroll-behavior: contain; padding: var(--sp-2); border: 1px solid var(--border-2); border-radius: var(--radius); background: var(--well-bg); }
+.it-set-mod { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; padding: 4px 6px; border-radius: 6px; font-size: var(--fs-sm); cursor: pointer; }
+.it-set-mod:hover { background: var(--hover-bg); }
+.it-set-mod input { flex-shrink: 0; }
+.it-set-deps { gap: 6px; min-width: 0; }
+.it-set-deps .row { gap: var(--sp-2); }
+
+/* ---------- Ajustes compartidos ---------- */
+.it-shared-save { align-items: center; gap: var(--sp-3); margin-top: var(--sp-3); }
+.it-shared-label { margin-top: var(--sp-3); margin-bottom: var(--sp-2); }
+.it-shared-groups { margin-bottom: var(--sp-2); }
+.it-shared .notice { margin-top: var(--sp-2); }
+
+/* ---------- ¿Qué cambia? ---------- */
+.it-cl { gap: var(--sp-3); }
+.it-cl-range { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.it-cl-ai { padding: var(--sp-3); border: 1px solid var(--border-2); border-radius: var(--radius); background: var(--well-bg); }
+.it-cl-ai .row { align-items: center; gap: var(--sp-3); }
+.it-cl-ai .notice { margin: 0; }
+.it-cl-answer { display: flex; flex-direction: column; gap: var(--sp-3); line-height: 1.55; }
+.it-cl-answer p { margin: 0; }
+.it-cl-list ul { margin: 4px 0 0; padding-left: 20px; font-size: var(--fs-sm); }
+.it-cl-list li { margin: 2px 0; }
+.it-cl-list.risks .label { color: var(--warn); }
+.it-cl-disclaimer { padding-top: var(--sp-2); border-top: 1px solid var(--border); }
+.it-cl-versions { display: flex; flex-direction: column; gap: var(--sp-2); max-height: 360px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.it-cl-version { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--border); border-radius: var(--radius); }
+.it-cl-version summary { display: flex; align-items: center; gap: var(--sp-2); cursor: pointer; min-width: 0; }
+.it-cl-version summary strong { min-width: 0; }
+.it-cl-body { margin-top: var(--sp-2); font-size: var(--fs-sm); line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-2); }
+
+/* Página de Actualizaciones */
+.it-updates-bar { gap: var(--sp-2); margin: var(--sp-3) 0; align-items: center; }
+.it-updates-bar .select { flex: 1; min-width: 180px; max-width: 360px; }
+.it-updates-row .badge { flex-shrink: 0; }
+.it-updates-row .btn { flex-shrink: 0; }

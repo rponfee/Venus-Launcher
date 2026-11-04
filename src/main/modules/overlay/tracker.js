@@ -4,7 +4,8 @@
 // y escribe una linea JSON cuando cambia algo: rectangulo del area de juego en pixeles fisicos (el hilo es
 // consciente de la escala de cada monitor), si esta minimizada, que ventana esta en primer plano y si ocupa
 // todo el monitor. Sondea unas 4 veces por segundo (mas rapido mientras la ventana se mueve) y termina solo
-// cuando se cierra el juego o el launcher. Sin Electron: lo prueban las pruebas con un spawn falso.
+// cuando se cierra el juego o el launcher. Por su entrada recibe una orden: "front <hwnd>" pone esa ventana adelante
+// (al abrir un panel del overlay y al volver al juego). Sin Electron: lo prueban las pruebas con un spawn falso.
 const { spawn } = require('child_process');
 const { parseLine } = require('./geometry');
 
@@ -18,6 +19,10 @@ using System.Text;
 using System.Threading;
 using System.Runtime.InteropServices;
 public static class VenusOverlayTracker {
+  [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+  [DllImport("user32.dll")] static extern bool AttachThreadInput(uint a, uint b, bool attach);
+  [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
   public delegate bool EnumProc(IntPtr h, IntPtr l);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
   [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
@@ -40,6 +45,30 @@ public static class VenusOverlayTracker {
   [DllImport("kernel32.dll")] static extern uint WaitForSingleObject(IntPtr h, uint ms);
 
   static bool Alive(IntPtr p) { return p != IntPtr.Zero && WaitForSingleObject(p, 0) != 0; }
+
+  // Windows solo deja cambiar la ventana de adelante a quien tiene el foco: se engancha un momento a ese hilo.
+  static void Front(IntPtr h) {
+    if (!IsWindow(h)) return;
+    if (IsIconic(h)) ShowWindow(h, 9);
+    uint other;
+    uint fgThread = GetWindowThreadProcessId(GetForegroundWindow(), out other);
+    uint me = GetCurrentThreadId();
+    bool attached = fgThread != 0 && fgThread != me && AttachThreadInput(me, fgThread, true);
+    SetForegroundWindow(h);
+    if (attached) AttachThreadInput(me, fgThread, false);
+  }
+
+  // Ordenes por la entrada estandar (hilo aparte: el bucle de abajo no se detiene). Sin entrada, termina y listo.
+  static void ReadOrders() {
+    try {
+      string line;
+      while ((line = Console.In.ReadLine()) != null) {
+        if (!line.StartsWith("front ")) continue;
+        long hwnd;
+        if (long.TryParse(line.Substring(6).Trim(), out hwnd) && hwnd != 0) Front(new IntPtr(hwnd));
+      }
+    } catch (Exception) { }
+  }
 
   static IntPtr Find(uint pid) {
     IntPtr game = IntPtr.Zero, big = IntPtr.Zero;
@@ -81,6 +110,10 @@ public static class VenusOverlayTracker {
 
   public static void Run(uint gamePid, uint parentPid, int waitMinutes) {
     try { SetThreadDpiAwarenessContext(new IntPtr(-4)); } catch (Exception) { }
+    Console.Out.Flush();
+    Thread orders = new Thread(ReadOrders);
+    orders.IsBackground = true;
+    orders.Start();
     IntPtr game = OpenProcess(0x00100000, false, gamePid);
     IntPtr parent = parentPid > 0 ? OpenProcess(0x00100000, false, parentPid) : IntPtr.Zero;
     DateTime deadline = DateTime.UtcNow.AddMinutes(waitMinutes);
@@ -127,7 +160,7 @@ function track({ pid, parentPid, onUpdate, onEnd, platform = process.platform, s
   const cmd = command({ pid, parentPid });
   let child;
   try {
-    child = spawnFn(cmd.file, cmd.args, { env: cmd.env, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+    child = spawnFn(cmd.file, cmd.args, { env: cmd.env, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
   } catch {
     return null;
   }
@@ -158,7 +191,17 @@ function track({ pid, parentPid, onUpdate, onEnd, platform = process.platform, s
   });
   child.on?.('error', finish);
   child.on?.('exit', finish);
+  child.stdin?.on?.('error', () => {}); // el ayudante pudo terminar justo antes de escribirle
   return {
+    // Pone adelante una ventana (el juego, o el overlay si Windows no le dio el foco). hwnd: el texto que dio el ayudante.
+    front(hwnd) {
+      if (ended || !/^-?\d{1,20}$/.test(String(hwnd))) return false;
+      try {
+        return Boolean(child.stdin?.write?.(`front ${hwnd}\n`));
+      } catch {
+        return false;
+      }
+    },
     stop() {
       ended = true;
       try {

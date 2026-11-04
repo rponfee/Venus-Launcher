@@ -164,6 +164,8 @@ async function backup(id, { auto = false, task } = {}) {
       },
     });
     servers.venusLog(id, t('servers.logBackup', { file: path.basename(file) }));
+    // Para quien quiera enterarse (avisos por Discord): sin la ruta del archivo
+    servers.events.emit('backup', id, { auto });
     return { name: path.basename(file), file, size: res.size, time: Date.now(), auto };
   } finally {
     if (live && servers.isRunning(id)) {

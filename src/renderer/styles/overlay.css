@@ -646,3 +646,730 @@ body.ovl-page .ovl-root.ovl-editing .ovl-stage {
   color: var(--ovl-sub);
   font-weight: 400;
 }
+
+/* Contadores en pantalla: la misma fila que Rendimiento (js/overlay/counters.js) */
+.ovl-count-val,
+.ovl-perf-fps .ovl-perf-val {
+  min-width: 1.6em;
+}
+
+/* ---------- Paneles (recetas y asistente): la ventana toma el mouse y el teclado, js/overlay/panels.js ---------- */
+.ovl-panel-back {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 3vh 3vw;
+  box-sizing: border-box;
+  background: rgba(12, 7, 5, 0.42);
+  pointer-events: auto;
+}
+.ovl-panel-back[hidden] {
+  display: none;
+}
+.ovl-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(860px, 100%);
+  height: min(600px, 100%);
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 196, 120, 0.32);
+  border-radius: 14px;
+  background: rgba(24, 16, 11, 0.97);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  color: #fff3e3;
+}
+.ovl-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 196, 120, 0.18);
+}
+.ovl-tabs {
+  display: flex;
+  gap: 4px;
+}
+.ovl-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #d4bfa8;
+  font: 600 13px 'Outfit', system-ui, sans-serif;
+  cursor: pointer;
+}
+.ovl-tab svg {
+  width: 16px;
+  height: 16px;
+}
+.ovl-tab:hover {
+  background: rgba(255, 196, 120, 0.1);
+  color: #fff3e3;
+}
+.ovl-tab.on {
+  background: rgba(242, 154, 46, 0.18);
+  color: #ffe6b0;
+}
+.ovl-panel-hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #b9a48f;
+  font-size: 12px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ovl-panel-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.ovl-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 196, 120, 0.18);
+  border-radius: 8px;
+  background: #2c2017;
+  color: #fff3e3;
+  cursor: pointer;
+}
+.ovl-icon-btn[hidden] {
+  display: none;
+}
+.ovl-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.ovl-icon-btn:hover {
+  background: #382a1e;
+}
+.ovl-icon-btn.primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, #ffc562, #f29a2e);
+  color: #2b1405;
+}
+.ovl-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ovl-tab:focus-visible,
+.ovl-icon-btn:focus-visible,
+.ovr-row:focus-visible,
+.ovr-tab:focus-visible,
+.ovr-slot:focus-visible,
+.ovl-input:focus-visible {
+  outline: 2px solid #ffc562;
+  outline-offset: 2px;
+}
+.ovl-btn.ghost {
+  border-color: transparent;
+  background: none;
+}
+.ovl-btn.ghost:hover {
+  background: rgba(255, 196, 120, 0.1);
+}
+.ovl-btn.danger {
+  border-color: transparent;
+  background: #c8443b;
+  color: #fff;
+}
+.ovl-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ovl-selectable,
+.ovl-selectable * {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+.ovl-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 196, 120, 0.22);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff3e3;
+  font: 400 13px 'Outfit', system-ui, sans-serif;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.ovl-input::placeholder {
+  color: #a8937f;
+}
+.ovl-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ovl-field > svg {
+  position: absolute;
+  left: 9px;
+  width: 15px;
+  height: 15px;
+  color: #a8937f;
+  pointer-events: none;
+}
+.ovl-field .ovl-input {
+  height: 34px;
+  padding: 0 10px 0 30px;
+}
+.ovl-spinner {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 2px solid rgba(255, 196, 120, 0.25);
+  border-top-color: #ffc562;
+  border-radius: 50%;
+}
+.ovl-root:not(.ovl-reduce) .ovl-spinner {
+  animation: ovl-spin 800ms linear infinite;
+}
+@keyframes ovl-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ovl-panel ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.ovl-panel ::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(255, 196, 120, 0.22);
+}
+.ovl-panel ::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Recetas */
+.ovr-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+.ovr-side {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 6px;
+  width: 280px;
+  min-height: 0;
+  padding: 10px;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(255, 196, 120, 0.14);
+}
+.ovr-count {
+  min-height: 15px;
+  color: #b9a48f;
+  font-size: 12px;
+}
+.ovr-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+}
+.ovr-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: inherit;
+  font: 400 13px 'Outfit', system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.ovr-row:hover {
+  background: rgba(255, 196, 120, 0.1);
+}
+.ovr-row.on {
+  background: rgba(242, 154, 46, 0.2);
+}
+.ovr-row-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ovr-row-note {
+  flex: none;
+  color: #a8937f;
+}
+.ovr-none {
+  padding: 10px 6px;
+  color: #b9a48f;
+  font-size: 12px;
+}
+.ovr-foot {
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 196, 120, 0.14);
+  color: #a8937f;
+  font-size: 11px;
+}
+.ovr-icon {
+  display: block;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  object-position: 0 0;
+  image-rendering: pixelated;
+}
+.ovr-icon.big {
+  width: 40px;
+  height: 40px;
+}
+.ovr-icon-text {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255, 196, 120, 0.14);
+  color: #ffe6b0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.ovr-icon-text.big {
+  font-size: 15px;
+}
+.ovr-detail {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  overflow-y: auto;
+}
+.ovr-empty {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 340px;
+  padding: 16px;
+  color: #b9a48f;
+  font-size: 13px;
+  text-align: center;
+}
+.ovr-empty svg {
+  width: 22px;
+  height: 22px;
+}
+.ovr-empty.bad {
+  color: #f0a59e;
+}
+.ovr-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ovr-head-text {
+  flex: 1;
+  min-width: 0;
+}
+.ovr-title {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ovr-sub {
+  overflow: hidden;
+  color: #a8937f;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ovr-optin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 196, 120, 0.24);
+  border-radius: 10px;
+  background: rgba(242, 154, 46, 0.08);
+}
+.ovr-optin-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #d4bfa8;
+  font-size: 12px;
+}
+.ovr-optin-text strong {
+  color: #fff3e3;
+  font-size: 13px;
+}
+.ovr-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid rgba(255, 196, 120, 0.14);
+}
+.ovr-tab {
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: #b9a48f;
+  font: 600 12px 'Outfit', system-ui, sans-serif;
+  cursor: pointer;
+}
+.ovr-tab:hover {
+  color: #fff3e3;
+}
+.ovr-tab.on {
+  border-bottom-color: #f29a2e;
+  color: #ffe6b0;
+}
+.ovr-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ovr-card {
+  padding: 8px 10px 10px;
+  border: 1px solid rgba(255, 196, 120, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 196, 120, 0.04);
+}
+.ovr-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.ovr-station {
+  color: #ffe6b0;
+  font-weight: 600;
+}
+.ovr-notes {
+  color: #a8937f;
+}
+.ovr-layout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ovr-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--ovr-cols, 3), 36px);
+  gap: 3px;
+}
+.ovr-row-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.ovr-arrow {
+  display: grid;
+  place-items: center;
+  color: #a8937f;
+}
+.ovr-arrow svg {
+  width: 20px;
+  height: 20px;
+}
+.ovr-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 196, 120, 0.2);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.32);
+  color: inherit;
+  cursor: pointer;
+}
+.ovr-slot.empty {
+  background: rgba(0, 0, 0, 0.16);
+  border-color: rgba(255, 196, 120, 0.08);
+  cursor: default;
+}
+button.ovr-slot:hover {
+  border-color: #f29a2e;
+  background: rgba(242, 154, 46, 0.14);
+}
+.ovr-slot.result {
+  width: 44px;
+  height: 44px;
+  border-color: rgba(255, 197, 98, 0.55);
+}
+.ovr-slot-count,
+.ovr-slot-alt {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  padding: 0 2px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-shadow: 0 1px 1px #000;
+}
+.ovr-slot-alt {
+  color: #ffc562;
+  font-size: 9px;
+}
+
+/* Asistente */
+.ova-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ova-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+}
+.ova-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100%;
+}
+.ova-user {
+  align-self: flex-end;
+  max-width: 82%;
+  padding: 7px 11px;
+  border-radius: 12px 12px 3px 12px;
+  background: rgba(242, 154, 46, 0.22);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.ova-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ova-turn:empty {
+  display: none;
+}
+.ova-text {
+  overflow-wrap: anywhere;
+}
+.ova-md > :first-child {
+  margin-top: 0;
+}
+.ova-md > :last-child {
+  margin-bottom: 0;
+}
+.ova-md p,
+.ova-md ul,
+.ova-md ol,
+.ova-md blockquote,
+.ova-md pre {
+  margin: 0 0 6px;
+}
+.ova-md ul,
+.ova-md ol {
+  padding-left: 20px;
+}
+.ova-md-h {
+  font-weight: 700;
+  color: #ffe6b0;
+}
+.ova-md blockquote {
+  padding-left: 10px;
+  border-left: 2px solid rgba(255, 196, 120, 0.3);
+  color: #d4bfa8;
+}
+.ova-md code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+}
+.ova-md pre {
+  padding: 8px;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+}
+.ova-md pre code {
+  padding: 0;
+  background: none;
+}
+.ova-link {
+  color: #ffc562;
+  text-decoration: underline dotted;
+}
+.ova-typing,
+.ova-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b9a48f;
+  font-size: 12px;
+}
+.ova-tool {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 196, 120, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 196, 120, 0.05);
+  font-size: 12px;
+}
+.ova-tool.bad {
+  border-color: rgba(240, 122, 112, 0.5);
+}
+.ova-tool-name {
+  font-weight: 600;
+}
+.ova-tool-sub {
+  flex: 1;
+  min-width: 80px;
+  overflow: hidden;
+  color: #b9a48f;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ova-tool-state {
+  display: inline-grid;
+  place-items: center;
+}
+.ova-tool-state svg {
+  width: 14px;
+  height: 14px;
+}
+.ova-tool-note {
+  color: #a8937f;
+  font-size: 11px;
+}
+.ova-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(255, 197, 98, 0.5);
+  border-radius: 10px;
+  background: rgba(242, 154, 46, 0.1);
+}
+.ova-confirm p {
+  margin: 0;
+  color: #d4bfa8;
+  font-size: 12px;
+}
+.ova-confirm ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+.ova-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.ova-error,
+.ova-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(240, 122, 112, 0.45);
+  border-radius: 10px;
+  background: rgba(229, 84, 75, 0.1);
+  font-size: 12px;
+}
+.ova-error > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ova-error svg,
+.ova-block > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.ova-block {
+  margin: 0 12px 8px;
+}
+.ova-block[hidden] {
+  display: none;
+}
+.ova-block-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ova-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px 6px;
+  border-top: 1px solid rgba(255, 196, 120, 0.14);
+}
+.ova-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.ova-input {
+  flex: 1;
+  max-height: 120px;
+  padding: 7px 10px;
+  resize: none;
+  line-height: 1.35;
+}
+.ova-input:disabled {
+  opacity: 0.55;
+}
+.ova-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #a8937f;
+  font-size: 11px;
+}
+.ova-hint .ovl-btn {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+.ova-hint .ovl-btn svg {
+  width: 14px;
+  height: 14px;
+}

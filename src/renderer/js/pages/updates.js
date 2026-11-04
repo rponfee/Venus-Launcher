@@ -2,6 +2,7 @@ import { h, mount } from '../ui.js';
 import { store } from '../store.js';
 import { t } from '../i18n.js';
 import { appendUpdates } from './settings/updates.js';
+import { modUpdatesPanel } from '../features/instancelook/changelog.js';
 
 export default {
   ns: ['updates'],
@@ -19,6 +20,7 @@ export default {
       alive: () => alive && root.isConnected,
       onCleanup: (fn) => { if (typeof fn === 'function') cleanups.push(fn); },
     });
+    body.append(modUpdatesPanel());
     return () => { alive = false; cleanups.forEach((off) => off()); };
   },
 };

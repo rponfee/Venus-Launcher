@@ -1,6 +1,7 @@
 // Textos de la pagina del overlay. La ventana del overlay no tiene el puente del launcher, asi que carga el mismo
-// diccionario de la interfaz (src/renderer/i18n/<idioma>/overlay.js) directamente, con el idioma que manda el
-// proceso principal y el ingles y el espanol de respaldo. Plurales con _one / _other como i18n.js.
+// diccionario de la interfaz (src/renderer/i18n/<idioma>/overlay.js y overlaytools.js) directamente, con el idioma que
+// manda el proceso principal y el ingles y el espanol de respaldo. Plurales con _one / _other como i18n.js.
+// Los del asistente (assistant.js) se cargan solo al abrir su panel y se piden como 'assistant.<clave>'.
 
 const FALLBACK = ['en', 'es'];
 const LOCALES = { pt: 'pt-BR', zh: 'zh-CN' };
@@ -9,19 +10,38 @@ export function createTranslator() {
   let lang = 'es';
   let chain = [];
   const dicts = new Map();
+  let withAssistant = false;
+
+  async function readDict(code, ns) {
+    try {
+      return (await import(new URL(`../../i18n/${code}/${ns}.js`, import.meta.url).href)).default || null;
+    } catch {
+      return null; // idioma sin traduccion todavia
+    }
+  }
 
   async function loadOne(code) {
     if (dicts.has(code)) return dicts.get(code);
     let dict = null;
     if (/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(code)) {
-      try {
-        dict = (await import(new URL(`../../i18n/${code}/overlay.js`, import.meta.url).href)).default || null;
-      } catch {
-        dict = null; // idioma sin traduccion del overlay todavia
-      }
+      const [own, tools] = await Promise.all([readDict(code, 'overlay'), readDict(code, 'overlaytools')]);
+      if (own || tools) dict = { ...(tools || {}), ...(own || {}) };
     }
+    if (dict && withAssistant) await addAssistant(dict, code);
     dicts.set(code, dict);
     return dict;
+  }
+
+  async function addAssistant(dict, code) {
+    const texts = await readDict(code, 'assistant');
+    for (const [k, v] of Object.entries(texts || {})) dict[`assistant.${k}`] = v;
+  }
+
+  // Textos del panel del asistente (mas de 300: no hacen falta hasta abrirlo)
+  async function loadAssistant() {
+    if (withAssistant) return;
+    withAssistant = true;
+    await Promise.all([...dicts.entries()].filter(([, d]) => d).map(([code, d]) => addAssistant(d, code)));
   }
 
   async function load(code) {
@@ -52,5 +72,5 @@ export function createTranslator() {
     return key;
   }
 
-  return { load, t };
+  return { load, t, loadAssistant };
 }

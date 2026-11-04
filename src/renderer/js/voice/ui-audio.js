@@ -8,6 +8,7 @@ import { voice } from '../voice.js';
 import { acceleratorFromEvent, acceleratorParts, keyLabel } from './keys.js';
 import { levelMeter, segmented, fieldId, tSlot, kbdKeys } from './ui-common.js';
 import { VOICE_QUALITIES } from './net.js';
+import { VOICE_EFFECTS } from './fx.js';
 
 const RECORD_SECONDS = 5;
 
@@ -19,6 +20,7 @@ export function audioView(container) {
   let clipState = null; // prueba de grabar y escuchar: 'rec' | 'play'
   let clipLeft = 0;
   let clipTimer = null;
+  let fxTesting = false; // "Probar" de los efectos de voz: la prueba de microfono con devolucion
   const cfg = () => voice.settings;
   const save = (patch) => voice.saveSettings(patch).catch((err) => fail(t('voice.saveFailed'), err));
 
@@ -88,6 +90,19 @@ export function audioView(container) {
     h('div', { class: 'vc-toggles' }, toggleRows),
   );
 
+  // ---------- Efecto de voz ----------
+  const fxSeg = segmented(
+    VOICE_EFFECTS.map((id) => ({ id, label: t(`voice.fx_${id}`) })),
+    cfg().voiceEffect,
+    (v) => save({ voiceEffect: v }),
+    t('voice.fxTitle'),
+  );
+  fxSeg.el.classList.add('vc-fx-seg');
+  const fxHint = h('div', { class: 'field-help', role: 'status' });
+  const fxTest = h('button', { class: 'btn sm', type: 'button' });
+  fxTest.addEventListener('click', () => toggleFxTest());
+  const fxCard = h('section', { class: 'card vc-set-card' }, cardHead('sparkles', t('voice.fxTitle'), t('voice.fxSub')), fxSeg.el, fxHint, h('div', { class: 'row wrap' }, fxTest, h('span', { class: 'field-help vc-fx-note' }, t('voice.fxTestHint'))));
+
   // ---------- Modo de transmision ----------
   const modeSeg = segmented(
     [
@@ -142,7 +157,6 @@ export function audioView(container) {
   testSound.addEventListener('click', () => voice.playTestSound());
   const notify = switchEl(cfg().notifySounds !== false, (v) => save({ notifySounds: v }), t('voice.notifySounds'));
   const levelSwitch = switchEl(cfg().levelVoices !== false, (v) => save({ levelVoices: v }), t('voice.opt_levelVoices'));
-  const sbEnabled = switchEl(cfg().soundboardEnabled !== false, (v) => save({ soundboardEnabled: v }), t('voice.hearOthersSounds'));
   const sbVolVal = h('span', { class: 'vc-val', 'aria-hidden': 'true' });
   const sbVol = h('input', { type: 'range', class: 'range', id: ids.sbVol, min: 0, max: 100, step: 5 });
   sbVol.addEventListener('input', () => setRangeText(sbVol, sbVolVal, `${sbVol.value}%`));
@@ -152,8 +166,8 @@ export function audioView(container) {
     { class: 'card vc-set-card' },
     cardHead('headphones', t('voice.outputTitle'), t('voice.outputSub')),
     h('div', { class: 'field' }, h('label', { for: ids.out }, t('voice.outputDevice')), h('div', { class: 'vc-device-row' }, outSel, testSound)),
-    h('div', { class: 'vc-toggles' }, toggleRow(t('voice.opt_levelVoices'), t('voice.opt_levelVoicesHint'), levelSwitch), toggleRow(t('voice.notifySounds'), t('voice.notifySoundsHint'), notify), toggleRow(t('voice.hearOthersSounds'), t('voice.hearOthersSoundsHint'), sbEnabled)),
-    h('div', { class: 'field' }, h('div', { class: 'vc-label-row' }, h('label', { for: ids.sbVol }, t('voice.soundboardVolume')), sbVolVal), sbVol),
+    h('div', { class: 'vc-toggles' }, toggleRow(t('voice.opt_levelVoices'), t('voice.opt_levelVoicesHint'), levelSwitch), toggleRow(t('voice.notifySounds'), t('voice.notifySoundsHint'), notify)),
+    h('div', { class: 'field' }, h('div', { class: 'vc-label-row' }, h('label', { for: ids.sbVol }, t('voice.soundboardVolume')), sbVolVal), sbVol, h('div', { class: 'field-help' }, t('voice.soundboardVolumeHint'))),
   );
 
   // ---------- Atajo global ----------
@@ -173,7 +187,7 @@ export function audioView(container) {
   const relayRow = toggleRow(t('voice.relayOnly'), t('voice.relayOnlyText'), relaySwitch);
   const netCard = h('section', { class: 'card vc-set-card', hidden: true }, cardHead('network', t('voice.netTitle'), t('voice.netSubText')), h('div', { class: 'vc-toggles' }, relayRow));
 
-  mount(container, h('div', { class: 'vc-settings' }, h('div', { class: 'vc-set-col' }, micCard, modeCard), h('div', { class: 'vc-set-col' }, outCard, qualityCard, scCard, netCard)));
+  mount(container, h('div', { class: 'vc-settings' }, h('div', { class: 'vc-set-col' }, micCard, fxCard, modeCard), h('div', { class: 'vc-set-col' }, outCard, qualityCard, scCard, netCard)));
 
   // ---------- Estado ----------
   function cardHead(iconName, title, sub) {
@@ -209,8 +223,49 @@ export function audioView(container) {
     qualitySeg.set(c.voiceQuality);
     qualityHint.textContent = t(`voice.qualityHint_${c.voiceQuality}`, { kbps: VOICE_QUALITIES[c.voiceQuality].bitrate / 1000 });
     drawNoise();
+    drawFx();
     drawShortcut();
     drawNet();
+  }
+
+  function drawFx() {
+    const id = cfg().voiceEffect;
+    fxSeg.set(id);
+    const failed = voice.state.fxFailed;
+    const text = t(failed ? 'voice.fxFailed' : `voice.fxHint_${id}`);
+    if (fxHint.textContent !== text) fxHint.textContent = text;
+    fxHint.classList.toggle('vc-warn-text', failed);
+    // Se corto la prueba desde afuera (por ejemplo, al entrar a una sala)
+    if (fxTesting && !voice.state.testing && !voice.state.inRoom) fxTesting = false;
+    mount(fxTest, icon(fxTesting ? 'stop' : 'ear'), t(fxTesting ? 'voice.fxTestStop' : 'voice.fxTest'));
+  }
+
+  // "Probar": te escuchas con el efecto, igual que te escuchan los demas. Sin esperar la tecla de pulsar para hablar.
+  async function toggleFxTest() {
+    if (fxTesting) {
+      fxTesting = false;
+      if (voice.state.inRoom) voice.setMonitor(false);
+      else if (stopTest) stopTest();
+      stopTest = voice.state.inRoom ? stopTest : null;
+      monitorSwitch.querySelector('input').checked = false;
+      drawFx();
+      drawTest();
+      return;
+    }
+    const done = setBusy(fxTest);
+    try {
+      const stop = await voice.startMicTest({ monitor: true, open: true });
+      if (!voice.state.inRoom) stopTest = stop;
+      fxTesting = true;
+      monitorSwitch.querySelector('input').checked = true;
+      loadDevices();
+    } catch (err) {
+      fail(t('voice.micTestFailed'), err);
+    } finally {
+      done();
+      drawFx();
+      drawTest();
+    }
   }
 
   function drawNoise() {
@@ -450,7 +505,6 @@ export function audioView(container) {
       drawValues();
       for (const { key, el } of toggles) el.querySelector('input').checked = cfg()[key] !== false;
       notify.querySelector('input').checked = cfg().notifySounds !== false;
-      sbEnabled.querySelector('input').checked = cfg().soundboardEnabled !== false;
       relaySwitch.querySelector('input').checked = Boolean(cfg().relayOnly);
       autoSwitch.querySelector('input').checked = cfg().vadAuto !== false;
       levelSwitch.querySelector('input').checked = cfg().levelVoices !== false;
@@ -459,6 +513,7 @@ export function audioView(container) {
     voice.on('state', () => {
       drawTest();
       drawNoise();
+      drawFx();
       drawPttState();
     }),
     voice.on('devices', () => loadDevices()),

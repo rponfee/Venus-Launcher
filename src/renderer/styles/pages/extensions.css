@@ -1,0 +1,112 @@
+/* Extensiones de la comunidad. Prefijo .xt- */
+.xt-root { display: flex; flex-direction: column; gap: var(--sp-4); }
+.xt-tab-host { min-width: 0; }
+.xt-list { gap: var(--sp-3); }
+.xt-actions { gap: var(--sp-3); align-items: center; }
+
+/* ---------- Marco: lo dibuja el launcher y la extensión no lo puede tapar ---------- */
+.xt-page { height: calc(100vh - 110px); min-height: 420px; display: flex; flex-direction: column; }
+.xt-frame {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 2px dashed var(--warn);
+  border-radius: var(--radius-l);
+  background: var(--bg-1, #120b07);
+  overflow: hidden;
+}
+.xt-page .xt-frame { flex: 1; min-height: 0; }
+.xt-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px 10px;
+  background: repeating-linear-gradient(135deg, var(--warn-wash), var(--warn-wash) 12px, transparent 12px, transparent 24px);
+  border-bottom: 1px solid var(--warn-line);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  user-select: none;
+}
+.xt-bar > svg { width: 16px; height: 16px; color: var(--warn); flex-shrink: 0; }
+.xt-name { min-width: 0; max-width: 40%; }
+.xt-tag {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--warn-line);
+  background: var(--warn-wash);
+  color: var(--warn);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.xt-author { min-width: 0; max-width: 30%; }
+.xt-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  /* Fondo propio y opaco: una extensión transparente no se mezcla con la interfaz del launcher */
+  background: #0c0806;
+  contain: strict;
+}
+.xt-iframe { flex: 1; min-width: 0; width: 100%; height: 100%; border: 0; display: block; background: #0c0806; color-scheme: dark; }
+.xt-spin { align-self: center; }
+.xt-stopped { align-self: center; margin: var(--sp-4); }
+
+/* Tarjetas en Inicio: tamaño fijo, una al lado de la otra */
+.xt-home { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-4); }
+.xt-card { width: 340px; flex: none; }
+.xt-card .xt-body { height: 180px; flex: none; }
+.xt-card .xt-name { max-width: 110px; }
+
+/* Entrada del menú: siempre con la pieza y una marca al costado */
+.nav-item.xt-nav { box-shadow: inset 2px 0 0 var(--warn-line); }
+
+/* ---------- Lista ---------- */
+.xt-item { display: flex; flex-direction: column; gap: var(--sp-3); }
+.xt-item.blocked { border-color: var(--bad, #e5484d); }
+.xt-item-top { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.xt-item-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: var(--radius); background: var(--warn-wash); color: var(--warn); flex-shrink: 0; }
+.xt-item-icon svg { width: 20px; height: 20px; }
+.xt-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.xt-item-name { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.xt-item-desc { overflow-wrap: anywhere; }
+.xt-item-perms { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.xt-chip { cursor: default; font-size: 12px; }
+.xt-item-card { padding: 0; }
+.xt-item-actions { align-items: center; }
+.xt-safe.on { border-color: var(--warn); }
+.xt-safe .tr-title svg { width: 15px; height: 15px; vertical-align: -2px; }
+
+/* ---------- Resumen de permisos ---------- */
+.xt-sum-head { display: flex; flex-direction: column; gap: 2px; }
+.xt-sum-name { font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
+.xt-sum-desc { margin: 6px 0 0; overflow-wrap: anywhere; }
+.xt-perms { display: flex; flex-direction: column; gap: var(--sp-2); }
+.xt-perm { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); background: var(--well-bg); border: 1px solid var(--border); }
+.xt-perm.new { border-color: var(--warn); }
+.xt-perm-icon { color: var(--accent-hi); flex-shrink: 0; margin-top: 2px; }
+.xt-perm-icon svg { width: 18px; height: 18px; }
+.xt-perm-title { font-weight: 600; display: flex; align-items: center; gap: var(--sp-2); }
+.xt-never { margin: 0; display: flex; gap: 6px; align-items: flex-start; }
+.xt-never svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; color: var(--good); }
+.xt-sha { overflow-wrap: anywhere; }
+.xt-check { display: flex; gap: var(--sp-2); align-items: flex-start; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
+.xt-check input { margin-top: 2px; }
+
+/* ---------- Catálogo ---------- */
+.xt-subs { gap: var(--sp-2); }
+.xt-sub { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+
+/* ---------- Revisión (panel de administración) ---------- */
+.xt-rev { display: flex; flex-direction: column; gap: var(--sp-3); }
+.xt-rev-files { display: flex; flex-direction: column; gap: 2px; max-height: 180px; overflow: auto; }
+.xt-rev-file { display: flex; gap: var(--sp-2); justify-content: space-between; padding: 3px 8px; border-radius: 6px; text-align: left; background: transparent; border: 0; color: inherit; cursor: pointer; font: inherit; font-size: 12px; }
+.xt-rev-file:hover, .xt-rev-file.active { background: var(--hover-bg); }
+.xt-rev-code { margin: 0; max-height: 340px; overflow: auto; padding: var(--sp-3); border-radius: var(--radius); background: var(--well-bg); border: 1px solid var(--border); font-family: ui-monospace, Consolas, monospace; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.xt-rev-img { max-width: 100%; max-height: 300px; image-rendering: auto; border-radius: var(--radius); background: var(--well-bg); }
+.xt-adm-filter { margin-bottom: var(--sp-3); }
+.xt-adm-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }

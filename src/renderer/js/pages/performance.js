@@ -1,5 +1,6 @@
 // Rendimiento: memoria para Minecraft (automatica o manual), opciones avanzadas de Java y del juego,
-// datos de tu PC y monitor en vivo. La memoria de cada instancia se cambia desde su propia pagina.
+// datos de tu PC y monitor en vivo. La memoria de cada instancia se cambia desde su propia pagina. La pestania Historial
+// (#/performance/history, performance/history.js) muestra las partidas pasadas.
 import { h, icon, mount, fmtBytes, fmtMb, fmtAgo, fmtDuration, switchEl, selectEl, instanceIcon, fail, skeleton, setBusy } from '../ui.js';
 import { store, api } from '../store.js';
 import { t } from '../i18n.js';
@@ -63,9 +64,9 @@ async function fallbackPlan(err) {
 }
 
 export default {
-  ns: ['performance', 'perf'],
-  css: ['pages/performance', 'features/perf'],
-  async render(root) {
+  ns: ['performance', 'perf', 'datatools'],
+  css: ['pages/performance', 'features/perf', 'features/datatools'],
+  async render(root, params) {
     mount(root, loadingView());
     let plan;
     try {
@@ -409,12 +410,34 @@ export default {
       gamesBox,
     );
 
-    mount(
-      root,
-      h('div', { class: 'pf-root' }, pageHead(optimizeBtn()), h('div', { class: 'pf-layout' }, h('div', { class: 'pf-col pf-main' }, ramCard, adv), h('div', { class: 'pf-col pf-side' }, pcCard, liveCard))),
-    );
+    // ---------- Pestanas: lo de ahora y el historial, que se carga recien al abrirlo ----------
+    const nowPane = h('div', { class: 'pf-layout' }, h('div', { class: 'pf-col pf-main' }, ramCard, adv), h('div', { class: 'pf-col pf-side' }, pcCard, liveCard));
+    const historyPane = h('div', { style: { display: 'none' } });
+    const tabBar = h('div', { class: 'tabs dt-tabs', role: 'tablist', 'aria-label': t('datatools.tabsAria') });
+    let history = null;
+    let gone = false;
+    const showTab = async (id) => {
+      mount(
+        tabBar,
+        [
+          ['now', 'gauge', t('datatools.tabNow')],
+          ['history', 'history', t('datatools.tabHistory')],
+        ].map(([key, ic, label]) => h('button', { type: 'button', role: 'tab', class: ['tab', id === key && 'active'], 'aria-selected': String(id === key), onclick: () => showTab(key) }, icon(ic), label)),
+      );
+      nowPane.style.display = id === 'now' ? '' : 'none';
+      historyPane.style.display = id === 'history' ? '' : 'none';
+      if (id !== 'history' || history) return;
+      const mod = await import('./performance/history.js');
+      if (gone || history) return;
+      history = mod.historyView();
+      mount(historyPane, history.el);
+    };
+    mount(root, h('div', { class: 'pf-root' }, pageHead(optimizeBtn()), tabBar, nowPane, historyPane));
+    showTab(params?.[0] === 'history' ? 'history' : 'now');
 
     return () => {
+      gone = true;
+      history?.destroy();
       clearInterval(timer);
       if (pending) {
         clearTimeout(saveTimer);

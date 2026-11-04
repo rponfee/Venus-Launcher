@@ -14,6 +14,7 @@ import { renderCloud } from './settings/account.js';
 import { renderAi, renderPlan } from './settings/services.js';
 import { renderJava, renderData } from './settings/system.js';
 import { appendUpdates } from './settings/updates.js';
+import { settingsCards } from '../settings-cards.js';
 
 const SECTIONS = [
   { group: 'launcher' },
@@ -261,6 +262,10 @@ export default {
       try {
         const ret = sec.render(body, ctx);
         if (typeof ret === 'function') sectionCleanups.push(ret);
+        for (const card of settingsCards(sec.id)) {
+          const el = card(ctx);
+          if (el) body.append(el);
+        }
       } catch (err) {
         console.error('[settings]', err);
         mount(body, errorNote(t('settings.sectionError', { error: errMsg(err) }), () => renderSection()));

@@ -13,6 +13,7 @@ import { ensureProfileStyle, normalize, styledName, applyFrame, bannerEl as prof
 import { mergeProfiles } from '../features/profile-editor/model.js';
 import { achievementInfo } from '../pages/achievements/names.js';
 import { shouldAutoplaySong } from './logic.js';
+import { clanTagSlot } from '../features/clans/tag.js';
 
 registerIcons({
   scCheckCheck: '<path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/>',
@@ -312,7 +313,7 @@ export function profileCard(profile, { presence = 'offline', statusText = '', se
     h(
       'div',
       { class: 'pf-card-names' },
-      styledName(n, { size: 'lg', title: true }),
+      h('div', { class: 'cl-name-line' }, styledName(n, { size: 'lg', title: true }), preview ? null : clanTagSlot(n.id)),
       sub.length ? h('div', { class: 'pf-card-sub' }, sub.flatMap((s, i) => (i ? [h('span', { class: 'pf-dot-sep', 'aria-hidden': 'true' }), s] : [s]))) : null,
     ),
     rareBadgeChips(n.showcase?.rareBadges),

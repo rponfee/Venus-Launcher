@@ -9,6 +9,8 @@ import { t } from '../../i18n.js';
 import { navigate } from '../../app.js';
 import { iconButton, runFeature, supportsMods, supportsShaders, dropZone, openFolder } from '../versions/common.js';
 import { curseforgeRecords, curseforgeUrl } from './records.js';
+import { openModSets } from './modsets.js';
+import { openModChangelog } from '../../features/instancelook/changelog.js';
 
 export const CONTENT_KINDS = ['mods', 'resourcepacks', 'shaderpacks', 'datapacks'];
 const MODRINTH_TYPE = { mods: 'mod', resourcepacks: 'resourcepack', shaderpacks: 'shader', datapacks: 'datapack' };
@@ -173,6 +175,8 @@ export function contentTab(container, ctx, kind, sub = []) {
         : id.slug
           ? iconButton('external', t('instance.viewOnModrinth'), () => api.app.openExternal(`https://modrinth.com/project/${encodeURIComponent(id.slug)}`))
           : null,
+      // Con un origen conocido: que cambia entre la version instalada y la nueva (modules/modchangelog.js)
+      kind !== 'datapacks' && !f.isDir && (f.projectId || cf.modId || id.projectId) ? iconButton('fileText', t('instancetools.whatChangesItem', { name: title }), () => openModChangelog(inst.id, { folder: kind, file: f.file, title })) : null,
       f.isDir ? h('span', { class: 'ih-switch-gap', title: t('instance.folderCantToggle') }) : switchEl(f.enabled, () => toggle(f), f.enabled ? t('instance.disableItem', { name: title }) : t('instance.enableItem', { name: title })),
       iconButton('trash', t('instance.deleteItem', { name: title }), () => remove(f, title), 'danger'),
     );
@@ -349,6 +353,7 @@ export function contentTab(container, ctx, kind, sub = []) {
           t('instance.checkUpdates'),
         )
       : null,
+    kind === 'mods' && supportsMods(inst) ? h('button', { class: 'btn sm', type: 'button', onclick: () => openModSets(ctx.inst, { onChanged: () => alive && load({ quiet: true }) }) }, icon('layers'), t('instancetools.setsButton')) : null,
     kind === 'mods' && inst.loader === 'forge' ? h('button', { class: 'btn sm', type: 'button', onclick: () => addOptifine(inst, () => load({ quiet: true })) }, icon('zap'), t('instance.addOptifine')) : null,
     iconButton('upload', t('instance.addFiles'), pickFiles),
     iconButton('folder', t('instance.openFolder'), () => {

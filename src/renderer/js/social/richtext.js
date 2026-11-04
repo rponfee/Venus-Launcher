@@ -2,6 +2,7 @@
 // Nunca se usa innerHTML con texto de otros usuarios: todo se arma con nodos de texto.
 import { h } from '../ui.js';
 import { api } from '../store.js';
+import { splitEmojis } from './stickers.js';
 
 export const EMOJIS = [
   '😀', '😄', '😁', '😂', '🤣', '😊', '😉', '😍', '😘', '😎', '🤩', '🥳', '😅', '😇', '🙂', '🙃',
@@ -51,19 +52,32 @@ export function linkEl(url) {
   );
 }
 
-// Nodos del cuerpo de un mensaje (texto plano + links http/https).
-export function renderBody(text) {
+// Emoji propio dentro del texto (3.3). Si el archivo no carga, vuelve a ser el texto :nombre:
+function customEmojiEl(name, url) {
+  const label = `:${name}:`;
+  const img = h('img', { class: 'msg-cemoji', src: url, alt: label, title: label, loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', draggable: 'false' });
+  img.addEventListener('error', () => img.replaceWith(label));
+  return img;
+}
+
+// Nodos del cuerpo de un mensaje (texto plano + links http/https). emojis(nombre) -> direccion: los :nombre: que conoce el
+// que escribio se dibujan como imagen (social/stickers.js); los demas siguen siendo texto.
+export function renderBody(text, { emojis = null } = {}) {
   const s = String(text || '');
   const out = [];
+  const pushText = (chunk) => {
+    if (!emojis) return out.push(chunk);
+    for (const part of splitEmojis(chunk, emojis)) out.push(typeof part === 'string' ? part : customEmojiEl(part.name, part.url));
+  };
   let last = 0;
   for (const m of s.matchAll(URL_RE)) {
     const url = trimUrl(m[0]);
     if (!url || url.length < 10) continue;
-    if (m.index > last) out.push(s.slice(last, m.index));
+    if (m.index > last) pushText(s.slice(last, m.index));
     out.push(linkEl(url));
     last = m.index + url.length;
   }
-  if (last < s.length) out.push(s.slice(last));
+  if (last < s.length) pushText(s.slice(last));
   return out;
 }
 

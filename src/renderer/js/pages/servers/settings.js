@@ -7,6 +7,7 @@ import { t } from '../../i18n.js';
 import { navigate } from '../../app.js';
 import { typeMeta, typeBadge, serverTile, tryInvoke, failUnlessTask } from './common.js';
 import { ramSlider } from './create.js';
+import { discordCard } from '../../features/serverremote/discord.js';
 
 const AUTO_DEFAULTS = { autoRestart: false, autostart: false, restart: { mode: 'off', hours: 6, time: '05:00', warn: true }, backup: { mode: 'off', hours: 6, time: '04:00', keep: 5 } };
 
@@ -390,7 +391,8 @@ export function settingsTab(container, ctx) {
     );
   }
 
-  mount(container, h('div', { class: 'sv-settings' }, h('div', { class: 'stack' }, identity, resources, software), h('div', { class: 'stack' }, automation, filesBox, danger)));
+  const discord = discordCard(srv.id);
+  mount(container, h('div', { class: 'sv-settings' }, h('div', { class: 'stack' }, identity, resources, software), h('div', { class: 'stack' }, automation, discord, filesBox, danger)));
   (async () => {
     try {
       totalMb = Math.floor((await api.system.info()).totalMem / 1048576);
@@ -404,5 +406,5 @@ export function settingsTab(container, ctx) {
     drawFiles();
     drawDanger();
   })();
-  return null;
+  return () => discord.destroy();
 }

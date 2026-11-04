@@ -7,6 +7,7 @@ import { social } from '../social.js';
 import { voice } from '../voice.js';
 import { acceleratorParts, keyLabel } from './keys.js';
 import { personAvatar, fmtPing, openRoomEditor, tSlot, kbdKeys } from './ui-common.js';
+import { soundboardPanel } from './ui-board.js';
 import { joinedMembers, ENTRY_EFFECT_MS } from '../social/logic.js';
 
 const SPEAK_LEVEL = 0.34; // ~ -53 dB
@@ -83,7 +84,7 @@ export function roomView(container, { onTab } = {}) {
   // La lista solo puede tener listitems: el boton va adentro de una celda
   const inviteCell = h('div', { class: 'vc-invite-cell', role: 'listitem' }, inviteTile);
   const soundChip = h('div', { class: 'vc-sound-chip', 'aria-live': 'polite' });
-  const board = soundboard();
+  const board = soundboardPanel();
   const ctl = controls();
   const membersCard = h('div', { class: 'card vc-members' }, soundChip, h('div', { class: 'vc-grid-wrap' }, grid));
   ctl.el.prepend(board.el);
@@ -671,68 +672,6 @@ export function roomView(container, { onTab } = {}) {
     };
   }
 
-  // ---------- Soundboard ----------
-  function soundboard() {
-    const btns = new Map();
-    const grid2 = h('div', { class: 'vc-board-grid' });
-    for (const s of voice.SOUNDS) {
-      const b = h('button', { class: 'vc-sfx', type: 'button', title: t(`voice.sfx_${s.id}`) }, icon(s.icon), h('span', {}, t(`voice.sfx_${s.id}`)));
-      b.addEventListener('click', () => {
-        if (!voice.playSound(s.id)) {
-          b.classList.remove('nope');
-          void b.offsetWidth;
-          b.classList.add('nope');
-          return;
-        }
-        grid2.classList.remove('cooling');
-        void grid2.offsetWidth;
-        grid2.classList.add('cooling');
-        flash(s.id);
-      });
-      btns.set(s.id, b);
-      grid2.append(b);
-    }
-    grid2.addEventListener('animationend', (e) => {
-      if (e.animationName === 'vc-cool') grid2.classList.remove('cooling');
-    });
-    const st = voice.settings;
-    const volVal = h('span', { class: 'vc-pop-val' }, `${Math.round((st.soundboardVolume ?? 0.7) * 100)}%`);
-    const vol = h('input', { type: 'range', class: 'range', min: 0, max: 100, step: 5, value: Math.round((st.soundboardVolume ?? 0.7) * 100), 'aria-label': t('voice.soundboardVolume') });
-    vol.addEventListener('input', () => {
-      volVal.textContent = `${vol.value}%`;
-      vol.setAttribute('aria-valuetext', `${vol.value}%`);
-    });
-    vol.addEventListener('change', () => voice.saveSettings({ soundboardVolume: Number(vol.value) / 100 }));
-    const el = h(
-      'div',
-      { class: 'vc-board', role: 'region', 'aria-label': t('voice.soundboard'), hidden: true },
-      h('div', { class: 'vc-board-head' }, h('span', { class: 'vc-board-title' }, icon('audioLines'), t('voice.soundboard')), h('span', { class: 'vc-board-hint' }, t('voice.soundboardHint'))),
-      grid2,
-      h(
-        'div',
-        { class: 'vc-board-foot' },
-        h('label', { class: 'vc-board-opt' }, switchEl(st.soundboardEnabled !== false, (v) => voice.saveSettings({ soundboardEnabled: v }), t('voice.hearOthersSounds')), h('span', {}, t('voice.hearOthersSounds'))),
-        h('div', { class: 'vc-board-vol' }, icon('volume'), vol, volVal),
-      ),
-    );
-    function flash(id) {
-      const b = btns.get(id);
-      if (!b) return;
-      b.classList.remove('flash');
-      void b.offsetWidth;
-      b.classList.add('flash');
-    }
-    return {
-      el,
-      flash,
-      show(on) {
-        el.hidden = !on;
-        // Al abrirlo con el teclado, el foco entra al primer sonido
-        if (on && el.closest('.vc-controls')?.contains(document.activeElement)) grid2.querySelector('button')?.focus({ preventScroll: true });
-      },
-    };
-  }
-
   // El soundboard flota sobre la barra de controles; Escape lo cierra
   const onBoardKey = (e) => {
     if (e.key === 'Escape' && boardOpen && !pop && !document.querySelector('.modal-backdrop')) {
@@ -752,7 +691,7 @@ export function roomView(container, { onTab } = {}) {
   let chipTimer = null;
   function showSoundChip({ name, id }) {
     board.flash(id);
-    mount(soundChip, icon('audioLines'), t('voice.soundPlayed', { name: name || t('voice.someone'), sound: t(`voice.sfx_${id}`) }));
+    mount(soundChip, icon('audioLines'), t('voice.soundPlayed', { name: name || t('voice.someone'), sound: t(id === 'custom' ? 'voice.boardCustomName' : `voice.sfx_${id}`) }));
     soundChip.classList.add('show');
     clearTimeout(chipTimer);
     chipTimer = setTimeout(() => soundChip.classList.remove('show'), 2200);
@@ -841,6 +780,7 @@ export function roomView(container, { onTab } = {}) {
     offs.forEach((off) => off());
     window.removeEventListener('resize', fit);
     document.removeEventListener('keydown', onBoardKey);
+    board.destroy();
     closePop();
     clearTimeout(chipTimer);
     video.srcObject = null;

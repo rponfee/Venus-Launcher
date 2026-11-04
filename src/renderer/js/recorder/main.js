@@ -192,19 +192,25 @@ async function thumb(width = 320) {
   });
 }
 
-// Captura de pantalla al tamanio real de la ventana (PNG)
+// Captura de pantalla al tamanio real de la ventana (PNG). Para el timelapse: otro formato (cmd.mime, cmd.quality),
+// achicada (cmd.maxHeight) y, con cmd.reuse, del cuadro de la captura que este andando en vez de abrir otra.
 async function grab(cmd) {
-  const { stream } = await openStream({ fps: 30, box: null, audio: false, sourceId: cmd.sourceId });
+  const reused = cmd.reuse && current ? current : null;
+  const opened = reused ? null : await openStream({ fps: 30, box: null, audio: false, sourceId: cmd.sourceId });
+  const stream = reused ? reused.stream : opened.stream;
   try {
-    const track = stream.getVideoTracks()[0];
+    const track = reused ? reused.track : stream.getVideoTracks()[0];
     if (!track) throw new Error('no video');
     const bmp = await frameOf(track, stream);
-    const blob = await encode(bmp, bmp.width, bmp.height, 'image/png');
-    const out = { data: new Uint8Array(await blob.arrayBuffer()), width: bmp.width, height: bmp.height };
+    const k = cmd.maxHeight && bmp.height > cmd.maxHeight ? cmd.maxHeight / bmp.height : 1;
+    const width = Math.max(2, Math.round(bmp.width * k));
+    const height = Math.max(2, Math.round(bmp.height * k));
+    const blob = await encode(bmp, width, height, cmd.mime || 'image/png', cmd.quality);
+    const out = { data: new Uint8Array(await blob.arrayBuffer()), width, height };
     bmp.close?.();
     return out;
   } finally {
-    stopTracks(stream);
+    if (!reused) stopTracks(stream);
   }
 }
 

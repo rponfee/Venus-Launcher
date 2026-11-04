@@ -8,6 +8,13 @@
 //   mapviewer:renderAll(instanceId, world, dimension, { force }?) -> tarea con progreso -> { total, rendered, cached, failed }
 //   mapviewer:saveImage(bytes PNG, nombreSugerido) -> dialogo para guardar -> { path, bytes } | null
 //   mapviewer:reveal(ruta) -> muestra en la carpeta una imagen exportada en esta sesion
+// Marcadores (mapviewer/markers.js; se guardan en <mundo>/venus-markers.json; los errores traen err.code):
+//   mapviewer:markers(instanceId, world) -> { markers }
+//   mapviewer:markerSave(instanceId, world, marker) -> { marker, markers } (sin id conocido lo crea)
+//   mapviewer:markerDelete(instanceId, world, id) -> { markers }
+//   mapviewer:markersEncode(marcadores) -> { code, count, length, fitsMessage } (codigo para compartir)
+//   mapviewer:markersDecode(texto) -> { markers, dropped } (revisa un codigo pegado, sin guardar nada)
+//   mapviewer:markersImport(instanceId, world, texto) -> { added, skipped, markers }
 // Evento hacia la interfaz: 'mapviewer:tileReady' ({ instanceId, world, dimension, rx, rz, url, empty })
 const fsp = require('fs/promises');
 const path = require('path');
@@ -20,6 +27,7 @@ const { t } = require('../core/i18n');
 const { readJson, writeJson, sanitizeFileName } = require('../core/util');
 const anvil = require('./mapviewer/anvil');
 const { Pool } = require('./mapviewer/pool');
+const markers = require('./mapviewer/markers');
 
 // Subir este numero cuando cambie el dibujo: invalida las teselas guardadas
 const RENDER_VERSION = 1;
@@ -548,6 +556,12 @@ function register(context) {
   handle('mapviewer:renderAll', (instanceId, world, dimension, opts) => renderAll(instanceId, world, dimension, opts || {}));
   handle('mapviewer:saveImage', (bytes, suggested) => saveImage(bytes, suggested));
   handle('mapviewer:reveal', (p) => reveal(p));
+  handle('mapviewer:markers', async (instanceId, world) => ({ markers: await markers.read(await worldDir(instanceId, world)) }));
+  handle('mapviewer:markerSave', async (instanceId, world, marker) => markers.save(await worldDir(instanceId, world), marker));
+  handle('mapviewer:markerDelete', async (instanceId, world, id) => markers.remove(await worldDir(instanceId, world), String(id || '')));
+  handle('mapviewer:markersEncode', (list) => markers.encodeCode(list));
+  handle('mapviewer:markersDecode', (text) => markers.decodeCode(text));
+  handle('mapviewer:markersImport', async (instanceId, world, text) => markers.addAll(await worldDir(instanceId, world), markers.decodeCode(text).markers));
   onQuit(async () => {
     await flushIndexes();
     if (pool) await pool.close();

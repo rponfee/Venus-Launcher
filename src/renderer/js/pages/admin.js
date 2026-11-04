@@ -16,12 +16,24 @@ import * as paymentsTab from './admin/payments.js';
 import * as integrationsTab from './admin/integrations.js';
 import * as passTab from './admin/pass.js';
 import * as reportsTab from './admin/reports.js';
+import * as reviewsTab from './admin/reviews.js';
+import * as stickersTab from './admin/stickers.js';
+import * as eventsTab from './admin/events.js';
+import * as galleryTab from './admin/gallery.js';
+import * as clansTab from './admin/clans.js';
+import * as extensionsTab from './admin/extensions.js';
 
 const TABS = [
   { id: 'overview', icon: 'chart', mod: overviewTab },
   { id: 'payments', icon: 'card', mod: paymentsTab },
   { id: 'pass', icon: 'rocket', mod: passTab },
   { id: 'reports', icon: 'alert', mod: reportsTab },
+  { id: 'reviews', icon: 'star', mod: reviewsTab },
+  { id: 'stickers', icon: 'smile', mod: stickersTab },
+  { id: 'events', icon: 'calendar', mod: eventsTab },
+  { id: 'gallery', icon: 'camera', mod: galleryTab },
+  { id: 'clans', icon: 'shield', mod: clansTab },
+  { id: 'extensions', icon: 'puzzle', mod: extensionsTab },
   { id: 'integrations', icon: 'plug', mod: integrationsTab },
   { id: 'support', icon: 'message', mod: supportTab },
   { id: 'users', icon: 'users', mod: usersTab },

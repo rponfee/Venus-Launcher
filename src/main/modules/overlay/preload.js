@@ -1,7 +1,8 @@
 'use strict';
 // Puente minimo de la ventana del overlay (contextIsolation + sandbox). Solo recibe el layout y los eventos, y
 // en el modo edicion avisa las posiciones nuevas. No hay invoke generico: la pagina no llega a ningun canal
-// del launcher. El proceso principal ademas revisa que los mensajes vengan de esta ventana.
+// del launcher. El proceso principal ademas revisa que los mensajes vengan de esta ventana. Los paneles (recetas y
+// asistente) tienen un unico canal, overlay:panel, con una lista cerrada de acciones (overlay/panels.js).
 const { contextBridge, ipcRenderer } = require('electron');
 
 const listen = (channel) => (cb) => {
@@ -20,4 +21,8 @@ contextBridge.exposeInMainWorld('overlayBridge', {
   move: (id, pos) => tell({ type: 'move', id: String(id), pos: pos && typeof pos === 'object' ? { anchor: String(pos.anchor), x: Number(pos.x), y: Number(pos.y) } : null }),
   reset: () => tell({ type: 'reset' }),
   done: () => tell({ type: 'done' }),
+  // Paneles: lo que pide la pagina se revisa en el proceso principal, y solo vale con un panel abierto
+  onPanel: listen('overlay:panelMsg'),
+  panel: (req) => ipcRenderer.invoke('overlay:panel', req && typeof req === 'object' ? { ...req } : null),
+  closePanel: () => tell({ type: 'panelClose' }),
 });

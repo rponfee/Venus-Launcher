@@ -39,6 +39,9 @@ export default {
 
   // Acciones
   manage: 'Gestionar',
+  copyLink: 'Copiar link',
+  copyLinkPack: 'Link del modpack copiado',
+  copyLinkLocal: 'Link copiado: solo sirve en esta PC',
   openFolder: 'Abrir carpeta',
   openFolderFailed: 'No se pudo abrir la carpeta',
   rename: 'Renombrar',

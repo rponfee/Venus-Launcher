@@ -23,6 +23,8 @@ import { styledName, bubbleAttrs, fetchStyle } from '../social/profile-style.js'
 import { renderBody, isJumbo, openEmojiPicker, closeEmojiPicker, insertAtCursor, EMOJIS, QUICK_REACTIONS } from '../social/richtext.js';
 import { isKlipyUrl } from '../features/profile-editor/model.js';
 import { openGifPicker, closeGifPicker } from '../social/gifpicker.js';
+import { openStickerPicker, closeStickerPicker, openStickerReport } from '../features/socialplus/stickerpicker.js';
+import { ChatExtras, stickerOfMessage, stickerOfLast, stickerEl } from './messages/plus.js';
 
 const drafts = new Map(); // borradores por conversacion (sobreviven al cambiar de pagina)
 const GROUP_MS = 5 * 60_000;
@@ -82,14 +84,15 @@ const gifOf = (body) => {
 function preview(last) {
   if (!last) return '';
   if (last.deleted) return t('messages.deletedShort');
+  if (stickerOfLast(last)) return t('socialplus.stickerPreview');
   return gifOf(last.body) ? t('messages.gifPreview') : String(last.body || '').replace(/\s+/g, ' ');
 }
 
 const typingDots = () => h('span', { class: 'msg-dots', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'));
 
 export default {
-  ns: ['messages', 'social'],
-  css: ['pages/messages'],
+  ns: ['messages', 'social', 'socialplus'],
+  css: ['pages/messages', 'features/socialplus'],
   render(root, params) {
     const page = new MessagesPage(root, params[0] || null);
     page.start();
@@ -159,6 +162,7 @@ class MessagesPage {
     this.chat?.destroy();
     closeEmojiPicker();
     closeGifPicker();
+    closeStickerPicker();
     social.setActive(null);
   }
 
@@ -801,6 +805,20 @@ class ChatView {
       if (this.stick && this.mounted) this.scroller.scrollTop = this.scroller.scrollHeight;
     });
     this.resizer.observe(this.scroller);
+    this.plus = new ChatExtras(this);
+  }
+
+  // Para pages/messages/plus.js
+  userIdSelf() {
+    return social.userId;
+  }
+
+  chatMessages() {
+    return social.chat(this.chatId)?.messages || [];
+  }
+
+  isMediaMessage(m) {
+    return Boolean(gifOf(m.body) || stickerOfMessage(m));
   }
 
   friend() {
@@ -837,6 +855,7 @@ class ChatView {
       }
       this.mountChat();
       this.renderMessages('open');
+      this.plus.onOpen(this.unreadFrom);
       social.markRead(this.chatId);
       // Burbujas personalizadas (3.1): si el estilo de alguno de los dos llega despues, se vuelven a dibujar
       Promise.all([fetchStyle(this.userId), fetchStyle(social.userId)]).then((list) => list.some(Boolean) && !this.destroyed && this.renderMessages('keep'));
@@ -865,6 +884,7 @@ class ChatView {
   destroy() {
     this.destroyed = true;
     this.resizer.disconnect();
+    this.plus.destroy();
     closeEmojiPicker();
     if (this.chatId && this.input) {
       const v = this.editing ? this.savedDraft || '' : this.input.value;
@@ -891,7 +911,7 @@ class ChatView {
     const profile = this.profile();
     const name = this.name();
     // no rehacer la cabecera si no cambio nada visible (conserva el foco del teclado)
-    const key = JSON.stringify([name, Boolean(f), f?.presence, f?.activity, f?.statusText, f?.presence === 'offline' ? f?.lastSeen : 0, profile.banner, profile.badges, profile.username, profile.mc_name, profile.mc_uuid]);
+    const key = JSON.stringify([name, Boolean(f), f?.presence, f?.activity, f?.statusText, f?.presence === 'offline' ? f?.lastSeen : 0, profile.banner, profile.badges, profile.username, profile.mc_name, profile.mc_uuid, this.plus.auto, Boolean(this.chatId)]);
     if (key === this.headKey) return;
     this.headKey = key;
     this.headEl.style.setProperty('--msg-banner', bannerBackground(profile.banner));
@@ -922,6 +942,10 @@ class ChatView {
           ? h('button', { class: 'btn tonal sm msg-join', type: 'button', title: t('messages.joinTitle', { address: f.activity.address }), 'aria-label': t('messages.joinTitle', { address: f.activity.address }), onclick: () => joinFriend(f) }, icon('play'), h('span', { class: 'msg-lbl' }, t('social.join')))
           : null,
         f ? iconBtn('mic', t('social.inviteVoice'), () => inviteToVoice(f), { disabled: f.presence === 'offline', title: f.presence === 'offline' ? t('social.friendOffline') : t('social.inviteVoice') }) : null,
+        // Traducir lo que llega en esta conversacion (3.3)
+        f && this.chatId
+          ? h('button', { class: ['icon-btn', 'sm', this.plus.auto && 'active'], type: 'button', title: t(this.plus.auto ? 'socialplus.trAutoOff' : 'socialplus.trAutoOn'), 'aria-label': t('socialplus.trAuto'), 'aria-pressed': String(this.plus.auto), onclick: () => this.plus.toggleAuto() }, icon('spxLanguages'))
+          : null,
         iconBtn('user', t('messages.viewProfile'), () => openProfile(this.userId)),
         f
           ? iconBtn(
@@ -993,7 +1017,8 @@ class ChatView {
   mountChat() {
     this.mounted = true;
     this.buildComposer();
-    mount(this.el, this.headEl, this.noticeEl, h('div', { class: 'msg-scroll-wrap' }, this.scroller, this.jump), this.typingEl, this.composer, this.announcer);
+    mount(this.el, this.headEl, this.noticeEl, h('div', { class: 'msg-scroll-wrap' }, this.scroller, this.jump), this.typingEl, this.plus.noticeEl, this.composer, this.announcer);
+    this.renderHead();
     this.renderNotice();
     this.renderTyping();
   }
@@ -1032,6 +1057,7 @@ class ChatView {
     }
     if (!msgs.length) frag.append(this.emptyChat());
     mount(this.list, frag);
+    this.plus.scanEmojis(msgs);
     if (mode === 'open') {
       const marker = this.list.querySelector('.msg-new');
       if (marker) sc.scrollTop = Math.max(0, marker.offsetTop - sc.clientHeight / 3);
@@ -1071,12 +1097,14 @@ class ChatView {
     // Burbuja personalizada del que escribe (card_style.bubble, 3.1): estilo y color legible
     const look = bubbleAttrs(mine ? social.me || { id: social.userId } : this.profile());
     const gif = m.deleted ? null : gifOf(m.body);
+    const sticker = m.deleted ? null : stickerOfMessage(m);
     if (m.deleted) bubble = h('div', { class: 'msg-bubble deleted' }, icon('ban'), h('span', { class: 'msg-text' }, t('messages.deletedMessage')), meta);
     else {
       const keys = local ? null : mine ? 'R E' : 'R';
       if (gif) bubble = h('div', { class: ['msg-bubble', 'gif', ...look.classes], style: look.vars, tabindex: 0, 'aria-keyshortcuts': keys }, m.reply_to ? this.quoteEl(m.reply_to) : null, h('img', { class: 'msg-gif', src: gif, alt: t('messages.gifAlt'), loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', draggable: 'false' }), meta);
+      else if (sticker) bubble = h('div', { class: 'msg-bubble spx-bubble-sticker', tabindex: 0, 'aria-keyshortcuts': keys }, m.reply_to ? this.quoteEl(m.reply_to) : null, stickerEl(sticker), meta);
       else if (isJumbo(m.body)) bubble = h('div', { class: 'msg-bubble jumbo', tabindex: 0, 'aria-keyshortcuts': keys }, h('span', { class: 'msg-jumbo' }, m.body), meta);
-      else bubble = h('div', { class: ['msg-bubble', ...look.classes], style: look.vars, tabindex: 0, 'aria-keyshortcuts': keys }, m.reply_to ? this.quoteEl(m.reply_to) : null, h('span', { class: 'msg-text priv' }, renderBody(m.body)), meta);
+      else bubble = h('div', { class: ['msg-bubble', ...look.classes], style: look.vars, tabindex: 0, 'aria-keyshortcuts': keys }, m.reply_to ? this.quoteEl(m.reply_to) : null, h('span', { class: 'msg-text priv' }, renderBody(m.body, { emojis: this.plus.emojisOf(m) })), meta);
     }
     bubble.addEventListener('dblclick', (ev) => {
       if (ev.target.closest('a, button') || m.deleted || local) return;
@@ -1099,6 +1127,7 @@ class ChatView {
       'div',
       { class: 'msg-col' },
       bubble,
+      m.deleted ? null : this.plus.blockFor(m),
       reacts.length
         ? h(
             'div',
@@ -1148,7 +1177,7 @@ class ChatView {
   quoteEl(id) {
     const q = social.quoted(this.chatId, id);
     const who = q ? (q.sender_id === social.userId ? t('social.you') : this.name()) : '';
-    const text = !q ? t('messages.quoteMissing') : q.deleted ? t('messages.deletedMessage') : String(q.body || '').replace(/\s+/g, ' ').slice(0, 140);
+    const text = !q ? t('messages.quoteMissing') : q.deleted ? t('messages.deletedMessage') : stickerOfMessage(q) ? t('socialplus.stickerPreview') : String(q.body || '').replace(/\s+/g, ' ').slice(0, 140);
     return h(
       'button',
       {
@@ -1187,8 +1216,10 @@ class ChatView {
       { class: 'msg-tools', role: 'toolbar', 'aria-label': t('messages.messageActions') },
       local ? null : btn('scSmilePlus', t('messages.react'), (anchor) => this.reactPicker(m, anchor)),
       local ? null : btn('scReply', t('messages.reply'), () => this.startReply(m)),
-      mine && !local ? btn('edit', t('messages.edit'), () => this.startEdit(m)) : null,
+      this.plus.canTranslate(m) ? btn('spxLanguages', t(this.plus.isShown(m) ? 'socialplus.trHide' : 'socialplus.trShow'), () => this.plus.translateMessage(m)) : null,
+      mine && !local && !stickerOfMessage(m) ? btn('edit', t('messages.edit'), () => this.startEdit(m)) : null,
       btn('copy', t('messages.copy'), () => copyText(m.body, t('messages.copied'))),
+      !mine && !local && this.plus.reportable(m) ? btn('spxFlag', t('socialplus.reportAction'), () => openStickerReport({ userId: m.sender_id, name: this.name(), sticker: this.plus.reportable(m) }), 'danger') : null,
       mine ? btn('trash', t('messages.delete'), () => this.confirmDelete(m), 'danger') : null,
     );
   }
@@ -1223,7 +1254,10 @@ class ChatView {
         const near = this.isNearBottom();
         this.renderMessages(mine ? 'bottom' : 'keep');
         if (!mine && !near) this.bumpNew();
-        if (!mine && e.message && !e.message.deleted) this.announcer.textContent = t('messages.announce', { name: this.name(), text: e.message.body });
+        if (!mine && e.message && !e.message.deleted) {
+          this.announcer.textContent = t('messages.announce', { name: this.name(), text: stickerOfMessage(e.message) ? t('socialplus.stickerPreview') : e.message.body });
+          this.plus.onIncoming(e.message);
+        }
         break;
       }
       case 'update':
@@ -1367,7 +1401,7 @@ class ChatView {
       return;
     }
     const who = m.sender_id === social.userId ? t('social.you') : this.name();
-    const text = String(m.body || '').replace(/\s+/g, ' ');
+    const text = stickerOfMessage(m) ? t('socialplus.stickerPreview') : String(m.body || '').replace(/\s+/g, ' ');
     mount(
       this.ctx,
       icon(this.editing ? 'edit' : 'scReply'),
@@ -1414,6 +1448,23 @@ class ChatView {
       },
       h('span', { class: 'msg-gif-label', 'aria-hidden': 'true' }, t('messages.gif')),
     );
+    // Stickers propios (3.3): el mensaje lleva solo la direccion del archivo, como un GIF
+    this.stickerBtn = h(
+      'button',
+      {
+        class: 'icon-btn msg-sticker-btn',
+        type: 'button',
+        title: t('socialplus.stickers'),
+        'aria-label': t('socialplus.stickers'),
+        'aria-haspopup': 'dialog',
+        onclick: () =>
+          openStickerPicker(this.stickerBtn, {
+            onSend: (item) => this.send(item.url, this.replyTo?.id || null),
+            onInsert: (item) => insertAtCursor(this.input, `:${item.name}: `),
+          }),
+      },
+      icon('spxSticker'),
+    );
     this.sendBtn = h('button', { class: 'btn primary msg-send', type: 'button', title: t('messages.send'), 'aria-label': t('messages.send'), onclick: () => this.submit() }, icon('send'));
     this.input.addEventListener('input', () => {
       this.autoGrow();
@@ -1443,7 +1494,7 @@ class ChatView {
       }
     });
     this.lockNote = h('div', { class: 'msg-locked', role: 'status', hidden: true });
-    mount(this.composer, this.ctx, this.lockNote, h('div', { class: 'msg-compose-row' }, this.emojiBtn, this.gifBtn, h('div', { class: 'msg-input-wrap' }, this.input, this.counter), this.sendBtn));
+    mount(this.composer, this.ctx, this.lockNote, h('div', { class: 'msg-compose-row' }, this.emojiBtn, this.gifBtn, this.stickerBtn, h('div', { class: 'msg-input-wrap' }, this.input, this.counter), this.sendBtn));
     this.autoGrow();
     this.updateCounter();
     this.updateComposerState();
@@ -1459,6 +1510,7 @@ class ChatView {
     this.input.disabled = !canWrite;
     this.emojiBtn.disabled = !canWrite;
     if (this.gifBtn) this.gifBtn.disabled = !canWrite;
+    if (this.stickerBtn) this.stickerBtn.disabled = !canWrite;
     this.lockNote.hidden = canWrite;
     let note = [];
     if (mod) note = [icon(mod.kind === 'banned' ? 'ban' : 'micOff'), h('span', {}, t(mod.kind === 'banned' ? 'messages.modBannedShort' : 'messages.modMutedShort'))];

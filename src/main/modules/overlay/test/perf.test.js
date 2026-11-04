@@ -37,14 +37,14 @@ test('evento perf del contrato 1: numeros acotados, null para lo que no se sabe'
   assert.deepEqual(validate({ kind: 'perf', cpu: 12.345, extra: 1 }), { kind: 'perf', ram: null, cpu: 12.3, ping: null, session: null });
 });
 
-test('ajustes del widget perf: abajo a la izquierda, con las cuatro medidas', () => {
+test('ajustes del widget perf: abajo a la izquierda, con las cinco medidas', () => {
   const c = config.normalize(undefined);
   assert.ok(config.WIDGETS.includes('perf'));
   assert.equal(c.widgets.perf.anchor, 'bl');
-  assert.deepEqual(c.widgets.perf.show, { ram: true, cpu: true, ping: true, session: true });
-  const custom = config.normalize({ widgets: { perf: { enabled: false, show: { ping: false, fps: true } } } });
+  assert.deepEqual(c.widgets.perf.show, { fps: true, ram: true, cpu: true, ping: true, session: true });
+  const custom = config.normalize({ widgets: { perf: { enabled: false, show: { ping: false, fps: false, otra: true } } } });
   assert.equal(custom.widgets.perf.enabled, false);
-  assert.deepEqual(custom.widgets.perf.show, { ram: true, cpu: true, ping: false, session: true });
+  assert.deepEqual(custom.widgets.perf.show, { fps: false, ram: true, cpu: true, ping: false, session: true });
   assert.deepEqual(config.positionPatch('perf', { anchor: 'tc' }), { perf: { anchor: 'tc' } });
 });
 
@@ -99,6 +99,43 @@ test('muestreo en Windows: una muestra por linea del ayudante, con el ping del s
   assert.equal(child.killed, true);
   child.stdout.emit('data', '{"ok":1,"mem":1,"cpu10":1}\n');
   assert.equal(samples.length, 3); // parado: no hay mas muestras
+});
+
+test('FPS: solo si los informa el mod, y sin el mod el evento queda como antes', async () => {
+  assert.equal(perf.buildSample({ mem: 1048576, fps: 143.6, now: 1 }).fps, 144);
+  assert.equal('fps' in perf.buildSample({ mem: 1048576, fps: null, now: 1 }), false);
+  assert.equal('fps' in perf.buildSample({ mem: 1048576, now: 1 }), false);
+  assert.equal(validate({ kind: 'perf', fps: 144.4 }).fps, 144);
+  assert.equal('fps' in validate({ kind: 'perf', fps: null }), false);
+  assert.equal(validate({ kind: 'perf', fps: 999999 }).fps, 100000);
+  // El archivo que escribe el mod, con el lector de perfhistory/fps.js
+  const child = fakeChild();
+  const samples = [];
+  let fps = 87;
+  perf.createSampler({ pid: 5, startedAt: 1, onSample: (s) => samples.push(s), getFps: () => fps, platform: 'win32', spawnFn: () => child });
+  child.stdout.emit('data', '{"ok":1,"mem":1048576,"cpu10":10}\n');
+  assert.equal(samples[0].fps, 87);
+  fps = null;
+  child.stdout.emit('data', '{"ok":1,"mem":1048576,"cpu10":10}\n');
+  assert.equal('fps' in samples[1], false);
+  child.stdout.emit('data', '{"end":1}\n');
+});
+
+test('FPS con el lector de perfhistory/fps.js: archivo fresco, viejo o sin el mod', () => {
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+  const { readFps } = require('../../perfhistory/fps');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'venus-fps-test-'));
+  try {
+    assert.equal(readFps(dir), null, 'sin el mod');
+    fs.mkdirSync(path.join(dir, 'venus'));
+    fs.writeFileSync(path.join(dir, 'venus', 'perf.json'), JSON.stringify({ fps: 120.4, at: 1000 }));
+    assert.deepEqual(readFps(dir, 2000), { fps: 120, at: 1000 });
+    assert.equal(readFps(dir, 60000), null, 'dato viejo: el juego esta en pausa');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('muestreo con pidusage cuando no hay ayudante', async () => {

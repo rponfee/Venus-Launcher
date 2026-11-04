@@ -6,11 +6,12 @@
 //   { kind: 'music', state: { title, artist, album, art, playing, position, duration, positionAt?, source, appName } | null }
 //     (position y duration en ms, positionAt en epoch ms)
 //   { kind: 'capture', type, path?, thumb?, duration? }
-//   { kind: 'perf', ram? (MB), cpu? (0 a 100), ping? (ms), session? (segundos) }   (cada medida puede ser null)
+//   { kind: 'perf', fps?, ram? (MB), cpu? (0 a 100), ping? (ms), session? (segundos) }   (cada medida puede ser null)
+//   { kind: 'counters', deaths?, mined?, session? (segundos), multiplayer? }   (lo que no se sabe queda en null)
 // validate(evento) devuelve una copia limpia (textos recortados y sin caracteres de control, numeros dentro de
 // rango, imagenes solo https, data:image o assets/ del launcher) o lanza un Error con code 'badEvent' y field.
 
-const KINDS = ['alert', 'message', 'voice', 'music', 'capture', 'perf'];
+const KINDS = ['alert', 'message', 'voice', 'music', 'capture', 'perf', 'counters'];
 const ALERT_ICONS = ['info', 'friend', 'server', 'points', 'achievement', 'capture', 'music', 'party'];
 const CAPTURE_TYPES = ['screenshot', 'clip', 'recording-start', 'recording-stop', 'replay-saved'];
 const MAX_MEMBERS = 16;
@@ -162,13 +163,27 @@ function perf(ev) {
     const n = num(v, 0, max);
     return n === null ? null : Number(n.toFixed(decimals));
   };
-  return {
+  const out = {
     kind: 'perf',
     ram: measure(ev.ram, 1e6),
     cpu: measure(ev.cpu, 100, 1),
     ping: measure(ev.ping, 60000),
     session: measure(ev.session, 1e7),
   };
+  // FPS: solo si el mod Venus Badge los informa (perfhistory/fps.js)
+  const fps = measure(ev.fps, 100000);
+  if (fps !== null) out.fps = fps;
+  return out;
+}
+
+// Contadores en pantalla (overlay/counters.js): enteros acotados, lo que no se sabe queda en null.
+function counters(ev) {
+  const count = (v, max) => {
+    if (v === null || v === undefined) return null;
+    const n = num(v, 0, max);
+    return n === null ? null : Math.floor(n);
+  };
+  return { kind: 'counters', deaths: count(ev.deaths, 1e9), mined: count(ev.mined, 1e12), session: count(ev.session, 1e7), multiplayer: bool(ev.multiplayer) };
 }
 
 function validate(ev) {
@@ -179,6 +194,7 @@ function validate(ev) {
   if (ev.kind === 'voice') return voice(ev);
   if (ev.kind === 'music') return music(ev);
   if (ev.kind === 'perf') return perf(ev);
+  if (ev.kind === 'counters') return counters(ev);
   return capture(ev);
 }
 

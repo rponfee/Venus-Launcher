@@ -2,9 +2,10 @@
 // las instancias, con filtros (instancia, fecha, busqueda por nombre o mundo), visor grande con teclado, editor
 // rapido (recortar y exportar en vertical 9:16 u horizontal) y compartir (link, a un amigo o destacada en el
 // perfil). Los clips automaticos llevan su motivo (muerte, logro, jefe) con etiqueta y filtro. Los archivos los lista
-// worlds:media (carpetas de cada instancia) y los graba modules/capture.js.
-// Ruta: #/clips[/<screenshots | clips | recordings>]
-import { h, icon, mount, ok, fail, toast, setBusy, selectEl, debounce, emptyState, confirmDialog, fmtBytes } from '../ui.js';
+// worlds:media (carpetas de cada instancia) y los graba modules/capture.js. Tambien: Montaje de la semana y Timelapse
+// (features/clipstudio/) y la pestana Galeria, con los clips publicados por los usuarios (pages/clips/gallery.js).
+// Ruta: #/clips[/<screenshots | clips | recordings | gallery>]
+import { h, icon, mount, ok, fail, toast, setBusy, selectEl, debounce, emptyState, confirmDialog, fmtBytes, loading } from '../ui.js';
 import { api } from '../store.js';
 import { t } from '../i18n.js';
 import { navigate } from '../app.js';
@@ -16,12 +17,14 @@ import { openEditor } from './clips/editor.js';
 
 // Filtros mientras dure la sesion (volver a la pagina los recuerda)
 const memo = { tab: 'screenshots', instanceId: '', range: 'all', query: '', reason: '' };
+// La galeria no es una carpeta de la PC: no cuenta en countByTab ni usa los filtros
+const PAGE_TABS = [...TABS, 'gallery'];
 
 export default {
-  ns: ['clips', 'capture', 'worlds'],
-  css: ['pages/worlds', 'pages/clips'],
+  ns: ['clips', 'capture', 'worlds', 'clipstudio'],
+  css: ['pages/worlds', 'pages/clips', 'features/capture', 'features/clipstudio'],
   render(root, params = []) {
-    if (TABS.includes(params[0])) memo.tab = params[0];
+    if (PAGE_TABS.includes(params[0])) memo.tab = params[0];
     return renderClips(root);
   },
 };
@@ -35,6 +38,7 @@ function renderClips(root) {
   let aiAvailable = false;
   let aiIndex = {}; // sharedKey -> descripcion hecha con IA (solo las que pidio el usuario)
   let alive = true;
+  let gallery = null; // panel de la pestana Galeria (se arma la primera vez que se abre)
   const offs = [];
 
   // ---------- Estructura ----------
@@ -46,6 +50,8 @@ function renderClips(root) {
   const refreshBtn = h('button', { class: 'icon-btn', type: 'button', title: t('clips.refresh'), 'aria-label': t('clips.refresh'), onclick: () => load(true) }, icon('refresh'));
   const folderBtn = h('button', { class: 'btn', type: 'button', onclick: () => openFolder() }, icon('folderOpen'), t('clips.openFolder'));
   const settingsBtn = h('button', { class: 'btn ghost', type: 'button', onclick: () => navigate('settings/ingame/capture') }, icon('settings'), t('clips.captureSettings'));
+  const montageBtn = h('button', { class: 'btn tonal', type: 'button', onclick: () => openMontageDialog() }, icon('sparkles'), t('clipstudio.montageButton'));
+  const timelapseBtn = h('button', { class: 'btn', type: 'button', onclick: () => openTimelapseDialog() }, icon('clock'), t('clipstudio.timelapseButton'));
   mount(
     root,
     h(
@@ -53,7 +59,7 @@ function renderClips(root) {
       { class: 'cl-root' },
       h('div', { class: 'page-head' }, h('div', { class: 'ph-text' }, h('h1', { class: 'page-title' }, t('clips.title')), h('p', { class: 'page-sub' }, t('clips.subtitle'))), h('div', { class: 'page-actions' }, refreshBtn, settingsBtn, folderBtn)),
       liveHost,
-      tabBar,
+      h('div', { class: 'cs-tabsrow' }, tabBar, h('div', { class: 'cs-tabsrow-actions' }, timelapseBtn, montageBtn)),
       toolbar,
       gridHost,
     ),
@@ -178,16 +184,16 @@ function renderClips(root) {
           onkeydown: (e) => {
             if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
             e.preventDefault();
-            const k = TABS.indexOf(memo.tab) + (e.key === 'ArrowRight' ? 1 : -1);
-            selectTab(TABS[(k + TABS.length) % TABS.length]);
+            const k = PAGE_TABS.indexOf(memo.tab) + (e.key === 'ArrowRight' ? 1 : -1);
+            selectTab(PAGE_TABS[(k + PAGE_TABS.length) % PAGE_TABS.length]);
             tabBar.querySelector('.tab.active')?.focus();
           },
         },
-        icon(TAB_ICON[id]),
-        t(`clips.tab_${id}`),
-        h('span', { class: 'count' }, counts ? String(counts[id]) : ''),
+        icon(id === 'gallery' ? 'globe' : TAB_ICON[id]),
+        id === 'gallery' ? t('clipstudio.galleryTab') : t(`clips.tab_${id}`),
+        id === 'gallery' ? null : h('span', { class: 'count' }, counts ? String(counts[id]) : ''),
       );
-    mount(tabBar, TABS.map(btn));
+    mount(tabBar, PAGE_TABS.map(btn));
     gridHost.setAttribute('aria-labelledby', `cl-tab-${memo.tab}`);
   }
 
@@ -201,6 +207,10 @@ function renderClips(root) {
   }
 
   function drawToolbar() {
+    if (memo.tab === 'gallery') {
+      mount(toolbar);
+      return;
+    }
     const insts = media ? instancesOf(media.items) : [];
     if (memo.instanceId && !insts.some((i) => i.id === memo.instanceId)) memo.instanceId = '';
     const instSel = selectEl([{ value: '', label: t('clips.allInstances') }, ...insts.map((i) => ({ value: i.id, label: i.name }))], memo.instanceId, (v) => {
@@ -346,7 +356,27 @@ function renderClips(root) {
     };
   }
 
+  function drawGallery() {
+    if (!gallery) {
+      gallery = h('div', { class: 'cs-gl-slot' }, loading());
+      import('./clips/gallery.js')
+        .then(({ galleryPanel }) => {
+          if (!alive || !gallery) return;
+          const panel = galleryPanel();
+          gallery.destroy = () => panel.destroy();
+          gallery.reload = () => panel.reload();
+          mount(gallery, panel);
+        })
+        .catch((err) => {
+          console.warn('[clips] galeria:', err?.message || err);
+          mount(gallery, h('div', { class: 'card flat' }, emptyState('alert', t('clips.unavailable'), '')));
+        });
+    }
+    if (gridHost.firstChild !== gallery) mount(gridHost, gallery);
+  }
+
   function drawGrid() {
+    if (memo.tab === 'gallery') return drawGallery();
     if (error) {
       mount(gridHost, h('div', { class: 'card flat' }, emptyState('alert', t('clips.loadError'), error, h('button', { class: 'btn', type: 'button', onclick: () => load(true) }, icon('refresh'), t('clips.retry')))));
       return;
@@ -384,19 +414,46 @@ function renderClips(root) {
     );
   }
 
+  // Lo que se acaba de guardar (editor, montaje o timelapse): pestana Clips y visor abierto en ese archivo
+  async function showSaved(res) {
+    memo.tab = 'clips';
+    history.replaceState(null, '', '#/clips/clips');
+    Object.assign(memo, { instanceId: '', range: 'all', query: '', reason: '' });
+    search.value = '';
+    await load(true);
+    const list = filterItems(media?.items || [], filters());
+    const idx = list.findIndex((i) => i.path === res?.path);
+    if (idx >= 0) openViewer(list, idx, { onEdit: (it) => edit(it), onShared: () => refreshShared(), onDeleted: () => load(true) });
+  }
+
   function edit(item) {
-    openEditor(item, {
-      onSaved: async (res) => {
-        memo.tab = 'clips';
-        history.replaceState(null, '', '#/clips/clips');
-        await load(true);
-        const idx = filterItems(media?.items || [], filters()).findIndex((i) => i.path === res?.path);
-        if (idx >= 0) {
-          const list = filterItems(media.items, filters());
-          openViewer(list, idx, { onEdit: (it) => edit(it), onShared: () => refreshShared(), onDeleted: () => load(true) });
-        }
-      },
-    });
+    openEditor(item, { onSaved: (res) => showSaved(res) });
+  }
+
+  // ---------- Montaje de la semana y Timelapse ----------
+  async function openMontageDialog() {
+    const done = setBusy(montageBtn);
+    try {
+      if (!media) await load(true);
+      const { openMontage } = await import('../features/clipstudio/montage.js');
+      openMontage({ items: media?.items || [], sharedMap: shared, onSaved: (res) => showSaved(res) });
+    } catch (err) {
+      fail(t('clipstudio.openFailed'), err);
+    } finally {
+      done();
+    }
+  }
+
+  async function openTimelapseDialog() {
+    const done = setBusy(timelapseBtn);
+    try {
+      const { openTimelapse } = await import('../features/clipstudio/timelapse.js');
+      openTimelapse({ instanceId: memo.instanceId, onSaved: () => load(true) });
+    } catch (err) {
+      fail(t('clipstudio.openFailed'), err);
+    } finally {
+      done();
+    }
   }
 
   // ---------- Datos ----------
@@ -452,6 +509,7 @@ function renderClips(root) {
 
   async function openFolder() {
     const kind = memo.tab === 'screenshots' ? 'screenshot' : memo.tab === 'recordings' ? 'recording' : 'clip';
+    // La galeria no tiene carpeta: se abre la de los clips
     try {
       await api.invoke('capture:openFolder', { instanceId: memo.instanceId || undefined, kind });
     } catch (err) {
@@ -479,6 +537,7 @@ function renderClips(root) {
   return () => {
     alive = false;
     offs.forEach((off) => off());
+    gallery?.destroy?.();
     closeViewer();
   };
 }

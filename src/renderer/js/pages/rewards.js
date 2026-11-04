@@ -8,11 +8,13 @@ import { navigate, openAccounts } from '../app.js';
 import { social } from '../social.js';
 import { backend } from './rewards/backend.js';
 import {
-  DOWNLOAD_URL, REFERRAL_POINTS, REFERRAL_DAYS, dailyInfo, equipPatch, formatDelta,
+  CAPE_SLOT, DOWNLOAD_URL, REFERRAL_POINTS, REFERRAL_DAYS, dailyInfo, equipPatch, formatDelta,
   formatPoints, historyEntry, normalizeReferralCode, shopView, utcDay,
 } from './rewards/logic.js';
 import { loadSummary, onSummary, getSummary, claimAchievement, sweepServerAchievements, achievementName, itemName } from '../features/rewards.js';
 import { perksPanel } from '../features/premium.js';
+import { capeArt, capesNotice } from '../features/capes.js';
+import { knownCapes } from '../features/capes/logic.js';
 
 const R = (key, vars) => t(`rewards.${key}`, vars);
 const TABS = [
@@ -53,8 +55,8 @@ function waysView() {
 }
 
 export default {
-  ns: ['rewards', 'premium'],
-  css: ['pages/rewards', 'features/premium'],
+  ns: ['rewards', 'premium', 'capes'],
+  css: ['pages/rewards', 'features/premium', 'features/capes'],
   async render(root, params) {
     const b = await backend();
     if (!root.isConnected) return;
@@ -84,7 +86,7 @@ export default {
     }
 
     // ---------- Estado ----------
-    const st = { tab: TABS.some((x) => x.id === params[0]) ? params[0] : 'shop', items: null, itemsError: null, profile: null, ps: null, stats: null, code: null, codeLoading: false };
+    const st = { tab: TABS.some((x) => x.id === params[0]) ? params[0] : 'shop', items: null, itemsError: null, profile: null, cape: null, ps: null, stats: null, code: null, codeLoading: false };
     let viewCleanups = [];
     const refreshBtn = h('button', { type: 'button', class: 'icon-btn', title: t('common.refresh'), 'aria-label': t('common.refresh'), onclick: () => reload(refreshBtn) }, icon('refresh'));
     const hero = h('div', { class: 'rw-hero' });
@@ -256,6 +258,7 @@ export default {
       if (item.kind === 'frame') return frameEl(profile, item.id);
       if (item.kind === 'name_effect') return nameEl({ ...profile, nameStyle: { ...profile.nameStyle, effect: item.data?.effect }, equipped: { ...profile.equipped, nameEffect: item.id } }, { size: 'md' });
       if (item.kind === 'badge_style') return badgePlate(item.data?.style);
+      if (item.kind === 'cape') return capeArt(item);
       return nameEl({ ...profile, equipped: { ...profile.equipped, title: item.id } }, { size: 'sm', title: true });
     }
 
@@ -276,7 +279,23 @@ export default {
       }
     }
 
+    // Las capas no van en profiles.equipped: tienen su propia RPC (0034_capas.sql).
+    async function equipCape(v, itemId, btn) {
+      const release = setBusy(btn);
+      try {
+        const res = await b.rpc('cape_equip', { p_item: itemId });
+        st.cape = res?.item ?? null;
+        ok(itemId ? R('equipped', { name: itemName(itemId) }) : R('unequipped', { name: itemName(v.item.id) }));
+        if (alive && st.tab === 'shop') paintPanel();
+      } catch (err) {
+        fail(R('equipFailed'), errText(err));
+      } finally {
+        release();
+      }
+    }
+
     async function equip(v, itemId, btn) {
+      if (v.slot === CAPE_SLOT) return equipCape(v, itemId, btn);
       const d = data();
       const patch = equipPatch(st.profile?.equipped || {}, v.slot, itemId, { items: st.items, owned: d?.items, premium: d?.premium });
       const release = setBusy(btn);
@@ -309,7 +328,7 @@ export default {
       }
       if (!st.items) return skeleton('grid', { items: 6, min: 200 });
       const profile = me();
-      const groups = shopView(st.items, { owned: d.items, premium: d.premium, balance: d.balance, equipped: profile.equipped });
+      const groups = shopView(st.items, { owned: d.items, premium: d.premium, balance: d.balance, equipped: { ...profile.equipped, cape: st.cape } });
       const look = h(
         'section',
         { class: 'card rw-look', 'aria-labelledby': 'rw-look-title' },
@@ -324,6 +343,7 @@ export default {
         look,
         groups.map((g) => [
           sectionTitle(R(`kind_${g.kind}`)),
+          g.kind === 'cape' ? capesNotice(d, { onVerify: () => show('invite', true) }) : null,
           h(
             'div',
             { class: 'rw-shop' },
@@ -566,7 +586,7 @@ export default {
     async function loadShop() {
       st.itemsError = null;
       try {
-        st.items = await b.shopItems();
+        st.items = knownCapes(await b.shopItems());
       } catch (err) {
         st.items = null;
         st.itemsError = err?.code === 'network' ? 'network' : 'unavailable';
@@ -611,15 +631,18 @@ export default {
     }
 
     async function loadExtras() {
-      const [profile, ps, stats] = await Promise.all([
+      const [profile, ps, stats, cape] = await Promise.all([
         b.rpc('profile_public', { p_user: userAtRender }).catch((err) => {
           console.warn('[rewards] perfil', err?.code || err);
           return null;
         }),
         profileStyle(),
         api.invoke('stats:summary').catch(() => null),
+        // Sin la migración 0034 no hay capas en la tienda y esto falla: no cambia nada más
+        b.rpc('cape_mine').catch(() => null),
       ]);
       st.profile = profile && typeof profile === 'object' ? profile : null;
+      st.cape = cape?.item || null;
       st.ps = ps;
       st.stats = stats;
     }

@@ -60,10 +60,12 @@ function setInteractive(win, on) {
   if (on) {
     win.setIgnoreMouseEvents(false);
     win.setFocusable(true);
+    win.setSkipTaskbar(true); // setFocusable la vuelve a poner en la barra de tareas
     win.focus();
   } else {
     win.setIgnoreMouseEvents(true, { forward: true });
     win.setFocusable(false);
+    win.setSkipTaskbar(true);
     win.blur();
   }
 }

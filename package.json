@@ -80,7 +80,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Venus Launcher",
       "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico"
+      "uninstallerIcon": "build/icon.ico",
+      "include": "build/installer.nsh"
     },
     "portable": {
       "artifactName": "VenusLauncher-Portable.${ext}"

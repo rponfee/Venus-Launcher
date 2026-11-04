@@ -71,18 +71,23 @@ function pickTarget(games) {
   return fg || list.sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0))[0];
 }
 
+// La ventana del juego se puede cubrir: encontrada, visible, no minimizada y con tamano.
+const usableInfo = (info) => Boolean(info?.found && !info.minimized && info.visible && info.rect?.width > 0 && info.rect?.height > 0);
+
 // Decide si la ventana del overlay se ve y sobre que rectangulo.
 //   enabled: overlay activado en Ajustes; userHidden: oculto con el atajo; editing / testing: modo edicion o
 //   prueba (se ve aunque el juego no este en primer plano); target: juego elegido por pickTarget;
-//   overlayHwnd: la ventana del overlay (si tiene el foco, el juego sigue "adelante" para el usuario).
+//   overlayHwnd: la ventana del overlay (si tiene el foco, el juego sigue "adelante" para el usuario); panel: hay un
+//   panel abierto (recetas o asistente): se ve aunque este oculto con el atajo, siempre que el juego se pueda ver.
 // Devuelve { show, mode: 'game' | 'screen' | null } ('screen': sin juego, sobre la pantalla principal).
-function decide({ enabled, userHidden, editing, testing, target, overlayHwnd }) {
+function decide({ enabled, userHidden, editing, testing, target, overlayHwnd, panel }) {
   const info = target?.info;
-  const usable = Boolean(info?.found && !info.minimized && info.visible && info.rect?.width > 0 && info.rect?.height > 0);
+  const usable = usableInfo(info);
   if (editing || testing) return { show: true, mode: usable ? 'game' : 'screen' };
+  if (panel && enabled && usable) return { show: true, mode: 'game' };
   if (!enabled || userHidden || !usable) return { show: false, mode: usable ? 'game' : null };
   const front = info.foreground === info.hwnd || (overlayHwnd && info.foreground === String(overlayHwnd));
   return { show: Boolean(front), mode: 'game' };
 }
 
-module.exports = { parseLine, physicalToDip, sameRect, pickTarget, decide };
+module.exports = { parseLine, physicalToDip, sameRect, pickTarget, decide, usableInfo };

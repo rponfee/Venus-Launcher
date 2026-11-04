@@ -1,14 +1,15 @@
-// Widget de rendimiento del overlay (3.1): RAM y CPU del proceso del juego, ping del servidor y tiempo de sesion.
-// Lo dibuja OverlayView (widgets.js) con los eventos { kind: 'perf', ram, cpu, ping, session } que manda el proceso
-// principal cada 2 s (src/main/modules/overlay/perf.js). No hay FPS: no se pueden medir desde afuera del juego, y el
-// widget lo dice en su tooltip. Sin imports de la interfaz (la pagina del overlay no carga ui.js).
+// Widget de rendimiento del overlay (3.1): FPS, RAM y CPU del proceso del juego, ping del servidor y tiempo de sesion.
+// Lo dibuja OverlayView (widgets.js) con los eventos { kind: 'perf', fps?, ram, cpu, ping, session } que manda el proceso
+// principal cada 2 s (src/main/modules/overlay/perf.js). Los FPS no se pueden medir desde afuera del juego: los informa el
+// mod Venus Badge y, sin el mod, el tooltip lo explica. Sin imports de la interfaz (la pagina del overlay no carga ui.js).
 import { h } from './dom.js';
 
 export const PERF_STALE_MS = 6000; // sin muestras nuevas, el widget se esconde
-export const PERF_METRICS = ['ram', 'cpu', 'ping', 'session'];
+export const PERF_METRICS = ['fps', 'ram', 'cpu', 'ping', 'session'];
 
 // Trazos fijos (estilo Lucide), nunca datos de afuera.
 const ICONS = {
+  fps: '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
   ram: '<path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M8 11V9"/><path d="M16 11V9"/><path d="M12 11V9"/><path d="M2 15h20"/><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z"/>',
   cpu: '<rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>',
   ping: '<path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/>',
@@ -37,7 +38,11 @@ export function hasPerfData(ev) {
 
 // Datos de ejemplo (vista previa de Ajustes y modo edicion).
 export function samplePerf() {
-  return { ram: 2048, cpu: 23, ping: 48, session: 2694 };
+  return { fps: 144, ram: 2048, cpu: 23, ping: 48, session: 2694 };
+}
+
+export function fmtFps(n) {
+  return isNum(n) ? String(Math.round(n)) : null;
 }
 
 export function fmtRam(mb) {
@@ -62,8 +67,8 @@ export function fmtSession(sec) {
   return hh ? `${hh}:${String(mm).padStart(2, '0')}:${ss}` : `${mm}:${ss}`;
 }
 
-const FORMAT = { ram: fmtRam, cpu: fmtCpu, ping: fmtPing, session: fmtSession };
-const LABEL = { ram: 'perfRam', cpu: 'perfCpu', ping: 'perfPing', session: 'perfSession' };
+const FORMAT = { fps: fmtFps, ram: fmtRam, cpu: fmtCpu, ping: fmtPing, session: fmtSession };
+const LABEL = { fps: 'perfFps', ram: 'perfRam', cpu: 'perfCpu', ping: 'perfPing', session: 'perfSession' };
 
 // Dibuja el widget dentro de `inner` (conserva la etiqueta del modo edicion). Devuelve si hay algo que mostrar.
 export function drawPerf(inner, cfg, data, { tr }) {
@@ -80,6 +85,6 @@ export function drawPerf(inner, cfg, data, { tr }) {
   });
   if (!items.length) return false;
   const tag = inner.querySelector(':scope > .ovl-tag');
-  inner.replaceChildren(...(tag ? [tag] : []), h('div', { class: 'ovl-perf', role: 'status', title: tr('perfNoFps'), 'aria-label': tr('w_perf') }, items));
+  inner.replaceChildren(...(tag ? [tag] : []), h('div', { class: 'ovl-perf', role: 'status', title: isNum(data?.fps) ? null : tr('perfNoFps'), 'aria-label': tr('w_perf') }, items));
   return true;
 }

@@ -270,12 +270,13 @@ class RecorderHost extends EventEmitter {
 
   // ---------- Captura de pantalla (tamanio real de la ventana) ----------
 
-  // Devuelve { data: Buffer PNG, width, height }
-  async grab(source) {
+  // Devuelve { data: Buffer PNG, width, height }. opts = { mime, quality, maxHeight, reuse }: otro formato, achicada y
+  // sacada de la captura que este andando (timelapse); sin opts, el PNG al tamanio real de siempre.
+  async grab(source, opts = {}) {
     clearTimeout(this.idleTimer);
     await this.ensureWindow();
     try {
-      const v = await this.withSource(source, false, () => this.request({ type: 'grab', sourceId: source.id }, 10000));
+      const v = await this.withSource(source, false, () => this.request({ type: 'grab', sourceId: source.id, ...opts }, 10000));
       if (!v?.data?.byteLength) throw new Error('empty frame');
       return { data: Buffer.from(v.data.buffer, v.data.byteOffset, v.data.byteLength), width: v.width, height: v.height };
     } finally {

@@ -1,0 +1,91 @@
+/* ============================================================
+   Marcadores del Mapa del mundo (features/overlaytools/markers-ui.js)
+   y tarjeta de la wiki en Ajustes. Prefijo: .wmk- y .ovt-
+   Los paneles dentro del juego estan en styles/overlay.css
+   ============================================================ */
+
+/* ---------- Panel ---------- */
+.wmk-panel {
+  top: var(--sp-3);
+  right: calc(var(--sp-3) + 52px);
+  bottom: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: min(320px, calc(100% - 96px));
+  padding: var(--sp-3);
+  overflow: hidden;
+  cursor: default;
+  background: color-mix(in srgb, var(--bg-1) 94%, transparent);
+}
+.wmk-head { display: flex; align-items: center; gap: var(--sp-1); }
+.wmk-title { flex: 1; min-width: 0; margin: 0; font-size: var(--fs-md); font-weight: 700; color: var(--text); }
+.wmk-tools { display: flex; align-items: center; gap: var(--sp-2); }
+.wmk-search { flex: 1; min-width: 0; }
+.wmk-count { min-height: 1em; font-size: var(--fs-xs); color: var(--muted); }
+.wmk-list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; margin: 0 calc(var(--sp-1) * -1); padding: 0 var(--sp-1); }
+.wmk-empty { padding: var(--sp-4) var(--sp-2); font-size: var(--fs-sm); line-height: 1.5; color: var(--muted); text-align: center; }
+.wmk-foot { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2); margin-top: auto; padding-top: var(--sp-2); border-top: 1px solid var(--border-2); }
+.wmk-foot .spacer { flex: 1; }
+
+/* ---------- Fila ---------- */
+.wmk-row { display: flex; align-items: center; gap: 2px; border-radius: var(--radius-s); }
+.wmk-row:hover, .wmk-row:focus-within { background: var(--hover-bg); }
+.wmk-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-2); padding: 6px; border: 0; border-radius: var(--radius-s); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.wmk-open:focus-visible { outline: var(--focus-ring); outline-offset: -2px; }
+.wmk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wmk-name { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.wmk-sub { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.wmk-help { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2); }
+
+/* Marca de color con su icono (la misma en la lista y sobre el mapa). El color lleva un borde para verse sobre cualquier terreno. */
+.wmk-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--mk, var(--accent));
+  color: #1b0d03;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bg-0) 82%, transparent);
+}
+.wmk-mark svg { width: 15px; height: 15px; }
+
+/* ---------- Sobre el mapa ---------- */
+.wmk-marker .wmk-mark { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); transition: transform 120ms; }
+.wmk-marker .wm-mlabel { top: 16px; }
+.wmk-marker:hover .wmk-mark, .wmk-marker:focus-visible .wmk-mark { transform: translate(-50%, -50%) scale(1.15); }
+.wmk-marker:focus-visible .wmk-mark { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+
+/* ---------- Formulario ---------- */
+.wmk-form { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--sp-3); overflow-y: auto; }
+.wmk-form > .btn { align-self: flex-start; }
+.wmk-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.wmk-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
+.wmk-num { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-xs); color: var(--muted); }
+.wmk-num .input { width: 100%; min-width: 0; }
+.wmk-swatches, .wmk-icons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.wmk-swatch { width: 26px; height: 26px; padding: 0; border: 2px solid transparent; border-radius: 50%; background: var(--mk); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25); }
+.wmk-swatch.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--accent-line); }
+.wmk-icon { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--border-2); border-radius: var(--radius-s); background: none; color: var(--text-2); cursor: pointer; }
+.wmk-icon svg { width: 16px; height: 16px; }
+.wmk-icon:hover { background: var(--hover-bg); color: var(--text); }
+.wmk-icon.on { background: var(--accent-wash); border-color: var(--accent-line); color: var(--accent-hi); }
+.wmk-swatch:focus-visible, .wmk-icon:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+
+/* ---------- Compartir e importar ---------- */
+.wmk-code { width: 100%; min-height: 86px; resize: vertical; font-family: var(--mono, ui-monospace, Consolas, monospace); font-size: var(--fs-xs); word-break: break-all; user-select: text; -webkit-user-select: text; }
+.wmk-send { display: flex; align-items: center; gap: var(--sp-2); }
+.wmk-send[hidden] { display: none; }
+.wmk-send .input { flex: 1; min-width: 0; }
+.wmk-preview { display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.wmk-preview-list { display: flex; flex-direction: column; gap: 4px; margin: var(--sp-1) 0 0; padding: 0; list-style: none; }
+.wmk-preview-list li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text); }
+.wmk-preview-list .wmk-mark { grid-row: span 2; }
+.field-error[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wmk-marker .wmk-mark { transition: none; }
+}
+html[data-reduce-motion] .wmk-marker .wmk-mark { transition: none; }

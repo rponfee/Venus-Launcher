@@ -6,6 +6,7 @@ import { store, api } from '../../store.js';
 import { t } from '../../i18n.js';
 import { navigate, launchInstance } from '../../app.js';
 import { typeMeta } from './common.js';
+import { remoteCard } from '../../features/serverremote/remote.js';
 
 const LOADER_FOR = { fabric: ['fabric', 'quilt'], quilt: ['quilt'], forge: ['forge'], neoforge: ['neoforge'], mohist: ['forge'], youer: ['neoforge'] };
 
@@ -113,7 +114,8 @@ export function networkTab(container, ctx) {
     }
   }
 
-  mount(container, h('div', { class: 'stack' }, playBox, netBox));
+  const remote = remoteCard(srv.id);
+  mount(container, h('div', { class: 'stack' }, playBox, remote, netBox));
   drawPlay();
   drawNetPanel();
   const offState = ctx.on('state', drawPlay);
@@ -121,6 +123,7 @@ export function networkTab(container, ctx) {
   return () => {
     offState();
     offInst();
+    remote.destroy();
     try {
       netEl?.destroy?.();
     } catch {

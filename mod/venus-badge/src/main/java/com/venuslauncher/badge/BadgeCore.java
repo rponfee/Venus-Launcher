@@ -1,5 +1,6 @@
 package com.venuslauncher.badge;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.file.Files;
@@ -12,7 +13,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Lo que la insignia hace igual en todos los loaders, sin una sola clase de Minecraft: el servidor (config/venus-badge.json,
  * que escribe el launcher; sin ese archivo usa el de siempre), el hilo que le pregunta y los estilos. Cada loader solo
- * llama a {@link #start} al iniciar y a {@link #style} y {@link #glyph} para armar el nombre con sus propias clases.
+ * llama a {@link #start} al iniciar y a {@link #style} y {@link #glyph} para armar el nombre con sus propias clases, y a
+ * {@link #cape} para saber qué capa dibujar.
  */
 public final class BadgeCore {
 	public static final String MOD_ID = "venusbadge";
@@ -27,6 +29,8 @@ public final class BadgeCore {
 	static final List<String> STYLES = List.of("default", "gold", "nebula", "ice");
 
 	private static volatile BadgeCache cache;
+	private static volatile BadgeCache capes;
+	private static volatile boolean showOtherCapes = true;
 
 	private BadgeCore() {}
 
@@ -42,15 +46,25 @@ public final class BadgeCore {
 		return c == null ? null : c.style(id);
 	}
 
+	/**
+	 * La capa de Venus del jugador (un id de {@link Capes}) o null. Con las capas ajenas apagadas (own = false) ni se pregunta
+	 * al servidor por ese jugador. Solo se llama si Mojang no le da una capa: la oficial tiene prioridad.
+	 */
+	public static String cape(UUID id, boolean own) {
+		BadgeCache c = capes;
+		return c == null || (!own && !showOtherCapes) ? null : c.style(id);
+	}
+
 	/** Arranca el hilo que consulta al servidor. No toca Minecraft: se puede llamar desde cualquier hilo al cargar el mod. */
 	public static void start(Path configFile, String modVersion) {
 		Server server = server(configFile);
 		BadgeClient client = new BadgeClient(server.url(), server.anonKey(), "VenusBadge/" + modVersion);
 		BadgeCache c = new BadgeCache(client, System::currentTimeMillis);
+		BadgeCache k = new BadgeCache(client::fetchCapes, System::currentTimeMillis);
 		Thread worker = new Thread(() -> {
 			while (!Thread.currentThread().isInterrupted()) {
 				try {
-					Thread.sleep(c.tick());
+					Thread.sleep(Math.min(c.tick(), k.tick()));
 				} catch (InterruptedException err) {
 					return;
 				} catch (RuntimeException err) {
@@ -60,6 +74,8 @@ public final class BadgeCore {
 		}, "Venus Badge");
 		worker.setDaemon(true);
 		worker.start();
+		showOtherCapes = showCapes(configFile);
+		capes = k;
 		cache = c;
 	}
 
@@ -78,5 +94,17 @@ public final class BadgeCore {
 			LOG.warn("No se pudo leer {}: {}", file, err.toString());
 		}
 		return new Server(DEFAULT_URL, DEFAULT_KEY);
+	}
+
+	// "showCapes": false en el mismo archivo apaga las capas de los demás (la propia se sigue viendo). Lo escribe el launcher:
+	// Venus Points → Tienda → Capas. Cualquier otra cosa, o el archivo roto, las deja prendidas.
+	static boolean showCapes(Path file) {
+		try {
+			if (!Files.isRegularFile(file)) return true;
+			JsonElement value = JsonParser.parseString(Files.readString(file)).getAsJsonObject().get("showCapes");
+			return value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isBoolean() || value.getAsBoolean();
+		} catch (Exception err) {
+			return true;
+		}
 	}
 }

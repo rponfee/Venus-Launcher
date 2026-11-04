@@ -40,7 +40,10 @@ const DAY = 24 * HOUR;
 
 // Tienda: tipo de cosmético -> casillero de profiles.equipped (profile_customize).
 export const SLOT_BY_KIND = { frame: 'frame', name_effect: 'nameEffect', badge_style: 'badgeStyle', title: 'title' };
-export const KIND_ORDER = ['frame', 'name_effect', 'badge_style', 'title'];
+// Las capas (0034) tienen su propia tabla y su RPC: no van en profiles.equipped ni pasan por equipPatch.
+export const CAPE_SLOT = 'cape';
+const slotOf = (kind) => (kind === 'cape' ? CAPE_SLOT : SLOT_BY_KIND[kind]);
+export const KIND_ORDER = ['frame', 'name_effect', 'badge_style', 'cape', 'title'];
 
 // Errores de las RPC de 0020/0021 (texto de la excepción) y los que arma el cliente.
 export const SERVER_CODES = [
@@ -218,7 +221,7 @@ export function errorDetail(err) {
 
 // ---------- Tienda ----------
 /**
- * Arma la vista de la tienda: grupos por tipo (en KIND_ORDER) con el estado de cada ítem.
+ * Arma la vista de la tienda: grupos por tipo (en KIND_ORDER) con el estado de cada ítem. equipped trae también .cape.
  *   state: 'equipped' | 'owned' (comprado o incluido con premium) | 'buy' | 'short' (faltan puntos) | 'premium' (solo premium)
  */
 export function shopView(items, { owned = [], premium = false, balance = 0, equipped = {} } = {}) {
@@ -226,10 +229,10 @@ export function shopView(items, { owned = [], premium = false, balance = 0, equi
   const eq = equipped && typeof equipped === 'object' ? equipped : {};
   const groups = new Map(KIND_ORDER.map((k) => [k, []]));
   // Lo que viene del Venus Pass (source 'pass', 0026) no se vende: no va en la tienda.
-  const rows = (Array.isArray(items) ? items : []).filter((it) => it && typeof it.id === 'string' && SLOT_BY_KIND[it.kind] && it.active !== false && (!it.source || it.source === 'shop'));
+  const rows = (Array.isArray(items) ? items : []).filter((it) => it && typeof it.id === 'string' && slotOf(it.kind) && it.active !== false && (!it.source || it.source === 'shop'));
   rows.sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0) || a.id.localeCompare(b.id));
   for (const it of rows) {
-    const slot = SLOT_BY_KIND[it.kind];
+    const slot = slotOf(it.kind);
     const price = Math.max(0, Number(it.price) || 0);
     const premiumOnly = it.premium_only === true || it.premiumOnly === true;
     const isOwned = have.has(it.id) || (premiumOnly && premium);
@@ -264,7 +267,7 @@ export function equipPatch(equipped, slot, itemId, { items = [], owned = [], pre
 }
 
 // ---------- Historial ----------
-const REASON_ICONS = { daily: 'calendar', achievement: 'trophy', referral: 'userPlus', referred: 'heart', shop: 'tag', admin: 'shieldCheck', gift_in: 'sparkles', gift_out: 'heart' };
+const REASON_ICONS = { daily: 'calendar', achievement: 'trophy', referral: 'userPlus', referred: 'heart', shop: 'tag', admin: 'shieldCheck', gift_in: 'sparkles', gift_out: 'heart', mission: 'target', pass: 'rocket', pass_refund: 'undo', challenge: 'swords' };
 
 /** Normaliza una fila del historial de points_me para dibujarla. */
 export function historyEntry(row) {

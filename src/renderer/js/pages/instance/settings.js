@@ -5,6 +5,7 @@ import { store, api } from '../../store.js';
 import { t } from '../../i18n.js';
 import { navigate } from '../../app.js';
 import { feature, runFeature, repairInstance, duplicateInstance, deleteInstance } from '../versions/common.js';
+import { sharedOptionsCard } from './sharedoptions.js';
 
 // Sliders propios: solo si el panel del modulo de rendimiento no se puede cargar.
 function fallbackMemory(ctx, save) {
@@ -168,6 +169,7 @@ export function settingsTab(container, ctx) {
   wInput.addEventListener('input', saveWin);
   hInput.addEventListener('input', saveWin);
 
+  const sharedCard = sharedOptionsCard(ctx);
   mount(
     container,
     h(
@@ -217,6 +219,7 @@ export function settingsTab(container, ctx) {
             h('div', { class: 'field-help ih-gap', id: 'ih-win-help' }, t('instance.windowHint')),
             h('div', { class: 'toggle-row' }, h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, t('instance.fullscreen'))), switchEl(Boolean(win.fullscreen), (v) => save({ window: { override: true, fullscreen: v } }), t('instance.fullscreen'))),
           ),
+          sharedCard,
         ),
         h(
           'div',
@@ -306,5 +309,6 @@ export function settingsTab(container, ctx) {
   return () => {
     alive = false;
     clearTimeout(saveTimer);
+    sharedCard.destroy();
   };
 }

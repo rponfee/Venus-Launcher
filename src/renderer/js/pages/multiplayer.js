@@ -26,6 +26,7 @@ import {
   fmtInt,
   copyText,
 } from '../features/serverlist.js';
+import { canReview, reviewChip, loadSummaries } from '../features/serverreviews.js';
 
 const NS = 'multiplayer';
 const REFRESH_MS = 30000;
@@ -103,7 +104,7 @@ function statusSlots({ fallbackVersion = '', compact = false } = {}) {
 
 export default {
   ns: [NS],
-  css: ['pages/multiplayer', 'features/serverlist'],
+  css: ['pages/multiplayer', 'features/serverlist', 'features/serverremote'],
 
   async render(root, params) {
     await ensureUi();
@@ -307,6 +308,8 @@ function featuredView(ctx) {
     const slots = statusSlots({ fallbackVersion: s.version, compact: true });
     const iconSlot = h('div', { class: 'mpf-icon' }, serverIcon(null));
     const motdSlot = h('div', { class: 'mpf-motd' }, motdSkeleton());
+    // Reseñas y votos: solo en los destacados que vienen de la nube
+    const review = canReview(s) ? reviewChip(s) : null;
     const el = h(
       'article',
       { class: ['mpf-card', s.partner && 'mpf-partner'], 'aria-label': s.name },
@@ -326,6 +329,7 @@ function featuredView(ctx) {
       motdSlot,
       s.description ? h('p', { class: 'mpf-desc', title: s.description }, s.description) : null,
       h('div', { class: 'mpf-meta' }, (s.tags || []).slice(0, 3).map((tg) => h('span', { class: 'mpf-tag' }, tagLabel(tg))), slots.version),
+      review?.el,
       h(
         'div',
         { class: 'mpf-foot' },
@@ -339,6 +343,7 @@ function featuredView(ctx) {
       el,
       server: s,
       result: null,
+      review,
       update(r) {
         card.result = r;
         mount(iconSlot, serverIcon(r?.favicon));
@@ -431,6 +436,10 @@ function featuredView(ctx) {
         : h('div', { class: 'mp-hint' }, icon('info'), h('span', {}, t(`${NS}.featuredFootnote`))),
     );
     pingAll(false);
+    loadSummaries(list).then((stats) => {
+      if (!isAlive()) return;
+      for (const card of cards.values()) if (card.review && stats.has(card.server.id)) card.review.update(stats.get(card.server.id));
+    }).catch(() => {});
   }
   mount(grid, gridSkeleton());
   load();

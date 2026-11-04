@@ -351,6 +351,7 @@ export function instanceMenuItems(inst, { onDeleted, manage = true } = {}) {
     { icon: 'star', label: isFavorite(inst) ? t('versions.removeFavorite') : t('versions.addFavorite'), run: () => toggleFavorite(inst) },
     { icon: 'tag', label: t('versions.editTags'), run: () => openTagsDialog(inst) },
     shortcutsSupported() ? { icon: 'vsShortcut', label: t('versions.shortcut'), run: () => createShortcut(inst) } : null,
+    { icon: 'link', label: t('instance.copyLink'), run: () => import('../../features/instancelook/links.js').then((m) => m.copyInstanceLink(inst)) },
     '-',
     {
       icon: 'trash',

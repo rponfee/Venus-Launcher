@@ -604,6 +604,19 @@ function smallThumb(png) {
   }
 }
 
+// Un cuadro de la ventana del juego para otro modulo (timelapse): no se guarda ni avisa y, si hay una captura andando,
+// sale de esa misma (asi no se abre otra). opts = { mime, quality, maxHeight }. Solo la ventana del juego: nunca la pantalla.
+async function grabFrame(instanceId, opts = {}) {
+  if (!target || target.instanceId !== instanceId || !target.found) throw coded('errNoGame', 'noGame');
+  const src = await resolveSource();
+  return host.grab(src, { ...opts, reuse: true });
+}
+
+// Lo que guarda otro modulo en clips/ (montaje, timelapse): la misma copia extra y los mismos avisos que un clip
+function savedElsewhere({ file, instanceId, duration }) {
+  return afterSave({ type: 'clip', file, instanceId, duration });
+}
+
 async function screenshot() {
   if (!target) throw coded('errNoGame', 'noGame');
   const instanceId = target.instanceId;
@@ -925,4 +938,4 @@ function register(c) {
   });
 }
 
-module.exports = { register, status, saveReplay, screenshot, startRecording, stopRecording };
+module.exports = { register, status, saveReplay, screenshot, startRecording, stopRecording, grabFrame, savedElsewhere };

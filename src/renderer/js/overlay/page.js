@@ -2,6 +2,7 @@
 // ver src/main/modules/overlay/preload.js) y los dibuja con OverlayView. No llega a ningun canal del launcher.
 import { OverlayView } from './widgets.js';
 import { createTranslator } from './i18n.js';
+import { OverlayPanels } from './panels.js';
 
 const bridge = window.overlayBridge;
 const root = document.getElementById('overlay');
@@ -16,6 +17,14 @@ const view = new OverlayView(root, {
   onDone: () => bridge?.done(),
 });
 
+// Paneles (recetas y asistente): van encima de los widgets y solo se ven con su atajo.
+const panels = new OverlayPanels(root, {
+  tr: (k, v) => tr.t(k, v),
+  bridge,
+  showAlert: (ev) => view.handle(ev),
+  loadAssistantTexts: () => tr.loadAssistant(),
+});
+
 let lang = null;
 let pending = Promise.resolve();
 if (bridge) {
@@ -25,10 +34,12 @@ if (bridge) {
       if (layout?.lang !== lang) {
         lang = layout?.lang || 'es';
         await tr.load(lang);
+        panels.reset(); // se vuelven a armar con los textos del idioma nuevo
       }
       view.setLayout(layout);
     });
   });
   bridge.onEvent((ev) => pending.then(() => view.handle(ev)));
+  bridge.onPanel((msg) => pending.then(() => panels.handle(msg)));
   bridge.ready();
 }

@@ -5,8 +5,13 @@
 // Camino normal:   microfono -> volumen -> AudioWorklet (RNNoise + medidor + compuerta) -> salida
 // Sin AudioWorklet: microfono -> volumen -> compuerta (GainNode manejado desde tick()) -> salida
 // Si RNNoise no carga o se rompe, la llamada sigue con la supresion del navegador: nunca se corta por esto.
+//
+// Efecto de voz (voice/fx.js): compuerta -> efecto -> salida. Con 'none' no existe ningun nodo de mas.
+// Soundboard (voice/soundboard.js): sonido -> limitador -> salida, sin pasar por el supresor, la compuerta ni el efecto.
 import { FLOOR_DB, rmsDb, VoiceGate } from './gate.js';
 import { RNNOISE_RATE } from './rnnoise-core.js';
+import { buildVoiceFx, normalizeEffect } from './fx.js';
+import { MIX_LIMITER, compressorMakeupDb } from './leveler.js';
 
 export { FLOOR_DB, rmsDb };
 
@@ -104,6 +109,11 @@ export class LocalMic {
     this.fellBack = false;
     this.onEnded = null;
     this.onNoiseChange = null; // el motor de supresion cambio solo (RNNoise se rompio)
+    this.fx = null; // efecto de voz armado (null = la cadena de siempre)
+    this.effect = 'none';
+    this.fxToken = 0;
+    this.fxFailed = false; // se pidio un efecto y no se pudo armar: la voz sale limpia
+    this.soundIn = null;
   }
 
   get stream() {
@@ -130,13 +140,60 @@ export class LocalMic {
     this.input.gain.value = clampVolume(opts.inputVolume);
     await this.setupProcessor();
     await this.applyNoise();
+    await this.setEffect(opts.voiceEffect);
     await this.capture();
   }
 
   connectFallback() {
     this.input.connect(this.analyser);
     this.input.connect(this.gateNode);
-    this.gateNode.connect(this.out);
+    this.gateNode.connect(this.fx?.input || this.out);
+  }
+
+  // Pone un efecto de voz despues de la compuerta. Si no se puede armar, la voz sigue limpia: nunca se corta por esto.
+  async setEffect(id) {
+    const want = normalizeEffect(id);
+    if (want === this.effect) return;
+    this.effect = want;
+    const token = ++this.fxToken;
+    let next = null;
+    this.fxFailed = false;
+    if (want !== 'none') {
+      try {
+        next = await withTimeout(buildVoiceFx(this.ctx, want), LOAD_TIMEOUT_MS);
+      } catch (err) {
+        console.warn('[voice] el efecto de voz no está disponible:', err?.message || err);
+        this.fxFailed = true;
+      }
+      if (token !== this.fxToken || this.stopped) {
+        next?.stop();
+        return;
+      }
+    }
+    const tail = this.node || this.gateNode;
+    const old = this.fx;
+    tail.disconnect();
+    this.fx = next;
+    if (next) {
+      tail.connect(next.input);
+      next.output.connect(this.out);
+    } else tail.connect(this.out);
+    old?.stop();
+  }
+
+  // Entrada del soundboard: se suma a lo que se envia despues de todo lo demas, con su propio limitador para que un
+  // sonido fuerte no sature. Se arma recien con el primer sonido.
+  soundInput() {
+    if (!this.soundIn) {
+      const limiter = this.ctx.createDynamicsCompressor();
+      for (const k of ['threshold', 'knee', 'ratio', 'attack', 'release']) limiter[k].value = MIX_LIMITER[k];
+      const trim = this.ctx.createGain();
+      trim.gain.value = 10 ** (-compressorMakeupDb(MIX_LIMITER) / 20);
+      limiter.connect(trim);
+      trim.connect(this.out);
+      this.soundIn = limiter;
+    }
+    return this.soundIn;
   }
 
   // Pasa el audio por el AudioWorklet; si no carga, queda el camino de respaldo y la voz funciona igual
@@ -152,7 +209,7 @@ export class LocalMic {
       this.gateNode.disconnect();
       this.gateNode.gain.value = 0;
       this.input.connect(node);
-      node.connect(this.out);
+      node.connect(this.fx?.input || this.out);
       this.node = node;
     } catch (err) {
       console.warn('[voice] AudioWorklet no disponible, se usa la compuerta simple:', err?.message || err);
@@ -292,6 +349,7 @@ export class LocalMic {
     this.opts = { ...opts };
     this.input.gain.setTargetAtTime(clampVolume(opts.inputVolume), this.ctx.currentTime, 0.02);
     await this.applyNoise();
+    await this.setEffect(opts.voiceEffect);
     if (this.raw && this.captureKey() !== before) await this.capture();
   }
 
@@ -391,7 +449,11 @@ export class LocalMic {
       this.node.port.onmessage = null;
       this.node.onprocessorerror = null;
     }
+    this.fxToken++;
+    this.fx?.stop();
+    this.fx = null;
     try {
+      this.soundIn?.disconnect();
       this.input.disconnect();
       this.gateNode.disconnect();
       this.node?.disconnect();

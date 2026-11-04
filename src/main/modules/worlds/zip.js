@@ -2,6 +2,7 @@
 // ZIP por streaming para las copias de seguridad de mundos: no carga archivos en memoria (sirve para
 // mundos de varios GB), soporta ZIP64 (archivos de mas de 4 GB o mas de 65535 entradas) y nombres UTF-8.
 //   zipDirectory(dir, destZip, { root, exclude, signal, onProgress }) -> { files, bytes, size, skipped }
+//   zipFiles([{ abs, rel, size, mtime } o { rel, data }], destZip, { root, signal, onProgress, transform }) -> igual
 //   readEntries(zipFile) -> [{ name, method, crc, compressedSize, size, offset, dir, mtime }]
 //   extract(zipFile, destDir, { prefix, signal, onProgress }) -> { files, bytes }
 const fs = require('fs');
@@ -118,8 +119,13 @@ function output(file) {
       ws.end();
       await once(ws, 'finish');
     },
+    // Espera a que el archivo se cierre: en Windows no se puede borrar mientras sigue abierto
     destroy() {
-      ws.destroy();
+      if (ws.closed) return Promise.resolve();
+      return new Promise((resolve) => {
+        ws.once('close', resolve);
+        ws.destroy();
+      });
     },
   };
 }
@@ -131,6 +137,16 @@ function output(file) {
  */
 async function zipDirectory(dir, destZip, { root = '', exclude, signal, onProgress, level = 4 } = {}) {
   const files = await walk(dir, { exclude, signal });
+  return zipFiles(files, destZip, { root, signal, onProgress, level });
+}
+
+/**
+ * Comprime una lista de archivos de cualquier carpeta: { abs, rel, size, mtime } lee del disco y { rel, data, mtime }
+ * guarda contenido generado (un Buffer). transform(f, datos) -> datos permite cambiar un archivo chico (hasta 1 MB)
+ * antes de guardarlo; los mas grandes pasan tal cual, por streaming.
+ */
+async function zipFiles(list, destZip, { root = '', signal, onProgress, level = 4, transform } = {}) {
+  const files = list.map((f) => (Buffer.isBuffer(f.data) ? { ...f, size: f.data.length } : f));
   const totalBytes = files.reduce((a, f) => a + f.size, 0);
   await fsp.mkdir(path.dirname(destZip), { recursive: true });
   const tmp = `${destZip}.part`;
@@ -170,18 +186,19 @@ async function zipDirectory(dir, destZip, { root = '', exclude, signal, onProgre
       const stored = STORED.has(path.extname(f.rel).toLowerCase()) || f.size === 0;
       const { time, date } = dosDateTime(f.mtime);
       const offset = out.offset;
-      if (f.size <= SMALL) {
+      if (f.data || f.size <= SMALL) {
         // Archivos chicos: se leen enteros primero, asi uno bloqueado por el juego se puede omitir
         let data;
         try {
-          data = await fsp.readFile(f.abs);
+          data = f.data || (await fsp.readFile(f.abs));
         } catch (err) {
-          if (LOCKED.has(err.code)) {
+          if (LOCKED.has(err.code) || err.code === 'ENOENT') {
             skipped++;
             continue;
           }
           throw err;
         }
+        if (transform) data = (await transform(f, data)) || data;
         const crc = crc32(data) >>> 0;
         const body = stored ? data : await deflateRaw(data, { level });
         const method = stored || body.length >= data.length ? 0 : 8;
@@ -354,7 +371,7 @@ async function zipDirectory(dir, destZip, { root = '', exclude, signal, onProgre
     const st = await fsp.stat(destZip);
     return { files: central.filter((e) => !e.dir).length, bytes, size: st.size, skipped };
   } catch (err) {
-    out.destroy();
+    await out.destroy();
     await fsp.rm(tmp, { force: true }).catch(() => {});
     throw err;
   }
@@ -508,7 +525,8 @@ async function extract(zipFile, destDir, { prefix = '', signal, onProgress, entr
         // Entradas chicas: se leen de una vez con el mismo descriptor
         const raw = await readAt(fh, start, e.compressedSize);
         if (raw.length !== e.compressedSize) throw badZip();
-        const data = e.method === 8 ? await inflateRaw(raw) : raw;
+        // maxOutputLength: un archivo que declara poco y se infla mucho falla aca, sin llenar la memoria
+        const data = e.method === 8 ? await inflateRaw(raw, { maxOutputLength: Math.max(e.size, 1) }) : raw;
         crc = crc32(data);
         size = data.length;
         bytes += data.length;
@@ -536,4 +554,4 @@ function worldPrefix(entries) {
   return levels[0].name.slice(0, -'level.dat'.length);
 }
 
-module.exports = { zipDirectory, readEntries, extract, worldPrefix, crc32, walk, safeJoin };
+module.exports = { zipDirectory, zipFiles, readEntries, extract, worldPrefix, crc32, walk, safeJoin };

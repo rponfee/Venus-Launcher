@@ -1,10 +1,12 @@
 // Mapa del mundo: visor desde arriba de un mundo guardado, sin abrir el juego.
 // El proceso principal dibuja una tesela PNG de 512x512 por region (mapviewer:*) y la guarda en cache;
 // aca se arman en un canvas con arrastre, zoom con la rueda (pixelado al acercar), marcadores de aparicion
-// y jugadores, cambio de dimension, "Renderizar todo" y exportar la vista como PNG.
+// y jugadores, cambio de dimension, "Renderizar todo" y exportar la vista como PNG. Los marcadores propios (nombre,
+// color e icono, por mundo y dimension) estan en features/overlaytools/markers-ui.js.
 import { h, icon, mount, modal, ok, fail, ensureCss, registerIcons, avatarImg, copyText, setBusy, reducedMotion } from '../ui.js';
 import { store, api } from '../store.js';
 import { t, loadNs, locale } from '../i18n.js';
+import { createMarkerTools, markerIcon } from './overlaytools/markers-ui.js';
 
 const NS = 'worldmap';
 const TILE = 512;
@@ -59,7 +61,8 @@ registerIcons({
 let ready = null;
 function ensureUi() {
   ensureCss('features/worldmap');
-  if (!ready) ready = loadNs(NS).catch((err) => console.warn('[worldmap] textos', err));
+  ensureCss('features/overlaytools'); // marcadores propios
+  if (!ready) ready = Promise.all([loadNs(NS), loadNs('overlaytools')]).catch((err) => console.warn('[worldmap] textos', err));
   return ready;
 }
 
@@ -200,6 +203,25 @@ class MapViewer {
     this.modal.el.querySelector('.modal-body')?.classList.add('wm-body');
     this.modal.el.querySelector('.modal-foot')?.classList.add('wm-foot');
 
+    // Marcadores propios: panel con la lista, el formulario y los codigos para compartir
+    this.markerTools = createMarkerTools({
+      instanceId: this.instanceId,
+      world: this.folder,
+      stage: this.stage,
+      getDim: () => this.dim,
+      getCenter: () => {
+        const v = this.view();
+        return v ? { x: v.x, z: v.z } : { x: 0, z: 0 };
+      },
+      dimLabel,
+      goTo: (m) => this.goToMarker(m),
+      onChange: () => {
+        this.markerDim = null;
+        this.scheduleDraw();
+      },
+    });
+    this.toolsEl.append(h('span', { class: 'wm-tool-sep', 'aria-hidden': 'true' }), this.markerTools.button);
+
     this.bindEvents();
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.stage);
@@ -228,6 +250,7 @@ class MapViewer {
       }
     }
     this.closeMenu();
+    this.markerTools?.destroy();
     this.queue = [];
     for (const tile of this.tiles.values()) tile.low?.close?.();
     this.tiles.clear();
@@ -311,13 +334,22 @@ class MapViewer {
         e.preventDefault();
       }
     });
-    // Escape cierra primero el menu de jugadores (sin cerrar el visor)
+    // Clic derecho: un marcador nuevo en ese lugar
+    c.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (!this.view() || !this.hasData()) return;
+      const r = c.getBoundingClientRect();
+      const b = this.blockAt(e.clientX - r.left, e.clientY - r.top);
+      this.markerTools.addAt(b.x, b.z);
+    });
+    // Escape cierra primero el menu de jugadores y el panel de marcadores (sin cerrar el visor)
     this.stage.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.menu) {
+      if (e.key !== 'Escape') return;
+      if (this.menu) {
         e.stopPropagation();
         this.closeMenu();
         this.playerBtn.focus();
-      }
+      } else if (this.markerTools?.handleEscape()) e.stopPropagation();
     });
     this.offs.push(api.on('mapviewer:tileReady', (p) => this.onTileReady(p)));
     this.offs.push(store.on('task', (task) => this.onTask(task)));
@@ -918,6 +950,10 @@ class MapViewer {
       const name = playerName(p);
       out.push({ kind: 'player', x: p.x, z: p.z, label: name, player: p, color: this.playerColors[i % this.playerColors.length], title: `${name} · ${t('worldmap.coords', { x: fmtInt(p.x), z: fmtInt(p.z) })}` });
     });
+    // Marcadores propios. El nombre es un dato (puede venir de un codigo de otra persona): va como texto.
+    for (const m of this.markerTools?.markers() || []) {
+      if (m.dimension === this.dim) out.push({ kind: 'user', x: m.x + 0.5, z: m.z + 0.5, label: m.name, color: m.color, marker: m, title: `${m.name} · ${t('worldmap.coords', { x: fmtInt(m.x), z: fmtInt(m.z) })}` });
+    }
     return out;
   }
 
@@ -925,7 +961,9 @@ class MapViewer {
     this.markerDim = this.dim;
     this.markerEls = this.markerList().map((m) => {
       const el =
-        m.kind === 'spawn'
+        m.kind === 'user'
+          ? h('button', { class: 'wm-marker wmk-marker', type: 'button', title: m.title, 'aria-label': m.title, style: { '--mk': m.color }, onclick: () => this.markerTools.edit(m.marker.id) }, h('span', { class: 'wmk-mark' }, markerIcon(m.marker.icon)), h('span', { class: 'wm-mlabel' }, m.label))
+          : m.kind === 'spawn'
           ? h(
               'button',
               { class: 'wm-marker wm-m-spawn', type: 'button', title: m.title, 'aria-label': m.title, onclick: () => this.centerOn(m.x, m.z) },
@@ -1036,6 +1074,13 @@ class MapViewer {
     if (!sp) return;
     if (sp.dimension !== this.dim && this.regionSets.get(sp.dimension)?.size) this.setDimension(sp.dimension, { x: sp.x + 0.5, z: sp.z + 0.5 });
     else this.centerOn(sp.x + 0.5, sp.z + 0.5, Math.max(this.view()?.zi ?? DEFAULT_ZOOM, DEFAULT_ZOOM));
+  }
+
+  goToMarker(m) {
+    const x = m.x + 0.5;
+    const z = m.z + 0.5;
+    if (m.dimension !== this.dim && this.info?.dimensions?.some((d) => d.id === m.dimension)) this.setDimension(m.dimension, { x, z });
+    else this.centerOn(x, z, Math.max(this.view()?.zi ?? DEFAULT_ZOOM, DEFAULT_ZOOM));
   }
 
   goToPlayer(p) {

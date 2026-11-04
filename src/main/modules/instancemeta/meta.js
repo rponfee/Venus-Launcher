@@ -1,5 +1,6 @@
 'use strict';
-// Metadatos de presentacion de una instancia (venus-instance.json): caratula, etiquetas, favorito y notas.
+// Metadatos de presentacion de una instancia (venus-instance.json): caratula, etiquetas, favorito, notas, aspecto
+// por instancia (look: fondo, color y musica) y si usa los ajustes compartidos (sharedOptions).
 // Funciones puras, sin Electron: core/instances.update las usa para validar lo que llega de la interfaz
 // (o de cualquier modulo) antes de escribir. Pruebas: node --test "src/main/modules/instancemeta/test/"
 const TAG_MAX = 10;
@@ -10,7 +11,14 @@ const TASK_LEN = 200;
 const TASK_ID = /^[a-z0-9]{4,32}$/i;
 // Solo nombres de archivo generados por el modulo (dentro de la carpeta de la instancia).
 const COVER_FILE = /^cover\.(png|webp|jpe?g)$/i;
-const META_KEYS = ['cover', 'coverAt', 'tags', 'favorite', 'notes'];
+const META_KEYS = ['cover', 'coverAt', 'tags', 'favorite', 'notes', 'look', 'sharedOptions'];
+// Aspecto por instancia (features/instancelook.js)
+const LOOK_ACCENTS = ['venus', 'mars', 'neptune', 'jupiter', 'earth', 'saturn'];
+const LOOK_HEX = /^#[0-9a-f]{6}$/i;
+const LOOK_WALLPAPER = /^[a-z0-9][a-z0-9-]{0,63}$/i;
+const LOOK_IMAGE = /\.(png|jpe?g|webp|gif|avif|bmp|mp4|webm|m4v|ogv)$/i;
+const LOOK_AUDIO = /\.(mp3|ogg|oga|opus|wav|flac|m4a|aac|weba)$/i;
+const LOOK_PATH_MAX = 1024;
 
 const CONTROL = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g;
 
@@ -77,12 +85,68 @@ function normalizeCover(raw) {
   return typeof raw === 'string' && COVER_FILE.test(raw) ? raw : undefined;
 }
 
+function lookInt(raw, min, max, def) {
+  const n = Math.round(Number(raw));
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
+}
+
+// Un archivo del usuario para el fondo o la musica: ruta local absoluta con una extension conocida (sin rutas de
+// red, sin direcciones). Devuelve la ruta o null.
+function lookFile(raw, ext) {
+  if (typeof raw !== 'string' || !raw || raw.length > LOOK_PATH_MAX || /[\x00-\x1f\x7f]/.test(raw) || !ext.test(raw)) return null;
+  return /^[A-Za-z]:[\\/]/.test(raw) || /^\/(?!\/)/.test(raw) ? raw : null;
+}
+
+function normalizeLookColor(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (LOOK_ACCENTS.includes(raw.accent)) return { accent: raw.accent };
+  if (raw.accent === 'custom' && LOOK_HEX.test(raw.customColor || '')) return { accent: 'custom', customColor: raw.customColor.toLowerCase() };
+  return null;
+}
+
+function normalizeLookBackground(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const shade = { dim: lookInt(raw.dim, 0, 90, 45), blur: lookInt(raw.blur, 0, 24, 0) };
+  if (raw.type === 'stars') return { type: 'stars' };
+  if (raw.type === 'wallpaper' && typeof raw.id === 'string' && LOOK_WALLPAPER.test(raw.id)) return { type: 'wallpaper', id: raw.id, ...shade };
+  if (raw.type === 'image') {
+    const file = lookFile(raw.file, LOOK_IMAGE);
+    if (file) return { type: 'image', file, ...shade };
+  }
+  return null;
+}
+
+function normalizeLookMusic(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (raw.type === 'off') return { type: 'off' };
+  if (raw.type === 'file') {
+    const file = lookFile(raw.file, LOOK_AUDIO);
+    if (file) return { type: 'file', file, volume: lookInt(raw.volume, 0, 100, 35), pauseInGame: raw.pauseInGame !== false };
+  }
+  return null;
+}
+
+// { color?, background?, music? } o null si no cambia nada (la instancia se ve como el launcher).
+function normalizeLook(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const out = {};
+  const color = normalizeLookColor(raw.color);
+  const background = normalizeLookBackground(raw.background);
+  const music = normalizeLookMusic(raw.music);
+  if (color) out.color = color;
+  if (background) out.background = background;
+  if (music) out.music = music;
+  return Object.keys(out).length ? out : null;
+}
+
 // Normaliza en el lugar las claves de metadatos presentes en un parche de instances.update.
 function applyMetaPatch(patch) {
   if (!patch || typeof patch !== 'object') return patch;
   if ('tags' in patch) patch.tags = normalizeTags(patch.tags);
   if ('favorite' in patch) patch.favorite = normalizeFavorite(patch.favorite);
   if ('notes' in patch) patch.notes = patch.notes === null ? null : normalizeNotes(patch.notes);
+  if ('look' in patch) patch.look = normalizeLook(patch.look);
+  if ('sharedOptions' in patch) patch.sharedOptions = patch.sharedOptions === true;
   if ('cover' in patch) {
     const cover = normalizeCover(patch.cover);
     if (cover === undefined) delete patch.cover;
@@ -112,6 +176,7 @@ module.exports = {
   normalizeFavorite,
   normalizeNotes,
   normalizeCover,
+  normalizeLook,
   applyMetaPatch,
   pendingTasks,
 };

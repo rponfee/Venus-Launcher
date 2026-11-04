@@ -25,6 +25,12 @@ const SHOP = [
   ['title_redstoner', 'title', 600, false, 130, { title: 'redstoner' }],
   ['title_legend', 'title', 3000, false, 140, { title: 'legend' }],
   ['title_supporter', 'title', 0, true, 150, { title: 'supporter' }],
+  // 0034_capas.sql
+  ['cape_dawn', 'cape', 1000, false, 400, { cape: 'dawn' }],
+  ['cape_nebula', 'cape', 1500, false, 401, { cape: 'nebula' }],
+  ['cape_aurora', 'cape', 1500, false, 402, { cape: 'aurora' }],
+  ['cape_magma', 'cape', 2500, false, 403, { cape: 'magma' }],
+  ['cape_orbit', 'cape', 0, true, 404, { cape: 'orbit' }],
 ].map(([id, kind, price, premium_only, sort, data]) => ({ id, kind, price, premium_only, sort, data }));
 
 const ACHIEVEMENTS = [
@@ -74,6 +80,7 @@ function seed(state, now) {
     unlocked,
     items: new Set(fresh ? [] : ['frame_neon', 'title_explorer']),
     equipped: fresh ? {} : premium ? { frame: 'frame_venus', title: 'title_supporter', badgeStyle: 'badge_gold' } : { frame: 'frame_neon', title: 'title_explorer' },
+    cape: premium ? 'cape_orbit' : null,
     referralCode: fresh ? null : 'VP-7K2QXM',
     referredBy: state === 'demo' ? { username: 'TomiCraft', rewarded: false } : null,
     canClaimReferral: fresh,
@@ -130,6 +137,25 @@ export function createFakeBackend(state = 'demo') {
     },
     mission_claim: () => ({ points: 25, bonus: 0, balance: balance() }),
     venus_is_premium: () => s.premium,
+    cape_mine() {
+      if (!s.cape) return null;
+      const it = SHOP.find((x) => x.id === s.cape);
+      return { item: it.id, cape: it.data.cape, active: s.items.has(it.id) || (it.premium_only && s.premium) };
+    },
+    cape_equip({ p_item: id } = {}) {
+      if (id === null || id === undefined) {
+        s.cape = null;
+        return { ok: true, item: null };
+      }
+      const it = SHOP.find((x) => x.id === id && x.kind === 'cape');
+      if (!it) fail('bad_item');
+      if (!s.items.has(id)) {
+        if (!it.premium_only) fail('not_owned', id);
+        if (!s.premium) fail('premium_required');
+      }
+      s.cape = id;
+      return { ok: true, item: id };
+    },
     points_daily_claim() {
       const today = utcDay(Date.now());
       if (s.ledger.some((r) => r.reason === 'daily' && r.ref === today)) return { points: 0, already: true, balance: balance() };

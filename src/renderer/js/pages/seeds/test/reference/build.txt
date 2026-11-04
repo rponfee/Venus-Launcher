@@ -1,0 +1,28 @@
+Como se genera la referencia del Visor de semillas
+==================================================
+
+Hace falta una copia de cubiomes y un compilador de C. En la PC donde se hizo no hay gcc, clang ni cl en el PATH: se
+uso el Emscripten que trae el modulo WebGL de Unity (Emscripten 3.1.39, clang 17), que compila a WebAssembly. Sirve
+cualquier otro compilador de C: el codigo no depende de nada de Emscripten.
+
+  git clone https://github.com/Cubitect/cubiomes  (se uso el commit e61f90580cbdd883214a8054670dacae655e59c0)
+
+  python emcc.py -O2 -fwrapv -I<cubiomes> harness.c <cubiomes>/noise.c <cubiomes>/biomes.c <cubiomes>/layers.c
+    <cubiomes>/biomenoise.c <cubiomes>/generator.c <cubiomes>/finders.c <cubiomes>/util.c <cubiomes>/quadbase.c
+    -o harness.js -sENVIRONMENT=node -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sSTACK_SIZE=16MB -sEXIT_RUNTIME=1 -lm
+
+  node harness.js published > refs.jsonl
+    Primero: los hashes de tests.c de cubiomes (b6_hashes de testGeneration). El binario tiene que dar esos valores;
+    si no, la compilacion no sirve como referencia.
+
+  node harness.js all 240 16 > ref-all.jsonl
+    240 semillas: 16 especiales, el resto al azar. Con las 128 fortalezas en las primeras 16.
+
+  node compare.js ref-all.jsonl
+    Comparacion completa contra el port. Tiene que terminar con "errors": 0.
+
+  node make-golden.js ref-all.jsonl 4 refs.jsonl
+    Arma golden.json, lo que usan las pruebas de siempre (node --test "src/renderer/js/pages/seeds/test/").
+
+  node gen-tables.js <cubiomes>
+    Solo si se actualiza cubiomes: vuelve a generar gen/tables/.

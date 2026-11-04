@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#14100c">
+<title>Venus Launcher</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<main id="login" class="view" hidden>
+  <h1 class="brand">Venus Launcher</h1>
+  <p data-t="page_loginText"></p>
+  <form id="login-form" autocomplete="off">
+    <label for="code" data-t="page_codeLabel"></label>
+    <input id="code" type="text" inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="60" required>
+    <button type="submit" class="primary" data-t="page_connect"></button>
+  </form>
+  <p id="login-error" class="error" role="alert" hidden></p>
+</main>
+
+<main id="app" class="view" hidden>
+  <header>
+    <div class="head-text">
+      <h1 id="name"></h1>
+      <p id="meta" class="muted"></p>
+    </div>
+    <span id="state" class="pill" role="status"></span>
+  </header>
+  <p id="banner" class="banner" role="alert" hidden></p>
+
+  <section class="actions">
+    <button id="btn-start" class="primary" type="button" data-t="page_start"></button>
+    <button id="btn-restart" type="button" data-t="page_restart"></button>
+    <button id="btn-stop" class="danger" type="button" data-t="page_stop"></button>
+  </section>
+
+  <section class="card">
+    <h2><span data-t="page_players"></span> <span id="player-count" class="count"></span></h2>
+    <ul id="players"></ul>
+    <p id="no-players" class="muted" data-t="page_noPlayers" hidden></p>
+  </section>
+
+  <section class="card">
+    <h2 data-t="page_console"></h2>
+    <div id="console" class="console" role="log" aria-live="off" tabindex="0"></div>
+    <form id="command-form" autocomplete="off">
+      <label class="sr-only" for="command" data-t="page_commandLabel"></label>
+      <input id="command" type="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="256" data-ph="page_commandPlaceholder">
+      <button type="submit" data-t="page_send"></button>
+    </form>
+  </section>
+
+  <footer class="muted">
+    <p id="expires"></p>
+    <button id="btn-forget" class="link" type="button" data-t="page_forget"></button>
+  </footer>
+</main>
+
+<div id="confirm" class="overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
+  <div class="dialog">
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-text"></p>
+    <code id="confirm-command" hidden></code>
+    <div class="dialog-actions">
+      <button id="confirm-no" type="button" data-t="page_cancel"></button>
+      <button id="confirm-yes" class="primary" type="button"></button>
+    </div>
+  </div>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

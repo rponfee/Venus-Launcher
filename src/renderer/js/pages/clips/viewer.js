@@ -46,6 +46,9 @@ export function openViewer(list, index, opts = {}) {
   const friendBtn = h('button', { class: 'btn sm', type: 'button', onclick: () => busy(friendBtn, async () => !clipTooBig(items[i]) && sendToFriend(items[i])) }, icon('send'), t('clips.sendFriend'));
   const featureBtn = h('button', { class: 'btn sm', type: 'button', onclick: () => busy(featureBtn, () => featureOnProfile(items[i])) }, icon('star'), t('clips.feature'));
   const editBtn = h('button', { class: 'btn sm tonal', type: 'button', onclick: () => edit() }, icon('clScissors'), t('clips.edit'));
+  // Subir a YouTube o TikTok y publicar en la galeria: solo clips, y cada uno con su propio aviso de que se sube y adonde
+  const uploadBtn = h('button', { class: 'btn sm', type: 'button', onclick: () => busy(uploadBtn, async () => (await import('../../features/clipstudio/upload.js')).openUpload(items[i])) }, icon('upload'), t('clipstudio.upload'));
+  const publishBtn = h('button', { class: 'btn sm', type: 'button', onclick: () => busy(publishBtn, async () => !clipTooBig(items[i]) && (await import('./gallery.js')).openPublish(items[i], { onDone: () => opts.onShared?.(items[i]) })) }, icon('globe'), t('clipstudio.galleryPublish'));
   const copyBtn = iconBtn('copy', t('clips.copyImage'), () => copyImage());
   const openFile = () => api.invoke('worlds:openMedia', items[i].path).catch((err) => fail(t('clips.openFailed'), err));
   const openBtn = iconBtn('external', t('clips.openFile'), openFile);
@@ -62,7 +65,7 @@ export function openViewer(list, index, opts = {}) {
       { class: 'cl-vw-bar' },
       h('div', { class: 'cl-vw-info', 'aria-live': 'polite' }, title, sub, aiLine),
       counter,
-      h('div', { class: 'cl-vw-actions', role: 'group', 'aria-label': t('clips.viewerActions') }, editBtn, shareBtn, friendBtn, featureBtn, sep(), copyBtn, openBtn, folderBtn, sep(), delBtn, sep(), closeBtn),
+      h('div', { class: 'cl-vw-actions', role: 'group', 'aria-label': t('clips.viewerActions') }, editBtn, shareBtn, friendBtn, featureBtn, uploadBtn, publishBtn, sep(), copyBtn, openBtn, folderBtn, sep(), delBtn, sep(), closeBtn),
     ),
   );
 
@@ -134,6 +137,8 @@ export function openViewer(list, index, opts = {}) {
     const shot = it.kind === 'screenshot';
     copyBtn.hidden = !shot;
     featureBtn.hidden = !shot;
+    uploadBtn.hidden = shot;
+    publishBtn.hidden = shot || !/\.webm$/i.test(it.file || '');
     editBtn.hidden = shot || typeof opts.onEdit !== 'function';
   }
 

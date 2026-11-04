@@ -8,6 +8,7 @@ import { api, store } from '../store.js';
 import { t } from '../i18n.js';
 import { navigate, openAccounts } from '../app.js';
 import { createViewer } from './skins/viewer.js';
+import { equippedCapeCanvas } from '../features/capes.js';
 import { loadImage, normalizeSkin, normalizeCape, mannequin } from './skins/texture.js';
 import { variantLabel, skinThumb, headThumb, capeThumb, confirmChange, readDropped, problemOf } from './skins/parts.js';
 import { createCatalogView, memory as catMem, catalogKey, isCatalogKey, catalogVariant, setCatalogVariant, catalogNorm, ensureNorm, catalogMeta, categoryLabel, fmtCount } from './skins/catalog.js';
@@ -39,6 +40,7 @@ export default {
     const blank = mannequin();
     let shown = null;
     let shownCape = null;
+    let venusCape = null;
     let barReady = false; // el visor avisa cambios desde que se crea, antes de que exista la barra
     let pauseIcon = null;
     let focusAfter = null; // control que recupera el foco cuando termina un cambio (mientras tanto queda deshabilitado)
@@ -937,7 +939,8 @@ export default {
       viewer.el.classList.toggle('sk-placeholder', !skin);
       const capeId = S.profile?.activeCapeId;
       const tex = capeId ? S.capes.get(capeId) : null;
-      const cape = isMsa() && tex instanceof HTMLCanvasElement ? tex : null;
+      // Sin capa oficial se ve la de Venus que tenga puesta: en el juego también manda la oficial
+      const cape = !isMsa() ? null : capeId ? (tex instanceof HTMLCanvasElement ? tex : null) : venusCape;
       if (cape !== shownCape) {
         viewer.setCape(cape);
         shownCape = cape;
@@ -1251,6 +1254,10 @@ export default {
     drawAll();
     loadLibrary();
     loadAccount();
+    equippedCapeCanvas().then((canvas) => {
+      venusCape = canvas;
+      if (S.alive) updatePreview();
+    });
     if (catMem.tab === 'catalog') setTab('catalog');
     else cat.prefetch();
     // Si cambian las cuentas durante un cambio en curso, se vuelve a leer la cuenta cuando termina

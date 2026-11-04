@@ -1,0 +1,110 @@
+/* Control remoto de Venus Launcher: página del celular (sin dependencias). */
+:root {
+  --bg: #14100c;
+  --card: #201913;
+  --line: #3a2e23;
+  --text: #f5ece1;
+  --muted: #b5a696;
+  --accent: #ff9a3d;
+  --accent-ink: #1d1208;
+  --good: #57c97a;
+  --warn: #f2bd4e;
+  --bad: #ff7a6b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+.view {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.brand { font-size: 20px; color: var(--accent); margin: 8px 0 0; }
+h1 { font-size: 20px; margin: 0; overflow-wrap: anywhere; }
+h2 { font-size: 15px; margin: 0 0 8px; }
+p { margin: 0; }
+.muted { color: var(--muted); font-size: 14px; }
+.error { color: var(--bad); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+header { display: flex; align-items: flex-start; gap: 12px; justify-content: space-between; }
+.head-text { min-width: 0; }
+.pill {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.pill.good { color: var(--good); border-color: currentColor; }
+.pill.warn { color: var(--warn); border-color: currentColor; }
+.banner { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bad); color: var(--bad); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-width: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions button { flex: 1 1 120px; }
+button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.danger { color: var(--bad); border-color: var(--bad); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.link { background: none; border: 0; padding: 0; min-height: 44px; color: var(--muted); text-decoration: underline; font-weight: 400; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--muted); }
+input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  font: 16px ui-monospace, Menlo, Consolas, monospace;
+}
+#login-form { display: flex; flex-direction: column; gap: 8px; }
+#command-form { display: flex; gap: 8px; margin-top: 8px; }
+#command-form input { flex: 1; min-width: 0; }
+.count { color: var(--muted); font-weight: 400; }
+#players { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+#players li { padding: 2px 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: 14px; overflow-wrap: anywhere; }
+.console {
+  height: 40vh;
+  min-height: 180px;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 8px;
+  background: #0c0907;
+  border: 1px solid var(--line);
+  font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
+}
+.line { overflow-wrap: anywhere; white-space: pre-wrap; }
+.line .time { color: #7c6e60; }
+.line.bad { color: var(--bad); }
+.line.warn { color: var(--warn); }
+.line.cmd { color: var(--accent); }
+footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.dialog { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.dialog h2 { font-size: 17px; margin: 0; }
+.dialog code { display: block; padding: 8px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); overflow-wrap: anywhere; font-size: 13px; }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.dialog-actions button { flex: 1; }

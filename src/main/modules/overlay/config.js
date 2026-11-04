@@ -1,24 +1,30 @@
 'use strict';
 // Ajustes del overlay (settings.overlay) con sus valores por defecto. Sin Electron: lo usan el modulo, la
 // pagina (le llega ya normalizado) y las pruebas.
-//   overlay: { enabled, shortcut, widgets: { voice, messages, alerts, captures, music, perf } }
+//   overlay: { enabled, shortcut, panelShortcuts: { recipes, assistant }, widgets: { voice, messages, alerts, captures, music, perf, counters } }
 // Cada widget: { enabled, anchor ('tl'...'br' de la grilla de 3x3 o 'free'), x, y (posicion libre, fracciones
 // de 0 a 1 del espacio que queda dentro del juego), scale (0.6 a 1.6), opacity (0.3 a 1), theme ('dark',
 // 'light' o 'accent') } y lo propio de cada uno (ver DEFAULTS).
 
-const WIDGETS = ['voice', 'messages', 'alerts', 'captures', 'music', 'perf'];
+const WIDGETS = ['voice', 'messages', 'alerts', 'captures', 'music', 'perf', 'counters'];
 const ANCHORS = ['tl', 'tc', 'tr', 'ml', 'mc', 'mr', 'bl', 'bc', 'br'];
 const THEMES = ['dark', 'light', 'accent'];
 const ALERT_GROUPS = ['launcher', 'friends', 'servers', 'rewards'];
-// Widget de rendimiento (3.1): que medidas muestra. No hay FPS: no se pueden medir desde afuera del juego.
-const PERF_METRICS = ['ram', 'cpu', 'ping', 'session'];
+// Widget de rendimiento (3.1): que medidas muestra. Los FPS solo se saben con el mod Venus Badge (perfhistory/fps.js).
+const PERF_METRICS = ['fps', 'ram', 'cpu', 'ping', 'session'];
+// Contadores en pantalla: muertes, bloques minados y tiempo de sesion (overlay/counters.js).
+const COUNTER_METRICS = ['deaths', 'mined', 'session'];
 const DEFAULT_SHORTCUT = 'Alt+Shift+O';
+// Paneles que se abren en el modo interactivo (recetas y asistente), con su atajo.
+const PANELS = ['recipes', 'assistant'];
+const PANEL_SHORTCUTS = Object.freeze({ recipes: 'Alt+Shift+R', assistant: 'Alt+Shift+A' });
 
 const base = (anchor, x, y) => ({ enabled: true, anchor, x, y, scale: 1, opacity: 0.94, theme: 'dark' });
 
 const DEFAULTS = Object.freeze({
   enabled: true,
   shortcut: DEFAULT_SHORTCUT,
+  panelShortcuts: { ...PANEL_SHORTCUTS },
   widgets: {
     // show: 'all' (toda la sala) o 'speaking' (solo quien habla)
     voice: { ...base('tl', 0, 0), show: 'all' },
@@ -29,8 +35,10 @@ const DEFAULTS = Object.freeze({
     captures: { ...base('br', 1, 1), duration: 5 },
     // show: 'always' (mientras suena) o 'change' (unos segundos al cambiar de cancion)
     music: { ...base('br', 1, 1), show: 'always' },
-    // show: que medidas van en el widget (RAM y CPU del juego, ping del servidor y tiempo de sesion)
-    perf: { ...base('bl', 0, 1), show: { ram: true, cpu: true, ping: true, session: true } },
+    // show: que medidas van en el widget (FPS, RAM y CPU del juego, ping del servidor y tiempo de sesion)
+    perf: { ...base('bl', 0, 1), show: { fps: true, ram: true, cpu: true, ping: true, session: true } },
+    // show: que contadores van en el widget (se cuentan desde que se abrio el juego)
+    counters: { ...base('bl', 0, 1), show: { deaths: true, mined: true, session: true } },
   },
 });
 
@@ -76,9 +84,9 @@ function normalizeWidget(id, raw) {
     const f = r.filter && typeof r.filter === 'object' ? r.filter : {};
     out.filter = Object.fromEntries(ALERT_GROUPS.map((g) => [g, bool(f[g], d.filter[g])]));
   }
-  if (id === 'perf') {
+  if (id === 'perf' || id === 'counters') {
     const s = r.show && typeof r.show === 'object' ? r.show : {};
-    out.show = Object.fromEntries(PERF_METRICS.map((m) => [m, bool(s[m], d.show[m])]));
+    out.show = Object.fromEntries((id === 'perf' ? PERF_METRICS : COUNTER_METRICS).map((m) => [m, bool(s[m], d.show[m])]));
   }
   return out;
 }
@@ -90,9 +98,15 @@ function normalize(raw) {
   let shortcut = DEFAULTS.shortcut;
   if (r.shortcut === '' || r.shortcut === null) shortcut = '';
   else if (validAccelerator(r.shortcut)) shortcut = r.shortcut.trim();
+  const ps = r.panelShortcuts && typeof r.panelShortcuts === 'object' ? r.panelShortcuts : {};
+  const panelShortcuts = Object.fromEntries(PANELS.map((id) => {
+    if (ps[id] === '' || ps[id] === null) return [id, ''];
+    return [id, validAccelerator(ps[id]) ? ps[id].trim() : PANEL_SHORTCUTS[id]];
+  }));
   return {
     enabled: bool(r.enabled, DEFAULTS.enabled),
     shortcut,
+    panelShortcuts,
     widgets: Object.fromEntries(WIDGETS.map((id) => [id, normalizeWidget(id, w[id])])),
   };
 }
@@ -121,4 +135,4 @@ function resetPatch() {
   }));
 }
 
-module.exports = { WIDGETS, ANCHORS, THEMES, ALERT_GROUPS, PERF_METRICS, DEFAULTS, DEFAULT_SHORTCUT, normalize, normalizeWidget, positionPatch, resetPatch, validAccelerator };
+module.exports = { WIDGETS, ANCHORS, THEMES, ALERT_GROUPS, PERF_METRICS, COUNTER_METRICS, PANELS, PANEL_SHORTCUTS, DEFAULTS, DEFAULT_SHORTCUT, normalize, normalizeWidget, positionPatch, resetPatch, validAccelerator };

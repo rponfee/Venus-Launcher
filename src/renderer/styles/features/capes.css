@@ -1,0 +1,19 @@
+/* ============================================================
+   Capas de Venus en la tienda (features/capes.js, pages/rewards.js). Prefijo: .cp-
+   La textura es un PNG de 64x32 y cada pieza es un recorte de ese PNG, ampliado sin suavizar.
+   ============================================================ */
+.cp-head { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.cp-notice { margin: 0; }
+.cp-toggle { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--border); border-radius: 10px; }
+.cp-toggle-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: var(--fs-sm); }
+.cp-toggle-text strong { font-weight: 600; color: var(--text); }
+.cp-toggle-text span { color: var(--muted); font-size: var(--fs-xs); }
+
+.cp-art { display: flex; align-items: center; justify-content: center; gap: var(--sp-3); }
+.cp-tex { display: block; flex-shrink: 0; background-repeat: no-repeat; image-rendering: pixelated; }
+/* La cara de afuera de la capa: 10x16 desde (1,1) */
+.cp-face { --cp-s: 4px; width: calc(10 * var(--cp-s)); height: calc(16 * var(--cp-s)); background-size: calc(64 * var(--cp-s)) calc(32 * var(--cp-s)); background-position: calc(-1 * var(--cp-s)) calc(-1 * var(--cp-s)); box-shadow: 0 2px 6px rgb(0 0 0 / 35%); }
+/* El ala del elytra: 10x20 desde (36,2). La de la derecha es la misma en espejo */
+.cp-wings { display: flex; gap: 1px; }
+.cp-wing { --cp-s: 3px; width: calc(10 * var(--cp-s)); height: calc(20 * var(--cp-s)); background-size: calc(64 * var(--cp-s)) calc(32 * var(--cp-s)); background-position: calc(-36 * var(--cp-s)) calc(-2 * var(--cp-s)); }
+.cp-wing-mirror { transform: scaleX(-1); }

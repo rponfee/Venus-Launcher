@@ -1,0 +1,79 @@
+/* ============================================================
+   Servidores 3.2: control remoto desde el celular y avisos por Discord (.sr-),
+   reseñas y votos de servidores destacados (.srv-).
+   ============================================================ */
+
+/* ---------- Tarjetas ---------- */
+.sr-body { gap: var(--sp-3); }
+.sr-on { display: flex; gap: var(--sp-4); align-items: flex-start; flex-wrap: wrap; }
+.sr-qr { width: 200px; height: 200px; image-rendering: pixelated; border-radius: var(--radius-s); flex-shrink: 0; background: #ffffff; }
+.sr-qr-hidden {
+  width: 200px; height: 200px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2);
+  padding: var(--sp-3); text-align: center; font-size: var(--fs-sm); color: var(--muted); border: 1px dashed var(--border-3); border-radius: var(--radius-s);
+}
+.sr-qr-hidden svg { width: 24px; height: 24px; }
+.sr-pair { flex: 1; min-width: 260px; gap: var(--sp-2); }
+.sr-step { margin: 0; }
+.sr-kv { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.sr-k { flex-shrink: 0; width: 72px; font-size: var(--fs-sm); color: var(--muted); }
+.sr-v { min-width: 0; overflow-wrap: anywhere; user-select: text; }
+.sr-live { gap: var(--sp-2); }
+.sr-live > .small svg { width: 14px; height: 14px; vertical-align: -2px; }
+.sr-rejected { color: var(--warn-text); }
+.sr-clients-title { margin-top: var(--sp-1); }
+.sr-client .li-main { min-width: 0; }
+.sr-url-row { align-items: stretch; }
+.sr-url-row .input { flex: 1; min-width: 0; }
+.sr-events { display: flex; flex-direction: column; }
+.sr-events .toggle-row { padding: var(--sp-2) 0; }
+
+/* ---------- Reseñas: en la tarjeta del destacado ---------- */
+.srv-chip {
+  display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 0; padding: 2px var(--sp-2); align-self: flex-start;
+  font-size: var(--fs-sm); color: var(--text-2); background: none; border: 1px solid transparent; border-radius: var(--radius-s); cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.srv-chip:hover { border-color: var(--border-3); color: var(--text); }
+.srv-chip .srv-num { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.srv-chip svg { width: 14px; height: 14px; }
+.srv-chip .srv-star-on { color: var(--accent-hi); fill: currentColor; }
+.srv-chip-sep { color: var(--faint); }
+
+/* ---------- Reseñas: detalle ---------- */
+.srv-stars { display: inline-flex; gap: 2px; align-items: center; }
+.srv-stars svg { width: 15px; height: 15px; color: var(--faint); }
+.srv-stars .on svg, .srv-stars svg.on { color: var(--accent-hi); fill: currentColor; }
+.srv-head { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; }
+.srv-avg { font-family: var(--pixel); font-size: 34px; line-height: 1; color: var(--cream); font-variant-numeric: tabular-nums; }
+.srv-head-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.srv-head .spacer { min-width: var(--sp-2); }
+.srv-vote-note { font-size: var(--fs-xs); color: var(--muted); text-align: right; }
+.srv-form { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); background: var(--well-bg); border: 1px solid var(--border); border-radius: var(--radius); }
+.srv-picker { display: inline-flex; gap: 2px; }
+.srv-picker button { display: inline-flex; padding: 3px; border: 0; border-radius: var(--radius-xs); background: none; color: var(--faint); cursor: pointer; }
+.srv-picker button svg { width: 24px; height: 24px; }
+.srv-picker button.on { color: var(--accent-hi); }
+.srv-picker button.on svg { fill: currentColor; }
+.srv-count { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.srv-count.over { color: var(--bad-text); }
+.srv-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.srv-item { display: flex; gap: var(--sp-3); padding: var(--sp-3); border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
+.srv-item .avatar { width: 32px; height: 32px; border-radius: var(--radius-xs); flex-shrink: 0; image-rendering: pixelated; }
+.srv-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.srv-item-top { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.srv-author { font-weight: 600; overflow-wrap: anywhere; }
+.srv-time { font-size: var(--fs-xs); color: var(--muted); }
+/* Texto ajeno: siempre con textContent. Respeta los saltos de línea y no rompe el diseño con palabras largas. */
+.srv-body { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2); white-space: pre-line; overflow-wrap: anywhere; user-select: text; }
+.srv-more { align-self: center; }
+
+/* ---------- Administración de reseñas ---------- */
+.srv-admin-row { display: flex; flex-direction: column; gap: var(--sp-2); }
+.srv-admin-row.hidden-review { opacity: 0.75; }
+.srv-admin-head { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.srv-admin-reports { margin: 0; padding-left: var(--sp-4); font-size: var(--fs-sm); color: var(--text-2); }
+.srv-admin-reports li { overflow-wrap: anywhere; }
+
+@media (max-width: 1100px) {
+  .sr-qr, .sr-qr-hidden { width: 176px; height: 176px; }
+}

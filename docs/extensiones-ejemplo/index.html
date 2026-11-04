@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Notas de partida</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <h1><img src="logo.png" alt="" width="24" height="24" /> Notas de partida</h1>
+      <p id="state" class="muted">Cargando…</p>
+
+      <section>
+        <h2>Mis notas</h2>
+        <textarea id="notes" rows="5" maxlength="2000" placeholder="Ideas para la próxima partida"></textarea>
+        <div class="row">
+          <button id="save" type="button">Guardar</button>
+          <button id="stats" type="button" class="ghost">Ver mis estadísticas</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Mis instancias</h2>
+        <ul id="instances"></ul>
+      </section>
+    </main>
+    <script src="venus-bridge.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

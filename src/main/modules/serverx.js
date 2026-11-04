@@ -237,6 +237,13 @@ function register({ handle, send, safePath, onQuit }) {
     await world.trash(servers.dir(id), { name: s.name });
     servers.clearLogs(id);
     liveRules.delete(id);
+    // Lo que sigue atado al servidor: el control remoto prendido y el webhook guardado
+    try {
+      require('./serverremote').stopFor(id, 'removed');
+      await require('./serverdiscord').forget(id);
+    } catch (err) {
+      console.warn('[serverx] limpieza al borrar', err?.message || err);
+    }
     changed();
     return true;
   });

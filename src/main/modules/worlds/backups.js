@@ -1,6 +1,7 @@
 'use strict';
 // Copias de seguridad de mundos: <datos>/backups/worlds/<instancia>/<mundo>-<fecha>.zip
 // Crear (ZIP por streaming), listar, restaurar (reemplazando el mundo o como mundo nuevo) y borrar.
+// Las automaticas (modules/worldbackups.js) terminan en .auto.zip: la rotacion solo toca esas, nunca una manual.
 const fsp = require('fs/promises');
 const path = require('path');
 const paths = require('../../core/paths');
@@ -17,28 +18,30 @@ function stamp(ts = Date.now()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
 }
 
-// "<carpeta>-2026-10-27_18-03-11.zip" -> { folder, time }
+// "<carpeta>-2026-10-27_18-03-11[-2][.auto].zip" -> { folder, time, auto }
 function parseName(name) {
-  const m = /^(.*)-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:-\d+)?\.zip$/i.exec(name);
+  const m = /^(.*)-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:-\d+)?(\.auto)?\.zip$/i.exec(name);
   if (!m) return null;
   const time = new Date(Number(m[2]), Number(m[3]) - 1, Number(m[4]), Number(m[5]), Number(m[6]), Number(m[7])).getTime();
-  return { folder: m[1], time };
+  return { folder: m[1], time, auto: Boolean(m[8]) };
 }
 
 const mb = (n) => (n / 1048576).toFixed(n >= 1048576 * 100 ? 0 : 1);
 
 /**
  * Comprime saves/<folder> de la instancia. No incluye session.lock (el juego lo tiene bloqueado).
+ * auto: copia automatica (la rotacion puede borrarla); las manuales nunca se rotan.
  */
-async function create(inst, folder, { task } = {}) {
+async function create(inst, folder, { task, auto = false } = {}) {
   const src = path.join(inst.dir, 'saves', folder);
   if (!(await exists(path.join(src, 'level.dat')))) throw new Error(t('worlds.errNotFound'));
   const dir = dirFor(inst.id);
   await fsp.mkdir(dir, { recursive: true });
   const base = sanitizeFileName(folder).replace(/\s+/g, ' ');
-  let file = path.join(dir, `${base}-${stamp()}.zip`);
+  const tail = auto ? '.auto.zip' : '.zip';
+  let file = path.join(dir, `${base}-${stamp()}${tail}`);
   let n = 2;
-  while (await exists(file)) file = path.join(dir, `${base}-${stamp()}-${n++}.zip`);
+  while (await exists(file)) file = path.join(dir, `${base}-${stamp()}-${n++}${tail}`);
   task?.update({ detail: t('worlds.detailScanning'), progress: null });
   const res = await zip.zipDirectory(src, file, {
     root: folder,
@@ -49,7 +52,7 @@ async function create(inst, folder, { task } = {}) {
     },
   });
   const st = await fsp.stat(file);
-  return { name: path.basename(file), path: file, size: st.size, time: st.mtimeMs, folder, files: res.files, skipped: res.skipped };
+  return { name: path.basename(file), path: file, size: st.size, time: st.mtimeMs, folder, files: res.files, skipped: res.skipped, auto };
 }
 
 // Copias de una instancia (opcionalmente de un mundo), de la mas nueva a la mas vieja.
@@ -68,7 +71,7 @@ async function list(instanceId, folder = null) {
     if (folder && (!meta || meta.folder !== sanitizeFileName(folder).replace(/\s+/g, ' '))) continue;
     const st = await fsp.stat(path.join(dir, name)).catch(() => null);
     if (!st?.isFile()) continue;
-    out.push({ name, path: path.join(dir, name), size: st.size, time: meta?.time || st.mtimeMs, folder: meta?.folder || null, instanceId });
+    out.push({ name, path: path.join(dir, name), size: st.size, time: meta?.time || st.mtimeMs, folder: meta?.folder || null, instanceId, auto: Boolean(meta?.auto) });
   }
   return out.sort((a, b) => b.time - a.time);
 }

@@ -72,13 +72,14 @@ async function removeMod(instanceDir) {
 
 /**
  * Deja el mod instalado (y su config/venus-badge.json con el servidor) o lo quita.
- * opts: { instanceDir, loader, loaderVersion?, mcVersion, enabled, server: { url, anonKey }, bundledDir? }
+ * opts: { instanceDir, loader, loaderVersion?, mcVersion, enabled, server: { url, anonKey }, showCapes?, bundledDir? }
+ * showCapes: false para no ver las capas de otros jugadores (queda escrito en la config del mod; ver mod/venus-badge).
  * Devuelve { state: 'installed'|'removed'|'off'|'unsupported'|'missing'|'userDisabled', written? }
  *   - unsupported: la instancia no puede cargarlo (loader o version); si estaba, se quito.
  *   - missing: este launcher no trae el jar (compilacion de desarrollo).
  *   - userDisabled: el jugador lo desactivo desde la lista de mods (venus-badge.jar.disabled): no se toca.
  */
-async function apply({ instanceDir, loader, loaderVersion, mcVersion, enabled, server, bundledDir = BUNDLED_DIR }) {
+async function apply({ instanceDir, loader, loaderVersion, mcVersion, enabled, server, showCapes = true, bundledDir = BUNDLED_DIR }) {
   const build = buildFor(loader, mcVersion, loaderVersion);
   if (!enabled || !build) {
     const had = await removeMod(instanceDir);
@@ -91,7 +92,7 @@ async function apply({ instanceDir, loader, loaderVersion, mcVersion, enabled, s
   if (!jar) return { state: 'missing' };
   let written = await writeIfChanged(target, jar);
   if (server?.url && server?.anonKey) {
-    const cfg = Buffer.from(`${JSON.stringify({ url: server.url, anonKey: server.anonKey }, null, 2)}\n`);
+    const cfg = Buffer.from(`${JSON.stringify({ url: server.url, anonKey: server.anonKey, ...(showCapes ? {} : { showCapes: false }) }, null, 2)}\n`);
     written = (await writeIfChanged(path.join(instanceDir, 'config', CONFIG_FILE), cfg)) || written;
   }
   return { state: 'installed', written };

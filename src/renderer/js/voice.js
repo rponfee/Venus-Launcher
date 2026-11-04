@@ -24,6 +24,8 @@ import { VOICE_QUALITIES, DEFAULT_QUALITY, qualityBitrate, bitrateCap } from './
 import { VoiceLeveler, VOICE_COMPRESSOR, MIX_LIMITER, compressorMakeupDb } from './voice/leveler.js';
 import { SOUNDS, SOUND_IDS, playSound, playChime } from './voice/sfx.js';
 import { isModifierCode, isTypingTarget } from './voice/keys.js';
+import { normalizeEffect } from './voice/fx.js';
+import { SoundLimiter, CustomSounds, isCustomSound, customFileId, playBuffer } from './voice/soundboard.js';
 
 // Valores por defecto de settings.voice (los que no estan en el archivo de ajustes)
 export const VOICE_DEFAULTS = {
@@ -35,6 +37,7 @@ export const VOICE_DEFAULTS = {
   noiseMode: 'rnnoise', // 'rnnoise' (si no carga, la del navegador) | 'browser' | 'off'. Sin guardar sale de noiseSuppression (2.x)
   levelVoices: true, // nivelar el volumen de los demas (compresor por persona y limitador en la mezcla)
   voiceQuality: DEFAULT_QUALITY, // tope del bitrate de voz: 'low' | 'normal' | 'high' (voice/net.js)
+  voiceEffect: 'none', // efecto de voz (voice/fx.js): 'none' | 'robot' | 'echo' | 'villager' | 'deep' | 'high'
   inputVolume: 1,
   muteShortcut: 'CommandOrControl+Shift+M',
   pushToTalk: false,
@@ -147,6 +150,7 @@ function readCfg(v) {
     // Quien apago la supresion de ruido en 2.x la sigue teniendo apagada
     noiseMode: NOISE_MODES.has(s.noiseMode) ? s.noiseMode : s.noiseSuppression === false ? 'off' : VOICE_DEFAULTS.noiseMode,
     voiceQuality: VOICE_QUALITIES[s.voiceQuality] ? s.voiceQuality : DEFAULT_QUALITY,
+    voiceEffect: normalizeEffect(s.voiceEffect),
     userVolumes: { ...(s.userVolumes || {}) },
   };
 }
@@ -346,6 +350,8 @@ export class VoiceEngine {
     this.socialHooked = false;
     this.levels = { self: 0, selfDb: FLOOR_DB, threshold: -50, open: false, voiced: false, users: {} };
     this.SOUNDS = SOUNDS;
+    this.customSounds = new CustomSounds((...args) => api.invoke(...args)); // hasta 8 sonidos propios, guardados en la PC
+    this.soundArmed = false;
   }
 
   // ---------- Cuenta / Supabase ----------
@@ -444,6 +450,19 @@ export class VoiceEngine {
     window.addEventListener('online', () => this.onNetworkBack());
     navigator.mediaDevices?.addEventListener?.('devicechange', () => this.onDeviceChange());
     if (this.backend) return;
+    // Atajos del soundboard: globales (andan con el juego en primer plano), pero registrados solo con una sala abierta
+    try {
+      api.on('soundboard:trigger', (id) => {
+        if (this.session) this.playSound(id);
+      });
+      this.on('room', (room) => {
+        if (Boolean(room) === this.soundArmed) return;
+        this.soundArmed = Boolean(room);
+        api.invoke('soundboard:arm', this.soundArmed).catch((err) => console.warn('[voice] atajos del soundboard', err?.message || err));
+      });
+    } catch (err) {
+      console.warn('[voice] atajos del soundboard', err);
+    }
     cloud.on('auth', (session) => {
       const s = this.session;
       if (s && !s.demo && session?.user?.id !== s.userId) this.leaveRoom({ silent: true });
@@ -577,7 +596,7 @@ export class VoiceEngine {
 
   micOpts() {
     const c = this.cfg;
-    return { inputDevice: c.inputDevice, echoCancellation: c.echoCancellation, noiseMode: c.noiseMode, autoGainControl: c.autoGainControl, inputVolume: c.inputVolume };
+    return { inputDevice: c.inputDevice, echoCancellation: c.echoCancellation, noiseMode: c.noiseMode, autoGainControl: c.autoGainControl, inputVolume: c.inputVolume, voiceEffect: c.voiceEffect };
   }
 
   // Hay un servidor TURN del launcher (entonces se puede ocultar la IP con relayOnly)
@@ -702,9 +721,15 @@ export class VoiceEngine {
     return Boolean(s && s.mic?.hasInput && !this.muted && !this.deafened && (!this.cfg.pushToTalk || this.pttDown));
   }
 
+  // Mientras suena un sonido del soundboard la pista queda activa aunque no estes hablando (pulsar para hablar). La
+  // compuerta sigue cerrada para la voz, asi que sale solo el sonido. Silenciado no sale nada.
+  trackWanted(s) {
+    return this.transmitting || (!this.muted && !this.deafened && Date.now() < (s?.sfxHold || 0));
+  }
+
   updateTransmit() {
     const s = this.session;
-    if (s?.mic) s.mic.track.enabled = this.transmitting;
+    if (s?.mic) s.mic.track.enabled = this.trackWanted(s);
     if (s) this.trackPresenceSoon();
   }
 
@@ -720,7 +745,7 @@ export class VoiceEngine {
       s.micError = micErrorCode(err);
       toast('info', t('voice.noticeNoMicTitle'), t(`voice.err_${s.micError}`));
     }
-    mic.track.enabled = this.transmitting;
+    mic.track.enabled = this.trackWanted(s);
   }
 
   async recoverMic(mic) {
@@ -738,7 +763,7 @@ export class VoiceEngine {
     const s = this.session;
     if (s?.mic) {
       s.micError = s.mic.hasInput ? null : s.micError;
-      s.mic.track.enabled = this.transmitting;
+      s.mic.track.enabled = this.trackWanted(s);
     }
     this.emitState();
   }
@@ -766,8 +791,9 @@ export class VoiceEngine {
     return { inputs: map('audioinput'), outputs: map('audiooutput') };
   }
 
-  // Prueba de microfono (fuera de una sala abre el micro; dentro usa el de la sala)
-  async startMicTest({ monitor = false } = {}) {
+  // Prueba de microfono (fuera de una sala abre el micro; dentro usa el de la sala). open: la compuerta no espera la
+  // tecla de pulsar para hablar (lo usa "Probar" de los efectos de voz).
+  async startMicTest({ monitor = false, open = false } = {}) {
     await this.init();
     if (this.session?.mic) {
       this.session.mic.setMonitor(monitor);
@@ -784,8 +810,9 @@ export class VoiceEngine {
       }
       mic.onEnded = () => this.recoverMic(mic);
       mic.onNoiseChange = () => this.emitState();
-      this.test = { mic, recording: false };
+      this.test = { mic, recording: false, open: false };
     }
+    this.test.open = open;
     this.test.mic.setMonitor(monitor);
     this.startTick();
     this.emitState();
@@ -880,7 +907,7 @@ export class VoiceEngine {
     const vad = !this.cfg.pushToTalk;
     let r = { db: FLOOR_DB, threshold: this.cfg.vadThreshold, voiced: false, open: false };
     if (mic) {
-      const transmit = s ? this.transmitting : !this.cfg.pushToTalk || this.pttDown || Boolean(this.test?.recording);
+      const transmit = s ? this.transmitting : !this.cfg.pushToTalk || this.pttDown || Boolean(this.test?.recording || this.test?.open);
       r = mic.tick({ now, vad, auto: this.cfg.vadAuto, threshold: vad ? this.cfg.vadThreshold : -55, transmit });
     }
     const users = {};
@@ -1025,6 +1052,7 @@ export class VoiceEngine {
       recording: Boolean(this.test?.recording),
       noiseEngine: this.mic?.hasInput ? this.mic.noiseEngine : null,
       noiseFallback: Boolean(this.mic?.hasInput && this.mic.noiseFallback),
+      fxFailed: Boolean(this.mic?.fxFailed),
     };
   }
 
@@ -1298,7 +1326,8 @@ export class VoiceEngine {
       presenceTimer: null,
       reconcileChain: Promise.resolve(),
       reconcileQueued: false,
-      sfxAt: 0,
+      sfxLimit: new SoundLimiter(),
+      sfxHold: 0,
       sfxFrom: new Map(),
       chatTimes: [],
       chatFrom: new Map(),
@@ -1342,7 +1371,7 @@ export class VoiceEngine {
       s.presenceSnapshot = ch.presenceState();
       this.reconcileSoon(s);
     });
-    for (const ev of ['sig', 'chat', 'hist', 'sfx', 'mod']) {
+    for (const ev of ['sig', 'chat', 'hist', 'sfx', 'sfxm', 'mod']) {
       ch.on('broadcast', { event: ev }, (msg) => {
         if (this.session === s && s.channel === ch) this.onBroadcast(s, ev, msg?.payload);
       });
@@ -1850,6 +1879,7 @@ export class VoiceEngine {
     else if (event === 'chat') this.onChatMsg(s, from, body, env);
     else if (event === 'hist') return this.onHistory(s, from, body);
     else if (event === 'sfx') this.onSfx(s, from, body);
+    else if (event === 'sfxm') this.onSfxMixed(s, from, body);
     else if (event === 'mod') this.onMod(s, from, body);
   }
 
@@ -1949,23 +1979,56 @@ export class VoiceEngine {
   }
 
   // ---------- Soundboard ----------
+  // Los sonidos se mezclan en el microfono saliente (voice/mic.js: soundInput): la sala los escucha como parte de tu voz,
+  // sin mandar archivos, y quien no quiera escucharlos le baja el volumen a esa persona. Uno cada 2 s; silenciado no suena.
+  validSound(id) {
+    return SOUND_IDS.has(id) || isCustomSound(id);
+  }
+
   playSound(id) {
-    if (!SOUND_IDS.has(id)) return false;
+    if (!this.validSound(id)) return false;
     const s = this.session;
-    const now = Date.now();
     if (s) {
-      if (now - s.sfxAt < 1500) return false;
-      s.sfxAt = now;
-      this.send(s, 'sfx', { id });
+      if (this.muted || this.deafened) return false;
+      if (!s.sfxLimit.tryPlay(Date.now())) return false;
+      // Solo el aviso ("Luna · Bocina"): el sonido ya va en la voz. Las versiones anteriores no conocen este evento
+      this.send(s, 'sfxm', { id: isCustomSound(id) ? 'custom' : id });
     }
-    if (!this.deafened) this.sfxLocal(id);
+    this.mixSound(s, id).catch((err) => console.warn('[voice] soundboard', err?.message || err));
+    this.emit('soundPlayed', { id });
     return true;
   }
 
+  // Lo escuchas solo vos (sin session, mixSound no toca el microfono)
   previewSound(id) {
-    if (SOUND_IDS.has(id)) this.sfxLocal(id);
+    if (this.validSound(id)) this.mixSound(null, id).catch((err) => console.warn('[voice] soundboard', err?.message || err));
   }
 
+  async mixSound(s, id) {
+    this.lastSfx = Date.now();
+    const ctx = this.audioCtx();
+    const tee = ctx.createGain();
+    tee.gain.value = clamp(this.cfg.soundboardVolume, 0, 1, 0.7);
+    const mic = s?.mic || null;
+    if (mic) tee.connect(mic.soundInput());
+    // Vos lo escuchas por afuera de lo que se envia (con la devolucion prendida ya te llega por ahi)
+    if (!this.deafened && !mic?.monitor) tee.connect(ctx.destination);
+    let dur = 0;
+    try {
+      dur = isCustomSound(id) ? playBuffer(ctx, await this.customSounds.buffer(ctx, customFileId(id)), tee) : playSound(ctx, id, { volume: 1, dest: tee });
+    } finally {
+      setTimeout(() => tee.disconnect(), (dur + 0.6) * 1000);
+    }
+    if (s && this.session === s) {
+      s.sfxHold = Date.now() + dur * 1000 + 200;
+      this.updateTransmit();
+      clearTimeout(s.timers.sfxHold);
+      s.timers.sfxHold = setTimeout(() => this.updateTransmit(), dur * 1000 + 250);
+    }
+    this.maybeSuspend();
+  }
+
+  // Sonido de quien todavia usa una version anterior, que manda el aviso para que cada uno lo toque
   sfxLocal(id) {
     try {
       this.lastSfx = Date.now();
@@ -1978,7 +2041,7 @@ export class VoiceEngine {
 
   get soundCooldown() {
     const s = this.session;
-    return s ? Math.max(0, 1500 - (Date.now() - s.sfxAt)) : 0;
+    return s ? s.sfxLimit.remaining(Date.now()) : 0;
   }
 
   onSfx(s, from, body) {
@@ -1990,6 +2053,15 @@ export class VoiceEngine {
     this.emit('sound', { from, id: body.id, name: info?.name || '' });
     if (!this.cfg.soundboardEnabled || this.deafened || s.localMutes.has(from)) return;
     this.sfxLocal(body.id);
+  }
+
+  // Alguien con esta version toco un sonido: ya llega en su voz, aca solo se avisa quien fue
+  onSfxMixed(s, from, body) {
+    if (body.id !== 'custom' && !SOUND_IDS.has(body.id)) return;
+    const now = Date.now();
+    if (now - (s.sfxFrom.get(from) || 0) < 1200) return;
+    s.sfxFrom.set(from, now);
+    this.emit('sound', { from, id: body.id, name: s.members.get(from)?.name || '' });
   }
 
   // ---------- Moderacion (solo el dueño de la sala) ----------

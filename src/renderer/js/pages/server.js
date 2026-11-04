@@ -40,8 +40,8 @@ function tabsFor(srv) {
 }
 
 export default {
-  ns: ['servers', 'server'],
-  css: ['pages/servers', 'pages/server'],
+  ns: ['servers', 'server', 'serverremote'],
+  css: ['pages/servers', 'pages/server', 'features/serverremote'],
   async render(root, params) {
     const [id, tabId = 'console'] = params;
     await loadTypes();

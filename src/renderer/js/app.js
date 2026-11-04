@@ -34,10 +34,15 @@ const NAV = [
   { id: 'servers', icon: 'server' },
   { id: 'voice', icon: 'mic' },
   { id: 'messages', icon: 'message' },
+  { id: 'compete', icon: 'trophy' },
+  { id: 'clans', icon: 'shield' },
+  { id: 'communities', icon: 'users' },
   { group: 'tools' },
   { id: 'updates', icon: 'download' },
   { id: 'stats', icon: 'chart' },
   { id: 'performance', icon: 'memory' },
+  { id: 'seeds', icon: 'map' },
+  { id: 'extensions', icon: 'puzzle' },
   { id: 'support', icon: 'message' },
 ];
 
@@ -65,6 +70,11 @@ const PAGES = {
   server: () => import('./pages/server.js'),
   voice: () => import('./pages/voice.js'),
   messages: () => import('./pages/messages.js'),
+  compete: () => import('./pages/compete.js'),
+  clans: () => import('./pages/clans.js'),
+  communities: () => import('./pages/communities.js'),
+  seeds: () => import('./pages/seeds.js'),
+  extensions: () => import('./pages/extensions.js'),
   settings: () => import('./pages/settings.js'),
   updates: () => import('./pages/updates.js'),
   support: () => import('./pages/support.js'),
@@ -112,6 +122,17 @@ const STARTUP = [
   () => import('./features/navcustom.js'), // menú lateral a gusto, packs de íconos y modo mini
   () => import('./features/tools.js'), // caja de herramientas, descansos, resumen al cerrar y aviso de versión nueva
   () => import('./social/gifts.js').then((m) => ({ startup: m.startGiftWatch })), // aviso cuando un amigo te regala puntos o un cosmético
+  // Venus 3.2 a 3.4
+  () => import('./features/instancelook.js'), // fondo, color y música por instancia, y links venus://
+  () => import('./features/datatools.js'), // copias automáticas, historial de rendimiento, modo familia y sincronizar ajustes
+  () => import('./features/overlaytools.js'), // recetas, wiki, contadores y asistente en el overlay
+  () => import('./features/serverremote.js'), // control remoto y avisos por Discord del servidor local
+  () => import('./features/socialplus.js'), // stickers, traducción de mensajes, soundboard y efectos de voz
+  () => import('./features/compete.js'), // rankings entre amigos, desafíos y calendario de eventos
+  () => import('./features/clipstudio.js'), // montaje, timelapse, subir clips, OBS y galería pública
+  () => import('./features/clans.js'), // clanes y comunidades
+  () => import('./features/capes.js'), // capas de Venus en el juego
+  () => import('./features/extensions.js'), // extensiones de la comunidad
   () => import('./features/achievements.js'), // logros de Venus: revisa los cumplidos cada tanto (no hay tope de cantidad)
   () => import('./features/missions.js'), // misiones diarias y semanales: cuenta el progreso
   () => import('./features/streamer.js'), // modo streamer: difumina codigos, direcciones, nombres y mensajes (y Ctrl+K)

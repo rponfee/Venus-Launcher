@@ -1,4 +1,4 @@
-// Vista del overlay: dibuja los widgets (Voice Chat, mensajes, avisos, capturas y musica) sobre un escenario del
+// Vista del overlay: dibuja los widgets (Voice Chat, mensajes, avisos, capturas, musica y contadores) sobre un escenario del
 // tamano del juego. La usan la pagina del overlay (renderer/overlay.html, js/overlay/page.js) y la vista previa
 // de Ajustes (features/overlay.js), con los mismos estilos (styles/overlay.css, clases .ovl-).
 //   const view = new OverlayView(root, { tr, preview, onMove, onReset, onDone, isReduced })
@@ -10,10 +10,12 @@
 import { h, icon } from './dom.js';
 import { ANCHORS, DIGIT_ANCHOR, boxFor, snap, clampBox, nudge, sizeOf, clampScale } from './layout.js';
 import { drawPerf, samplePerf, hasPerfData, PERF_STALE_MS } from './perf.js';
+import { drawCounters, sampleCounters, hasCounters, COUNTERS_STALE_MS } from './counters.js';
 
-// perf (3.1): rendimiento del juego (RAM, CPU, ping y tiempo de sesion), ver perf.js.
-export const WIDGETS = ['voice', 'messages', 'alerts', 'captures', 'music', 'perf'];
-const WIDGET_ICON = { voice: 'mic', messages: 'message', alerts: 'info', captures: 'capture', music: 'music', perf: 'info' };
+// perf (3.1): rendimiento del juego (FPS, RAM, CPU, ping y tiempo de sesion), ver perf.js. counters: muertes, bloques
+// minados y tiempo de sesion, ver counters.js.
+export const WIDGETS = ['voice', 'messages', 'alerts', 'captures', 'music', 'perf', 'counters'];
+const WIDGET_ICON = { voice: 'mic', messages: 'message', alerts: 'info', captures: 'capture', music: 'music', perf: 'info', counters: 'info' };
 const DEFAULT_DURATION = { alerts: 6, messages: 8, captures: 5 };
 const MAX_ALERTS = 3;
 const MAX_QUEUE = 20;
@@ -57,7 +59,7 @@ export class OverlayView {
     this.isReduced = isReduced || (() => false);
     this.now = now || (() => Date.now());
     this.layout = null;
-    this.data = { voice: null, messages: [], alerts: [], queue: [], captures: [], recording: null, music: null, perf: null };
+    this.data = { voice: null, messages: [], alerts: [], queue: [], captures: [], recording: null, music: null, perf: null, counters: null };
     this.timer = null;
     this.drag = null;
     this.destroyed = false;
@@ -270,6 +272,10 @@ export class OverlayView {
       // Una muestra cada 2 s; con todo en null (se cerro el juego) el widget se esconde.
       d.perf = hasPerfData(ev) ? { ...ev, at: now } : null;
       this.renderWidget('perf');
+    } else if (ev.kind === 'counters') {
+      // Una muestra cada 5 s (el reloj corre solo entre muestra y muestra); con todo en null, se esconde.
+      d.counters = hasCounters(ev) ? { ...ev, at: now } : null;
+      this.renderWidget('counters');
     }
     this.schedule();
   }
@@ -295,6 +301,7 @@ export class OverlayView {
     }
     if (d.recording) next = Math.min(next, now + 1000);
     if (d.perf) next = Math.min(next, d.perf.at + PERF_STALE_MS + 20);
+    if (d.counters && this.cfg('counters')?.enabled !== false) next = Math.min(next, now + 1000);
     if (next === Infinity) return;
     this.timer = setTimeout(() => this.tick(), Math.max(60, Math.min(next - now, 60000)));
   }
@@ -314,6 +321,10 @@ export class OverlayView {
     if (d.perf && now - d.perf.at > PERF_STALE_MS) {
       d.perf = null; // sin muestras nuevas (se cerro el juego o el overlay dejo de medir)
       this.renderWidget('perf');
+    }
+    if (d.counters) {
+      if (now - d.counters.at > COUNTERS_STALE_MS) d.counters = null;
+      this.renderWidget('counters');
     }
     this.schedule();
   }
@@ -486,6 +497,13 @@ export class OverlayView {
     if (this.preview || (!p && editing)) p = samplePerf();
     if (!p) return false;
     return drawPerf(inner, cfg, p, { tr: this.tr });
+  }
+
+  draw_counters(inner, cfg, editing) {
+    let c = this.data.counters;
+    if (this.preview || (!c && editing)) c = sampleCounters();
+    if (!c) return false;
+    return drawCounters(inner, cfg, c, { tr: this.tr, now: this.now(), lang: this.layout?.lang });
   }
 
   sampleVoice() {

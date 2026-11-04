@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 // Lista de jugadores (Tab). El ancho de las columnas también sale de getNameForDisplay, así que el ícono entra.
-// Es el único mixin en Forge y NeoForge: ninguno de los dos tiene un evento para este nombre.
+// Va por mixin en Forge y NeoForge porque ninguno de los dos tiene un evento para este nombre.
 @Mixin(PlayerTabOverlay.class)
 abstract class PlayerTabOverlayMixin {
 	@Inject(method = "getNameForDisplay", at = @At("RETURN"), cancellable = true)

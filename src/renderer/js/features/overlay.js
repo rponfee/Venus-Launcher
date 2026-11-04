@@ -16,9 +16,11 @@ import { createLimiter, createChangeGate, voiceSnapshot, accelFromKey, accelPart
 
 const NS = 'overlay';
 const STAGE = { width: 960, height: 540 }; // tamano virtual del juego en la vista previa
-const WIDGET_ICON = { voice: 'mic', messages: 'message', alerts: 'bell', captures: 'camera', music: 'music', perf: 'activity' };
+const WIDGET_ICON = { voice: 'mic', messages: 'message', alerts: 'bell', captures: 'camera', music: 'music', perf: 'activity', counters: 'target' };
 const DURATIONS = [3, 4, 5, 6, 8, 10, 12, 15, 20, 30];
-const PERF_METRICS = ['ram', 'cpu', 'ping', 'session']; // widget de rendimiento (3.1), overlay/config.js
+const PERF_METRICS = ['fps', 'ram', 'cpu', 'ping', 'session']; // widget de rendimiento (3.1), overlay/config.js
+const COUNTER_METRICS = ['deaths', 'mined', 'session']; // contadores en pantalla, overlay/config.js
+const PANELS = ['recipes', 'assistant']; // paneles del modo interactivo, overlay/config.js
 let readyPromise = null;
 let panelSeq = 0;
 
@@ -184,7 +186,8 @@ function sampleEvents() {
     },
     { kind: 'capture', type: 'screenshot' },
     { kind: 'music', state: { title: t('overlay.sampleSong'), artist: t('overlay.sampleArtist'), album: null, art: null, playing: true, position: 61000, duration: 215000, source: 'test', appName: 'Spotify' } },
-    { kind: 'perf', ram: 2048, cpu: 23, ping: 48, session: 2694 },
+    { kind: 'perf', fps: 144, ram: 2048, cpu: 23, ping: 48, session: 2694 },
+    { kind: 'counters', deaths: 2, mined: 347, session: 2694 },
   ];
 }
 
@@ -459,6 +462,8 @@ async function build(root, offs, isDisposed) {
   });
   changeBtn.addEventListener('blur', () => capturing && stopCapture());
   removeBtn.addEventListener('click', () => applyShortcut(''));
+  // Atajos de los paneles (recetas y asistente): se prueban igual que el de arriba, con su propio canal.
+  const panelRows = PANELS.map((id) => panelShortcutRow(id, { uid, get: () => cfg.panelShortcuts?.[id] || '', put: (v) => { cfg.panelShortcuts = { ...cfg.panelShortcuts, [id]: v }; } }));
   const shortcutCol = h(
     'div',
     { class: 'ovp-shortcut' },
@@ -466,6 +471,9 @@ async function build(root, offs, isDisposed) {
     h('div', { class: 'ovp-keys-row' }, keys, changeBtn, removeBtn),
     shortcutMsg,
     shortcutWarn,
+    h('div', { class: 'ovp-sec-title ovp-mt' }, t('overlay.panelsTitle')),
+    h('p', { class: 'ovp-help' }, t('overlay.panelsHint')),
+    panelRows.map((r) => r.el),
     h('div', { class: 'ovp-sec-title ovp-mt' }, t('overlay.editTitleCard')),
     h('p', { class: 'ovp-help' }, t('overlay.editInGameHint')),
   );
@@ -483,6 +491,7 @@ async function build(root, offs, isDisposed) {
     root.classList.toggle('ovp-off', !cfg.enabled);
     WIDGETS.forEach((id) => blocks[id].sync());
     drawKeys();
+    panelRows.forEach((r) => r.sync());
   }
 
   mount(
@@ -516,6 +525,74 @@ async function build(root, offs, isDisposed) {
       syncAll();
     }),
   );
+}
+
+// Atajo de un panel: las teclas, Cambiar y Quitar. Lo guarda el proceso principal si se puede registrar.
+function panelShortcutRow(id, { uid, get, put }) {
+  const name = t(`overlay.panelName_${id}`);
+  const keys = h('span', { class: 'ovp-keys' });
+  const helpId = `${uid}-psc-${id}`;
+  const msg = h('div', { class: 'ovp-help', id: helpId, role: 'status', 'aria-live': 'polite' });
+  const label = h('span', {}, t('overlay.shortcutChange'));
+  const change = h('button', { type: 'button', class: 'btn sm', 'aria-label': t('overlay.panelChangeAria', { name }), 'aria-describedby': helpId, dataset: { overlayAction: `panel-shortcut-${id}` } }, icon('keyboard'), label);
+  const remove = h('button', { type: 'button', class: 'btn ghost sm', 'aria-label': t('overlay.panelRemoveAria', { name }) }, icon('x'), t('overlay.shortcutRemove'));
+  let capturing = false;
+  const sync = () => {
+    const parts = accelParts(get());
+    mount(keys, parts.length ? parts.map((p) => h('span', { class: 'kbd' }, p)) : h('span', { class: 'muted' }, t('overlay.shortcutNone')));
+    remove.hidden = !parts.length;
+  };
+  const stop = () => {
+    capturing = false;
+    change.classList.remove('active');
+    label.textContent = t('overlay.shortcutChange');
+  };
+  const apply = async (accel) => {
+    try {
+      const r = await api.invoke('overlay:setPanelShortcut', id, accel);
+      if (r?.ok) {
+        put(r.shortcut);
+        msg.textContent = r.shortcut ? t('overlay.shortcutSaved', { shortcut: accelParts(r.shortcut).join('+') }) : t('overlay.shortcutRemoved');
+      } else msg.textContent = r?.code === 'invalid' ? t('overlay.shortcutInvalid') : t('overlay.shortcutTaken');
+    } catch (err) {
+      fail(t('overlay.saveFailed'), err);
+    }
+    sync();
+  };
+  change.addEventListener('click', () => {
+    if (capturing) {
+      stop();
+      msg.textContent = '';
+      return;
+    }
+    capturing = true;
+    change.classList.add('active');
+    label.textContent = t('overlay.shortcutPress');
+    msg.textContent = t('overlay.shortcutPressHint');
+  });
+  change.addEventListener('keydown', (e) => {
+    if (!capturing) return;
+    if (e.key === 'Tab') return stop();
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === 'Escape') {
+      stop();
+      msg.textContent = '';
+      return;
+    }
+    if (['Control', 'Alt', 'Shift', 'Meta', 'AltGraph'].includes(e.key)) return;
+    const accel = accelFromKey(e);
+    if (!accel) {
+      msg.textContent = t('overlay.shortcutInvalid');
+      return;
+    }
+    stop();
+    apply(accel);
+  });
+  change.addEventListener('blur', () => capturing && stop());
+  remove.addEventListener('click', () => apply(''));
+  sync();
+  return { el: h('div', { class: 'ovp-panel-key' }, h('div', { class: 'ovp-keys-row' }, h('span', { class: 'ovp-panel-name' }, name), keys, change, remove), msg), sync };
 }
 
 // Un widget: encabezado con interruptor y, al abrirlo, posicion, tamano, opacidad, tema y lo propio de cada uno.
@@ -607,20 +684,23 @@ function widgetBlock(id, { uid, cfg, save, preview }) {
       toggle(t(`overlay.${key}`), t(`overlay.${key}Sub`), () => w().filter[g], (v) => set({ filter: { [g]: v } }));
     }
   }
-  // Rendimiento (3.1): que medidas mostrar. Sin FPS (no se pueden medir desde afuera del juego).
-  if (id === 'perf') {
-    for (const m of PERF_METRICS) {
-      const key = `perfShow${m.charAt(0).toUpperCase()}${m.slice(1)}`;
+  // Rendimiento (3.1) y contadores: que medidas mostrar. Los FPS solo se saben con el mod Venus Badge.
+  if (id === 'perf' || id === 'counters') {
+    const prefix = id === 'perf' ? 'perfShow' : 'countersShow';
+    for (const m of id === 'perf' ? PERF_METRICS : COUNTER_METRICS) {
+      const key = `${prefix}${m.charAt(0).toUpperCase()}${m.slice(1)}`;
       toggle(t(`overlay.${key}`), t(`overlay.${key}Sub`), () => w().show?.[m] !== false, (v) => set({ show: { [m]: v } }));
     }
   }
-  const togglesLabel = id === 'alerts' ? t('overlay.alertsFilter') : id === 'perf' ? t('overlay.perfShow') : null;
+  const togglesLabel = id === 'alerts' ? t('overlay.alertsFilter') : id === 'perf' || id === 'counters' ? t('overlay.perfShow') : null;
 
   mount(
     body,
     h('div', { class: 'ovp-w-grid' }, h('div', { class: 'ovp-field' }, h('span', { class: 'ovp-label' }, t('overlay.position')), h('div', { class: 'ovp-anchor-row' }, grid, freeNote)), h('div', { class: 'ovp-w-controls' }, scale.el, opacity.el, theme.el, ...extras.map((x) => x.el))),
     toggles.length ? h('div', { class: 'ovp-toggles' }, togglesLabel ? h('div', { class: 'ovp-label' }, togglesLabel) : null, toggles.map((x) => x.el)) : null,
     id === 'perf' ? h('p', { class: 'ovp-tip', title: t('overlay.perfNoFps') }, icon('info'), h('span', {}, t('overlay.perfNoFps'))) : null,
+    id === 'counters' ? h('p', { class: 'ovp-tip' }, icon('info'), h('span', {}, t('overlay.countersHint'))) : null,
+    id === 'counters' ? h('p', { class: 'ovp-tip' }, icon('info'), h('span', {}, t('overlay.countersHintMp'))) : null,
   );
 
   function sync() {

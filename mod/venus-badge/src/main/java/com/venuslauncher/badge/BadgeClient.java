@@ -20,6 +20,7 @@ import java.util.UUID;
  * jugadores que se ven en pantalla (ni nombres, ni servidor, ni nada de la cuenta) y recibe cuáles de esos tienen
  * la insignia y con qué estilo. Si el servidor todavía no tiene badge_styles (404), usa badge_lookup (todas con el
  * estilo de siempre). La clave es la "anon key" pública del proyecto: no da acceso a nada más que a estas consultas.
+ * {@link #fetchCapes} hace lo mismo con badge_capes (migración 0034): qué capa tiene puesta cada uno.
  */
 final class BadgeClient implements BadgeCache.Fetcher {
 	private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
@@ -36,10 +37,7 @@ final class BadgeClient implements BadgeCache.Fetcher {
 
 	@Override
 	public Map<UUID, String> fetch(List<UUID> batch) throws IOException {
-		JsonArray ids = new JsonArray();
-		for (UUID id : batch) ids.add(id.toString());
-		JsonObject body = new JsonObject();
-		body.add("p_uuids", ids);
+		JsonObject body = body(batch);
 		if (!legacy) {
 			HttpResponse<String> res = post("badge_styles", body);
 			if (res.statusCode() == 200) return parseStyles(res.body());
@@ -49,6 +47,21 @@ final class BadgeClient implements BadgeCache.Fetcher {
 		HttpResponse<String> res = post("badge_lookup", body);
 		if (res.statusCode() != 200) throw new IOException("HTTP " + res.statusCode());
 		return parseLookup(res.body());
+	}
+
+	/** UUID → capa. Sin la migración responde 404: cuenta como un error de red y el caché espera cada vez más. */
+	Map<UUID, String> fetchCapes(List<UUID> batch) throws IOException {
+		HttpResponse<String> res = post("badge_capes", body(batch));
+		if (res.statusCode() != 200) throw new IOException("HTTP " + res.statusCode());
+		return parseCapes(res.body());
+	}
+
+	private static JsonObject body(List<UUID> batch) {
+		JsonArray ids = new JsonArray();
+		for (UUID id : batch) ids.add(id.toString());
+		JsonObject body = new JsonObject();
+		body.add("p_uuids", ids);
+		return body;
 	}
 
 	private HttpResponse<String> post(String rpc, JsonObject body) throws IOException {
@@ -88,6 +101,21 @@ final class BadgeClient implements BadgeCache.Fetcher {
 		Map<UUID, String> out = new HashMap<>();
 		try {
 			for (JsonElement el : JsonParser.parseString(json).getAsJsonArray()) out.put(UUID.fromString(el.getAsString()), "default");
+		} catch (RuntimeException err) {
+			throw new IOException("respuesta inválida", err);
+		}
+		return out;
+	}
+
+	/** [{ "mc_uuid": "...", "cape": "dawn" }, ...] Un id que no está en la lista fija de {@link Capes} se ignora. */
+	static Map<UUID, String> parseCapes(String json) throws IOException {
+		Map<UUID, String> out = new HashMap<>();
+		try {
+			for (JsonElement el : JsonParser.parseString(json).getAsJsonArray()) {
+				JsonObject o = el.getAsJsonObject();
+				String cape = o.has("cape") && !o.get("cape").isJsonNull() ? o.get("cape").getAsString() : null;
+				if (Capes.known(cape)) out.put(UUID.fromString(o.get("mc_uuid").getAsString()), cape);
+			}
 		} catch (RuntimeException err) {
 			throw new IOException("respuesta inválida", err);
 		}
