@@ -4,7 +4,8 @@
 //  - El borde y la franja con el nombre y "Extensión de la comunidad" los dibuja el launcher por fuera del iframe:
 //    la extensión no los puede tapar ni imitar un diálogo, porque no dibuja fuera de su rectángulo.
 //  - Solo se atiende a event.source === el iframe. Cualquier otro origen de mensajes se ignora sin leer su contenido.
-//  - Foco: entra al iframe solo si la persona hace clic o llega con Tab; si se lo lleva solo, se le saca.
+//  - Foco: entra al iframe solo si la persona hace clic o llega con Tab. Si se lo lleva solo, se le saca: el marco corre
+//    en otro proceso y el launcher no recibe ningún evento en el iframe, así que se revisa cada tanto y al perder el foco.
 import { h, icon, mount, toast, confirmDialog } from '../../ui.js';
 import { api, store } from '../../store.js';
 import { t, getLanguage } from '../../i18n.js';
@@ -12,12 +13,36 @@ import { navigate, launchInstance } from '../../app.js';
 import { createBridge, gameStateView, BRIDGE_VERSION } from './bridge-core.js';
 
 const SLOW_READ_MS = 150; // leer un mensaje no debería tardar: si tarda, es enorme
+const HUGE_READ_MS = 1000; // con una sola de estas alcanza
 const SLOW_STRIKES = 2;
 const MAX_DECLINES = 3;
+const FOCUS_CHECK_MS = 250;
+const TAB_GRACE_MS = 800;
 
 const sessions = new Map(); // WindowProxy del iframe -> sesión
 let listening = false;
 let lastTab = 0;
+let focusTimer = null;
+
+function guardFocus() {
+  for (const session of sessions.values()) {
+    const { iframe } = session;
+    if (document.activeElement !== iframe) {
+      session.focusOk = false;
+    } else if (!session.focusOk) {
+      if (iframe.matches(':hover') || Date.now() - lastTab < TAB_GRACE_MS) session.focusOk = true;
+      else iframe.blur();
+    }
+  }
+}
+
+function syncFocusTimer() {
+  if (sessions.size && !focusTimer) focusTimer = setInterval(guardFocus, FOCUS_CHECK_MS);
+  else if (!sessions.size && focusTimer) {
+    clearInterval(focusTimer);
+    focusTimer = null;
+  }
+}
 
 function onMessage(event) {
   const session = sessions.get(event.source);
@@ -28,6 +53,7 @@ function ensureListening() {
   if (listening) return;
   listening = true;
   window.addEventListener('message', onMessage);
+  window.addEventListener('blur', guardFocus);
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') lastTab = Date.now();
   });
@@ -57,6 +83,7 @@ function launchHandler(ext) {
 }
 
 function ensureActive(iframe) {
+  guardFocus(); // un foco robado no cuenta
   if (document.activeElement !== iframe) throw Object.assign(new Error('not_allowed'), { code: 'not_allowed' });
 }
 
@@ -87,6 +114,7 @@ export function extensionFrame(ext, surface = 'page') {
   function teardown() {
     if (!session) return;
     sessions.delete(session.win);
+    syncFocusTimer();
     session.iframe.remove();
     session = null;
   }
@@ -139,6 +167,7 @@ export function extensionFrame(ext, surface = 'page') {
     const current = {
       iframe,
       win: iframe.contentWindow,
+      focusOk: false,
       receive(event) {
         const verdict = bridge.admit();
         if (verdict === 'flood') return stop('flood');
@@ -152,7 +181,9 @@ export function extensionFrame(ext, surface = 'page') {
         dropped = false;
         const before = performance.now();
         const data = event.data; // recién acá se deserializa
-        if (performance.now() - before > SLOW_READ_MS) {
+        const took = performance.now() - before;
+        if (took > HUGE_READ_MS) return stop('flood');
+        if (took > SLOW_READ_MS) {
           slowReads += 1;
           if (slowReads >= SLOW_STRIKES) return stop('flood');
         }
@@ -166,6 +197,7 @@ export function extensionFrame(ext, surface = 'page') {
     };
     session = current;
     sessions.set(current.win, current);
+    syncFocusTimer();
     iframe.addEventListener('load', () => {
       if (session !== current) return;
       loads += 1;
@@ -173,11 +205,6 @@ export function extensionFrame(ext, surface = 'page') {
       if (loads > 1) return stop('navigated');
       current.win.postMessage({ venus: BRIDGE_VERSION, type: 'hello', extension: { id: ext.id, name: ext.name, version: ext.version }, permissions: [...ext.permissions], surface, locale: getLanguage() }, '*');
       return undefined;
-    });
-    // Foco: entra con un clic (el puntero está encima) o con Tab. Si no, se lo lleva la extensión: se le saca.
-    iframe.addEventListener('focus', () => {
-      if (session !== current) return;
-      if (!iframe.matches(':hover') && Date.now() - lastTab > 800) iframe.blur();
     });
   }
 

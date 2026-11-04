@@ -220,9 +220,9 @@ test('stickers: vivo, borrado y sin 0030 (se ve como texto)', async (t) => {
 test('la galería se oculta sin error si la función no está', async () => {
   const [{ createFakeClient }, { createBackend }] = await modules;
   const sin = createFakeClient();
-  assert.equal(await createBackend(sin, 'x').gallery({}), undefined);
+  assert.equal(await createBackend(sin, 'x').gallery(), undefined);
   const con = createFakeClient({ gallery: true });
-  assert.equal((await createBackend(con, 'x').gallery({})).length, 1);
+  assert.equal((await createBackend(con, 'x').gallery()).items.length, 1);
 });
 
 test('un error del servidor al arrancar deja reintentar', async (t) => {

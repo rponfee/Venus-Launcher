@@ -5,7 +5,7 @@
 // worlds:media (carpetas de cada instancia) y los graba modules/capture.js. Tambien: Montaje de la semana y Timelapse
 // (features/clipstudio/) y la pestana Galeria, con los clips publicados por los usuarios (pages/clips/gallery.js).
 // Ruta: #/clips[/<screenshots | clips | recordings | gallery>]
-import { h, icon, mount, ok, fail, toast, setBusy, selectEl, debounce, emptyState, confirmDialog, fmtBytes, loading } from '../ui.js';
+import { h, icon, mount, ok, fail, toast, setBusy, selectEl, debounce, emptyState, confirmDialog, fmtBytes, loading as loadingNote } from '../ui.js';
 import { api } from '../store.js';
 import { t } from '../i18n.js';
 import { navigate } from '../app.js';
@@ -358,7 +358,7 @@ function renderClips(root) {
 
   function drawGallery() {
     if (!gallery) {
-      gallery = h('div', { class: 'cs-gl-slot' }, loading());
+      gallery = h('div', { class: 'cs-gl-slot' }, loadingNote());
       import('./clips/gallery.js')
         .then(({ galleryPanel }) => {
           if (!alive || !gallery) return;

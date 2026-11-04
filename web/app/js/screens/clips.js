@@ -99,7 +99,7 @@ export function clipsScreen(ctx, route) {
           draw();
         }
       } else {
-        url = media.galleryMedia(item.url, config.url);
+        url = media.signedMedia(item.url, config.url);
       }
     } catch (err) {
       toast(tr(errorKey(err)), 'bad');
@@ -153,7 +153,7 @@ export function clipsScreen(ctx, route) {
       return ((await store.backend.receivedMedia()) || []).map(normalizeReceived);
     }
     if (id === 'mine') return (await store.backend.myMedia()).map(normalizeMine);
-    const raw = await store.backend.gallery({});
+    const raw = await store.backend.gallery();
     if (raw === undefined) {
       unavailable.gallery = true;
       return [];
@@ -192,7 +192,7 @@ export function clipsScreen(ctx, route) {
     if (galleryChecked) return;
     galleryChecked = true;
     try {
-      const raw = await store.backend.gallery({});
+      const raw = await store.backend.gallery();
       if (destroyed) return;
       unavailable.gallery = raw === undefined;
       if (raw !== undefined) data.gallery = normalizeGallery(raw);

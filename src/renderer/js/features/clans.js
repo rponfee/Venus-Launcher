@@ -92,7 +92,7 @@ export function loadMine({ force = false } = {}) {
 
 /** Le avisa a un amigo que algo cambió para que vuelva a preguntar. Si no llega, lo ve en la próxima consulta. */
 export function tellFriend(userId) {
-  if (userId) social.sendSignal?.(userId, SIGNAL, {})?.catch?.(() => {});
+  if (userId) Promise.resolve().then(() => social.sendSignal(userId, SIGNAL, {})).catch(() => {});
 }
 
 export async function startup() {

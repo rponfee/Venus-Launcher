@@ -69,7 +69,7 @@ function mineView(host, { b }) {
     try {
       const rows = await b.rpc('community_my');
       if (!host.isConnected) return;
-      mount(list, rows?.length ? rows.map(communityCard) : emptyState('users', C('communitiesEmpty'), C('communitiesEmptyText'), h('button', { class: 'btn', type: 'button', onclick: () => navigate('communities/explore') }, icon('compass'), C('tab_explore'))));
+      mount(list, rows?.length ? rows.map(communityCard) : emptyState('users', C('communitiesEmpty'), C('communitiesEmptyText'), h('button', { class: 'btn', type: 'button', onclick: () => navigate('communities/explore') }, icon('compass'), C('comTab_explore'))));
     } catch (err) {
       if (host.isConnected) mount(list, problem(err, load));
     }
@@ -126,7 +126,7 @@ export default {
       current = id;
       mount(tabBar, TABS.map((tab) => h('button', {
         type: 'button', class: ['tab', tab.id === current && 'active'], role: 'tab', 'aria-selected': String(tab.id === current), tabindex: tab.id === current ? '0' : '-1', dataset: { tab: tab.id }, onclick: () => select(tab.id),
-      }, icon(tab.icon), C(`tab_${tab.id}`))));
+      }, icon(tab.icon), C(`comTab_${tab.id}`))));
       VIEWS[id](panel, { b });
       try {
         history.replaceState(null, '', id === 'mine' ? '#/communities' : `#/communities/${id}`);

@@ -16,10 +16,12 @@
 .cl-card { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
 .cl-card .card-title, .cl-card .card-sub { margin: 0; }
 .cl-closed { opacity: 0.75; }
+.cl-card p { margin: 0; }
 .cl-section { display: flex; flex-direction: column; gap: var(--sp-3); }
 .cl-h2 { margin: 0; font-size: var(--fs-lg, 16px); font-weight: 600; }
 .cl-h4 { margin: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
 .cl-search { max-width: 480px; }
+.cl-seg { align-self: flex-start; }
 .cl-back { align-self: flex-start; margin-bottom: var(--sp-2); }
 .cl-desc { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; color: var(--text-2); }
 .cl-quote { margin: 0; padding: var(--sp-2) var(--sp-3); border-left: 3px solid var(--border-2); background: var(--well-bg); border-radius: var(--radius-s); white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -149,6 +151,7 @@
 .cm-member { display: flex; align-items: center; gap: var(--sp-2); width: 100%; padding: 4px var(--sp-2); border: 0; border-radius: var(--radius-s); background: none; color: var(--text-2); font: inherit; font-size: var(--fs-sm); cursor: pointer; min-width: 0; text-align: left; }
 .cm-member:hover { background: var(--hover-bg); color: var(--text); }
 .cm-member-name { flex: 1; }
+.cm-more { margin: var(--sp-1) var(--sp-2) var(--sp-2); flex-shrink: 0; }
 .cm-role { display: inline-flex; color: var(--accent-hi); }
 .cm-role svg { width: 13px; height: 13px; }
 .cm-role.is-muted { color: var(--bad-text); }
@@ -170,8 +173,8 @@
 .cm-msg:hover { background: var(--hover-bg); }
 .cm-text { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; }
 .cm-gone { flex: 1; font-style: italic; color: var(--muted); font-size: var(--fs-sm); }
-.cm-msg-actions { position: absolute; top: -8px; right: 0; display: none; gap: 2px; padding: 1px; border-radius: var(--radius-s); background: var(--surface-2); border: 1px solid var(--border); }
-.cm-msg:hover .cm-msg-actions, .cm-msg:focus-within .cm-msg-actions { display: flex; }
+.cm-msg-actions { position: absolute; top: -8px; right: 0; display: flex; opacity: 0; pointer-events: none; gap: 2px; padding: 1px; border-radius: var(--radius-s); background: var(--surface-2); border: 1px solid var(--border); }
+.cm-msg:hover .cm-msg-actions, .cm-msg:focus-within .cm-msg-actions { opacity: 1; pointer-events: auto; }
 .cm-banner { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); background: var(--bad-wash); color: var(--bad-text); font-size: var(--fs-sm); flex-shrink: 0; }
 .cm-banner svg { width: 15px; height: 15px; flex-shrink: 0; }
 .cm-composer { display: flex; align-items: flex-end; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3) var(--sp-3); flex-shrink: 0; }
@@ -184,4 +187,3 @@
   .cm-layout { grid-template-columns: 200px minmax(0, 1fr); }
   .cm-members { display: none; }
 }
-html[data-ui-lite] .cl-row:hover, html[data-ui-lite] .cm-msg:hover { background: none; }

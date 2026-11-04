@@ -32,7 +32,7 @@ const biomeName = (id) => {
 };
 
 // Lo ultimo que se miro, para volver a la pagina sin perderlo. Las camaras de desafio arrancan apagadas: hay muchisimas
-const session = { text: null, version: null, dim: 0, y: 79, off: new Set(['trial_chambers']), slime: false };
+const session = { text: null, version: null, dim: 0, y: 79, off: new Set(['trial_chambers']), slime: false, doubt: true };
 
 function initialVersion() {
   if (session.version) return session.version;
@@ -61,6 +61,7 @@ export default {
       y: session.y,
       off: session.off,
       slime: session.slime,
+      doubt: session.doubt,
     };
 
     const seedInput = h('input', { class: 'input mono sd-seed', id: 'sd-seed', type: 'text', value: st.text, spellcheck: 'false', autocomplete: 'off', placeholder: T('seedPlaceholder'), 'aria-describedby': 'sd-seed-info', maxlength: 400 });
@@ -180,6 +181,11 @@ export default {
       session.slime = on;
       map.setSlime(on);
     }, T('slime')));
+    const doubtRow = h('div', { class: 'toggle-row sd-slime-row' }, h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, T('doubtful')), h('div', { class: 'tr-sub' }, T('doubtfulHint'))), switchEl(st.doubt, (on) => {
+      st.doubt = on;
+      session.doubt = on;
+      map.setDoubtful(on);
+    }, T('doubtful')));
     const filterChecks = new Map();
     const countEls = new Map();
     const currentTypes = () => [...typesFor(st.dim, versionByKey(st.version).mc), ...(st.dim === 0 ? ['stronghold'] : [])];
@@ -209,6 +215,7 @@ export default {
         );
       }
       slimeRow.hidden = st.dim !== 0;
+      doubtRow.hidden = st.dim !== 0;
       allBtn.hidden = !types.length;
       noneBtn.hidden = !types.length;
       applyFilters();
@@ -254,7 +261,7 @@ export default {
                 h(
                   'button',
                   {
-                    class: 'sd-near-row',
+                    class: ['sd-near-row', m.doubt && 'doubt'],
                     type: 'button',
                     onclick: () => {
                       map.centerOn(m.x, m.z);
@@ -262,7 +269,7 @@ export default {
                     },
                   },
                   h('span', { class: 'sd-chip', style: { '--sd-c': STRUCT_STYLE[m.type].color }, 'aria-hidden': 'true' }, icon(`sd-${m.type}`)),
-                  h('span', { class: 'sd-near-name ellipsis' }, markerName(m)),
+                  h('span', { class: 'sd-near-name ellipsis' }, m.doubt ? T('nameDoubtful', { name: markerName(m) }) : markerName(m)),
                   h('span', { class: 'sd-near-pos' }, `${fmtInt(m.x)}, ${fmtInt(m.z)}`),
                 ),
               )
@@ -294,7 +301,7 @@ export default {
         mount(map.pop);
         return;
       }
-      const note = m.kind === 'spawn' ? T('noteSpawn') : m.kind === 'stronghold' ? T('noteStronghold') : T('noteStruct');
+      const note = m.kind === 'spawn' ? T('noteSpawn') : m.kind === 'stronghold' ? T('noteStronghold') : m.doubt ? T('noteDoubt') : T('noteStruct');
       const sub = m.kind === 'stronghold' ? T('strongholdIndex', { index: m.index }) : m.biome !== undefined ? T('villageOf', { biome: biomeName(m.biome) }) : null;
       mount(
         map.pop,
@@ -305,7 +312,7 @@ export default {
             'div',
             { class: 'sd-pop-head' },
             h('span', { class: 'sd-chip lg', style: { '--sd-c': STRUCT_STYLE[m.type].color }, 'aria-hidden': 'true' }, icon(`sd-${m.type}`)),
-            h('div', { class: 'sd-pop-text' }, h('div', { class: 'sd-pop-title' }, markerName(m)), sub ? h('div', { class: 'small muted' }, sub) : null),
+            h('div', { class: 'sd-pop-text' }, h('div', { class: 'sd-pop-title' }, m.doubt ? T('nameDoubtful', { name: markerName(m) }) : markerName(m)), sub ? h('div', { class: 'small muted' }, sub) : null),
             h('button', { class: 'icon-btn sm', type: 'button', title: t('common.close'), 'aria-label': t('common.close'), onclick: () => map.select(null) }, icon('x')),
           ),
           h('div', { class: 'sd-pop-pos' }, T('coords', { x: fmtInt(m.x), z: fmtInt(m.z) })),
@@ -422,7 +429,7 @@ export default {
           h(
             'aside',
             { class: 'sd-side' },
-            h('section', { class: 'card sd-card' }, h('div', { class: 'sd-card-head' }, h('h2', { class: 'card-title' }, icon('filter'), T('filters')), h('div', { class: 'sd-card-actions' }, allBtn, noneBtn)), filtersEl, hiddenNote, slimeRow),
+            h('section', { class: 'card sd-card' }, h('div', { class: 'sd-card-head' }, h('h2', { class: 'card-title' }, icon('filter'), T('filters')), h('div', { class: 'sd-card-actions' }, allBtn, noneBtn)), filtersEl, hiddenNote, doubtRow, slimeRow),
             h('section', { class: 'card sd-card' }, h('h2', { class: 'card-title' }, icon('target'), T('near')), nearEl),
             h('section', { class: 'card sd-card' }, h('h2', { class: 'card-title' }, icon('map'), T('legend')), legendEl),
             h('section', { class: 'card sd-card' }, accuracy),
@@ -432,6 +439,7 @@ export default {
     );
 
     map.setSlime(st.slime);
+    map.setDoubtful(st.doubt);
     drawFilters();
     map.resize();
     readSeed();

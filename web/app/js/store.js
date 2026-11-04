@@ -11,11 +11,10 @@ const TYPING_SEND_MS = 3000;
 const TYPING_SHOW_MS = 6500;
 
 export class Store {
-  constructor({ backend, profile = null, base, someone = '', doc = globalThis.document, net = globalThis.navigator, uuid = () => crypto.randomUUID() }) {
+  constructor({ backend, profile = null, someone = '', doc = globalThis.document, net = globalThis.navigator, uuid = () => crypto.randomUUID() }) {
     this.backend = backend;
     this.userId = backend.userId;
     this.me = profile;
-    this.base = base;
     this.someone = someone;
     this.doc = doc;
     this.net = net;

@@ -71,6 +71,17 @@ test('el End en 1:4 y 1:16 usa el bioma del chunk', () => {
   }
 });
 
+test('una estructura dudosa conserva su posicion y no se cuenta como valida', async () => {
+  const tree = await loadTree(versionByKey('1.21.1').table);
+  // De listas publicadas: una mansion que la estimacion de terreno descarta y una ciudad antigua justo arriba del Abismo
+  const mansion = new SeedWorld({ seed: 2916547943699047976n, version: '1.21.1', dim: 0, tree }).finder;
+  const size = STRUCTURES.mansion.size * 16;
+  assert.deepEqual(mansion.evaluate('mansion', Math.floor(-496 / size), Math.floor(512 / size)), { x: -496, z: 512, doubt: true });
+  const city = new SeedWorld({ seed: 1669984371247603308n, version: '1.21.1', dim: 0, tree }).finder;
+  const citySize = STRUCTURES.ancient_city.size * 16;
+  assert.deepEqual(city.evaluate('ancient_city', Math.floor(8912 / citySize), Math.floor(6640 / citySize)), { x: 8912, z: 6640, doubt: true });
+});
+
 test('todo bioma que puede salir tiene color y nombre', async () => {
   for (const id of BIOME_KEYS.keys()) assert.ok(BIOME_RGBA[id] >>> 24 === 0xff && (BIOME_RGBA[id] !== 0xff000000 || id === 127));
   const missing = [];

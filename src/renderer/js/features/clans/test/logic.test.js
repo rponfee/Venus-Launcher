@@ -119,6 +119,7 @@ test('por qué el ranking está en cero', () => {
   assert.equal(L.rankingNotice({ available: false, rows: [{ sharing: 0 }] }), 'unavailable');
   assert.equal(L.rankingNotice({ available: true, rows: [{ sharing: 0 }] }), 'nobody');
   assert.equal(L.rankingNotice({ available: true, rows: [] }), 'nobody');
+  assert.equal(L.rankingNotice({ available: true, rows: [{ sharing: 1 }] }), 'nobody', 'con uno solo el servidor da cero');
   assert.equal(L.rankingNotice({ available: true, rows: [{ sharing: 0 }, { sharing: 2 }] }), null);
 });
 

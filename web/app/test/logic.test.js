@@ -152,8 +152,6 @@ test('medios de clips: solo links firmados del proyecto', () => {
   ]) {
     assert.equal(media.signedMedia(no, BASE), null, String(no).slice(0, 80));
   }
-  assert.ok(media.galleryMedia(`${BASE}/storage/v1/object/public/gallery/${A}/x.webm`, BASE));
-  assert.equal(media.galleryMedia('https://evil.com/storage/v1/object/public/gallery/x.webm', BASE), null);
 });
 
 test('rutas: lo desconocido cae en Amigos y un id raro no abre nada', async () => {
@@ -224,8 +222,9 @@ test('clips: se normaliza lo propio, lo recibido y lo de la galería', async () 
   assert.equal(normalizeReceived({ id: '2', kind: 'otro', name: 'n', from: 'Luna', at: 'x', url: 'u', seen: 1 }).kind, 'screenshot');
   assert.deepEqual(normalizeGallery(null), []);
   assert.deepEqual(normalizeGallery([{ nada: 1 }]), []);
-  const g = normalizeGallery({ items: [{ id: 5, kind: 'clip', title: 'T', author: 'A', url: 'u', created_at: 'c' }] });
+  const g = normalizeGallery({ items: [{ id: 5, title: 'T', author: { name: 'A' }, url: 'u', at: 'c', thumb: 'data:x' }], more: false });
   assert.deepEqual(g, [{ id: '5', kind: 'clip', name: 'T', from: 'A', at: 'c', url: 'u' }]);
+  assert.equal(normalizeGallery([{ id: 6, title: 'x', author: 'B' }])[0].from, 'B');
   assert.equal(formatBytes(0), '');
   assert.equal(formatBytes(2048), '2 KB');
   assert.equal(formatBytes(5 * 1024 * 1024), '5.0 MB');

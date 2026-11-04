@@ -96,10 +96,6 @@ export class GenPool {
     }
   }
 
-  get working() {
-    return this.slots.some((s) => s.busy);
-  }
-
   destroy() {
     this.dead = true;
     for (const s of this.slots) s.worker?.terminate();

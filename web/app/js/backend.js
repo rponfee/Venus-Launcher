@@ -121,10 +121,10 @@ export function createBackend(client, userId) {
       if (res.error) throw new ApiError(res.error, res.error?.statusCode ? Number(res.error.statusCode) : null);
       return res.data?.signedUrl || null;
     },
-    // Galería pública (otro módulo): si la función no está, no hay pestaña.
-    async gallery(args = {}) {
+    // Galería pública (0032): si la función no está, no hay pestaña.
+    async gallery({ sort = 'recent', offset = 0, limit = 24 } = {}) {
       try {
-        return await rpc('gallery_list', args);
+        return await rpc('gallery_list', { p_sort: sort, p_offset: offset, p_limit: limit });
       } catch (err) {
         if (isMissing(err)) return undefined;
         throw err;

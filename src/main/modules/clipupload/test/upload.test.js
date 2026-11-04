@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
+const http = require('http');
 const oauth = require('../oauth');
 const { createYoutube, cleanMeta, CHUNK, UPLOAD_URL } = require('../youtube');
 const { createTiktok, planChunks, INIT_URL, STATUS_URL } = require('../tiktok');
@@ -279,6 +280,52 @@ test('YouTube: errores que no se reintentan y cancelar', async () => {
   const { fetchFake } = ytServer({ size });
   await assert.rejects(ytUpload(fetchFake, size, { signal: c.signal }), (e) => e.code === 'cancelled');
   await assert.rejects(createYoutube({ fetch: fetchFake, clientId: 'id' }).upload({ getToken: async () => 't', meta: { title: '<>' }, size, read: reader() }), (e) => e.code === 'badRequest');
+});
+
+test('YouTube con el fetch de verdad: 308 sin seguir redirecciones, Range y encabezados', async () => {
+  // Un servidor local que contesta como YouTube: lo que no se puede probar con un fetch falso es como trata undici el 308
+  const size = 10 * MIB;
+  const seen = { puts: [], authOk: true };
+  let received = 0;
+  const server = http.createServer((req, resp) => {
+    const chunks = [];
+    req.on('data', (d) => chunks.push(d));
+    req.on('end', () => {
+      const body = Buffer.concat(chunks);
+      if (req.method === 'POST') {
+        assert.equal(req.headers['x-upload-content-length'], String(size));
+        assert.equal(JSON.parse(body).status.privacyStatus, 'private');
+        resp.writeHead(200, { Location: `http://127.0.0.1:${server.address().port}/session` });
+        return resp.end();
+      }
+      if (req.headers.authorization !== 'Bearer tok') seen.authOk = false;
+      const range = req.headers['content-range'];
+      seen.puts.push({ range, length: Number(req.headers['content-length']), got: body.length });
+      const m = /bytes (\d+)-(\d+)\/(\d+)/.exec(range);
+      received = Number(m[2]) + 1;
+      if (received >= size) {
+        resp.writeHead(201, { 'Content-Type': 'application/json' });
+        return resp.end(JSON.stringify({ id: 'REAL1' }));
+      }
+      // Con un Location raro: si fetch siguiera el 308, se iria a otro lado y la prueba falla
+      resp.writeHead(308, { Range: `bytes=0-${received - 1}`, Location: 'http://127.0.0.1:1/nunca' });
+      return resp.end();
+    });
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  try {
+    const port = server.address().port;
+    const doFetch = (url, init) => fetch(url === UPLOAD_URL ? `http://127.0.0.1:${port}/upload` : url, init);
+    const out = await createYoutube({ fetch: doFetch, clientId: 'id', sleep: noSleep }).upload({ getToken: async () => 'tok', meta: { title: 'x' }, size, mime: 'video/webm', read: reader() });
+    assert.equal(out.id, 'REAL1');
+    assert.equal(seen.authOk, true);
+    assert.equal(seen.puts.length, 2);
+    assert.equal(seen.puts[0].length, CHUNK);
+    assert.equal(seen.puts[0].got, CHUNK);
+    assert.equal(seen.puts[1].range, `bytes ${CHUNK}-${size - 1}/${size}`);
+  } finally {
+    server.close();
+  }
 });
 
 // ---------- TikTok ----------

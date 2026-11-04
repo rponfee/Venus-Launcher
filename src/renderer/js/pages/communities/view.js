@@ -59,10 +59,11 @@ export function communityView(root, id, wantedChannel, { b }) {
     community = await b.rpc('community_get', { p_community: id });
     return community;
   }
-  async function fetchMembers() {
+  async function fetchMembers({ more = false } = {}) {
     try {
-      const res = await b.rpc('community_members_list', { p_community: id });
-      members = Array.isArray(res?.members) ? res.members.filter(Boolean) : [];
+      const res = await b.rpc('community_members_list', { p_community: id, p_offset: more ? members.length : 0 });
+      const rows = Array.isArray(res?.members) ? res.members.filter(Boolean) : [];
+      members = more ? [...members, ...rows.filter((m) => !members.some((x) => x.userId === m.userId))] : rows;
       total = Number(res?.total) || members.length;
       for (const m of members) people.set(m.userId, m);
     } catch (err) {
@@ -206,7 +207,12 @@ export function communityView(root, id, wantedChannel, { b }) {
     mount(memberHost,
       h('div', { class: 'cm-side-head' }, h('strong', {}, C('membersTotal', { n: total }))),
       h('ul', { class: 'cm-channels cm-side-scroll' }, members.map(memberRow)),
-      total > members.length ? h('p', { class: 'cl-muted small cm-side-empty' }, C('membersMore', { n: total - members.length })) : null);
+      total > members.length ? h('button', { class: 'btn sm ghost cm-more', type: 'button', onclick: async (e) => {
+        const done = setBusy(e.currentTarget);
+        await fetchMembers({ more: true });
+        done();
+        drawMembers();
+      } }, C('membersMore', { n: total - members.length })) : null);
   }
 
   async function start() {

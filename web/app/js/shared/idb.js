@@ -5,13 +5,14 @@
   'use strict';
   const DB = 'venus-app';
   const STORE = 'kv';
+  const OPEN_MS = 3000;
   const memory = new Map();
   let opening = null;
 
   function open() {
     if (!root.indexedDB) return Promise.resolve(null);
     if (opening) return opening;
-    opening = new Promise((resolve) => {
+    const attempt = new Promise((resolve) => {
       let req;
       try {
         req = root.indexedDB.open(DB, 1);
@@ -19,8 +20,11 @@
         resolve(null);
         return;
       }
+      // Safari a veces no contesta nunca: la app no se puede quedar colgada esperando
+      const timer = setTimeout(() => resolve(null), OPEN_MS);
       req.onupgradeneeded = () => req.result.createObjectStore(STORE);
       req.onsuccess = () => {
+        clearTimeout(timer);
         const db = req.result;
         db.onclose = () => (opening = null);
         db.onversionchange = () => {
@@ -29,10 +33,20 @@
         };
         resolve(db);
       };
-      req.onerror = () => resolve(null);
-      req.onblocked = () => resolve(null);
+      req.onerror = () => {
+        clearTimeout(timer);
+        resolve(null);
+      };
+      req.onblocked = () => {
+        clearTimeout(timer);
+        resolve(null);
+      };
+    }).then((db) => {
+      if (!db) opening = null; // la próxima vez se vuelve a probar
+      return db;
     });
-    return opening;
+    opening = attempt;
+    return attempt;
   }
 
   async function run(mode, action, fallback) {

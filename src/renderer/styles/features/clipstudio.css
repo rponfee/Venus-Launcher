@@ -98,6 +98,7 @@
 .cs-ad-row.off { opacity: 0.85; }
 .cs-ad-video { width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-sm, 8px); background: var(--surface-3); object-fit: contain; }
 .cs-ad-video.none { display: grid; place-items: center; color: var(--muted); }
+.cs-ad-video.none svg { width: 32px; height: 32px; }
 .cs-ad-main { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
 .cs-ad-report { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-sm); padding: var(--sp-2); border-radius: var(--radius-sm, 8px); background: var(--surface-2); }
 .cs-ad-report p { margin: 0; width: 100%; }

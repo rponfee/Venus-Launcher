@@ -22,8 +22,7 @@ const LIST = [
 ];
 
 // Esta ciudad antigua aparece en la lista, pero la validacion de biomas de cubiomes (y por lo tanto la nuestra) la descarta:
-// la posicion coincide, y en el punto que se revisa el Abismo empieza una celda mas abajo. Por eso la interfaz dice que la
-// validacion es una estimacion.
+// la posicion coincide, y en el punto que se revisa el Abismo empieza una celda mas abajo. La interfaz la muestra como dudosa.
 const KNOWN_MISS = '2965478343720343130|ancient_city|512|-672';
 
 test('las coordenadas publicadas coinciden con las del port', async () => {
@@ -46,7 +45,9 @@ test('las coordenadas publicadas coinciden con las del port', async () => {
       const rz = Math.floor(z / size);
       assert.equal(w.finder.position(type, rx, rz), true, `${seed} ${type} sin intento`);
       assert.deepEqual([w.finder.x, w.finder.z], [x, z], `${seed} ${type}`);
-      if (!w.finder.evaluate(type, rx, rz)) misses.push(`${seed}|${type}|${x}|${z}`);
+      const found = w.finder.evaluate(type, rx, rz);
+      assert.ok(found, `${seed} ${type} descartada del todo`);
+      if (found.doubt) misses.push(`${seed}|${type}|${x}|${z}`);
     }
   }
   assert.equal(checked, 61);

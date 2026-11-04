@@ -41,13 +41,7 @@
     return u && /^\/storage\/v1\/object\/sign\/(screenshots|clips)\//.test(u.pathname) ? u.href : null;
   }
 
-  // Un archivo de la galería pública: firmado o público, siempre de este proyecto
-  function galleryMedia(raw, base) {
-    const u = inProject(raw, base);
-    return u && /^\/storage\/v1\/object\/(sign|public)\/[a-z0-9_-]+\//.test(u.pathname) ? u.href : null;
-  }
-
-  const media = { gifOf, stickerOf, signedMedia, galleryMedia };
+  const media = { gifOf, stickerOf, signedMedia };
   root.VenusApp = Object.assign(root.VenusApp || {}, { media });
   if (typeof module === 'object' && module.exports) module.exports = media;
 })(globalThis);

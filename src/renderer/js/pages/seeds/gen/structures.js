@@ -3,7 +3,8 @@
 //
 // Que tan exacto es cada paso: la posicion candidata de una region sale del mismo calculo que usa el juego. Que la
 // estructura aparezca ahi depende ademas de chequeos que cubiomes aproxima: biomas en un punto y altura del terreno
-// estimada desde la profundidad (isViableStructureTerrain). Por eso la interfaz las muestra como probables.
+// estimada desde la profundidad (isViableStructureTerrain). Por eso la interfaz dice que eso es una estimacion y muestra
+// aparte las que quedan en duda (evaluate).
 import { JavaRandom, mul48, add48, splitInt, bigToLimbs, rHi, rLo } from './rng.js';
 import { MC_1_19_2, MC_1_20, MC_1_21_1 } from './versions.js';
 import * as B from './biomes.js';
@@ -431,15 +432,26 @@ export class StructureFinder {
   }
 
   // ---------- Una region completa ----------
-  // { x, z, biome? } si cubiomes da la estructura por valida; null si no
+  // { x, z, biome? } si cubiomes da la estructura por valida; { x, z, doubt: true } si la estimacion la descarta por poco y
+  // podria estar igual (ver doubtful); null si no hay nada
   evaluate(type, rx, rz) {
     if (!this.position(type, rx, rz)) return null;
     const x = this.x;
     const z = this.z;
     const v = this.viable(type, x, z);
-    if (!v) return null;
-    if (this.overworld && !this.terrain(type, x, z)) return null;
+    if (!v) return this.doubtful(type, x, z) ? { x, z, doubt: true } : null;
+    if (this.overworld && !this.terrain(type, x, z)) return { x, z, doubt: true };
     return type === 'village' ? { x, z, biome: v } : { x, z };
+  }
+
+  // Comparado con listas publicadas de semillas, la validacion descarta algunas ciudades antiguas que existen: en el punto
+  // que revisa no hay Abismo, pero empieza justo una celda mas abajo. Esto no sale de cubiomes: solo sirve para mostrarlas
+  // como dudosas en lugar de esconderlas.
+  doubtful(type, x, z) {
+    if (type !== 'ancient_city') return false;
+    this.variant(type, x, z, -1);
+    const v = this.v;
+    return this.overworld.biome(this.centerCell(x >> 4, v.x, v.sx), (v.y >> 2) - 1, this.centerCell(z >> 4, v.z, v.sz)) === B.DEEP_DARK;
   }
 
   // ---------- Fortalezas (stronghold) ----------

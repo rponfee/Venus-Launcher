@@ -7,9 +7,11 @@
 --     solicitud que aprueba un oficial. Si se va el último, el clan se disuelve. El líder pasa el liderazgo antes de irse; si se
 --     borra su cuenta lo toma el oficial (o el miembro) más antiguo.
 --   * Ranking y logros del clan: se calculan al pedirlos con miembros, antigüedad y las horas de 0031 de quienes eligieron
---     compartir (ranking_prefs.share), sin baneados. Sin puntos ni dinero.
+--     compartir (ranking_prefs.share), sin baneados. Sin puntos ni dinero. Con menos de 2 miembros compartiendo las horas dan
+--     cero: Competir promete que los números de cada uno los ven solo sus amigos, y una suma de una sola persona los mostraría.
 --   * Comunidades: hasta 3 por cuenta y 500 miembros; dueño, moderador y miembro. Públicas (se buscan y se entra) o por código.
---     Hasta 20 canales fijos. Expulsar deja afuera hasta que un moderador lo deshaga (community_bans).
+--     Hasta 20 canales fijos. Expulsar deja afuera hasta que un moderador lo deshaga (community_bans). El silencio
+--     (community_mutes) no depende de ser miembro: salir y volver a entrar no lo borra.
 --   * Mensajes: community_messages tiene RLS de miembros (por la tabla y por Realtime) y se escribe solo con community_send:
 --     30 por minuto por cuenta. El borrado es suave y vacía el texto. No están cifrados de punta a punta.
 --   * Voz: community_voice_room crea a pedido una sala de 0003 y la reutiliza. La sala queda cerrada (is_locked) y cada pedido
@@ -179,7 +181,6 @@ create table if not exists public.community_members (
   community_id uuid not null references public.communities (id) on delete cascade,
   user_id uuid not null references auth.users (id) on delete cascade,
   role text not null default 'member' check (role in ('owner', 'moderator', 'member')),
-  muted_until timestamptz,
   joined_at timestamptz not null default now(),
   primary key (community_id, user_id)
 );
@@ -195,6 +196,14 @@ create table if not exists public.community_bans (
 );
 create index if not exists community_bans_user on public.community_bans (user_id);
 create index if not exists community_bans_banned_by on public.community_bans (banned_by);
+
+create table if not exists public.community_mutes (
+  community_id uuid not null references public.communities (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  muted_until timestamptz not null,
+  primary key (community_id, user_id)
+);
+create index if not exists community_mutes_user on public.community_mutes (user_id);
 
 create table if not exists public.community_channels (
   id uuid primary key default gen_random_uuid(),
@@ -253,7 +262,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['clans', 'clan_members', 'clan_invites', 'clan_requests', 'communities', 'community_members', 'community_bans',
-                           'community_channels', 'community_messages', 'group_reports'] loop
+                           'community_mutes', 'community_channels', 'community_messages', 'group_reports'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from public, anon, authenticated', t);
     execute format('grant all on public.%I to service_role', t);
@@ -343,6 +352,10 @@ begin
       join public.ranking_prefs p on p.user_id = m.user_id and p.share
      where m.clan_id = $1 and public.moderation_social_block(m.user_id) is distinct from 'user_banned'
   $q$ into v_sharing, v_week, v_total using p_clan, p_week;
+  if v_sharing < 2 then
+    v_week := 0;
+    v_total := 0;
+  end if;
   return jsonb_build_object('available', true, 'sharing', v_sharing, 'weekMinutes', v_week, 'totalMinutes', v_total);
 end $$;
 
@@ -758,7 +771,7 @@ declare
 begin
   if me is null then raise exception 'not_authenticated' using errcode = '42501'; end if;
   v_totals := case when v_has then $s$
-      select m.clan_id, count(*)::integer as sharing, coalesce(sum(w.minutes), 0)::bigint as minutes
+      select m.clan_id, count(*)::integer as sharing, case when count(*) >= 2 then coalesce(sum(w.minutes), 0) else 0 end::bigint as minutes
         from public.clan_members m
         join public.ranking_prefs p on p.user_id = m.user_id and p.share
         left join public.ranking_weekly w on w.user_id = m.user_id and w.week = $1
@@ -987,7 +1000,8 @@ begin
   if public.moderation_social_block(p_user) = 'user_banned' then raise exception 'target_banned' using errcode = '22023'; end if;
   if (select count(*) from public.community_members m where m.user_id = p_user and m.role = 'owner') >= 3 then raise exception 'target_too_many' using errcode = '22023'; end if;
   update public.community_members m set role = 'moderator' where m.community_id = p_community and m.user_id = me;
-  update public.community_members m set role = 'owner', muted_until = null where m.community_id = p_community and m.user_id = p_user;
+  update public.community_members m set role = 'owner' where m.community_id = p_community and m.user_id = p_user;
+  delete from public.community_mutes x where x.community_id = p_community and x.user_id = p_user;
   perform private.community_sync_rooms(p_community);
   return jsonb_build_object('ok', true);
 end $$;
@@ -1036,7 +1050,7 @@ begin
   end if;
   return private.community_card(p_community, me) || jsonb_build_object(
     'inviteCode', case when v_role in ('owner', 'moderator') then c.invite_code end,
-    'mutedUntil', (select m.muted_until from public.community_members m where m.community_id = p_community and m.user_id = me and m.muted_until > now()),
+    'mutedUntil', (select x.muted_until from public.community_mutes x where x.community_id = p_community and x.user_id = me and x.muted_until > now()),
     'channels', (select coalesce(jsonb_agg(jsonb_build_object('id', ch.id, 'kind', ch.kind, 'name', ch.name, 'position', ch.position,
         'people', case when ch.kind = 'voice' then (select coalesce(jsonb_agg(private.group_person(v.user_id) order by v.joined_at), '[]'::jsonb)
                      from public.voice_members v where v.room_id = ch.voice_room_id and not v.banned and v.last_seen > now() - interval '75 seconds')
@@ -1110,8 +1124,9 @@ declare
 begin
   return jsonb_build_object('total', (select count(*) from public.community_members m where m.community_id = p_community),
     'members', (select coalesce(jsonb_agg(private.group_person(x.user_id) || jsonb_build_object('role', x.role, 'joinedAt', x.joined_at,
-                  'mutedUntil', case when (v_staff or x.user_id = me) and x.muted_until > now() then x.muted_until end) order by x.ord, x.joined_at), '[]'::jsonb)
-      from (select m.*, case m.role when 'owner' then 0 when 'moderator' then 1 else 2 end as ord
+                  'mutedUntil', case when v_staff or x.user_id = me then x.muted_until end) order by x.ord, x.joined_at), '[]'::jsonb)
+      from (select m.*, case m.role when 'owner' then 0 when 'moderator' then 1 else 2 end as ord,
+                   (select u.muted_until from public.community_mutes u where u.community_id = m.community_id and u.user_id = m.user_id and u.muted_until > now()) as muted_until
               from public.community_members m where m.community_id = p_community
              order by ord, m.joined_at offset greatest(coalesce(p_offset, 0), 0) limit 100) x));
 end $$;
@@ -1144,8 +1159,11 @@ begin
   if v_target is null then raise exception 'not_member_target' using errcode = '22023'; end if;
   if p_user = me or v_target = 'owner' or (v_mine = 'moderator' and v_target <> 'member') then raise exception 'forbidden' using errcode = '42501'; end if;
   if coalesce(p_minutes, 0) not between 0 and 43200 then raise exception 'bad_minutes' using errcode = '22023'; end if;
-  v_until := case when coalesce(p_minutes, 0) > 0 then now() + make_interval(mins => p_minutes) end;
-  update public.community_members m set muted_until = v_until where m.community_id = p_community and m.user_id = p_user;
+  delete from public.community_mutes x where x.community_id = p_community and (x.user_id = p_user or x.muted_until <= now());
+  if coalesce(p_minutes, 0) > 0 then
+    v_until := now() + make_interval(mins => p_minutes);
+    insert into public.community_mutes (community_id, user_id, muted_until) values (p_community, p_user, v_until);
+  end if;
   return jsonb_build_object('ok', true, 'mutedUntil', v_until);
 end $$;
 
@@ -1275,14 +1293,14 @@ declare
   me uuid := private.group_writer();
   v_body text := private.group_text(coalesce(p_body, ''));
   v_community uuid;
-  v_until timestamptz;
   m public.community_messages;
 begin
   select c.community_id into v_community from public.community_channels c where c.id = p_channel and c.kind = 'text';
   if not found then raise exception 'not_found' using errcode = '22023'; end if;
-  select x.muted_until into v_until from public.community_members x where x.community_id = v_community and x.user_id = me;
-  if not found then raise exception 'not_member' using errcode = '42501'; end if;
-  if v_until > now() then raise exception 'community_muted' using errcode = '22023'; end if;
+  if private.community_role(v_community, me) is null then raise exception 'not_member' using errcode = '42501'; end if;
+  if exists (select 1 from public.community_mutes x where x.community_id = v_community and x.user_id = me and x.muted_until > now()) then
+    raise exception 'community_muted' using errcode = '22023';
+  end if;
   if v_body is null or v_body = '' or char_length(v_body) > 2000 then raise exception 'bad_body' using errcode = '22023'; end if;
   perform private.group_hit(me, 'community_msg', 30, interval '1 minute');
   insert into public.community_messages (community_id, channel_id, author, body) values (v_community, p_channel, me, v_body) returning * into m;
@@ -1366,7 +1384,7 @@ begin
     if m.author = me then raise exception 'bad_target' using errcode = '22023'; end if;
     v_community := m.community_id;
     v_user := m.author;
-    v_snapshot := jsonb_build_object('body', m.body, 'at', m.created_at, 'channel', (select c.name from public.community_channels c where c.id = m.channel_id),
+    v_snapshot := jsonb_build_object('body', left(m.body, 1000), 'at', m.created_at, 'channel', (select c.name from public.community_channels c where c.id = m.channel_id),
       'community', (select c.name from public.communities c where c.id = m.community_id));
   elsif p_kind = 'community' then
     select jsonb_build_object('name', c.name, 'description', c.description) into v_snapshot from public.communities c

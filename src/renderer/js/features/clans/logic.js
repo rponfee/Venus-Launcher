@@ -136,11 +136,14 @@ export function achievementView(a) {
   };
 }
 
-/** Por qué el ranking está en cero, para explicarlo: 'unavailable' (sin datos de Competir), 'nobody' (nadie comparte) o null. */
+/** Hacen falta 2 miembros compartiendo: con uno solo el servidor da cero para no dejar ver las horas de una sola persona. */
+export const MIN_SHARING = 2;
+
+/** Por qué el ranking está en cero, para explicarlo: 'unavailable' (sin datos de Competir), 'nobody' (ningún clan llega a 2 compartiendo) o null. */
 export function rankingNotice(view) {
   if (!view || view.available === false) return 'unavailable';
   const rows = Array.isArray(view.rows) ? view.rows : [];
-  return rows.some((r) => Number(r.sharing) > 0) ? null : 'nobody';
+  return rows.some((r) => Number(r.sharing) >= MIN_SHARING) ? null : 'nobody';
 }
 
 // ---------- Errores ----------

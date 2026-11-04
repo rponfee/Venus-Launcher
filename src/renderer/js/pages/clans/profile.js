@@ -2,13 +2,13 @@
 // el tag y la descripción son de otras cuentas: van siempre como texto. Los botones se muestran según el rol, pero el que
 // decide es el servidor (0033_clanes_comunidades.sql).
 import { h, icon, ok, fail, setBusy, confirmDialog, copyText, fmtDate, fmtAgo } from '../../ui.js';
-import { t } from '../../i18n.js';
+import { t, locale } from '../../i18n.js';
 import { navigate } from '../../app.js';
 import { errText } from '../../features/clans/backend.js';
 import { emblemBadge, forgetClanTags, tagChip } from '../../features/clans/tag.js';
 import { tellFriend } from '../../features/clans.js';
 import { openGroupReport } from '../../features/clans/report.js';
-import { achievementView, canKickFromClan, canSetClanRole, canTransferClan, isClanStaff, minutesToHours, sortClanMembers } from '../../features/clans/logic.js';
+import { MIN_SHARING, achievementView, canKickFromClan, canSetClanRole, canTransferClan, isClanStaff, minutesToHours, sortClanMembers } from '../../features/clans/logic.js';
 import { headImg, openProfile, popMenu } from '../../social/profile-ui.js';
 import { openClanForm, openClanInvite } from './forms.js';
 
@@ -17,7 +17,7 @@ const ACH_ICONS = { members: 'users', days: 'calendar', minutes: 'clock' };
 
 const nameOf = (p) => String(p?.displayName || p?.username || '').trim() || C('someone');
 
-export const hoursText = (minutes) => C('hoursValue', { n: minutesToHours(minutes).toLocaleString(undefined, { maximumFractionDigits: 1 }) });
+export const hoursText = (minutes) => C('hoursValue', { n: minutesToHours(minutes).toLocaleString(locale(), { maximumFractionDigits: 1 }) });
 
 // Corre una acción del clan: botón ocupado, aviso y volver a dibujar con lo que diga el servidor.
 function runner(reload) {
@@ -60,7 +60,7 @@ function memberRow(m, clan, { b, run }) {
 
 function rankingCard(clan, rank) {
   const shared = clan.shared || {};
-  const note = shared.available === false ? C('sharedUnavailable') : Number(shared.sharing) > 0 ? C('sharedSome', { count: Number(shared.sharing) }) : C('sharedNobody');
+  const note = shared.available === false ? C('sharedUnavailable') : Number(shared.sharing) >= MIN_SHARING ? C('sharedSome', { count: Number(shared.sharing) }) : Number(shared.sharing) === 1 ? C('sharedOne') : C('sharedNobody');
   return h('section', { class: 'card cl-card' },
     h('h3', { class: 'card-title' }, icon('trophy'), C('rankingCard')),
     h('div', { class: 'cl-stats' },

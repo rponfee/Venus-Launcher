@@ -30,10 +30,11 @@ El código de una extensión es hostil por definición. No debe poder leer token
 | Política | `modules/extensions/server.js` | CSP por respuesta del protocolo: `default-src 'none'`, solo archivos propios, `connect-src 'none'`, Trusted Types, y `sandbox allow-scripts` repetido en el encabezado |
 | Un solo uso | `extensions:openSession` + `server.js` | Una página HTML exige una ficha de un solo uso que dura 30 s |
 | Navegación | CSP de la ventana (`frame-src venus-ext:`), `will-frame-navigate` y `frame.js` | Un marco no sale de `venus-ext://`, sin ficha no carga otra página, y una segunda carga detiene la extensión |
-| WebRTC | `modules/extensions/boot.js` | Este Chromium (Electron 44) no entiende `webrtc 'block'` en la CSP. Un script del launcher corre primero en cada página, saca WebRTC y no deja crear marcos anidados, que traerían un ámbito limpio |
+| WebRTC y otros | `modules/extensions/boot.js` | Este Chromium (Electron 44) no entiende `webrtc 'block'` en la CSP. Un script del launcher corre primero en cada página, saca WebRTC y no deja crear marcos anidados, que traerían un ámbito limpio. También saca sonido, voz y `execCommand` |
 | Puente | `features/extensions/bridge-core.js`, `frame.js` | Solo `event.source` igual al iframe; esquema cerrado; permiso en cada pedido; tamaños y frecuencia; copias planas; errores internos que no se cuentan |
 | Marco visual | `frame.js`, `styles/pages/extensions.css` | Borde punteado y franja con el nombre y "Extensión de la comunidad", por fuera del iframe. Fondo opaco propio |
-| Foco | `frame.js` | Si el iframe se lleva el foco sin clic ni Tab, se le saca |
+| Foco | `frame.js` | Si el iframe se lleva el foco sin clic ni Tab, se le saca. Se revisa cada 250 ms y al perder el foco la ventana, porque el launcher no recibe eventos del iframe |
+| Permisos del navegador | `modules/extensions.js` (`denyPermissions`) | `main.js` concede notificaciones, micrófono y demás a toda la ventana. Sus manejadores se envuelven (evento `session-created`) para decir que no a lo que pide un marco `venus-ext:`, sin cambiar lo que deciden para el launcher |
 | Textos | En toda la interfaz | Lo que viene de una extensión se dibuja como texto. Sin controles, invisibles ni marcas de dirección. El nombre no puede contener `venus`, `oficial`, `official`, `mojang` ni `microsoft` |
 
 ### Por qué un protocolo propio y no `srcdoc` ni `blob:`
@@ -42,17 +43,17 @@ Un `srcdoc` o un `blob:` heredan la CSP de la ventana, que no permite scripts en
 
 ### Lo que queda sin cerrar
 
-- **`boot.js` no es un límite duro.** Corre en el mismo ámbito que la extensión. Se probaron los caminos conocidos para armar un marco anidado (lista abajo), pero si apareciera otro, la extensión tendría WebRTC. Ganaría solo eso: sacar por WebRTC lo que ya tiene, que son sus datos y lo que el puente le da.
+- **`boot.js` no es un límite duro.** Corre en el mismo ámbito que la extensión. Se probaron los caminos conocidos para armar un marco anidado, pero si apareciera otro, la extensión tendría WebRTC, sonido y `execCommand`. Ganaría solo eso: sacar por WebRTC lo que ya tiene, que son sus datos y lo que el puente le da.
 - **DNS:** `X-DNS-Prefetch-Control: off` pide no hacer resoluciones anticipadas. Los detectores locales prueban conexiones, no consultas de DNS: eso no quedó medido.
-- **Audio:** una extensión puede hacer ruido con `AudioContext`. Molesta, no filtra nada.
-- **Portapapeles:** `navigator.clipboard` no existe, pero `document.execCommand('copy')` con un clic de la persona adentro del marco puede funcionar. No se bloqueó.
+- **Mensajes enormes:** el contenido de un mensaje recién se conoce al leerlo. Un mensaje de cientos de MB puede frenar la interfaz una vez, unos segundos, y ahí la extensión se detiene.
 - **Engaño adentro del marco:** dentro de su rectángulo una extensión dibuja lo que quiera, incluso algo parecido a un diálogo del launcher. La franja de afuera es la defensa.
-- **El catálogo lo decide la persona.** Con el catálogo apagado no se consulta la lista de bloqueadas: se cumple la última que se guardó.
+- **Copiar con Ctrl+C adentro del marco:** si la persona copia estando en la extensión, la página puede cambiar lo que se copia con el evento `copy`. Solo pasa cuando ella copia ahí.
+- **La lista de bloqueadas depende del interruptor del catálogo.** Con el catálogo apagado no se consulta: se cumple la última que se guardó.
 
 ## Por dentro
 
 ```
-src/main/modules/extensions.js          IPC, protocolo, guardia de marcos, paquetes en espera
+src/main/modules/extensions.js          IPC, protocolo, guardia de marcos, permisos, paquetes en espera
 src/main/modules/extensions/manifest.js validateManifest, PERMISSIONS, addedPermissions
 src/main/modules/extensions/package.js  readPackage, writePackage, topes
 src/main/modules/extensions/server.js   parseUrl, respond, cspFor (sin Electron)
@@ -81,7 +82,8 @@ El sha-256 no lo verifica el servidor (la base no ve el contenido). Lo verifican
 ## Pendientes para integrar
 
 - Aplicar `0036_extensiones.sql` (se probó entera en una transacción con vuelta atrás; no está aplicada).
-- `docs/arquitectura.md`: sumar canales, `settings.extensions` y los datos de `<datos>/extensions/` a las secciones 6.3, 7.2 y 7.3. La línea que dice "esquema `venus-ext`" ya es correcta. `docs/supabase.md`: sumar 0036.
+- `docs/arquitectura.md`: sumar canales, `settings.extensions` y los datos de `<datos>/extensions/` a las secciones 6.3, 7.2 y 7.3, y `frame-src venus-ext:` a la regla de la CSP de la sección 8. La línea que dice "esquema `venus-ext`" ya es correcta. `docs/supabase.md`: sumar 0036.
+- `main.js`: los manejadores de permisos podrían mirar el pedido por su cuenta (`details.requestingUrl` que empiece con `venus-ext:`). Mientras tanto lo hace `denyPermissions`. Si alguien cambia esos manejadores, la prueba hostil lo detecta: `Notification` tiene que dar `denied`.
 - Los 12 idiomas restantes del namespace `extensions` (interfaz y proceso principal).
 
 ## Cómo probar
@@ -93,3 +95,23 @@ node src/main/modules/extensions/test/hostile/ui.js <carpeta temporal>    # fluj
 ```
 
 `run.js` levanta detectores locales de HTTP, TCP y UDP y deja `resultados.json` y las capturas en la carpeta. Usa `VENUS_DATA_DIR` y `VENUS_DEVSHOT`: nunca toca los datos reales.
+
+## Resultados de la última prueba
+
+**Extensiones hostiles en la ventana real** (`run.js`): 117 filas bloqueadas, ninguna lograda, y 0 pedidos en los detectores locales de HTTP, TCP y UDP. Lo que fue encontrando la prueba y se corrigió:
+
+| Hallazgo | Corrección |
+|---|---|
+| `Notification.requestPermission()` daba `granted`: `main.js` concede ese permiso a toda la ventana, y una extensión podía mandar avisos del sistema a nombre del launcher | `denyPermissions` en `modules/extensions.js`. Ahora da `denied` |
+| Este Chromium no entiende `webrtc 'block'` y sin eso WebRTC queda fuera de `connect-src` | `boot.js`, Trusted Types y rechazar etiquetas de marcos en el HTML |
+| `document.activeElement` quedaba en el iframe después de un `focus()` desde adentro, sin ningún evento en el launcher | Revisión cada 250 ms y al perder el foco la ventana |
+| `AudioContext` en estado `running`, sin pedir nada | `boot.js` saca sonido, voz y `execCommand` |
+| Mensajes de 200 MB: hasta 3 s de interfaz frenada, con dos lecturas lentas antes de cortar | Una lectura de más de 1 s corta enseguida |
+
+Medido en esa corrida: bucle infinito, 7 ms de demora máxima en el launcher; 6000 mensajes seguidos, 7 ms y la extensión detenida; tarjeta en Inicio de 340 × 180 aunque la página pida 5000 px.
+
+**Migración** (en una transacción con vuelta atrás, aplicada dos veces para comprobar que es idempotente): 108 comprobaciones bien, de las cuales 2 son de relleno (no prueban nada). Después se verificó que en producción no quedó ni la tabla, ni el bucket, ni las políticas, ni los usuarios de prueba.
+
+**Interfaz** (`ui.js`, con un cliente de Supabase falso): catálogo apagado sin pedidos, instalar, sha-256 e id que no coinciden, permisos nuevos al actualizar, lista de bloqueadas, envío, tope diario y revisión del admin.
+
+**Sin probar:** la app empaquetada; el catálogo y Storage contra un servidor real (la migración no está aplicada); clics y teclas reales (las capturas ignoran el mouse y la ventana no tiene el foco del sistema, así que el robo de foco se probó por `document.activeElement`); consultas de DNS; `venus://` y `mailto:` de verdad, para no abrir nada en la PC (se usó un esquema inventado); macOS y Linux.

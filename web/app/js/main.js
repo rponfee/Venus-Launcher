@@ -157,7 +157,7 @@ function showBoot() {
 
 function startSession(user) {
   sessionUser = user.id;
-  store = new Store({ backend: createBackend(client, user.id), base: config.url, someone: tr('someone') });
+  store = new Store({ backend: createBackend(client, user.id), someone: tr('someone') });
   pushApi = fake ? fake.createFakePush() : createPush({ client, config, idb: V.idb });
   mount(app, shell);
   if (!location.hash) history.replaceState(null, '', '#/friends');
@@ -170,49 +170,55 @@ function startSession(user) {
   pushApi.refresh?.().catch((err) => console.warn('[app] avisos', err?.message || err));
 }
 
-async function endSession() {
+// Corta los avisos de este celular y borra todo lo guardado. La cáscara de la app queda: no tiene datos.
+async function wipeLocal() {
+  try {
+    await Promise.race([pushApi?.disable(), new Promise((resolve) => setTimeout(resolve, 3000))]);
+  } catch {
+    /* sin red o sin sesión: el servidor lo borra al primer aviso que rebote */
+  }
   const old = store;
   store = null;
   sessionUser = null;
   current?.destroy?.();
   current = null;
-  await old?.stop();
+  await old?.stop()?.catch?.(() => {});
+  return async () => {
+    await V.idb.clear().catch(() => {});
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {
+      /* almacenamiento bloqueado */
+    }
+    try {
+      const reg = swAllowed && 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+      for (const n of (await reg?.getNotifications()) || []) n.close();
+      await navigator.clearAppBadge?.();
+    } catch {
+      /* sin notificaciones */
+    }
+  };
+}
+
+// La sesión se terminó sola (venció, o se cerró desde el launcher en todos los dispositivos)
+async function endSession() {
+  const finish = await wipeLocal();
+  await finish();
   closeRouteDialogs();
   renderLogin(app, { client, tr });
 }
 
-// Salir: corta los avisos de este celular y borra todo lo que hay guardado.
+// Salir
 async function signOut() {
   showBoot();
-  try {
-    await Promise.race([pushApi?.disable(), new Promise((resolve) => setTimeout(resolve, 3000))]);
-  } catch {
-    /* sin red: el servidor lo borra al primer aviso que rebote */
-  }
-  const old = store;
-  store = null;
-  current?.destroy?.();
-  current = null;
-  await old?.stop().catch?.(() => {});
+  const finish = await wipeLocal();
   try {
     await Promise.race([client.auth.signOut({ scope: 'local' }), new Promise((resolve) => setTimeout(resolve, 4000))]);
   } catch {
     /* sin red: la sesión local se borra igual */
   }
-  await V.idb.clear().catch(() => {});
-  try {
-    localStorage.clear();
-    sessionStorage.clear();
-  } catch {
-    /* almacenamiento bloqueado */
-  }
-  try {
-    const reg = swAllowed && 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
-    for (const n of (await reg?.getNotifications()) || []) n.close();
-    await navigator.clearAppBadge?.();
-  } catch {
-    /* sin notificaciones */
-  }
+  await finish();
   location.replace(`${location.pathname}${location.search}`);
 }
 

@@ -220,7 +220,7 @@ export function createFakeClient({ signedIn = true, gallery = false, now = Date.
       requests: db.friendships.filter((f) => f.addressee === ME && f.status === 'pending').map((f) => ({ userId: f.requester, name: nameOf(db, f.requester), at: f.created_at })),
       clips: db.media_received.filter((r) => !r.seen_at).map((r) => ({ id: r.id, userId: r.sender, from: nameOf(db, r.sender), kind: r.kind, name: r.name, at: r.created_at })),
     }),
-    gallery_list: () => (hasGallery ? [{ id: 'g1', kind: 'clip', title: 'Mejor clip de la semana', author: 'Luna', created_at: ago(100, now), url: `${BASE}/storage/v1/object/public/gallery/${LUNA}/g1.webm` }] : undefined),
+    gallery_list: () => (hasGallery ? { items: [{ id: 'g1', title: 'Mejor clip de la semana', author: { name: 'Luna' }, at: ago(100, now), url: `${BASE}/storage/v1/object/sign/clips/${LUNA}/g1.webm?token=demo`, likes: 3 }], more: false } : undefined),
   };
 
   const client = {

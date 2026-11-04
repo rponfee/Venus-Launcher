@@ -345,17 +345,13 @@ export function normalizeReceived(row) {
   return { id: row.id, kind: row.kind === 'clip' ? 'clip' : 'screenshot', name: cleanText(row.name, 120) || row.id, from: cleanText(row.from, 40), userId: row.userId, at: row.at, url: row.url || null, seen: Boolean(row.seen) };
 }
 
-// La galería la hace otro módulo (gallery_list): se toma lo que hay y lo que no se entiende se descarta.
+// La galería pública (gallery_list, migración 0032): siempre clips, con el autor como { name } o texto.
 export function normalizeGallery(raw) {
   const list = Array.isArray(raw) ? raw : Array.isArray(raw?.items) ? raw.items : [];
   return list
     .filter((r) => r && typeof r === 'object' && r.id != null)
-    .map((r) => ({
-      id: String(r.id),
-      kind: r.kind === 'clip' || r.kind === 'video' ? 'clip' : 'screenshot',
-      name: cleanText(r.title ?? r.name ?? r.file_name ?? r.fileName, 120),
-      from: cleanText(r.author ?? r.authorName ?? r.owner_name ?? r.ownerName ?? r.username ?? r.displayName, 40),
-      at: r.created_at ?? r.createdAt ?? r.at ?? null,
-      url: r.url ?? r.publicUrl ?? r.public_url ?? null,
-    }));
+    .map((r) => {
+      const author = r.author && typeof r.author === 'object' ? r.author.displayName || r.author.name || r.author.username : r.author;
+      return { id: String(r.id), kind: 'clip', name: cleanText(r.title, 80) || String(r.id), from: cleanText(author, 40), at: r.at ?? null, url: r.url ?? null };
+    });
 }

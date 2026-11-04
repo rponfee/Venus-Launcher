@@ -91,6 +91,7 @@ En la práctica:
 - **Sin diálogos ni ventanas.** `alert`, `confirm`, `prompt`, `window.open`, formularios y pantalla completa no hacen nada.
 - **Una sola página.** No podés navegar a otra: la URL de tu página es de un solo uso y, si el marco vuelve a cargar, el launcher lo detiene. Si querés varias pantallas, mostralas y ocultalas con JS.
 - **Sin marcos adentro.** `createElement('iframe')` tira error.
+- **Sin sonido ni voz.** No existen `AudioContext` ni `speechSynthesis`. Tampoco `document.execCommand`.
 
 El launcher dibuja arriba de tu página una franja con el nombre y "Extensión de la comunidad". No la podés tapar ni sacar, y no podés dibujar fuera de tu rectángulo.
 

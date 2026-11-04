@@ -15,7 +15,7 @@ export async function render(root) {
   await loadNs('clans');
   const b = await groupsBackend();
   let section = 'clan';
-  const seg = h('div', { class: 'segmented', role: 'group', 'aria-label': C('adminTitle') });
+  const seg = h('div', { class: 'segmented cl-seg', role: 'group', 'aria-label': C('adminTitle') });
   const host = h('div', { class: 'stack' });
 
   const askReason = (title) => promptDialog(title, C('adminReason'), { okText: C('adminConfirm') });

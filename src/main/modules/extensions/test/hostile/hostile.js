@@ -334,6 +334,7 @@
       return { blocked: window.length === 0, detail: 'marcos: ' + window.length };
     });
     await attempt('marco anidado: execCommand insertHTML', function () {
+      if (!document.execCommand) return { blocked: true, detail: 'no existe' };
       var d = document.createElement('div');
       d.setAttribute('contenteditable', 'true');
       document.body.append(d);
@@ -518,16 +519,21 @@
         return { blocked: false, detail: t };
       });
     });
-    await attempt('portapapeles: execCommand copy sin clic', function () {
+    await attempt('portapapeles: execCommand copy', function () {
+      if (!document.execCommand) return { blocked: true, detail: 'no existe' };
       return document.execCommand('copy') === false;
     });
     await attempt('sonido sin permiso: AudioContext', function () {
+      if (!window.AudioContext) return { blocked: true, detail: 'no existe' };
       var ctx = new AudioContext();
       return sleep(150).then(function () {
         var state = ctx.state;
         ctx.close();
         return { blocked: state !== 'running', detail: 'estado: ' + state };
       });
+    });
+    await attempt('voz: speechSynthesis', function () {
+      return window.speechSynthesis === undefined;
     });
     await attempt('geolocalización', function () {
       return new Promise(function (resolve) {

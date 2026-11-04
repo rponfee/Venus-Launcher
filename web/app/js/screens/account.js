@@ -1,13 +1,19 @@
 // Tu cuenta: código de amigo, instalar la app y salir (salir borra todo lo que hay en el celular).
-import { avatar, confirmBox, h, icon } from '../dom.js';
+import { avatar, confirmBox, h, icon, mount } from '../dom.js';
 import { avatarTone, displayName, isIos } from '../logic.js';
 import { myCode } from './friends.js';
 
 export function accountScreen(ctx) {
   const { store, tr, install } = ctx;
   const offs = [];
-  const me = store.me;
-  const name = displayName(me) || tr('someone');
+  const profileBox = h('div', { class: 'card profile-card' });
+  const drawProfile = () => {
+    const me = store.me;
+    const name = displayName(me) || tr('someone');
+    mount(profileBox, avatar(name, avatarTone(me?.id), 'big'), h('div', { class: 'row-main' }, h('div', { class: 'profile-name' }, name), me?.username ? h('div', { class: 'muted small' }, `@${me.username}`) : null));
+  };
+  offs.push(store.on('friends', drawProfile)); // el perfil puede llegar después de abrir la pantalla
+  drawProfile();
 
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   let installBox = null;
@@ -34,12 +40,7 @@ export function accountScreen(ctx) {
     el: h(
       'div',
       { class: 'screen' },
-      h(
-        'div',
-        { class: 'card profile-card' },
-        avatar(name, avatarTone(me?.id), 'big'),
-        h('div', { class: 'row-main' }, h('div', { class: 'profile-name' }, name), me?.username ? h('div', { class: 'muted small' }, `@${me.username}`) : null),
-      ),
+      profileBox,
       h('div', { class: 'card' }, myCode(ctx, offs)),
       installBox,
       h('div', { class: 'card' }, h('p', { class: 'muted small' }, tr('account_presence_note'))),

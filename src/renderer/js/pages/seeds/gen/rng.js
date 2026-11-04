@@ -39,7 +39,7 @@ export function parseSeed(text) {
 // Semilla al azar de 64 bits, ya con signo
 export function randomSeed() {
   const buf = new BigUint64Array(1);
-  (globalThis.crypto || crypto).getRandomValues(buf);
+  crypto.getRandomValues(buf);
   return BigInt.asIntN(64, buf[0]);
 }
 

@@ -1,5 +1,5 @@
 // Tarjeta de Ajustes para la integracion con OBS (Ajustes > En el juego). Apagada por defecto. La contraseña va directo al
-// proceso principal, que la guarda cifrada y nunca la devuelve. Canales: obs:status, obs:test, obs:setPassword, obs:refresh.
+// proceso principal, que la guarda cifrada y nunca la devuelve. Canales: obs:status, obs:test, obs:setPassword.
 import { h, icon, mount, ok, fail, switchEl, selectEl, setBusy, loading } from '../../ui.js';
 import { store, api } from '../../store.js';
 import { t } from '../../i18n.js';

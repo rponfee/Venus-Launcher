@@ -197,7 +197,7 @@ export function createFakeGroups(scenario = 'demo', base) {
       if (!c.members.length) communities.delete(p_community);
       return { ok: true, dissolved: !c.members.length };
     },
-    community_members_list: ({ p_community }) => { const c = needComm(p_community); return { total: c.members.length + c.extra, members: c.members }; },
+    community_members_list: ({ p_community, p_offset = 0 }) => { const c = needComm(p_community); return { total: c.members.length + (p_offset ? 0 : c.extra), members: p_offset ? [] : c.members }; },
     community_set_role: ({ p_community, p_user, p_role }) => { const c = needComm(p_community, 'owner'); c.members.find((m) => m.userId === p_user).role = p_role; return { ok: true }; },
     community_mute: ({ p_community, p_user, p_minutes }) => { const c = needComm(p_community, 'owner', 'moderator'); const until = p_minutes ? iso(Date.now() + p_minutes * 60000) : null; c.members.find((m) => m.userId === p_user).mutedUntil = until; return { ok: true, mutedUntil: until }; },
     community_kick: ({ p_community, p_user }) => {

@@ -3,6 +3,8 @@
 // Existe por un solo agujero: connect-src no alcanza a WebRTC y este Chromium no entiende la directiva webrtc de la CSP.
 // Saca WebRTC del ámbito de la página; y como un marco anidado traería un ámbito nuevo con WebRTC intacto, tampoco deja
 // crear marcos. Trusted Types (CSP) cierra innerHTML y demás, y package.js rechaza las etiquetas de marcos en el HTML.
+// De paso saca lo que tampoco es de una extensión: sonido y voz (podría hablar como si fuera el launcher) y execCommand
+// (escribir en el portapapeles con un clic).
 // No es el límite de seguridad principal: el aislamiento lo dan el sandbox y la CSP. Si alguien encontrara cómo sacarle
 // la vuelta, lo único que ganaría es hablar por WebRTC con lo que la extensión ya tiene (sus datos y lo que el puente le da).
 const BOOT_PATH = '.venus/boot.js';
@@ -24,10 +26,11 @@ const BOOT_SCRIPT = `(function () {
   for (var i = 0; i < names.length; i++) {
     if (/^(webkit)?RTC/.test(names[i])) drop(window, names[i]);
   }
-  ['HTMLIFrameElement', 'HTMLFrameElement', 'HTMLFrameSetElement', 'HTMLObjectElement', 'HTMLEmbedElement', 'HTMLPortalElement', 'HTMLFencedFrameElement', 'XSLTProcessor'].forEach(function (name) {
+  ['HTMLIFrameElement', 'HTMLFrameElement', 'HTMLFrameSetElement', 'HTMLObjectElement', 'HTMLEmbedElement', 'HTMLPortalElement', 'HTMLFencedFrameElement', 'XSLTProcessor', 'AudioContext', 'webkitAudioContext', 'speechSynthesis', 'SpeechSynthesisUtterance'].forEach(function (name) {
     drop(window, name);
   });
   drop(DOMImplementation.prototype, 'createDocument');
+  drop(Document.prototype, 'execCommand');
   var lower = Object.create(null);
   var upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   var small = 'abcdefghijklmnopqrstuvwxyz';

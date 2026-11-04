@@ -34,8 +34,13 @@ export async function buildTimelapse({ instanceId, folder, fps, every, onProgres
   const names = await api.invoke('clipstudio:timelapseFrames', instanceId, folder);
   const plan = planTimelapse(names.length, fps, every);
   if (!plan.frames) throw new Error(C('errNoFrames'));
-  // El tamanio sale de la imagen mas nueva: si cambio la ventana, las viejas quedan con franjas negras
-  const sample = await loadFrame(instanceId, folder, names[plan.frames - 1]);
+  // El tamanio sale de una imagen del medio: si la ventana cambio un rato, esas quedan con franjas negras
+  let sample = null;
+  for (const i of [Math.floor(plan.frames / 2), plan.frames - 1, 0]) {
+    sample = await loadFrame(instanceId, folder, names[i]).catch(() => null);
+    if (sample) break;
+  }
+  if (!sample) throw new Error(C('errNoFrames'));
   const box = outputBox(sample.width, sample.height);
   sample.close?.();
   const track = await pickCodec(box.width, box.height, plan.fps);

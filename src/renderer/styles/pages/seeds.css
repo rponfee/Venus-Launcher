@@ -77,6 +77,8 @@
 .sd-near-row { display: flex; align-items: center; gap: var(--sp-2); width: 100%; min-height: 30px; padding: 2px 6px; border: 0; border-radius: var(--radius-s); background: transparent; color: var(--text); font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer; }
 .sd-near-row:hover { background: var(--hover-bg); }
 .sd-near-row:focus-visible { outline: var(--focus-ring); outline-offset: -2px; }
+.sd-near-row.doubt .sd-chip { opacity: 0.55; }
+.sd-near-row.doubt .sd-near-name { color: var(--text-2); }
 .sd-near-name { flex: 1; min-width: 0; }
 .sd-near-pos { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 

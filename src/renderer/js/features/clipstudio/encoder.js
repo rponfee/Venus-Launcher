@@ -7,6 +7,9 @@ const MAX_QUEUE = 6;
 const BATCH_FRAMES = 24;
 const BATCH_BYTES = 4 * 1024 * 1024;
 const WEBCODECS = { V_VP9: 'vp09.00.41.08', V_VP8: 'vp8' };
+// MediaRecorder no guarda el espacio de color en el WebM y un <video> lo muestra como BT.601: sin esto, VideoDecoder lo toma
+// como BT.709 y un clip recodificado sale con los colores corridos (comprobado con clips de prueba de colores puros)
+const SOURCE_COLOR = { primaries: 'bt709', transfer: 'iec61966-2-1', matrix: 'smpte170m', fullRange: false };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const canEncode = () => typeof VideoEncoder === 'function' && typeof VideoFrame === 'function';
@@ -228,7 +231,7 @@ export async function transcodeSegment(encoder, jobId, index, { signal, onTime }
     },
   });
   try {
-    decoder.configure({ codec: WEBCODECS[info.codec] || 'vp09.00.41.08', codedWidth: info.width, codedHeight: info.height });
+    decoder.configure({ codec: WEBCODECS[info.codec] || 'vp09.00.41.08', codedWidth: info.width, codedHeight: info.height, colorSpace: SOURCE_COLOR });
     for (;;) {
       if (signal?.cancelled) return;
       if (failure) throw failure;

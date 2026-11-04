@@ -36,5 +36,3 @@ export function versionForGame(id) {
   return VERSIONS[0];
 }
 
-// Solo la fila 1.21.4 cubre versiones que cubiomes todavia no conoce por nombre
-export const newestCoveredGame = '1.21.4';

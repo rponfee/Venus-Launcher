@@ -99,7 +99,7 @@ function harness(pkgs) {
     `extensions|${setStage(5)}`,
     `ext-hostile|${waitDone(5)}`,
     // La guardia de foco: si el iframe recibe el foco sin clic ni Tab, se lo saca
-    `ext-hostile|(async()=>{const f=document.querySelector('iframe');f.focus();f.dispatchEvent(new Event('focus'));await new Promise(r=>setTimeout(r,100));${log('focus-guard', 'document.activeElement.tagName')}})()`,
+    `ext-hostile|(async()=>{const f=document.querySelector('iframe');f.focus();await new Promise(r=>setTimeout(r,500));${log('focus-guard', 'document.activeElement.tagName')}})()`,
     ...[6, 7, 8, 9, 10, 11, 12].flatMap((n) => [`extensions|${setStage(n)}`, `ext-hostile|${waitDone(n)}`]),
     // Recargar desde la franja vuelve a abrir una extensión detenida
     `extensions|${setStage(2)}`,
@@ -205,7 +205,7 @@ async function main() {
       /* línea cortada */
     }
   }
-  const refused = lines.filter((l) => /Refused to frame|Not allowed to load local|external protocol|Blocked a frame/i.test(l)).map((l) => l.slice(0, 170));
+  const refused = lines.filter((l) => !l.includes('[HOSTIL]') && /Framing|Not allowed to load local|Unsafe attempt to initiate navigation|Running the JavaScript URL/i.test(l)).map((l) => l.slice(0, 170));
   const report = { exit: code, ports: det.ports, networkHits: det.hits, out, refused, otherErrors: lines.filter((l) => /\[error\]|\[js-error\]/.test(l) && !/Content Security Policy|Content-Security-Policy|Trusted Type|sandbox|Blocked|blocked|ERR_|net::/i.test(l)).slice(0, 40) };
   fs.writeFileSync(path.join(BASE, 'resultados.json'), JSON.stringify(report, null, 2));
 

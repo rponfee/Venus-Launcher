@@ -61,10 +61,11 @@ function decide(s) {
   return { action: 'capture' };
 }
 
-// Un cuadro negro (ventana minimizada o todavia sin dibujar) pesa casi nada: no sirve para el video
+// Un cuadro de un solo color (ventana minimizada o todavia sin dibujar) pesa casi nada: no sirve para el video. Medido con
+// JPEG de calidad 0,85: un color liso da ~0,02 bytes por pixel y una imagen del juego, de 0,1 para arriba.
 function isBlankFrame(bytes, width, height) {
   const pixels = Math.max(1, Number(width) || 0) * Math.max(1, Number(height) || 0);
-  return (Number(bytes) || 0) / pixels < 0.008;
+  return (Number(bytes) || 0) / pixels < 0.025;
 }
 
 const isFrameFile = (name) => FRAME_RE.test(String(name));

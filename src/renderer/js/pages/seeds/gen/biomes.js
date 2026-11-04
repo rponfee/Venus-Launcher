@@ -79,7 +79,6 @@ export const BIOME_CSS = new Map(RAW.map(([id, , rgb]) => [id, `#${rgb.toString(
 export const OCEAN = 0;
 export const PLAINS = 1;
 export const DESERT = 2;
-export const FOREST = 4;
 export const TAIGA = 5;
 export const SWAMP = 6;
 export const RIVER = 7;

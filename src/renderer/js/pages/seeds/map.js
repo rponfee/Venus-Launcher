@@ -23,8 +23,9 @@ const STRONG_BATCH = 6;
 const SPRITE = 22; // pixeles CSS
 const HIT = 14;
 const SLIME_MIN_ZOOM = 5;
+const WORLD_LIMIT = 30000000;
 
-export const levelForZoom = (zi) => {
+const levelForZoom = (zi) => {
   const ppb = ZOOMS[zi];
   if (ppb >= 1 / 4) return 0;
   return Math.min(MAX_LEVEL, Math.round(Math.log2(1 / (4 * ppb))));
@@ -40,6 +41,7 @@ export class SeedMap {
     this.world = null;
     this.filters = new Set();
     this.slimeOn = false;
+    this.doubtOn = true;
     this.tiles = new Map();
     this.pending = new Set();
     this.failed = new Set();
@@ -208,6 +210,12 @@ export class SeedMap {
     this.scheduleDraw();
   }
 
+  setDoubtful(on) {
+    this.doubtOn = on;
+    if (!on && this.selected?.doubt) this.select(null);
+    this.scheduleDraw();
+  }
+
   // ---------- Dibujo ----------
   resize() {
     const w = this.el.clientWidth;
@@ -240,6 +248,9 @@ export class SeedMap {
     const W = this.canvas.width;
     const H = this.canvas.height;
     const v = this.view;
+    // Hasta el borde del mundo: mas alla no hay nada que calcular
+    v.x = Math.max(-WORLD_LIMIT, Math.min(WORLD_LIMIT, v.x));
+    v.z = Math.max(-WORLD_LIMIT, Math.min(WORLD_LIMIT, v.z));
     const ppb = ZOOMS[v.zi];
     const s = ppb * this.dpr;
     const level = levelForZoom(v.zi);
@@ -281,7 +292,7 @@ export class SeedMap {
     this.planFine = fine;
     this.planCoarse = this.coarsePlan(level, x0, z0, x1, z1);
 
-    if (this.slimeOn && v.zi >= SLIME_MIN_ZOOM) this.drawSlime(g, s, W, H, x0, z0, x1, z1);
+    if (this.slimeOn && this.world.dim === 0 && v.zi >= SLIME_MIN_ZOOM) this.drawSlime(g, s, W, H, x0, z0, x1, z1);
     this.drawMarkers(g, s, W, H, x0, z0, x1, z1);
     this.evict();
     this.updateChrome();
@@ -397,7 +408,10 @@ export class SeedMap {
       const px = (m.x - v.x) * s + W / 2;
       const py = (m.z - v.z) * s + H / 2;
       const size = Math.round(SPRITE * this.dpr);
+      // Las dudosas se ven apagadas: la estimacion las descarta, pero pueden estar
+      g.globalAlpha = m.doubt ? 0.5 : 1;
       g.drawImage(this.sprite(m.type), Math.round(px - size / 2), Math.round(py - size / 2));
+      g.globalAlpha = 1;
       drawn.push({ ...m, px: px / this.dpr, py: py / this.dpr });
     };
     this.planStructs = [];
@@ -426,7 +440,7 @@ export class SeedMap {
           const key = `${rx},${rz}`;
           const res = cache.get(key);
           if (res === undefined) missing.push(rx, rz);
-          else if (res) put({ kind: 'struct', type, x: res.x, z: res.z, biome: res.biome, id: `${type}:${key}` });
+          else if (res && (this.doubtOn || !res.doubt)) put({ kind: 'struct', type, x: res.x, z: res.z, biome: res.biome, doubt: res.doubt, id: `${type}:${key}` });
         }
       }
       for (let i = 0; i < missing.length; i += STRUCT_BATCH * 2) this.planStructs.push({ t: 'structs', type, regions: missing.slice(i, i + STRUCT_BATCH * 2) });
@@ -697,13 +711,13 @@ export class SeedMap {
     }
     const biomes = [...totals].sort((a, b) => b[1] - a[1]).map(([id]) => id);
     const counts = {};
-    for (const m of this.drawn) counts[m.type] = (counts[m.type] || 0) + 1;
+    for (const m of this.drawn) if (!m.doubt) counts[m.type] = (counts[m.type] || 0) + 1;
     const near = this.drawn
       .filter((m) => m.px >= 0 && m.py >= 0 && m.px <= this.cssW && m.py <= this.cssH)
       .map((m) => ({ ...m, d: Math.hypot(m.x - v.x, m.z - v.z) }))
       .sort((a, b) => a.d - b.d)
       .slice(0, 8);
-    this.onView({ biomes, counts, near, hidden: this.hiddenTypes || [], strongLoading: this.strongState === 'wanted', slimeTooFar: this.slimeOn && v.zi < SLIME_MIN_ZOOM });
+    this.onView({ biomes, counts, near, hidden: this.hiddenTypes || [], strongLoading: this.strongState === 'wanted', slimeTooFar: this.slimeOn && this.world.dim === 0 && v.zi < SLIME_MIN_ZOOM });
   }
 
   // ---------- Navegacion ----------

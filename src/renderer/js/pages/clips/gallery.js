@@ -10,6 +10,7 @@ import { navigate } from '../../app.js';
 import { cloud } from '../../cloud.js';
 import { ensureLink } from './share.js';
 import { LIMITS } from '../worlds/media.js';
+import '../../features/clipstudio/icons.js';
 import { VIEWS, PAGE_SIZE, TITLE_MAX, THUMB_MAX, REPORT_REASONS, cleanTitle, visibleClips, ownClips, ownState, expiresSoon, toggledLike, errorCode } from './gallery-logic.js';
 
 const C = (key, vars) => t(`clipstudio.${key}`, vars);
@@ -194,10 +195,10 @@ function openReport(clip) {
     },
   );
   reasonSel.setAttribute('aria-label', C('galleryReportReason'));
-  const send = h('button', { class: 'btn danger', type: 'button' }, icon('flag'), C('galleryReportOk'));
+  const send = h('button', { class: 'btn danger', type: 'button' }, icon('csFlag'), C('galleryReportOk'));
   const m = modal({
     title: C('galleryReportTitle'),
-    icon: 'flag',
+    icon: 'csFlag',
     size: 'sm',
     body: h('div', { class: 'stack' }, h('p', { class: 'cl-modal-text priv' }, clip.title), h('div', { class: 'cs-field' }, h('label', { class: 'cs-label' }, C('galleryReportReason')), reasonSel), h('div', { class: 'cs-field' }, h('label', { class: 'cs-label' }, C('galleryReportDetail')), textIn)),
     footer: [h('button', { class: 'btn ghost', type: 'button', onclick: () => m.close() }, t('common.cancel')), send],
@@ -295,10 +296,14 @@ export function galleryPanel() {
   function clipCard(clip) {
     const mineView = memo.view === 'mine';
     const state = mineView ? ownState(clip) : 'live';
-    const likes = h('span', { class: 'cs-gl-likes num', title: C('galleryLikesWeek', { count: clip.likesWeek }) }, icon('heart'), String(clip.likes));
+    const own = clip.mine || mineView;
+    const weekly = C('galleryLikesWeek', { count: clip.likesWeek });
     const card = h('article', { class: ['cs-gl-card', state !== 'live' && 'off'] });
-    const likeBtn = !clip.mine && !mineView ? h('button', { class: ['icon-btn sm cs-gl-like', clip.liked && 'on'], type: 'button', 'aria-pressed': String(clip.liked), title: clip.liked ? C('galleryUnlike') : C('galleryLike'), 'aria-label': clip.liked ? C('galleryUnlikeName', { name: clip.title }) : C('galleryLikeName', { name: clip.title }), onclick: () => toggleLike(clip, card) }, icon('heart')) : null;
-    const reportBtn = !clip.mine && !mineView ? h('button', { class: 'icon-btn sm', type: 'button', title: C('galleryReport'), 'aria-label': C('galleryReportName', { name: clip.title }), onclick: () => openReport(clip) }, icon('flag')) : null;
+    // Lo propio no se puede votar: muestra la cuenta sola
+    const likes = own
+      ? h('span', { class: 'cs-gl-likes num', title: weekly }, icon('heart'), String(clip.likes))
+      : h('button', { class: ['btn sm ghost cs-gl-like', clip.liked && 'on'], type: 'button', 'aria-pressed': String(clip.liked), title: `${clip.liked ? C('galleryUnlike') : C('galleryLike')} · ${weekly}`, 'aria-label': clip.liked ? C('galleryUnlikeName', { name: clip.title }) : C('galleryLikeName', { name: clip.title }), onclick: () => toggleLike(clip, card) }, icon('heart'), h('span', { class: 'num' }, String(clip.likes)));
+    const reportBtn = !own ? h('button', { class: 'icon-btn sm', type: 'button', title: C('galleryReport'), 'aria-label': C('galleryReportName', { name: clip.title }), onclick: () => openReport(clip) }, icon('csFlag')) : null;
     const removeBtn = mineView && state !== 'hidden' ? h('button', { class: 'btn sm ghost', type: 'button', onclick: () => unpublish(clip) }, icon('x'), C('galleryUnpublishOk')) : null;
     const title = h('h3', { class: ['cs-gl-title', 'ellipsis', !mineView && !clip.mine && 'priv'], title: clip.title }, clip.title);
     const who = clip.author?.name ? h('div', { class: 'cs-gl-who' }, avatarImg(clip.author.mc || clip.author.name, 32, 'cs-gl-av'), h('span', { class: ['ellipsis', !clip.mine && 'priv'] }, clip.author.name)) : null;
@@ -306,7 +311,7 @@ export function galleryPanel() {
     if (mineView && state === 'hidden') note = h('div', { class: 'cs-gl-note bad' }, icon('alert'), h('span', {}, clip.hiddenReason ? C('galleryHiddenReason', { reason: clip.hiddenReason }) : C('galleryHidden')));
     else if (mineView && state === 'expired') note = h('div', { class: 'cs-gl-note warn' }, icon('clock'), h('span', {}, C('galleryExpired')));
     else if (expiresSoon(clip)) note = h('div', { class: 'cs-gl-note warn' }, icon('clock'), h('span', {}, C('galleryExpiresSoon', { date: fmtDate(clip.expiresAt, DATE_LONG) })));
-    mount(card, thumbOf(clip), h('div', { class: 'cs-gl-body' }, title, who, note, h('div', { class: 'cs-gl-foot' }, h('span', { class: 'cs-gl-when' }, clip.at ? fmtAgo(clip.at) : ''), h('span', { class: 'spacer' }), likes, likeBtn, reportBtn, removeBtn)));
+    mount(card, thumbOf(clip), h('div', { class: 'cs-gl-body' }, title, who, note, h('div', { class: 'cs-gl-foot' }, h('span', { class: 'cs-gl-when' }, clip.at ? fmtAgo(clip.at) : ''), h('span', { class: 'spacer' }), likes, reportBtn, removeBtn)));
     return card;
   }
 

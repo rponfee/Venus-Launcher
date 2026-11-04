@@ -5,7 +5,7 @@
 // reintenta con espera creciente sin avisar nada. La contraseña va cifrada (core/secure) y nunca vuelve a la interfaz.
 //
 // Canales: obs:status() -> estado · obs:test({ host, port, password? }) -> { ok, version, scenes, current, streaming, recording } o error con code
-//   obs:setPassword(texto | null) · obs:refresh() (vuelve a pedir las escenas)
+//   obs:setPassword(texto | null)
 // Evento: obs:state (lo mismo que obs:status) · obs:streamer { on } (cambio el modo streamer: la interfaz relee los ajustes)
 // Ajustes: settings.obs (obs/logic.js). Guia: docs/wip/clips-33.md.
 const settings = require('../core/settings');
@@ -311,7 +311,6 @@ function register(c) {
     } else emit();
     return view();
   });
-  handle('obs:refresh', () => refreshScenes());
 
   onQuit(() => {
     generation += 1;

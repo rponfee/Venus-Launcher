@@ -3,43 +3,65 @@
 import { deviceLabel, pushSupport, sameKeyBytes, urlB64ToBytes } from './logic.js';
 
 const PREVIEW_KEY = 'prefs.preview';
+const READY_MS = 5000;
+const unavailable = () => Object.assign(new Error('push_unavailable'), { code: 'push_unavailable' });
 
-async function publicKey(url) {
-  const res = await fetch(url, { headers: { accept: 'application/json' } });
-  if (!res.ok) throw Object.assign(new Error('push_unavailable'), { code: 'push_unavailable' });
-  const data = await res.json();
-  if (typeof data?.publicKey !== 'string') throw Object.assign(new Error('push_unavailable'), { code: 'push_unavailable' });
-  return data.publicKey;
-}
+/**
+ * deps (para las pruebas): nav, notification, fetchFn, standalone().
+ */
+export function createPush({ client, config, idb, deps = {} }) {
+  const nav = deps.nav ?? globalThis.navigator;
+  const notification = () => deps.notification ?? globalThis.Notification;
+  const fetchFn = deps.fetchFn ?? ((...args) => globalThis.fetch(...args));
+  const standalone = deps.standalone ?? (() => matchMedia('(display-mode: standalone)').matches || nav.standalone === true);
+  const hasPush = () => deps.hasPush ?? 'PushManager' in globalThis;
+  const hasNotification = () => Boolean(notification());
+  let keyText = null;
 
-export function createPush({ client, config, idb }) {
   const env = () => ({
-    hasSW: 'serviceWorker' in navigator,
-    hasPush: 'PushManager' in globalThis,
-    hasNotification: 'Notification' in globalThis,
-    standalone: matchMedia('(display-mode: standalone)').matches || navigator.standalone === true,
-    ua: navigator.userAgent,
-    platform: navigator.platform,
-    touchPoints: navigator.maxTouchPoints,
+    hasSW: 'serviceWorker' in nav,
+    hasPush: hasPush(),
+    hasNotification: hasNotification(),
+    standalone: standalone(),
+    ua: nav.userAgent,
+    platform: nav.platform,
+    touchPoints: nav.maxTouchPoints,
   });
-  const registration = () => navigator.serviceWorker.ready;
+
+  // La clave pública la da la Edge Function: no va en el repositorio y se puede cambiar.
+  async function publicKey() {
+    if (keyText) return keyText;
+    let res;
+    try {
+      res = await fetchFn(config.pushFunction, { headers: { accept: 'application/json' } });
+    } catch {
+      throw unavailable();
+    }
+    if (!res.ok) throw unavailable();
+    const data = await res.json().catch(() => null);
+    if (typeof data?.publicKey !== 'string') throw unavailable();
+    keyText = data.publicKey;
+    return keyText;
+  }
+
+  // Si el service worker no llega a estar listo, no se queda esperando para siempre
+  const registration = () => Promise.race([nav.serviceWorker.ready, new Promise((_, reject) => setTimeout(() => reject(unavailable()), READY_MS))]);
 
   async function subscribed() {
-    const reg = await registration();
-    return reg.pushManager.getSubscription();
+    return (await registration()).pushManager.getSubscription();
   }
 
   async function save(sub) {
-    const { error } = await client.rpc('push_subscribe', { p_endpoint: sub.endpoint, p_label: deviceLabel(navigator.userAgent) });
+    const { error } = await client.rpc('push_subscribe', { p_endpoint: sub.endpoint, p_label: deviceLabel(nav.userAgent) });
     if (error) throw error;
   }
 
   return {
-    // { support: 'ok' | 'ios_install' | 'ios_old' | 'unsupported', permission, enabled }
+    // { support: 'ok' | 'ios_install' | 'ios_old' | 'unsupported', permission, enabled }. Nunca pide permiso.
     async status() {
       const support = pushSupport(env());
       if (support !== 'ok') return { support, permission: 'default', enabled: false };
-      const permission = Notification.permission;
+      const { permission } = notification();
       let enabled = false;
       if (permission === 'granted') {
         try {
@@ -48,14 +70,16 @@ export function createPush({ client, config, idb }) {
           enabled = false;
         }
       }
+      // Se trae antes del toque: Safari exige que el permiso salga enseguida del gesto
+      if (!enabled && permission !== 'denied') publicKey().catch(() => {});
       return { support, permission, enabled };
     },
 
-    // Solo desde un toque de la persona
+    // Solo desde un toque de la persona. Lo primero es el permiso.
     async enable() {
-      const key = urlB64ToBytes(await publicKey(config.pushFunction));
-      const permission = await Notification.requestPermission();
+      const permission = await notification().requestPermission();
       if (permission !== 'granted') throw Object.assign(new Error('push_denied'), { code: 'push_denied' });
+      const key = urlB64ToBytes(await publicKey());
       const reg = await registration();
       let sub = await reg.pushManager.getSubscription();
       if (sub && !sameKeyBytes(sub.options?.applicationServerKey, key)) {
@@ -67,6 +91,7 @@ export function createPush({ client, config, idb }) {
     },
 
     async disable() {
+      if (pushSupport(env()) !== 'ok') return;
       const sub = await subscribed();
       if (!sub) return;
       const { endpoint } = sub;
@@ -77,10 +102,10 @@ export function createPush({ client, config, idb }) {
 
     // Al abrir: si ya estaba activado, avisa que este celular sigue en uso y corrige si cambió la clave.
     async refresh() {
-      if (pushSupport(env()) !== 'ok' || Notification.permission !== 'granted') return;
+      if (pushSupport(env()) !== 'ok' || notification().permission !== 'granted') return;
       const sub = await subscribed();
       if (!sub) return;
-      const key = urlB64ToBytes(await publicKey(config.pushFunction));
+      const key = urlB64ToBytes(await publicKey());
       if (sameKeyBytes(sub.options?.applicationServerKey, key)) {
         await save(sub);
         return;

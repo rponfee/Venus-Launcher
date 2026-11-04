@@ -144,9 +144,10 @@ function mineView(host, { b }) {
 function viewClan(host, id, { b }) {
   async function draw() {
     try {
-      const [clan, me] = await Promise.all([b.rpc('clan_get', { p_clan: id }), loadMine()]);
+      const [clan, me, ranking] = await Promise.all([b.rpc('clan_get', { p_clan: id }), loadMine(), b.rpc('clan_ranking', {}).catch(() => null)]);
       if (!host.isConnected) return;
-      mount(host, backToBrowse(), clanProfile(clan, { b, reload: draw, inClan: !!me?.data?.clan && !clan.myRole }));
+      const rank = (ranking?.rows || []).find((r) => r.id === id) || null;
+      mount(host, backToBrowse(), clanProfile(clan, { b, reload: draw, rank, inClan: !!me?.data?.clan && !clan.myRole }));
     } catch (err) {
       if (!host.isConnected) return;
       mount(host, backToBrowse(), err?.code === 'not_found' ? emptyState('shield', C('clanGone'), C('clanGoneText')) : problem(err, draw));
