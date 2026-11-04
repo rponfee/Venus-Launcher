@@ -1,6 +1,7 @@
 'use strict';
 module.exports = {
-  errNoKey: "이 런처 버전에서는 CurseForge를 사용할 수 없어요.",
+  errNoKey: "현재 CurseForge 설정을 이용할 수 없습니다.",
+  errSignIn: "CurseForge를 사용하려면 Venus 계정으로 로그인하세요.",
   errBadKey: "지금은 CurseForge를 사용할 수 없어요. 나중에 다시 시도해 주세요.",
   errNetwork: "CurseForge에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.",
   errTimeout: "CurseForge 응답이 너무 오래 걸렸어요. 잠시 후 다시 시도해 주세요.",

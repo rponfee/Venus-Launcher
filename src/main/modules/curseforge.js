@@ -1,13 +1,13 @@
 'use strict';
 // Modulo del proceso principal del dueño "modrinth" (se autocarga):
-//  - CurseForge (con la API key del launcher de core/app-config.js; sin key queda desactivado): busqueda,
+//  - CurseForge (clave del build o catálogo configurado en Administración): búsqueda,
 //    proyectos, archivos, instalacion en instancias, modpacks y huellas (fingerprints).
 //  - Canales extra del catalogo de Modrinth que usan la pagina y el dialogo de instalacion
 //    (equipo, pedidos en lote, filtros por tipo de proyecto).
 //
 // Para otros modulos del proceso principal (importar packs, analisis de seguridad):
 //   const curseforge = require('./curseforge');
-//   await curseforge.available()                 -> CurseForge esta disponible (el launcher trae API key)
+//   await curseforge.available()                 -> CurseForge está configurado en el build o en el servidor
 //   await curseforge.getMods([ids])              -> mods (datos crudos de la API de CurseForge)
 //   await curseforge.getFiles([fileIds])         -> archivos (crudos; downloadUrl puede venir null)
 //   await curseforge.fingerprintMatches([n])     -> { exactMatches, exactFingerprints, unmatchedFingerprints, ... }
@@ -45,6 +45,8 @@ function register({ handle, send }) {
       /* ventana cerrada */
     }
   };
+
+  cf.setRefreshRequester(() => emit('cloud:refreshSession'));
 
   // ---------- CurseForge ----------
   handle('curseforge:status', status);

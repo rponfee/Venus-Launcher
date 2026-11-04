@@ -57,7 +57,7 @@ function pickIds(ids) {
   return IDS.filter((id) => wanted.has(id));
 }
 
-// Definiciones vigentes. curseforgeApiKey: la de core/app-config (vacía = CurseForge no se comprueba).
+// Definiciones vigentes. curseforgeApiKey: la de core/app-config; sin ella se comprueba el servicio central de Venus.
 // cloud: { url, anonKey, configured } de core/cloud-defaults. userAgent: el del launcher.
 function buildDefs({ curseforgeApiKey = '', cloud = null, userAgent = 'VenusLauncher' } = {}) {
   const ua = String(userAgent || 'VenusLauncher').slice(0, 120);
@@ -65,9 +65,15 @@ function buildDefs({ curseforgeApiKey = '', cloud = null, userAgent = 'VenusLaun
   const cloudOk = Boolean(cloud && cloud.configured && typeof cloud.url === 'string' && /^https?:\/\//i.test(cloud.url) && cloud.anonKey);
   return SERVICES.map((svc) => {
     const def = { id: svc.id, group: svc.group, company: svc.company, anyAnswer: Boolean(svc.anyAnswer), skip: null, requests: [] };
-    if (svc.needs === 'curseforgeKey' && !cfKey) def.skip = 'noKey';
+    if (svc.needs === 'curseforgeKey' && !cfKey && !cloudOk) def.skip = 'noKey';
     else if (svc.needs === 'cloud' && !cloudOk) def.skip = 'notConfigured';
     if (def.skip) return def;
+    if (svc.id === 'curseforge' && !cfKey && cloudOk) {
+      const url = `${cloud.url.replace(/\/+$/, '')}/rest/v1/rpc/curseforge_status`;
+      // Solo conectividad con el catálogo central; no verifica una clave ni descarga contenido.
+      def.requests = [{ url, method: 'GET', headers: { 'User-Agent': ua, apikey: String(cloud.anonKey) }, secretHost: hostOf(url) }];
+      return def;
+    }
     if (svc.id === 'venus') {
       const url = `${cloud.url.replace(/\/+$/, '')}/auth/v1/health`;
       def.requests = [{ url, method: 'GET', headers: { 'User-Agent': ua, apikey: String(cloud.anonKey) }, secretHost: hostOf(url) }];

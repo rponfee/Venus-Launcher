@@ -318,7 +318,7 @@ export default {
   envEither: "客户端或服务端",
   envEitherBoth: "客户端或服务端（两端都装效果最佳）",
   cfOffTitle: "CurseForge 不可用",
-  cfOffText: "此版本的启动器不包含 CurseForge 目录。你仍可继续从 Modrinth 搜索和安装。",
+  cfOffText: "CurseForge 目前不可用。你可以继续通过 Modrinth 搜索和安装内容。",
   cfOffBack: "返回 Modrinth",
   cfNoDistribution: "需手动下载",
   cfNoDistributionText: "作者不允许其他应用下载：部分文件需要从网站下载。",

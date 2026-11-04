@@ -1,6 +1,7 @@
 'use strict';
 module.exports = {
-  errNoKey: "此版本的启动器不提供 CurseForge。",
+  errNoKey: "CurseForge 配置目前不可用。",
+  errSignIn: "请登录 Venus 账号以使用 CurseForge。",
   errBadKey: "CurseForge 目前不可用。请稍后再试。",
   errNetwork: "无法连接到 CurseForge。请检查你的网络连接。",
   errTimeout: "CurseForge 响应时间过长。请稍后再试。",

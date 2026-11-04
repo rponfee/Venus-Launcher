@@ -318,7 +318,7 @@ export default {
   envEither: "클라이언트 또는 서버",
   envEitherBoth: "클라이언트 또는 서버 (둘 다에 설치하면 더 좋음)",
   cfOffTitle: "CurseForge를 사용할 수 없어요",
-  cfOffText: "이 버전의 런처에는 CurseForge 카탈로그가 포함돼 있지 않아요. Modrinth에서는 계속 검색하고 설치할 수 있어요.",
+  cfOffText: "현재 CurseForge를 이용할 수 없습니다. Modrinth에서 계속 검색하고 설치할 수 있습니다.",
   cfOffBack: "Modrinth로 돌아가기",
   cfNoDistribution: "수동 다운로드",
   cfNoDistributionText: "제작자가 다른 앱에서의 다운로드를 허용하지 않아요. 일부 파일은 웹사이트에서 받아야 해요.",

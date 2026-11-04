@@ -1,6 +1,6 @@
 # Edge Functions de Venus Launcher
 
-> La rama 4.5.0 está en integración, sin publicar. Producción fue verificada solo hasta la migración 0027. Las instrucciones siguientes preparan operaciones futuras. `admin`, `ai-assistant` y `billing` desplegadas difieren del repo: reconciliar antes de desplegar. [Estado](../../docs/estado-4.5.0.md).
+> **Estado al 4 de noviembre de 2026:** 0028–0037 ya se aplicaron en producción. `push-notify` y `tiktok-token` están **v1 ACTIVE**, con `verify_jwt` false y true respectivamente; ambas responden **HTTP 503 `not_configured`** por credenciales pendientes. `curseforge` está **v1 ACTIVE**, `verify_jwt = true`; el estado público devuelve HTTP 200, `configured: false`, con la clave aún sin cargar. El launcher y la web siguen sin publicar. `admin`, `ai-assistant` y `billing` desplegadas difieren del repo: reconciliar antes de redesplegarlas. [Activación y límites](../../docs/activacion-backend-4.5.0.md).
 
 | Función | Para qué | Migraciones que necesita | Documentación |
 |---|---|---|---|
@@ -12,10 +12,13 @@
 
 | Función nueva de 4.5.0 | Autenticación y configuración | Documentación |
 |---|---|---|
-| `tiktok-token` | JWT y sesión de Venus; `TIKTOK_CLIENT_KEY` y `TIKTOK_CLIENT_SECRET` solo en Supabase. Intercambia/renueva tokens para la app aprobada; el launcher distribuye solo el client key público. | [Clips](../../docs/implementacion/clips.md) |
-| `push-notify` | GET ofrece VAPID pública; POST comprueba el secreto del disparo y usa service role para reclamar destinos. `verify_jwt = false` en config local; requiere 0035. | [App para celular](../../docs/implementacion/app-celular.md) |
+| `tiktok-token` | **v1 ACTIVE**, `verify_jwt = true`. JWT y sesión de Venus; `TIKTOK_CLIENT_KEY` y `TIKTOK_CLIENT_SECRET` solo en Supabase. Actualmente HTTP 503 `not_configured`: credenciales pendientes. El launcher distribuye solo el client key público; aprobación del proveedor y OAuth real siguen pendientes. | [Clips](../../docs/implementacion/clips.md) |
+| `push-notify` | **v1 ACTIVE**, `verify_jwt = false`; 0035 aplicada. GET ofrece VAPID pública cuando está configurada; POST comprueba el secreto del disparo. Actualmente HTTP 503 `not_configured`: credenciales y configuración privada de push pendientes. | [App para celular](../../docs/implementacion/app-celular.md) |
+| `curseforge` | **v1 ACTIVE**, `verify_jwt = true`; 0037 aplicada. Clave en Vault, acceso por `service_role` y cuota de 240 consultas/minuto por cuenta. Preflight OPTIONS 204 con CORS `*`; POST sin autenticación 401. Clave aún sin cargar, proveedor sin probar. | [Administración](../../docs/admin.md) y [activación](../../docs/activacion-backend-4.5.0.md) |
 
-## Antes de empezar
+## Antes de un despliegue nuevo
+
+Las instrucciones siguientes son generales. La aplicación de 0028–0037 y los despliegues de `push-notify`, `tiktok-token` y `curseforge` ya se completaron en la producción actual; no corresponde repetirlos como pendientes. La configuración que falta no autoriza a reemplazar funciones existentes divergentes.
 
 1. Instalá la [Supabase CLI](https://supabase.com/docs/guides/cli) e iniciá sesión: `supabase login`.
 2. Vinculá la carpeta del proyecto con tu proyecto de Supabase: `supabase link --project-ref <ref>` (el `ref` está en la URL del panel: `https://supabase.com/dashboard/project/<ref>`).
@@ -99,14 +102,20 @@ Las funciones SQL no se ejecutan en estas pruebas: probalas una vez en un proyec
 | `config.ts` | Constantes: protocolos, modelos que acepta el protocolo, herramientas permitidas y su nivel de permiso, límites, CORS. |
 | `tests/` | Pruebas con `node:test` (incluye `fake-db.ts`, `owner-plans.ts` y `fake-openai-sdk.ts`, que son solo para las pruebas). No se despliegan (no las importa `index.ts`). |
 
-## Integración pendiente: push y subidas de 4.5.0
+## CurseForge: desplegada, pendiente de la clave del dueño
 
-No se desplegaron estas funciones como parte de la revisión. El informe de la PWA registra 83 pruebas locales de PWA/push; el de clips, 182 entre sus módulos. No son pruebas de Deno desplegado, proveedores ni celulares.
+El **4 de noviembre de 2026**, con autorización, se aplicó `0037_curseforge_admin.sql` (versión **`20261104170221`**) y se desplegó `curseforge` **v1 ACTIVE**, con **`verify_jwt = true`**. No se reemplazó la función `admin`. Los hashes aplicados y las comprobaciones HTTP/ACL están en el [registro de activación](../../docs/activacion-backend-4.5.0.md).
 
-Para **push**, los secretos del servidor son `VENUS_VAPID_PUBLIC`, `VENUS_VAPID_PRIVATE` y `VENUS_PUSH_SECRET`; `VENUS_PUSH_SUBJECT` es opcional. `generar-claves.mjs` prepara los valores, que no deben copiarse al repo ni al chat. `private.push_configure` fija el endpoint y el secreto del disparo en Vault. El procedimiento y las cabeceras web están en la [guía permanente](../../docs/implementacion/app-celular.md). No aplicar `db push` para seleccionar una sola migración ni exponer el esquema `net`.
+La clave se carga desde **Administración → Integraciones → CurseForge** y queda en Vault. El estado público devolvió **HTTP 200, `configured: false`**; la Edge respondió **OPTIONS 204 con CORS `*`** y **POST 401 sin autenticación**. No se cargó una clave real ni se probaron cuentas/JWT reales o el proveedor; no se enviaron mensajes. La validación local registró **84/84 SQL**, **82/82 Node main/Edge/UI** y **56/56 de estado de servicios**, con Vault simulado y rollback comprobado. Estos resultados no prueban cifrado de Vault ni funcionamiento completo con el proveedor.
 
-El servidor acota los pedidos y los destinos: cuerpo de hasta 400 bytes, cinco suscripciones por cuenta, 30 avisos por hora y enfriamiento de dos minutos por clave. Envía Web Push **sin contenido**; el service worker consulta después la bandeja con la sesión local y respeta la preferencia de vistas previas. Los proveedores de push reciben el endpoint y los metadatos de entrega. Cerrar sesión en un dispositivo no cierra la sesión de los otros.
+## Push y subidas: desplegadas, con configuración pendiente
 
-Para **subidas**, `scripts/write-build-config.js` incorpora solamente `youtubeClientId` y `tiktokClientKey` desde sus dos variables públicas. No distribuir secretos OAuth ni configurar uno de YouTube en el workflow. Si el proveedor exige un secreto que el flujo público actual no resuelve, **la subida directa queda pendiente de un flujo aprobado y probado**. TikTok mantiene su secreto en esta función, no en el instalador; publicación directa y aprobación del proveedor no deben darse por obtenidas.
+El **4 de noviembre de 2026**, con autorización, se desplegaron `push-notify` **v1 ACTIVE** (`verify_jwt = false`) y `tiktok-token` **v1 ACTIVE** (`verify_jwt = true`). Ambas devolvieron **HTTP 503 `not_configured`** por credenciales pendientes. Estos resultados prueban despliegue y respuesta, no entrega push ni OAuth/subida real. El informe anterior de la PWA registra 83 pruebas locales de PWA/push; el de clips, 182 entre sus módulos: esos antecedentes no son pruebas con proveedores ni celulares.
 
-La revisión SQL, las guardas de los escenarios y la falta de ejecución del ensayo estructural se conservan en [revision-sql-0028-0036.md](../../docs/implementacion/revision-sql-0028-0036.md).
+Para **push**, faltan `VENUS_VAPID_PUBLIC`, `VENUS_VAPID_PRIVATE` y `VENUS_PUSH_SECRET`; `VENUS_PUSH_SUBJECT` es opcional. **El dueño confirmó que las configurará personalmente.** Los materiales privados ya están preparados; no regenerarlos, pedirlos por chat ni copiar valores o ubicaciones privadas al repositorio. También ejecutará el `configure-push.sql` privado que configura el endpoint y el secreto del disparo mediante `private.push_configure`. No había entradas `venus_push_url` ni `venus_push_secret`; la consulta se limitó a esos nombres. **pg_net 0.20.4 está instalado y `net` no está expuesto**. El contrato y las cabeceras web están en la [guía de la app para celular](../../docs/implementacion/app-celular.md).
+
+El servidor acota pedidos y destinos: cuerpo de hasta 400 bytes, cinco suscripciones por cuenta, 30 avisos por hora y enfriamiento de dos minutos por clave. Envía Web Push **sin contenido**; el service worker consulta después la bandeja con su sesión local y respeta las vistas previas. Falta comprobar recepción real en un teléfono tras configurar las credenciales y publicar la web.
+
+Para **TikTok**, faltan las credenciales del servidor y la validación de la app/OAuth con el proveedor. `tiktok-token` mantiene `TIKTOK_CLIENT_SECRET` fuera del instalador. Para **YouTube y TikTok**, `scripts/write-build-config.js` incorpora solamente `youtubeClientId` y `tiktokClientKey` desde sus variables públicas. No distribuir secretos OAuth ni configurar uno de YouTube en el workflow. Si el proveedor exige un secreto que el flujo público actual no resuelve, la subida directa sigue pendiente de un flujo aprobado y probado. No se afirma que exista aprobación de publicación directa ni que las subidas funcionen.
+
+Las migraciones 0028–0037 ya están aplicadas. La suite SQL local de 0028–0036 **sí se ejecutó el 3 de noviembre: 1282 comprobaciones (1225 estructurales y 57 escenarios), con rollback**. Sus guardas y límites están en la [revisión SQL](../../docs/implementacion/revision-sql-0028-0036.md); la aplicación real, las lecturas SQL/HTTP y las versiones están en el [registro de activación del backend](../../docs/activacion-backend-4.5.0.md). No hubo merge, release ni publicación web.

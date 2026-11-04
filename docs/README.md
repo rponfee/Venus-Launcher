@@ -1,6 +1,6 @@
 # Documentación de Venus Launcher
 
-La rama **4.5.0 está implementada y en integración, sin publicar**. Producción verificada hasta 0027. Empezá por el [estado y la evidencia](estado-4.5.0.md); los [documentos permanentes de implementación](implementacion/README.md) conservan los contratos y límites de los doce frentes y la revisión SQL. Los WIP fueron reconciliados, incluido el informe SQL completo, y se retiraron después de revisar las referencias permanentes.
+La rama **4.5.0 está implementada; el launcher y la web siguen sin publicar**. El 4 de noviembre de 2026 se aplicaron **0028–0036 en producción** y se desplegaron `push-notify` y `tiktok-token`, ambas todavía sin las credenciales necesarias. Empezá por el [estado y la evidencia](estado-4.5.0.md) y el [registro de activación del backend](activacion-backend-4.5.0.md). Los [documentos permanentes de implementación](implementacion/README.md) conservan los contratos y antecedentes de los doce frentes; las menciones históricas a producción pendiente se actualizan en ese registro.
 
 | Documento | Para quién | De qué trata |
 |---|---|---|
@@ -10,7 +10,7 @@ La rama **4.5.0 está implementada y en integración, sin publicar**. Producció
 | [login-microsoft.md](login-microsoft.md) | Dueño | Cómo pasar el inicio de sesión de Microsoft a una app propia de Azure, con la aprobación de Mojang. |
 | [arquitectura.md](arquitectura.md) | Desarrolladores | Documento vivo con la arquitectura y las reglas para programar: módulos, canales IPC, contratos entre módulos, rutas, ajustes, archivos de datos y cómo verificar. |
 | [../design-system/venus-launcher/MASTER.md](../design-system/venus-launcher/MASTER.md) | Desarrolladores y diseño | Sistema de diseño: identidad, tokens (color, tipografía, espaciado, movimiento), componentes, layout de página, accesibilidad y checklist antes de entregar una pantalla. |
-| [supabase.md](supabase.md) | Dueño (quien administra la nube) | Cómo conectar Supabase: qué crea cada migración (0001–0036; producción hasta 0027), emails con código, Realtime, Storage, backend de la IA y servidores destacados. |
+| [supabase.md](supabase.md) | Dueño (quien administra la nube) | Qué crea cada migración (0001–0036, aplicadas en producción), Auth, Realtime, Storage y configuración pendiente de servicios. |
 | [backend-ia.md](backend-ia.md) | Dueño y desarrolladores | Edge Function `ai-assistant`: protocolo, errores, seguridad, despliegue, cómo se cuenta la cuota, planes, costos, respaldo en OpenAI y privacidad. |
 | [pagos.md](pagos.md) | Dueño y desarrolladores | Pagos de Venus IA con Stripe: Checkout, portal, webhook, modo de prueba, impuestos, pagos fallidos y los canales `billing:*` para la interfaz. |
 | [admin.md](admin.md) | Dueño (administradores) | Panel de administración (`#/admin`): quién tiene acceso, usuarios, moderación, cupones, planes, registro y la Edge Function `admin`. |
@@ -29,8 +29,9 @@ La rama **4.5.0 está implementada y en integración, sin publicar**. Producció
 
 | Documento de integración | Para quién | Contenido |
 |---|---|---|
-| [estado-4.5.0.md](estado-4.5.0.md) | Dueño e integración | Decisiones, evidencia local atribuida, producción pendiente y comprobaciones externas. |
+| [estado-4.5.0.md](estado-4.5.0.md) | Dueño e integración | Decisiones, evidencia local y de producción, credenciales y comprobaciones externas pendientes. |
+| [activacion-backend-4.5.0.md](activacion-backend-4.5.0.md) | Dueño y backend | Activación del 4 de noviembre: nueve versiones aplicadas, Edge Functions desplegadas, lecturas SQL/HTTP y límites. |
 | [implementacion/README.md](implementacion/README.md) | Desarrolladores | Doce especificaciones permanentes, con tablas, canales, RPC, datos y límites. |
-| [Revisión SQL 0028–0036](implementacion/revision-sql-0028-0036.md) | Dueño y backend | Correcciones, inventario, guardas y escenarios preparados; diferencia entre inspección textual y SQL ejecutado. |
+| [Revisión SQL 0028–0036](implementacion/revision-sql-0028-0036.md) | Dueño y backend | Correcciones, guardas y ensayo local ejecutado el 3 de noviembre: 1282 comprobaciones (1225 estructurales y 57 escenarios), con rollback. |
 | [hoja-de-ruta.md](hoja-de-ruta.md) | Dueño y colaboradores | Grupos históricos y estado de implementación en la rama 4.5.0. |
 | [Web y PWA](../web/LEEME.md) | Dueño | Hosting, ruta `/app/`, cabeceras y validación pendiente en celulares. |

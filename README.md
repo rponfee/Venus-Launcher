@@ -1,6 +1,6 @@
 # Venus Launcher
 
-Launcher de **Minecraft: Java Edition** para Windows hecho con Electron. Instala cualquier versión (de pre-classic a las snapshots más nuevas) con Vanilla, Fabric, Quilt, Forge, NeoForge, OptiFine, Iris, Legacy Fabric o Babric; trae el catálogo completo de Modrinth (y el de CurseForge, si el build trae su clave), servidores locales, juego con amigos sin abrir puertos, amigos, mensajes y Voice Chat, nube de mundos, un asistente de IA y muchas herramientas para que los mods no se rompan. Toda la interfaz está en español rioplatense y se traduce a 14 idiomas.
+Launcher de **Minecraft: Java Edition** para Windows hecho con Electron. Instala cualquier versión (de pre-classic a las snapshots más nuevas) con Vanilla, Fabric, Quilt, Forge, NeoForge, OptiFine, Iris, Legacy Fabric o Babric; trae el catálogo completo de Modrinth (y el de CurseForge, configurado por el administrador), servidores locales, juego con amigos sin abrir puertos, amigos, mensajes y Voice Chat, nube de mundos, un asistente de IA y muchas herramientas para que los mods no se rompan. Toda la interfaz está en español rioplatense y se traduce a 14 idiomas.
 
 ![Logo](src/renderer/assets/logo-256.png)
 
@@ -70,7 +70,7 @@ La producción verificada llega a la migración **0027**; 0028–0036, funciones
 
 ### Contenido
 
-- **Modrinth**: mods, modpacks, shaders, resource packs, data packs y plugins con carga infinita, filtros (categorías, loader, versión, entorno, licencia, "Compatible con" una instancia o servidor), detalle con galería y versiones, y comparador de shaders y resource packs. Antes de instalar revisa la compatibilidad (versión, loader, dependencias, incompatibilidades y duplicados). **CurseForge** viene incluido si el build trae su API key (`src/main/core/app-config.js`).
+- **Modrinth**: mods, modpacks, shaders, resource packs, data packs y plugins con carga infinita, filtros (categorías, loader, versión, entorno, licencia, "Compatible con" una instancia o servidor), detalle con galería y versiones, y comparador de shaders y resource packs. Antes de instalar revisa la compatibilidad (versión, loader, dependencias, incompatibilidades y duplicados). **CurseForge** se configura en Administración → Integraciones; la clave central queda en el servidor y el catálogo se usa con la sesión de Venus. Se conserva el respaldo de claves incluidas en builds anteriores.
 - **Buscador inteligente**: pedí en lenguaje natural ("mods de tecnología para jugar con amigos en la 1.20.1") y arma un kit compatible agrupado por tipo, listo para instalar en una instancia o crear una nueva. Funciona sin IA y mejora con IA.
 
 ### En línea
@@ -102,7 +102,7 @@ Bienvenida guiada la primera vez (idioma, cuentas, primera instancia, contenido 
 
 - **Para jugar**: Windows 10 u 11 e internet para descargar el juego y el contenido. Java **no** hace falta: el launcher descarga el Java oficial de Mojang que pide cada versión (8, 16, 17, 21 o 25), con Adoptium de respaldo.
 - **Para desarrollar**: Node.js **22.12 o superior** (el proyecto se usa con Node 24) y npm. `package.json` también trae la configuración de electron-builder para Linux (AppImage) y macOS (dmg), que se compilan en esos sistemas.
-- **Para compilar (el dueño)**: la API key de CurseForge en el secreto `VENUS_CURSEFORGE_API_KEY` de GitHub Actions (`scripts/write-build-config.js` la mete en el build; no va en el repositorio), el proyecto de Supabase en `src/main/core/cloud-defaults.js` y, en `src/main/core/app-config.js`, el cliente propio de Microsoft cuando esté aprobado ([docs/login-microsoft.md](docs/login-microsoft.md)), el Application ID de Discord (Rich Presence) y, si hacen falta, el servidor TURN del Voice Chat y el servidor de túneles bore. Los usuarios no cargan claves.
+- **Para compilar (el dueño)**: CurseForge en Administración → Integraciones ([configuración y requisitos](docs/admin.md#curseforge-desde-integraciones-450)); `VENUS_CURSEFORGE_API_KEY` de GitHub Actions queda como respaldo opcional de builds anteriores, el proyecto de Supabase en `src/main/core/cloud-defaults.js` y, en `src/main/core/app-config.js`, el cliente propio de Microsoft cuando esté aprobado ([docs/login-microsoft.md](docs/login-microsoft.md)), el Application ID de Discord (Rich Presence) y, si hacen falta, el servidor TURN del Voice Chat y el servidor de túneles bore. Los usuarios no cargan claves.
 
 ## Comandos
 

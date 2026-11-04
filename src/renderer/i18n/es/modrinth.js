@@ -348,7 +348,7 @@ export default {
 
   // CurseForge
   cfOffTitle: 'CurseForge no está disponible',
-  cfOffText: 'Esta versión del launcher no incluye el catálogo de CurseForge. Podés seguir buscando e instalando desde Modrinth.',
+  cfOffText: "CurseForge no está disponible en este momento. Podés seguir buscando e instalando desde Modrinth.",
   cfOffBack: 'Volver a Modrinth',
   cfNoDistribution: 'Descarga manual',
   cfNoDistributionText: 'El autor no permite descargas desde otras apps: algunos archivos se bajan desde la web.',

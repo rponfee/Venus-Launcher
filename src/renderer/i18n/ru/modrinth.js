@@ -345,7 +345,7 @@ export default {
   envEither: "Клиент или сервер",
   envEitherBoth: "Клиент или сервер (лучше на обоих)",
   cfOffTitle: "CurseForge недоступен",
-  cfOffText: "В этой версии лаунчера нет каталога CurseForge. Вы по-прежнему можете искать и устанавливать контент через Modrinth.",
+  cfOffText: "CurseForge сейчас недоступен. Вы можете продолжать поиск и установку контента через Modrinth.",
   cfOffBack: "Вернуться к Modrinth",
   cfNoDistribution: "Ручная загрузка",
   cfNoDistributionText: "Автор запрещает загрузку через сторонние приложения: некоторые файлы нужно скачивать на сайте.",

@@ -37,6 +37,23 @@ pages/admin.js ── admin:me (de nuevo) ──► si no es admin: "No autoriza
 - **Rango** en la ficha de cada usuario: helper, mod o admin (`admin_set_rank`, queda en el registro de acciones). Es lo que se ve en el perfil: no da acceso a este panel. `owner` se carga a mano con SQL y no se puede cambiar desde el panel.
 - **Integraciones**: clave de la app de KLIPY (`admin_set_klipy_key`, en el Vault). Sin clave, el buscador de GIF del perfil avisa que no está disponible.
 
+### CurseForge desde Integraciones (4.5.0)
+
+La tarjeta **CurseForge** permite guardar, reemplazar, quitar y probar la clave del proyecto. Se guarda en Vault; el panel solo muestra los últimos cuatro caracteres. Guardada no significa validada: **Probar conexión** consulta las categorías reales usando la clave guardada. El campo se vacía después de cada operación y no se guarda en los ajustes locales.
+
+**Activada en producción el 4 de noviembre de 2026**, con autorización del dueño: `0037_curseforge_admin.sql` aplicada con versión **`20261104170221`** y Edge Function `curseforge` **v1 ACTIVE**, **`verify_jwt = true`**. No se reemplazó la función `admin` existente. El estado público devuelve **HTTP 200, `configured: false`**: el dueño todavía no cargó la clave. El preflight devolvió OPTIONS 204 con CORS `*` y el POST sin autenticación, 401. [Versiones, hashes y límites](activacion-backend-4.5.0.md).
+
+La validación local pasó **84 comprobaciones SQL** con Vault simulado y **82 pruebas Node de main/Edge/UI**. No se probó una clave ni una cuenta real contra CurseForge. El portable que incorpora esta sección se está compilando; no se informa todavía una entrega terminada ni publicación.
+
+- Administración llama `admin_curseforge_status()` y `admin_set_curseforge_key(p_key)`; ambas comprueban la cuenta administradora en el servidor. Los cambios quedan en el registro como `curseforge.key`, sin clave ni pista.
+- `curseforge_status()` solo informa si existe configuración. La clave la recupera exclusivamente la función del servidor mediante `curseforge_proxy_access(p_user)`, restringida a `service_role`.
+- El catálogo central requiere una cuenta de Venus. Su clave tiene prioridad sobre la incluida en builds anteriores. Si no hay configuración central, se conserva ese camino anterior.
+- Las consultas se limitan a las rutas utilizadas de Minecraft en `api.curseforge.com`, sin seguir redirecciones, con un máximo de 240 consultas por minuto y cuenta. La caché local de resultados sigue vigente.
+- Quitar una clave central no revoca copias incluidas en instaladores viejos; la revocación de esas claves se hace en CurseForge. Para builds nuevos puede dejarse vacío `VENUS_CURSEFORGE_API_KEY`.
+- Nunca pegues la clave en un issue, el chat o el repositorio.
+
+Referencias: [API oficial de CurseForge](https://docs.curseforge.com/rest-api/) y [Supabase Vault](https://supabase.com/docs/guides/database/vault).
+
 ### Agregar o quitar un admin
 
 En el SQL Editor de Supabase (o con la service role):

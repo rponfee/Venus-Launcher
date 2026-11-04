@@ -327,7 +327,7 @@ export default {
   envEither: "İstemci veya sunucu",
   envEitherBoth: "İstemci veya sunucu (ikisinde de daha iyi)",
   cfOffTitle: "CurseForge kullanılamıyor",
-  cfOffText: "Başlatıcının bu sürümü CurseForge kataloğunu içermiyor. Modrinth'ten aramaya ve yüklemeye devam edebilirsin.",
+  cfOffText: "CurseForge şu anda kullanılamıyor. Modrinth üzerinden aramaya ve içerik yüklemeye devam edebilirsiniz.",
   cfOffBack: "Modrinth'e dön",
   cfNoDistribution: "Manuel indirme",
   cfNoDistributionText: "Yapımcı, başka uygulamalardan indirmeye izin vermiyor: bazı dosyalar web sitesinden indirilmeli.",

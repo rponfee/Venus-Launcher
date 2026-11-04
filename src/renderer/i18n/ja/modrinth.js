@@ -318,7 +318,7 @@ export default {
   envEither: "クライアントまたはサーバー",
   envEitherBoth: "クライアントまたはサーバー (両方に入れるのがベスト)",
   cfOffTitle: "CurseForgeは利用できません",
-  cfOffText: "このバージョンのランチャーには、CurseForgeのカタログが含まれていません。Modrinthからの検索とインストールは引き続き利用できます。",
+  cfOffText: "現在、CurseForgeを利用できません。Modrinthでの検索とインストールは引き続き利用できます。",
   cfOffBack: "Modrinthに戻る",
   cfNoDistribution: "手動ダウンロード",
   cfNoDistributionText: "作者が他のアプリからのダウンロードを許可していないため、一部のファイルはWebサイトからダウンロードする必要があります。",

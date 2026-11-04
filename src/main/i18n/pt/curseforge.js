@@ -1,6 +1,7 @@
 'use strict';
 module.exports = {
-  errNoKey: "O CurseForge não está disponível nesta versão do launcher.",
+  errNoKey: "A configuração do CurseForge não está disponível no momento.",
+  errSignIn: "Entre com sua conta Venus para usar o CurseForge.",
   errBadKey: "O CurseForge não está disponível no momento. Tente mais tarde.",
   errNetwork: "Não foi possível conectar ao CurseForge. Verifique a sua conexão com a internet.",
   errTimeout: "O CurseForge demorou demais para responder. Tente de novo daqui a pouco.",

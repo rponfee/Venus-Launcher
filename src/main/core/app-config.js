@@ -1,8 +1,9 @@
 'use strict';
 // Configuración incluida en el launcher: claves y servidores de servicios externos que NO se configuran desde la
-// interfaz salvo el Application ID público de Discord, que se puede configurar desde Ajustes.
+// interfaz salvo el Application ID público de Discord (Ajustes) y la clave central de CurseForge (Administración).
 // LA COMPLETA EL DUEÑO ANTES DE COMPILAR. Un valor vacío deja
-// esa función apagada (CurseForge, Discord Rich Presence, TURN) o usa el servicio público (bore.pub).
+// esa función apagada (Discord Rich Presence, TURN) o usa el servicio público (bore.pub).
+// CurseForge usa primero el catálogo central de Venus; la clave compilada queda como respaldo.
 // La API key de CurseForge no va en este archivo (sus términos prohíben compartirla y el repositorio es público):
 // scripts/write-build-config.js la escribe al compilar en build-config.json, desde el secreto de GitHub Actions
 // VENUS_CURSEFORGE_API_KEY. Ese archivo no se sube y queda dentro del instalador.
@@ -16,7 +17,7 @@
 // launcher). Nunca claves secretas de servidores (Stripe, service_role de Supabase, Anthropic u OpenAI).
 // El proyecto de Supabase está aparte, en core/cloud-defaults.js.
 const BUILT_IN = Object.freeze({
-  // API key de CurseForge for Studios (console.curseforge.com → API keys). Vacía = sin catálogo de CurseForge.
+  // API key de CurseForge for Studios (console.curseforge.com → API keys). Vacía = usar el catálogo central de Venus.
   // Siempre vacía acá: entra al compilar (ver arriba).
   curseforgeApiKey: '',
   // Application (client) ID de la app propia de Azure, ya aprobada por Mojang (docs/login-microsoft.md). No es secreto.

@@ -1,6 +1,7 @@
 'use strict';
 module.exports = {
-  errNoKey: "CurseForge, başlatıcının bu sürümünde kullanılamıyor.",
+  errNoKey: "CurseForge yapılandırması şu anda kullanılamıyor.",
+  errSignIn: "CurseForge'u kullanmak için Venus hesabınızla giriş yapın.",
   errBadKey: "CurseForge şu anda kullanılamıyor. Daha sonra tekrar dene.",
   errNetwork: "CurseForge'a bağlanılamadı. İnternet bağlantını kontrol et.",
   errTimeout: "CurseForge yanıt vermekte çok gecikti. Biraz sonra tekrar dene.",

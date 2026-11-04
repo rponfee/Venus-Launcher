@@ -9,3 +9,7 @@ verify_jwt = false
 # GET publica VAPID; POST verifica x-venus-push-secret dentro de la función.
 [functions.push-notify]
 verify_jwt = false
+
+# CurseForge requiere una sesión de usuario y acceso autorizado por la RPC.
+[functions.curseforge]
+verify_jwt = true

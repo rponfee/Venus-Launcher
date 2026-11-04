@@ -1,6 +1,7 @@
 'use strict';
 module.exports = {
-  errNoKey: "このバージョンのランチャーでは、CurseForgeを利用できません。",
+  errNoKey: "現在、CurseForgeの設定を利用できません。",
+  errSignIn: "CurseForgeを利用するには、Venusアカウントでログインしてください。",
   errBadKey: "CurseForgeは現在利用できません。後でもう一度お試しください。",
   errNetwork: "CurseForgeに接続できませんでした。インターネット接続を確認してください。",
   errTimeout: "CurseForgeの応答に時間がかかりすぎました。しばらくしてから、もう一度お試しください。",

@@ -20,7 +20,7 @@ test('todos los servicios tienen grupo conocido y solo HEAD o GET por https', ()
   }
 });
 
-test('CurseForge: la key va solo a api.curseforge.com; sin key se saltea', () => {
+test('CurseForge: clave directa o comprobación pública del servidor central', () => {
   const withKey = byId(buildDefs({ curseforgeApiKey: 'cf-secret', cloud: CLOUD }));
   assert.equal(withKey.curseforge.skip, null);
   assert.equal(withKey.curseforge.requests[0].headers['x-api-key'], 'cf-secret');
@@ -28,10 +28,15 @@ test('CurseForge: la key va solo a api.curseforge.com; sin key se saltea', () =>
     if (d.id === 'curseforge') continue;
     for (const r of d.requests) assert.ok(!('x-api-key' in r.headers), `${d.id} no lleva la key de CurseForge`);
   }
-  const noKey = byId(buildDefs({ curseforgeApiKey: '', cloud: CLOUD }));
+  const central = byId(buildDefs({ curseforgeApiKey: '', cloud: CLOUD })).curseforge;
+  assert.equal(central.skip, null);
+  assert.equal(central.requests[0].method, 'GET');
+  assert.equal(central.requests[0].url, CLOUD.url + '/rest/v1/rpc/curseforge_status');
+  assert.equal(central.requests[0].headers['x-api-key'], undefined);
+  const noKey = byId(buildDefs({ curseforgeApiKey: '', cloud: null }));
   assert.equal(noKey.curseforge.skip, 'noKey');
   assert.deepEqual(noKey.curseforge.requests, []);
-  assert.equal(byId(buildDefs({ curseforgeApiKey: '   ', cloud: CLOUD })).curseforge.skip, 'noKey');
+  assert.equal(byId(buildDefs({ curseforgeApiKey: '   ', cloud: null })).curseforge.skip, 'noKey');
 });
 
 test('Venus: GET a /auth/v1/health con la anon key pública; sin proyecto se saltea', () => {

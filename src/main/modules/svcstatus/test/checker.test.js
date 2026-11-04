@@ -56,10 +56,14 @@ test('la key de CurseForge viaja solo en el pedido a api.curseforge.com', async 
   }
 });
 
-test('sin key, CurseForge queda "skipped" y no se consulta', async () => {
+test('sin clave compilada se comprueba el catálogo central sin enviar tokens', async () => {
   const { checker, fetch } = setup({ '*': 200 }, { key: '' });
   const s = await checker.check();
-  assert.equal(state(s, 'curseforge'), 'skipped');
+  assert.equal(state(s, 'curseforge'), 'ok');
+  const call = fetch.calls.find((c) => c.url.endsWith('/rpc/curseforge_status'));
+  assert.equal(call.init.method, 'GET');
+  assert.equal(call.init.headers.Authorization, undefined);
+  assert.equal(call.init.headers['x-api-key'], undefined);
   assert.equal(fetch.count('api.curseforge.com'), 0);
   assert.equal(s.verdict.kind, 'ok');
 });

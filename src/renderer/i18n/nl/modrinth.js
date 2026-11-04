@@ -327,7 +327,7 @@ export default {
   envEither: "Client of server",
   envEitherBoth: "Client of server (het best op beide)",
   cfOffTitle: "CurseForge is niet beschikbaar",
-  cfOffText: "Deze versie van de launcher bevat de CurseForge-catalogus niet. Je kunt gewoon blijven zoeken en installeren via Modrinth.",
+  cfOffText: "CurseForge is momenteel niet beschikbaar. Je kunt blijven zoeken en installeren via Modrinth.",
   cfOffBack: "Terug naar Modrinth",
   cfNoDistribution: "Handmatige download",
   cfNoDistributionText: "De maker staat downloads vanuit andere apps niet toe: sommige bestanden moeten via de website worden gedownload.",

@@ -1,7 +1,8 @@
 'use strict';
 // Textos del proceso principal para CurseForge.
 module.exports = {
-  errNoKey: 'CurseForge no está disponible en esta versión del launcher.',
+  errNoKey: "La configuración de CurseForge no está disponible en este momento.",
+  errSignIn: "Iniciá sesión con tu cuenta de Venus para usar CurseForge.",
   errBadKey: 'CurseForge no está disponible en este momento. Probá más tarde.',
   errNetwork: 'No se pudo conectar con CurseForge. Revisá tu conexión a internet.',
   errTimeout: 'CurseForge tardó demasiado en responder. Probá de nuevo en un rato.',

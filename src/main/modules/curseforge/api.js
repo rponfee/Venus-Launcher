@@ -1,7 +1,7 @@
 'use strict';
-// Cliente de la API de CurseForge (https://api.curseforge.com/v1). Usa la API key del launcher, que viene incluida
-// en core/app-config.js (curseforgeApiKey; la completa el dueño antes de compilar). Sin key, CurseForge queda
-// desactivado. Los usuarios no cargan claves: la 'curseforge.apiKey' guardada por versiones anteriores se ignora.
+// Cliente de CurseForge: admite la clave incluida al compilar y el catálogo configurado en Administración.
+// La clave central queda en Vault y el servidor hace la consulta; el launcher solo envía su sesión de Venus.
+// La antigua clave personal guardada en ajustes se sigue ignorando.
 const appConfig = require('../../core/app-config');
 const http = require('../../core/http');
 const { t } = require('../../core/i18n');
@@ -30,8 +30,17 @@ async function getKey() {
   return appConfig.get().curseforgeApiKey || null;
 }
 
+let requestRefresh = () => {};
+const cloud = require('./cloud').createCloudClient({
+  fetch: (...args) => fetch(...args),
+  cloudConfig: () => require('../../core/cloud-defaults').config(),
+  readSession: () => require('../../core/secure').get('ui:sb.venus-auth'),
+  refreshSession: () => requestRefresh(),
+  t,
+});
+function setRefreshRequester(fn) { requestRefresh = fn; }
 async function hasKey() {
-  return Boolean(await getKey());
+  return await cloud.configured({ force: true }) || Boolean(await getKey());
 }
 
 function cfError(message, extra = {}) {
@@ -46,16 +55,18 @@ function userAgent() {
   }
 }
 
-// Pedido a la API con la key del launcher.
+// La configuración central tiene prioridad. Sin ella se conserva la clave de builds anteriores.
 async function request(pathname, { method = 'GET', body, retries = 2, notFound, signal } = {}) {
-  const apiKey = await getKey();
-  if (!apiKey) throw cfError(t('curseforge.errNoKey'), { code: 'nokey' });
+  const central = await cloud.configured();
+  const apiKey = central ? null : await getKey();
+  if (!central && !apiKey) throw cfError(t('curseforge.errNoKey'), { code: 'nokey' });
   let lastErr = null;
   for (let attempt = 0; attempt <= retries; attempt++) {
     let res;
     try {
       const timeout = AbortSignal.timeout(TIMEOUT);
-      res = await fetch(`${BASE}${pathname}`, {
+      const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
+      res = apiKey ? await fetch(`${BASE}${pathname}`, {
         method,
         headers: {
           'x-api-key': apiKey,
@@ -64,16 +75,29 @@ async function request(pathname, { method = 'GET', body, retries = 2, notFound, 
           ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
-        signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-      });
+        signal: combined,
+        redirect: 'error',
+      }) : await cloud.request(pathname, { method, body, signal: combined });
     } catch (err) {
       if (signal?.aborted) throw signal.reason || err;
+      if (err?.code === 'noSession' || err?.code === 'nokey') throw err;
       lastErr = cfError(err?.name === 'TimeoutError' ? t('curseforge.errTimeout') : t('curseforge.errNetwork'), { code: 'network', cause: err });
       if (attempt < retries) {
         await sleep(700 * 2 ** attempt);
         continue;
       }
       throw lastErr;
+    }
+    if (!apiKey && res.status === 401) {
+      await res.body?.cancel().catch(() => {});
+      throw cfError(t('curseforge.errSignIn'), { status: 401, code: 'noSession' });
+    }
+    if (!apiKey && res.status === 503) {
+      const detail = await res.clone().json().catch(() => null);
+      if (detail?.error?.code === 'not_configured') {
+        await res.body?.cancel().catch(() => {});
+        throw cfError(t('curseforge.errNoKey'), { status: 503, code: 'nokey' });
+      }
     }
     if (res.status === 401 || res.status === 403) {
       await res.body?.cancel().catch(() => {});
@@ -391,6 +415,7 @@ module.exports = {
   SORT_FIELDS,
   MAX_WINDOW,
   getKey,
+  setRefreshRequester,
   hasKey,
   request,
   search,
