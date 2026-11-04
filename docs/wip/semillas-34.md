@@ -127,7 +127,7 @@ Es lo más cerca del juego que se pudo llegar. Se buscaron listas públicas de s
 node --test "src/renderer/js/pages/seeds/test/"
 ```
 
-29 pruebas. Son lentas por los hashes publicados (4096 semillas por versión): tardan unos 40 s con la PC libre y llegaron a 6 minutos con la CPU saturada. Para regenerar la referencia: `pages/seeds/test/reference/build.txt`. Nada de `test/` entra al paquete (`!src/**/test/**`).
+29 pruebas. Son lentas por los hashes publicados (4096 semillas por versión): tardaron 54 s en la última corrida y hasta 6 minutos con la CPU saturada por otros procesos. Para regenerar la referencia: `pages/seeds/test/reference/build.txt`. Nada de `test/` entra al paquete (`!src/**/test/**`).
 
 ## Rendimiento
 

@@ -63,9 +63,9 @@ De las 73 de la hoja de ruta, 38 ya salieron en la 3.1.0. Estas son las otras 35
 | Competir | Rankings entre amigos; desafíos; calendario de eventos | 0031 | `competir-33.md` | Terminado |
 | Capas | Capas de Venus en el juego; FPS informados por el mod | 0034 | `capas-34.md` | Terminado |
 | Extensiones | Extensiones de la comunidad en sandbox | 0036 | `extensiones-34.md`, `docs/extensiones.md` | Terminado |
-| Clips | Montaje de la semana; timelapse; subir a YouTube o TikTok; OBS; galería pública | 0032 | `clips-33.md` | **Verificá: quedó en curso** |
+| Clips | Montaje de la semana; timelapse; subir a YouTube o TikTok; OBS; galería pública; Edge Function `tiktok-token` | 0032 | `clips-33.md` | Terminado |
 | Clanes y comunidades | Clanes; comunidades con canales de texto y voz | 0033 | `clanes-comunidades-34.md` | Terminado |
-| Visor de semillas | Biomas y estructuras antes de crear el mundo | | `semillas-34.md` | **Verificá: quedó en curso** |
+| Visor de semillas | Biomas y estructuras antes de crear el mundo | | `semillas-34.md` | Terminado: 0 diferencias contra cubiomes en C, sin comparar con el juego |
 | App para celular | PWA en `web/app` con amigos, mensajes, clips y avisos; Edge Function `push-notify` | 0035 | `app-celular-34.md` | **Verificá: quedó en curso** |
 
 Lo marcado "Terminado" significa que pasó las pruebas de quien lo hizo, **no** que esté probado en el mundo real.
