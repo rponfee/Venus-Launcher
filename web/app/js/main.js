@@ -35,6 +35,8 @@ const NAV = [
 let store = null;
 let sessionUser = null;
 let current = null;
+let signingOut = false;
+let recovering = false;
 
 // ---------- Instalar ----------
 let installEvent = null;
@@ -205,6 +207,8 @@ async function endSession() {
 
 // Salir
 async function signOut() {
+  if (signingOut) return;
+  signingOut = true;
   showBoot();
   const finish = await wipeLocal();
   try {
@@ -217,8 +221,16 @@ async function signOut() {
 }
 
 client.auth.onAuthStateChange((event, session) => {
+  // Verificar el código ya crea una sesión: recién entramos cuando se guardó la contraseña.
+  if (event === 'PASSWORD_RECOVERY') {
+    recovering = true;
+    return;
+  }
+  if (recovering && event !== 'USER_UPDATED' && event !== 'SIGNED_OUT') return;
+  recovering = false;
   // Fuera del callback: supabase-js no admite llamarse a sí mismo desde acá
   setTimeout(() => {
+    if (signingOut || recovering) return;
     const id = session?.user?.id || null;
     if (id && id !== sessionUser) startSession(session.user);
     else if (!id && sessionUser) endSession();

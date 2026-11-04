@@ -22,7 +22,7 @@ function head() {
 }
 
 export default {
-  ns: ['compete'],
+  ns: ['compete', 'clans'],
   css: ['pages/compete'],
   async render(root, params = []) {
     const b = await competeBackend();

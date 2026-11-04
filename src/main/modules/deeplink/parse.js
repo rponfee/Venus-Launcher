@@ -75,13 +75,15 @@ function classifyIpv4([a, b]) {
 
 function classifyIpv6(host) {
   if (host.includes('%') || net.isIP(host) !== 6) return undefined;
-  const low = host.toLowerCase();
-  if (low === '::' || low === '::1' || /^0*:(0*:)*0*1?$/.test(low)) return undefined; // sin especificar y loopback
+  // La forma canónica trata igual las variantes comprimidas y la IPv4 mapeada en hexadecimal.
+  const low = new URL(`http://[${host}]/`).hostname.slice(1, -1);
+  if (low === '::' || low === '::1') return undefined; // sin especificar y loopback
   if (/^fe[89ab]/.test(low) || /^ff/.test(low)) return undefined; // enlace local y multicast
-  const v4 = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(low);
+  const v4 = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(low);
   if (v4) {
-    const parts = ipv4Parts(v4[1]);
-    return parts ? classifyIpv4(parts) : undefined;
+    const high = parseInt(v4[1], 16);
+    const lowWord = parseInt(v4[2], 16);
+    return classifyIpv4([high >> 8, high & 255, lowWord >> 8, lowWord & 255]);
   }
   return { lan: /^f[cd]/.test(low) };
 }

@@ -46,11 +46,13 @@ class ObsClient extends EventEmitter {
     this.seq = 0;
     this.identified = false;
     this.closed = false;
+    this.cancelConnect = null;
   }
 
   // Conecta e identifica. Devuelve { rpcVersion, obsWebSocketVersion }. Errores con code: 'refused', 'timeout', 'auth',
   // 'authRequired' (pide contraseña y no hay), 'version'.
   connect() {
+    if (this.closed) return Promise.reject(coded('closed'));
     if (!this.WS) return Promise.reject(coded('refused', 'no WebSocket'));
     return new Promise((resolve, reject) => {
       let settled = false;
@@ -58,6 +60,7 @@ class ObsClient extends EventEmitter {
       const finish = (err, value) => {
         if (settled) return;
         settled = true;
+        this.cancelConnect = null;
         clearTimeout(timer);
         if (err) {
           this.closeSocket();
@@ -66,6 +69,7 @@ class ObsClient extends EventEmitter {
       };
       const timer = setTimeout(() => finish(coded('timeout')), this.connectTimeout);
       timer.unref?.();
+      this.cancelConnect = () => finish(coded('closed'));
       let ws;
       try {
         ws = new this.WS(this.url, SUBPROTOCOL);
@@ -75,6 +79,7 @@ class ObsClient extends EventEmitter {
       }
       this.ws = ws;
       ws.onmessage = (e) => {
+        if (this.closed || (settled && !this.identified)) return;
         let msg;
         try {
           msg = JSON.parse(typeof e.data === 'string' ? e.data : Buffer.from(e.data).toString('utf8'));
@@ -91,7 +96,11 @@ class ObsClient extends EventEmitter {
             }
             identify.authentication = authResponse(this.password, hello.authentication.salt, hello.authentication.challenge);
           }
-          this.sendOp(OP.Identify, identify);
+          try {
+            this.sendOp(OP.Identify, identify);
+          } catch (err) {
+            finish(coded('refused', err?.message));
+          }
         } else if (msg?.op === OP.Identified) {
           this.identified = true;
           finish(null, { rpcVersion: msg.d?.negotiatedRpcVersion ?? RPC_VERSION, obsWebSocketVersion: hello?.obsWebSocketVersion || null });
@@ -175,6 +184,7 @@ class ObsClient extends EventEmitter {
 
   close() {
     this.closed = true;
+    this.cancelConnect?.();
     this.identified = false;
     this.failPending(coded('closed'));
     this.closeSocket();

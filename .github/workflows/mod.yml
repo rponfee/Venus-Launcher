@@ -62,7 +62,7 @@ jobs:
         run: |
           revisar() {
             jar="out/$1"; shift
-            for archivo in "$@" assets/venusbadge/font/badge.json assets/venusbadge/textures/font/badge.png; do
+            for archivo in "$@" assets/venusbadge/font/badge.json assets/venusbadge/textures/font/badge.png assets/venusbadge/textures/cape/dawn.png; do
               unzip -l "$jar" | grep -q " $archivo\$" || { echo "::error title=Mod Venus Badge::Falta $archivo en $jar"; exit 1; }
             done
           }

@@ -29,7 +29,7 @@ create table if not exists public.user_capes (
   equipped_at timestamptz not null default now()
 );
 alter table public.user_capes enable row level security;
-revoke all on public.user_capes from anon, authenticated;
+revoke all on public.user_capes from public, anon, authenticated;
 
 -- ---------- Tienda ----------
 -- Las texturas las dibuja mod/venus-badge/make-capes.js. Para sumar una: docs/wip/capas-34.md.

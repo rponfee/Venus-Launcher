@@ -107,25 +107,34 @@ function closingPage(ok) {
 async function connect(name) {
   const { shell } = require('electron');
   if (connecting) connecting.close();
+  let loop = null;
+  const current = { cancelled: false, close() { this.cancelled = true; loop?.close(); } };
+  connecting = current;
+  const check = () => {
+    if (current.cancelled) throw Object.assign(new Error('cancelled'), { code: 'cancelled' });
+  };
   try {
     const api = provider(name);
     const verifier = oauth.randomVerifier();
     const state = oauth.randomState();
-    const loop = await oauth.startLoopback({ path: api.loopbackPath || '/', state, page: closingPage });
-    connecting = { provider: name, close: loop.close };
+    loop = await oauth.startLoopback({ path: api.loopbackPath || '/', state, page: closingPage });
     try {
+      check();
       const challenge = name === 'tiktok' ? oauth.challengeHex(verifier) : oauth.challengeS256(verifier);
       await shell.openExternal(api.authorizeUrl({ redirectUri: loop.redirectUri, challenge, state }));
       const code = await loop.result;
+      check();
       const tokens = await api.exchange({ code, verifier, redirectUri: loop.redirectUri });
+      check();
       await secure.set(tokenKey(name), tokens);
       return { connected: true };
     } finally {
       loop.close();
-      connecting = null;
     }
   } catch (err) {
     throw friendly(err);
+  } finally {
+    if (connecting === current) connecting = null;
   }
 }
 
@@ -165,16 +174,19 @@ async function upload(opts) {
   const name = o.provider === 'tiktok' ? 'tiktok' : 'youtube';
   const m = media.checkMediaPath(o.path);
   if (!jobId || !m || m.kind !== 'clip') throw coded('errClip', 'clip');
-  const st = await fsp.stat(m.full).catch(() => null);
-  if (!st?.size) throw coded('errClip', 'clip');
-  if (st.size > MAX_SIZE) throw coded('errUploadTooBig', 'tooBig');
+  if (jobs.has(jobId)) throw coded('errUploadFailed', 'failed');
   const controller = new AbortController();
   jobs.set(jobId, controller);
   let fh = null;
   let last = 0;
   try {
+    const st = await fsp.stat(m.full).catch(() => null);
+    controller.signal.throwIfAborted();
+    if (!st?.isFile() || !st.size) throw coded('errClip', 'clip');
+    if (st.size > MAX_SIZE) throw coded('errUploadTooBig', 'tooBig');
     const api = provider(name);
     fh = await fsp.open(m.full, 'r');
+    controller.signal.throwIfAborted();
     const read = async (pos, len) => {
       const buf = Buffer.allocUnsafe(len);
       const { bytesRead } = await fh.read(buf, 0, len, pos);

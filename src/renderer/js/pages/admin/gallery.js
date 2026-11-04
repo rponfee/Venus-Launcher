@@ -35,6 +35,8 @@ export async function render(root) {
   let filter = 'reported';
   let rows = [];
   let more = false;
+  let token = 0;
+  let loading = false;
   const list = h('div', { class: 'stack cs-ad-list' });
   const moreHost = h('div', { class: 'cs-gl-more' });
   const reload = h('button', { class: 'btn sm', type: 'button', onclick: () => load() }, icon('refresh'), C('refresh'));
@@ -126,27 +128,39 @@ export async function render(root) {
   }
 
   async function load() {
+    const my = ++token;
+    loading = true;
     mount(list, skeleton('list', { rows: 4, label: C('galleryLoading') }));
     mount(moreHost);
     try {
       const data = await rpc('admin_gallery_list', { p_filter: filter, p_offset: 0 });
+      if (my !== token) return;
       rows = Array.isArray(data?.items) ? data.items : [];
       more = data?.more === true;
       draw();
     } catch (err) {
+      if (my !== token) return;
       console.warn('[admin] galeria:', err?.message || err);
       mount(list, emptyState('alert', C('galleryLoadFailed'), errText(err)));
+    } finally {
+      if (my === token) loading = false;
     }
   }
 
   async function loadMore() {
+    if (loading || !more) return;
+    loading = true;
+    const my = token;
     try {
       const data = await rpc('admin_gallery_list', { p_filter: filter, p_offset: rows.length });
+      if (my !== token) return;
       rows = rows.concat(Array.isArray(data?.items) ? data.items : []);
       more = data?.more === true;
       draw();
     } catch (err) {
-      fail(C('galleryLoadFailed'), errText(err));
+      if (my === token) fail(C('galleryLoadFailed'), errText(err));
+    } finally {
+      if (my === token) loading = false;
     }
   }
 

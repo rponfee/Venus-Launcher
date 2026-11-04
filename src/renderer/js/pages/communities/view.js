@@ -46,6 +46,7 @@ export function communityView(root, id, wantedChannel, { b }) {
   let chat = null;
   let channelId = wantedChannel || null;
   let destroyed = false;
+  let request = 0;
   const people = new Map();
   let members = [];
   let total = 0;
@@ -56,12 +57,34 @@ export function communityView(root, id, wantedChannel, { b }) {
   const back = h('button', { class: 'btn sm ghost cl-back', type: 'button', onclick: () => navigate('communities') }, icon('arrowLeft'), C('backToCommunities'));
 
   async function fetchCommunity() {
-    community = await b.rpc('community_get', { p_community: id });
-    return community;
+    const current = ++request;
+    try {
+      const next = await b.rpc('community_get', { p_community: id });
+      if (destroyed || current !== request) return false;
+      community = next;
+      return true;
+    } catch (err) {
+      if (destroyed || current !== request) return false;
+      throw err;
+    }
+  }
+  function closeChat() {
+    chat?.destroy();
+    chat = null;
+  }
+  function clearMembership() {
+    closeChat();
+    people.clear();
+    members = [];
+    total = 0;
+    channelId = null;
+    route();
+    root.classList.remove('cm-fill');
   }
   async function fetchMembers({ more = false } = {}) {
     try {
       const res = await b.rpc('community_members_list', { p_community: id, p_offset: more ? members.length : 0 });
+      if (destroyed || !community?.myRole) return;
       const rows = Array.isArray(res?.members) ? res.members.filter(Boolean) : [];
       members = more ? [...members, ...rows.filter((m) => !members.some((x) => x.userId === m.userId))] : rows;
       total = Number(res?.total) || members.length;
@@ -71,10 +94,33 @@ export function communityView(root, id, wantedChannel, { b }) {
     }
   }
   async function refresh() {
-    await fetchCommunity();
-    if (destroyed) return community;
-    drawSide();
-    chat?.setCommunity(community);
+    try {
+      if (!(await fetchCommunity())) return community;
+    } catch (err) {
+      // Un fallo de red conserva la vista. Si ya no tiene acceso, se cierra también la suscripción del chat.
+      if (!['not_found', 'not_member', 'user_banned', 'noSession'].includes(err?.code)) throw err;
+      clearMembership();
+      community = null;
+      mount(root, back, emptyState('users', C('communityGone'), errText(err)));
+      return null;
+    }
+    if (!community.myRole) {
+      clearMembership();
+      mount(root, back, previewFor(community, { b, onJoined: start }));
+      return community;
+    }
+    const ch = pickChannel(community.channels, channelId);
+    if (ch && (!chat || ch.id !== channelId)) openChannel(ch);
+    else if (ch) {
+      drawSide();
+      chat.setCommunity(community);
+    } else {
+      closeChat();
+      channelId = null;
+      route();
+      drawSide();
+      mount(chatHost, emptyState('hash', C('chatNoChannel'), ''));
+    }
     return community;
   }
 
@@ -89,7 +135,7 @@ export function communityView(root, id, wantedChannel, { b }) {
   function openChannel(ch) {
     channelId = ch.id;
     route();
-    chat?.destroy();
+    closeChat();
     chat = chatView(chatHost, { b, community, channel: ch, people, onPerson: () => {} });
     drawSide();
   }
@@ -218,7 +264,7 @@ export function communityView(root, id, wantedChannel, { b }) {
   async function start() {
     mount(root, back, skeleton('card', { lines: 6 }));
     try {
-      await fetchCommunity();
+      if (!(await fetchCommunity())) return;
     } catch (err) {
       if (destroyed) return;
       mount(root, back, err?.code === 'not_found' ? emptyState('users', C('communityGone'), C('communityGoneText')) : emptyState('alert', errText(err), '', h('button', { class: 'btn', type: 'button', onclick: start }, icon('refresh'), C('retry'))));
@@ -230,7 +276,7 @@ export function communityView(root, id, wantedChannel, { b }) {
       return;
     }
     await fetchMembers();
-    if (destroyed) return;
+    if (destroyed || !community?.myRole) return;
     root.classList.add('cm-fill');
     mount(root, back, layout);
     drawMembers();
@@ -248,6 +294,6 @@ export function communityView(root, id, wantedChannel, { b }) {
   return () => {
     destroyed = true;
     clearInterval(timer);
-    chat?.destroy();
+    closeChat();
   };
 }

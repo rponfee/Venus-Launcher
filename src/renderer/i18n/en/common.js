@@ -179,4 +179,9 @@ export default {
   streamerOnText: "Codes, addresses, friend names and messages stay hidden until you turn it off.",
   streamerOff: "Streamer mode off",
   streamerSaveError: "Could not change streamer mode",
+  messageSticker: "Sticker",
+  messageGif: "GIF",
+  net_wikiTitle: "Minecraft Wiki",
+  net_wikiText: "Allows requests to minecraft.wiki from overlay recipes when you ask for them.",
+  net_integrationsNote: "Discord server notifications and settings sync are enabled separately in their settings. They stay off until you enable them.",
 };

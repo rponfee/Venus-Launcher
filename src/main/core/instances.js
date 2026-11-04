@@ -351,6 +351,10 @@ async function duplicate(id, { name, worlds = true } = {}) {
             if (count % 25 === 0) task.update({ detail: t('instances.copiedFiles', { count }) });
           },
         });
+        // Los sets se copian, pero su Deshacer apunta a una instantánea de la instancia original.
+        const modsetsFile = path.join(dir(copy.id), '.venus', 'modsets.json');
+        const modsets = await readJson(modsetsFile, null);
+        if (modsets && typeof modsets === 'object' && !Array.isArray(modsets)) await writeJson(modsetsFile, { ...modsets, lastApply: null });
         task.update({ detail: t('instances.copiedFiles', { count }) });
       },
       { instanceId: copy.id },

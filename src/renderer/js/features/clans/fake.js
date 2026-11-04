@@ -39,6 +39,7 @@ export function createFakeGroups(scenario = 'demo', base) {
     ['c-3', { id: 'c-3', name: 'Mineros del Sur', tag: 'SUR', description: 'Cuevas, diamantes y mate.', color: '#f5a524', emblem: 'pickaxe', isOpen: true, createdAt: iso(now - 12 * DAY), members: [{ ...P.pixel, role: 'leader', joinedAt: iso(now - 12 * DAY) }, { ...P.fer, role: 'member', joinedAt: iso(now - 9 * DAY) }], requests: [], invited: [], minutes: 0, sharing: 0, total: 0 }],
   ]);
   let myClan = empty ? null : 'c-mine';
+  let sharePlaytime = false; // permiso separado: nunca se hereda de Compartir con mis amigos
   let invites = empty ? [{ clan: 'c-3', invitedBy: P.pixel, at: iso(now - 2 * HOUR) }] : [];
   let requests = [];
 
@@ -105,7 +106,8 @@ export function createFakeGroups(scenario = 'demo', base) {
   const like = (text, q) => String(text).toLowerCase().includes(String(q || '').toLowerCase());
 
   const rpcs = {
-    clan_me: () => ({ clan: myClan ? clanJson(clans.get(myClan)) : null, invites: invites.map((i) => ({ clan: card(clanOf(i.clan)), invitedBy: i.invitedBy, at: i.at })), requests: requests.map((r) => ({ clan: card(clanOf(r.clan)), at: r.at })) }),
+    clan_share_playtime: ({ p_share }) => { sharePlaytime = p_share === true; return { sharePlaytime }; },
+    clan_me: () => ({ sharePlaytime, clan: myClan ? clanJson(clans.get(myClan)) : null, invites: invites.map((i) => ({ clan: card(clanOf(i.clan)), invitedBy: i.invitedBy, at: i.at })), requests: requests.map((r) => ({ clan: card(clanOf(r.clan)), at: r.at })) }),
     clan_get: ({ p_clan }) => clanJson(clanOf(p_clan)),
     clan_search: ({ p_query }) => [...clans.values()].filter((c) => c.isOpen && (like(c.name, p_query) || like(c.tag, p_query))).sort((a, b) => b.members.length - a.members.length).map(card),
     clan_tags: ({ p_users }) => (p_users || []).flatMap((u) => { const c = [...clans.values()].find((x) => x.members.some((m) => m.userId === u)); return c ? [{ userId: u, clanId: c.id, tag: c.tag, name: c.name, color: c.color, emblem: c.emblem }] : []; }),

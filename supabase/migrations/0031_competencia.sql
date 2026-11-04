@@ -577,6 +577,8 @@ declare
 begin
   if me is null then raise exception 'not_authenticated' using errcode = '42501'; end if;
   if public.moderation_social_block(me) = 'user_banned' then raise exception 'user_banned' using errcode = '42501'; end if;
+  -- El tope por cuenta también se comparte entre eventos distintos.
+  perform pg_advisory_xact_lock(hashtext('event-signups:' || me::text));
   select * into e from public.calendar_events x where x.id = p_id for update; -- el cupo se revisa de a uno
   if not found then raise exception 'not_found' using errcode = '22023'; end if;
   if exists (select 1 from public.calendar_signups s where s.event_id = p_id and s.user_id = me) then return private.event_json(e, me); end if;

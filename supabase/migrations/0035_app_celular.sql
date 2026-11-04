@@ -143,6 +143,7 @@ begin
   v_kind := case when v_url ~ '/object/sign/clips/' then 'clip' else 'screenshot' end;
   v_name := left(btrim(regexp_replace(coalesce(p_payload ->> 'name', ''), '[[:cntrl:]]', '', 'g')), 120);
   if v_name = '' then v_name := v_kind; end if;
+  perform pg_advisory_xact_lock(hashtext('media-received:' || p_recipient::text));
   insert into public.media_received (recipient, sender, kind, name, url)
   values (p_recipient, p_sender, v_kind, v_name, v_url)
   on conflict (recipient, url) do nothing
@@ -196,7 +197,7 @@ create trigger push_on_friend_request
 -- ---------- Señal media-share ----------
 -- Igual a la de 0014 (misma firma y mismos límites); lo único nuevo es la línea de media-share, después de mandarla.
 create or replace function public.social_send_signal(target uuid, kind text, payload jsonb default '{}'::jsonb) returns boolean
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = '' as $
 declare
   me uuid := auth.uid();
   v_block text;
@@ -306,6 +307,8 @@ begin
          where m.conversation_id = c.id and m.sender_id <> me and not m.deleted
          order by m.created_at desc limit 1) lm
      where mine.user_id = me and u.n > 0
+       and not exists (select 1 from public.friendships b
+                        where b.requester = me and b.addressee = o.other and b.status = 'blocked')
      order by lm.created_at desc
      limit 20) x;
 

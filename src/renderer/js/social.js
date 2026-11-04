@@ -19,6 +19,7 @@ import { store, api } from './store.js';
 import { cloud } from './cloud.js';
 import { t, loadNs } from './i18n.js';
 import { toast } from './ui.js';
+import { messagePreview } from './social/preview.js';
 import { createSupabaseBackend, SocialError } from './social/backend.js';
 import { sanitizeActivity, publicAddress, displayName, isOnline } from './social/cosmetics.js';
 
@@ -487,8 +488,9 @@ class Social {
         }
         if (!row.deleted) {
           const name = this.nameOf(row.sender_id);
-          this.emit('message', { chatId: chat.id, from: name, fromId: row.sender_id, text: row.body, id: row.id, message: row });
-          this._notifyDesktop(chat, name, row.body);
+          const text = messagePreview(row.body, row.sender_id, cloud.config?.url, { sticker: t('common.messageSticker'), gif: t('common.messageGif') });
+          this.emit('message', { chatId: chat.id, from: name, fromId: row.sender_id, text, id: row.id, message: row });
+          this._notifyDesktop(chat, name, text);
         }
       }
       this.emit('chat', { chatId: chat.id, kind: 'insert', message: chat.byId.get(row.id) || row });

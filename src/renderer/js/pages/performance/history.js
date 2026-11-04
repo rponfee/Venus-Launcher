@@ -1,8 +1,8 @@
 // Pestaña Historial de Rendimiento: lista de partidas, gráfico SVG propio y comparación entre dos partidas. Los datos los
 // junta modules/perfhistory.js (una muestra cada 10 s de RAM, CPU y FPS). Los colores salen de las variables del tema, así el
 // gráfico se ve bien en claro y en oscuro; la segunda partida de una comparación va punteada, para no depender solo del color.
-import { h, icon, mount, emptyState, skeleton, fail, ok, selectEl, confirmDialog, fmtDate, fmtDuration, fmtNumber } from '../../ui.js';
-import { api } from '../../store.js';
+import { h, icon, mount, emptyState, skeleton, fail, ok, selectEl, confirmDialog, fmtDate, fmtDuration, fmtNumber, switchEl } from '../../ui.js';
+import { api, store } from '../../store.js';
 import { t } from '../../i18n.js';
 import { bounds, ticks, linePath, compareRows, niceRam } from './chart-math.js';
 
@@ -87,7 +87,10 @@ export function historyView() {
   const toolbar = h('div', { class: 'dt-hist-bar' });
   const list = h('div', { class: 'dt-hist-list', role: 'list', 'aria-label': T('histListAria') });
   const panel = h('div', { class: 'dt-hist-panel' });
-  const root = h('div', { class: 'dt-hist' }, toolbar, h('div', { class: 'dt-hist-main' }, list, panel));
+  const record = h('div', { class: 'card toggle-row' },
+    h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, T('histRecord')), h('div', { class: 'tr-sub' }, T('histRecordText'))),
+    switchEl(store.settings?.perfhistory?.enabled !== false, (enabled) => store.setSettings({ perfhistory: { enabled } }).catch((err) => fail(T('saveError'), err)), T('histRecord')));
+  const root = h('div', { class: 'dt-hist' }, record, toolbar, h('div', { class: 'dt-hist-main' }, list, panel));
 
   const visible = () => (state.sessions || []).filter((s) => !state.filter || s.instanceId === state.filter);
 
@@ -286,10 +289,10 @@ export function historyView() {
     if (!state.alive) return;
     state.sessions = sessions;
     if (!sessions.length) {
-      mount(root, h('div', { class: 'card flat' }, emptyState('activity', T('histEmpty'), T('histEmptyText'))));
+      mount(root, record, h('div', { class: 'card flat' }, emptyState('activity', T('histEmpty'), T('histEmptyText'))));
       return;
     }
-    if (!root.contains(list)) mount(root, toolbar, h('div', { class: 'dt-hist-main' }, list, panel));
+    if (!root.contains(list)) mount(root, record, toolbar, h('div', { class: 'dt-hist-main' }, list, panel));
     if (!state.selected || !sessions.some((s) => s.id === state.selected)) state.selected = sessions[0].id;
     state.compare = state.compare.filter((id) => sessions.some((s) => s.id === id));
     drawList();

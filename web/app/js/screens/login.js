@@ -9,7 +9,7 @@ const RESEND_MS = 60_000;
 const MIN_PASSWORD = 6; // como en el launcher
 
 export function renderLogin(root, { client, tr }) {
-  const form = { mode: 'signin', email: '', username: '', msg: null, resendAt: 0 };
+  const form = { mode: 'signin', email: '', username: '', msg: null, resendAt: 0, recoveryVerified: false };
 
   const field = (id, label, attrs) => {
     const input = h('input', { id, class: 'input', ...attrs });
@@ -62,7 +62,11 @@ export function renderLogin(root, { client, tr }) {
   }
 
   const linkBtn = (text, onclick) => h('button', { class: 'btn link', type: 'button', onclick }, text);
-  const goto = (mode) => () => {
+  const goto = (mode) => async () => {
+    if (form.recoveryVerified) {
+      await client.auth.signOut({ scope: 'local' });
+      form.recoveryVerified = false;
+    }
     form.mode = mode;
     form.msg = null;
     draw();
@@ -196,7 +200,7 @@ export function renderLogin(root, { client, tr }) {
       tr('verify_text', { email: form.email }),
       async () => {
         const token = code.input.value.replace(/\D/g, '');
-        if (!CODE.test(token)) {
+        if (!form.recoveryVerified && !CODE.test(token)) {
           setMsg('bad', 'auth_code');
           draw();
           return;
@@ -206,12 +210,15 @@ export function renderLogin(root, { client, tr }) {
           draw();
           return;
         }
-        const res = await client.auth.verifyOtp({ email: form.email, token, type: 'recovery' });
-        if (res.error) throw res.error;
+        if (!form.recoveryVerified) {
+          const res = await client.auth.verifyOtp({ email: form.email, token, type: 'recovery' });
+          if (res.error) throw res.error;
+          form.recoveryVerified = true;
+        }
         const up = await client.auth.updateUser({ password: pass.input.value });
         if (up.error) throw up.error;
       },
-      [code, pass],
+      form.recoveryVerified ? [pass] : [code, pass],
       tr('reset_save'),
       h('div', { class: 'login-links' }, linkBtn(tr('login_back'), goto('signin'))),
     );

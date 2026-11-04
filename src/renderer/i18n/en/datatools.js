@@ -72,7 +72,7 @@ export default {
   histSessionB: 'Dotted line',
   histDiff: 'Difference',
   histCrashed: 'This session ended in a crash',
-  histPartial: 'Incomplete measurement: the launcher closed before the game',
+  histPartial: "Incomplete measurement: recording was paused or the launcher closed before the game",
   histDelete: 'Delete this session',
 
   // ---------- Family mode ----------
@@ -244,4 +244,6 @@ export default {
   syncFirstText: 'This is the first time this PC syncs. Which ones do you keep? After that they stay up to date on their own, key by key.',
   syncFirstPull: 'Bring from the cloud',
   syncFirstPush: 'Upload these',
+  histRecord: "Save performance history",
+  histRecordText: "Measures RAM, CPU and FPS every 10 seconds while you play. Turn it off to stop those measurements and their resource usage; existing history is kept.",
 };

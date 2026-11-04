@@ -182,3 +182,67 @@ test('no se pisan dos capturas al mismo tiempo', async () => {
   assert.equal(st.writes.length, 1);
   tl.stop();
 });
+
+
+const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
+
+test('detener durante la lectura de ajustes no inicia una captura despues', async () => {
+  const pending = deferred();
+  const { tl } = rig({ config: () => pending.promise });
+  const start = tl.start('inst');
+  tl.stop('inst');
+  pending.resolve({ enabled: true });
+  await start;
+  assert.equal(tl.view().active, false);
+  tl.stop();
+});
+
+test('dos inicios superpuestos conservan la ultima instancia solicitada', async () => {
+  const pending = deferred();
+  const { tl } = rig({ usage: id => id === 'anterior' ? pending.promise : Promise.resolve(0) });
+  const first = tl.start('anterior');
+  await new Promise(r => setImmediate(r));
+  await tl.start('ultima');
+  pending.resolve(0);
+  await first;
+  assert.equal(tl.view().instanceId, 'ultima');
+  tl.stop();
+});
+
+test('una consulta de disco tardia no captura ni detiene la nueva sesion', async () => {
+  const pending = deferred();
+  const { tl, st } = rig({ freeBytes: () => pending.promise });
+  await tl.start('anterior');
+  const tick = tl.tick();
+  await tl.start('ultima');
+  pending.resolve(0);
+  assert.equal((await tick).action, 'skip');
+  assert.equal(tl.view().active, true);
+  assert.equal(st.grabs, 0);
+  assert.equal(st.notices.length, 0);
+  tl.stop();
+});
+
+test('salir del mundo mientras llega la imagen no la guarda en el mundo anterior', async () => {
+  const pending = deferred();
+  const { tl, st } = rig({ grab: () => pending.promise });
+  await tl.start('inst');
+  const tick = tl.tick();
+  await new Promise(r => setImmediate(r));
+  st.activity = { type: 'menu' };
+  pending.resolve(st.shot);
+  assert.equal((await tick).action, 'skip');
+  assert.equal(st.writes.length, 0);
+  tl.stop();
+});
+
+test('el limite de espacio tambien comprueba el tamaño real de la imagen', async () => {
+  const { tl, st } = rig();
+  st.used = 256 * 1048576 - logic.FRAME_ESTIMATE;
+  st.shot.data = new Uint8Array(logic.FRAME_ESTIMATE + 1);
+  await tl.start('inst');
+  assert.equal((await tl.tick()).action, 'full');
+  assert.equal(st.writes.length, 0);
+  assert.deepEqual(st.notices, ['timelapseFull']);
+  tl.stop();
+});

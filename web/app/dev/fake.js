@@ -240,13 +240,17 @@ export function createFakeClient({ signedIn = true, gallery = false, now = Date.
       signUp: async () => ({ data: { user: { id: 'nuevo', identities: [{}] }, session: null }, error: null }),
       resend: async () => ({ data: {}, error: null }),
       resetPasswordForEmail: async () => ({ data: {}, error: null }),
-      async verifyOtp({ token }) {
+      async verifyOtp({ token, type }) {
         if (token === '000000') return { data: {}, error: { code: 'otp_expired', message: 'Token has expired or is invalid', status: 403 } };
         const next = { user, access_token: 'falso', expires_at: Math.floor(Date.now() / 1000) + 3600 };
-        setSession(next, 'SIGNED_IN');
+        setSession(next, type === 'recovery' ? 'PASSWORD_RECOVERY' : 'SIGNED_IN');
         return { data: { session: next, user }, error: null };
       },
-      updateUser: async () => ({ data: { user }, error: null }),
+      async updateUser() {
+        if (db.fail?.updateUser) return { data: {}, error: db.fail.updateUser };
+        setSession(session, 'USER_UPDATED');
+        return { data: { user }, error: null };
+      },
       async signOut() {
         setSession(null, 'SIGNED_OUT');
         return { error: null };

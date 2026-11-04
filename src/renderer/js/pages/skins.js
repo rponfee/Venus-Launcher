@@ -481,7 +481,8 @@ export default {
       else if (p) {
         const cape = p.capes.find((c) => c.id === p.activeCapeId);
         const variant = p.skin ? variantLabel(p.skin.variant) : t('skins.defaultSkin');
-        sub = cape ? t('skins.accountSummary', { variant, cape: cape.alias || t('skins.capeUnnamed') }) : t('skins.accountSummaryNoCape', { variant });
+        const capeName = cape ? cape.alias || t('skins.capeUnnamed') : venusCape ? t('skins.venusCape') : null;
+        sub = capeName ? t('skins.accountSummary', { variant, cape: capeName }) : t('skins.accountSummaryNoCape', { variant });
       } else sub = t('skins.profileUnavailable');
       const avatar = h('div', { class: 'sk-acc-avatar' }, S.accountSkinState === 'ready' ? headThumb(S.accountSkin.canvas) : icon('user'));
       const row = h(
@@ -878,7 +879,7 @@ export default {
         const active = (p.activeCapeId || null) === id;
         const tex = c ? S.capes.get(c.id) : null;
         const art = !c ? icon('skNoCape', 'sk-cape-none') : tex instanceof HTMLCanvasElement ? capeThumb(tex) : tex === 'error' || !c.textureUrl ? icon('alert', 'sk-cape-none') : h('div', { class: 'spinner', 'aria-hidden': 'true' });
-        const name = c ? c.alias || t('skins.capeUnnamed') : t('skins.noCape');
+        const name = c ? c.alias || t('skins.capeUnnamed') : venusCape ? t('skins.venusCape') : t('skins.noCape');
         const btn = h(
           'button',
           {
@@ -1256,7 +1257,11 @@ export default {
     loadAccount();
     equippedCapeCanvas().then((canvas) => {
       venusCape = canvas;
-      if (S.alive) updatePreview();
+      if (S.alive) {
+        drawAccount();
+        drawCapes();
+        updatePreview();
+      }
     });
     if (catMem.tab === 'catalog') setTab('catalog');
     else cat.prefetch();

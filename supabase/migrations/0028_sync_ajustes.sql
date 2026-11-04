@@ -20,7 +20,7 @@ create table if not exists public.settings_sync (
 );
 alter table public.settings_sync enable row level security;
 -- Todo pasa por las funciones de abajo: nadie lee ni escribe la tabla directo
-revoke all on public.settings_sync from anon, authenticated;
+revoke all on public.settings_sync from public, anon, authenticated;
 
 -- { data, version, updatedAt } o { data: null, version: 0 } si todavía no se subió nada
 create or replace function public.settings_sync_get() returns jsonb

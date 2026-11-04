@@ -195,14 +195,18 @@ if (!DEVSHOT && !app.requestSingleInstanceLock()) {
     instances.setTrash((p) => shell.trashItem(p));
     servers.setTrash((p) => shell.trashItem(p));
 
+    // Solo la página del launcher recibe permisos, nunca los marcos de las extensiones.
+    const { isAppPage, isPermissionRequester } = require('./core/permissions');
+    const rendererFile = path.join(__dirname, '..', 'renderer', 'index.html');
     // Microfono para el Voice Chat; el resto de permisos se deniega.
     const allowed = new Set(['media', 'clipboard-sanitized-write', 'notifications', 'fullscreen', 'display-capture']);
-    session.defaultSession.setPermissionRequestHandler((wc, permission, cb) => cb(allowed.has(permission)));
-    session.defaultSession.setPermissionCheckHandler((wc, permission) => allowed.has(permission));
+    session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) => cb(allowed.has(permission) && isPermissionRequester(wc, details, rendererFile)));
+    session.defaultSession.setPermissionCheckHandler((wc, permission, _origin, details) => allowed.has(permission) && isPermissionRequester(wc, details, rendererFile));
     // Compartir pantalla en el Voice Chat: la pantalla principal (Electron no muestra selector propio salvo
     // el del sistema en macOS) y, en Windows, el sonido del equipo si la pagina pide audio (loopback).
     session.defaultSession.setDisplayMediaRequestHandler(
       (request, callback) => {
+        if (!isAppPage(request.frame?.url, rendererFile) || request.frame !== mainWindow?.webContents.mainFrame) return callback({});
         let answered = false;
         const reply = (streams) => {
           if (answered) return;

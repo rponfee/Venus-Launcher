@@ -72,7 +72,7 @@ export default {
   histSessionB: 'Línea punteada',
   histDiff: 'Diferencia',
   histCrashed: 'Esta partida terminó en un crash',
-  histPartial: 'Medición incompleta: el launcher se cerró antes que el juego',
+  histPartial: "Medición incompleta: se pausó el registro o se cerró el launcher antes del juego",
   histDelete: 'Borrar esta partida',
 
   // ---------- Modo familia ----------
@@ -244,4 +244,6 @@ export default {
   syncFirstText: 'Esta es la primera vez que sincronizás esta PC. ¿Con cuáles te quedás? Después se mantienen al día solos, clave por clave.',
   syncFirstPull: 'Traer de la nube',
   syncFirstPush: 'Subir esto',
+  histRecord: "Guardar historial de rendimiento",
+  histRecordText: "Mide RAM, CPU y FPS cada 10 segundos mientras jugás. Apagalo para evitar esas mediciones y su consumo de recursos; conserva el historial que ya tenés.",
 };

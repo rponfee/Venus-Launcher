@@ -30,7 +30,7 @@ export default {
   shareToggleSub: 'While off, nothing is sent. It powers the rankings and lets you accept challenges.',
   shareNeedsAccount: 'You need to sign in with your Venus account.',
   shareSends: 'Venus receives how long you played on this PC, plus the diamonds and blocks mined, mobs killed and deaths from your worlds, as weekly totals.',
-  shareSees: 'Only your Venus friends see it, in the ranking and in the challenges you accept.',
+  shareSees: "Your Venus friends see your numbers in the friends ranking and the challenges you accept. Your hours only count towards your public clan ranking if you also enable its separate permission.",
   shareNotSent: "It doesn't send which worlds or servers you played on. Whatever you played before turning this on doesn't count.",
   shareOtherPc: 'Your account shares from another PC. Turn it on here to also add what you play on this one.',
   shareActive: "You're sharing your numbers with your friends",

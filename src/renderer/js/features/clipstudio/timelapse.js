@@ -31,6 +31,7 @@ async function loadFrame(instanceId, folder, name) {
  * onJob(jobId) avisa el trabajo para poder cancelarlo.
  */
 export async function buildTimelapse({ instanceId, folder, fps, every, onProgress, onJob, signal }) {
+  if (signal?.cancelled) return null;
   const names = await api.invoke('clipstudio:timelapseFrames', instanceId, folder);
   const plan = planTimelapse(names.length, fps, every);
   if (!plan.frames) throw new Error(C('errNoFrames'));
@@ -44,15 +45,19 @@ export async function buildTimelapse({ instanceId, folder, fps, every, onProgres
   const box = outputBox(sample.width, sample.height);
   sample.close?.();
   const track = await pickCodec(box.width, box.height, plan.fps);
+  if (signal?.cancelled) return null;
   if (!track) throw new Error(C('errNoEncoder'));
   const { jobId } = await api.invoke('clipstudio:timelapseOpen', { instanceId, folder, width: box.width, height: box.height, codec: track, frameMs: plan.frameMs });
-  onJob?.(jobId);
-  const encoder = new FrameEncoder({ jobId, track, width: box.width, height: box.height, fps: plan.fps });
-  const canvas = new OffscreenCanvas(box.width, box.height);
-  const ctx = canvas.getContext('2d', { alpha: false });
-  ctx.imageSmoothingQuality = 'high';
-  let out = 0;
+  let encoder = null;
+  let finished = false;
   try {
+    onJob?.(jobId);
+    if (signal?.cancelled) return null;
+    encoder = new FrameEncoder({ jobId, track, width: box.width, height: box.height, fps: plan.fps });
+    const canvas = new OffscreenCanvas(box.width, box.height);
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.imageSmoothingQuality = 'high';
+    let out = 0;
     for (let i = 0; i < plan.frames; i++) {
       if (signal?.cancelled) return null;
       let bmp;
@@ -80,12 +85,15 @@ export async function buildTimelapse({ instanceId, folder, fps, every, onProgres
     await encoder.flush();
     encoder.close();
     if (signal?.cancelled) return null;
-    return await api.invoke('clipstudio:finish', jobId);
+    const result = await api.invoke('clipstudio:finish', jobId);
+    finished = true;
+    return result;
   } catch (err) {
-    await api.invoke('clipstudio:cancel', jobId).catch(() => {});
+    if (signal?.cancelled) return null;
     throw err;
   } finally {
-    encoder.close();
+    encoder?.close();
+    if (!finished) await api.invoke('clipstudio:cancel', jobId).catch(() => {});
   }
 }
 
@@ -208,6 +216,7 @@ export function openTimelapse({ instanceId: wanted = '', onSaved } = {}) {
   function draw() {
     if (!alive) return;
     if (!insts.length) return mount(content, emptyState('clock', C('timelapseNoInstances'), ''));
+    instSel.disabled = Boolean(running);
     if (!data) return mount(content, loading());
     mount(
       content,
@@ -244,13 +253,14 @@ export function openTimelapse({ instanceId: wanted = '', onSaved } = {}) {
 
   async function generate(f, btn) {
     if (running) return;
+    const sourceId = instanceId;
     const def = TIMELAPSE_SPEEDS.find((s) => s.id === speed) || TIMELAPSE_SPEEDS[1];
     running = { folder: f.folder, signal: { cancelled: false }, jobId: null, setProgress: () => {} };
     const done = setBusy(btn);
     draw();
     try {
       const res = await buildTimelapse({
-        instanceId,
+        instanceId: sourceId,
         folder: f.folder,
         fps: def.fps,
         every: data.config.every,
@@ -269,7 +279,7 @@ export function openTimelapse({ instanceId: wanted = '', onSaved } = {}) {
       ok(C('timelapseSaved'), res.name || '');
       onSaved?.(res);
       if (alive) draw();
-      if (await confirmDialog(C('timelapseDeleteAfterTitle'), C('timelapseDeleteAfterText', { count: f.count, size: fmtBytes(f.bytes) }), { okText: C('moveToTrash'), cancelText: C('keepFrames') })) await removeFolder(f, { confirmed: true });
+      if (await confirmDialog(C('timelapseDeleteAfterTitle'), C('timelapseDeleteAfterText', { count: f.count, size: fmtBytes(f.bytes) }), { okText: C('moveToTrash'), cancelText: C('keepFrames') })) await removeFolder(f, { confirmed: true, sourceId });
     } catch (err) {
       running = null;
       fail(C('timelapseFailed'), err);
@@ -279,10 +289,10 @@ export function openTimelapse({ instanceId: wanted = '', onSaved } = {}) {
     }
   }
 
-  async function removeFolder(f, { confirmed = false } = {}) {
+  async function removeFolder(f, { confirmed = false, sourceId = instanceId } = {}) {
     if (!confirmed && !(await confirmDialog(C('timelapseDeleteTitle'), C('timelapseDeleteText', { count: f.count, size: fmtBytes(f.bytes) }), { okText: C('moveToTrash'), danger: true }))) return;
     try {
-      await api.invoke('clipstudio:timelapseDelete', instanceId, f.folder);
+      await api.invoke('clipstudio:timelapseDelete', sourceId, f.folder);
       ok(C('timelapseDeleted'));
       if (alive) load();
     } catch (err) {

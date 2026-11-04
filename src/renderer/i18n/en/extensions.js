@@ -97,9 +97,9 @@ export default {
   safeModeForced: 'The launcher was opened with --venus-safe-mode: no extension runs in this session.',
 
   catalogSwitch: 'Check the extensions catalog',
-  catalogSwitchText: 'Asks Venus for the list of extensions, the updates and the block list. If it is off, it does not connect.',
+  catalogSwitchText: "Checks the catalog and available updates. Blocked-extension checks have separate consent.",
   catalogOptTitle: 'The catalog is an optional connection',
-  catalogOptText: 'To show it, the launcher asks Venus for the list of approved extensions, the updates and the block list, which turns off the ones that turned out to be dangerous. You can turn it off in Settings > Privacy.',
+  catalogOptText: "To show it, the launcher asks Venus for approved extensions and updates. You can turn the catalog off in Settings → Privacy. Block checks have separate consent.",
   catalogEnable: 'Turn on the catalog',
   signInTitle: 'Sign in to Venus',
   signInText: 'The catalog and submissions need your Venus account.',
@@ -160,7 +160,7 @@ export default {
   adminNoteLabel: 'Reason (the submitter sees it)',
   adminNotePlaceholder: 'What has to change',
   adminApproveConfirm: 'Approve “{name}” version {version}? It becomes available to the whole community.',
-  adminBlockConfirm: 'It gets turned off in every launcher that checks the catalog. Block “{name}”?',
+  adminBlockConfirm: "It is disabled in launchers when they receive the block list. Block “{name}”?",
   adminDone: 'Done',
   adminActionFailed: 'Could not do it',
   adminReviewTitle: 'Content of {name} {version}',
@@ -175,4 +175,7 @@ export default {
   adminErr_not_found: 'That version no longer exists.',
   adminErr_bad_action: 'Invalid action.',
   adminErr_note_required: 'Write the reason.',
+  blocklistTitle: "Check blocked extensions",
+  blocklistText: "With your permission, Venus fetches only the block list on startup and every 4 hours, even with the catalog off. It does not send which extensions you have. Offline, it uses the last saved list; new blocks arrive when you reconnect. Turning this off stops new block updates.",
+  blocklistAllow: "Allow the check",
 };

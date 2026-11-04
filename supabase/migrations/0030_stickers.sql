@@ -25,7 +25,7 @@ create table if not exists public.user_stickers (
 );
 create index if not exists user_stickers_user on public.user_stickers (user_id, created_at desc);
 alter table public.user_stickers enable row level security;
-revoke all on public.user_stickers from anon, authenticated;
+revoke all on public.user_stickers from public, anon, authenticated;
 
 -- ---------- Ayudantes ----------
 -- Tope de la cuenta: 30, o 100 con Premium

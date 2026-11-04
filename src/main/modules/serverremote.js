@@ -17,6 +17,7 @@ const { encodeQr } = require('./serverremote/qr');
 
 const NET_CHECK_MS = 60000;
 const hosts = new Map(); // id de servidor -> host
+const starting = new Map(); // id -> inicio pendiente, también se puede cancelar
 let notify = () => {};
 let changedServers = () => {};
 let isDevLoopback = () => false;
@@ -115,7 +116,21 @@ function status(id) {
 }
 
 async function start(id, opts = {}) {
+  const pending = starting.get(id);
+  if (pending) return pending.promise;
+  const entry = { reason: null };
+  entry.promise = startHost(id, opts, entry);
+  starting.set(id, entry);
+  try {
+    return await entry.promise;
+  } finally {
+    if (starting.get(id) === entry) starting.delete(id);
+  }
+}
+
+async function startHost(id, opts, pending) {
   await servers.get(id);
+  if (pending.reason) return { on: false };
   const cur = hosts.get(id);
   if (cur && !cur.isStopped()) return status(id);
   const list = addresses();
@@ -128,7 +143,8 @@ async function start(id, opts = {}) {
     strings: pageStrings,
     onEvent(kind, data) {
       if (kind === 'stopped') {
-        if (hosts.get(id) === host) hosts.delete(id);
+        if (hosts.get(id) !== host) return;
+        hosts.delete(id);
         if (data.reason !== 'quit' && data.reason !== 'removed') servers.venusLog(id, t('serverremote.logOff'));
         notify('serverremote:changed', id, { on: false, kind, reason: data.reason });
       } else if (kind === 'connected') notify('serverremote:changed', id, { on: true, kind, device: deviceLabel(data.device) });
@@ -143,8 +159,13 @@ async function start(id, opts = {}) {
   try {
     await host.start();
   } catch (err) {
+    host.stop('listen');
     console.warn('[serverremote] no se pudo escuchar:', err?.message || err);
     throw coded('listen', t('serverremote.errListen'));
+  }
+  if (pending.reason || host.isStopped()) {
+    host.stop(pending.reason || 'stopped');
+    return { on: false };
   }
   hosts.set(id, host);
   servers.venusLog(id, t('serverremote.logOn'));
@@ -153,14 +174,16 @@ async function start(id, opts = {}) {
 }
 
 function stopFor(id, reason = 'stopped') {
+  const pending = starting.get(id);
+  if (pending) pending.reason = reason;
   const host = hosts.get(id);
-  if (!host) return false;
+  if (!host) return Boolean(pending);
   host.stop(reason);
   return true;
 }
 
 function stopAll(reason = 'quit') {
-  for (const id of [...hosts.keys()]) stopFor(id, reason);
+  for (const id of new Set([...hosts.keys(), ...starting.keys()])) stopFor(id, reason);
 }
 
 function register({ app, handle, send, onQuit }) {
