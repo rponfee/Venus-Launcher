@@ -1,0 +1,42 @@
+/* Cuidado del juego (features/playcare): resumen al cerrar el juego, aviso de version nueva, descansos (Ajustes > General) y
+   descargas programadas. */
+/* Resumen al cerrar el juego (features/playcare/recap.js) */
+.pc-recap { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.pc-recap-hero { display: flex; align-items: center; gap: var(--sp-3); }
+.pc-recap-hero > svg { width: 32px; height: 32px; color: var(--accent-hi); flex-shrink: 0; }
+.pc-recap-big { font-family: var(--pixel); font-size: 20px; color: var(--cream); line-height: 1.2; }
+.pc-recap-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+.pc-recap-tile { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); background: var(--well-bg); border: 1px solid var(--border); }
+.pc-recap-ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent-hi); flex-shrink: 0; }
+.pc-recap-ic svg { width: 18px; height: 18px; }
+.pc-recap-val { font-size: 18px; font-weight: 700; color: var(--cream); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.pc-recap-lab { font-size: var(--fs-xs); color: var(--muted); }
+.pc-recap-list ul { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.pc-recap-list li { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); }
+.pc-recap-list li svg { width: 14px; height: 14px; color: var(--accent-hi); flex-shrink: 0; }
+
+/* Aviso de version nueva (toast con botones) */
+.pc-toast { display: flex; flex-direction: column; gap: var(--sp-2); }
+.pc-toast-actions { margin-top: 2px; }
+
+/* Ajustes > General > Descansos y resumen (pages/settings/general.js) */
+.cfg-care-options { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-3); padding: var(--sp-2) 0 var(--sp-2) 0; }
+.cfg-care-options.is-disabled { opacity: 0.55; }
+.cfg-care-field { display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.cfg-care-select { width: 150px; }
+
+/* Descargas programadas: tarjeta de Ajustes y aviso en el panel de tareas (features/playcare/schedule.js) */
+.tsch-panel { display: flex; flex-direction: column; gap: var(--sp-3); }
+.tsch-head { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.tsch-head-text { flex: 1; min-width: 0; }
+.tsch-head .card-sub { margin-bottom: 0; }
+.tsch-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-3); }
+.tsch-field { display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.tsch-time { width: 130px; }
+.tsch-off .tsch-row { opacity: 0.6; }
+.tsch-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-2) 12px; border-radius: var(--radius); background: var(--well-bg); border: 1px solid var(--border); font-size: var(--fs-sm); line-height: 1.45; }
+.tsch-status-text { flex: 1; min-width: 200px; color: var(--text-2); }
+.pc-sched-task { border-color: var(--warn-line); }
+.pc-sched-task .task-top > svg { color: var(--warn-text); }
+.pc-sched-task .task-detail { white-space: normal; }
+.pc-sched-task-actions { margin-top: var(--sp-2); display: flex; gap: var(--sp-2); }

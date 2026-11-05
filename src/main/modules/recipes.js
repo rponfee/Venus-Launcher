@@ -20,6 +20,10 @@ const { pickNames } = require('./recipes/parse');
 const CACHE_VERSION = 1;
 const MAX_MODS = 500;
 const SESSIONS = 2; // cuantas sesiones quedan en memoria
+// Con cientos de mods la primera lectura es larga (despues sale de la cache). El panel no espera mas que esto: lo que falta
+// se sigue leyendo en segundo plano, de a uno y dejando respirar al launcher, y la proxima vez que se abra ya esta completo.
+const BUILD_BUDGET_MS = 30000;
+const later = () => new Promise((resolve) => setImmediate(resolve));
 
 const sessions = new Map(); // clave -> Promise<sesion>
 
@@ -92,18 +96,39 @@ async function assetIndexOf(rootId) {
   return typeof data?.assetIndex?.id === 'string' ? data.assetIndex.id : null;
 }
 
-async function build({ jar, rootId, instanceDir, lang, assetIndex, mods, assetsDir, cacheDir }) {
+async function build({ jar, rootId, instanceDir, lang, assetIndex, mods, assetsDir, cacheDir, budgetMs = BUILD_BUDGET_MS, onComplete }) {
+  const started = Date.now();
   const client = await loadSource(jar, { cacheDir, lang: null, label: rootId });
   const list = mods && instanceDir ? await modJars(instanceDir) : { jars: [], skipped: 0 };
   const sources = [client];
+  const modSource = (m) => loadSource(m, { cacheDir: path.join(cacheDir, 'mods'), lang, label: path.basename(m, path.extname(m)) });
   let failed = 0;
+  const rest = [];
   for (const m of list.jars) {
+    if (Date.now() - started > budgetMs) {
+      rest.push(m);
+      continue;
+    }
     try {
-      sources.push(await loadSource(m, { cacheDir: path.join(cacheDir, 'mods'), lang, label: path.basename(m, path.extname(m)) }));
+      sources.push(await modSource(m));
     } catch (err) {
       failed++;
       console.warn('[recipes] mod:', path.basename(m), err?.message || err);
     }
+    await later(); // entre un .jar y otro el launcher atiende lo suyo (esto corre en el proceso principal mientras se juega)
+  }
+  if (rest.length) {
+    (async () => {
+      for (const m of rest) {
+        try {
+          await modSource(m);
+        } catch {
+          /* un .jar que no se lee se cuenta en la proxima vuelta */
+        }
+        await later();
+      }
+      onComplete?.();
+    })();
   }
   const langTable = await assetNames({ assetsDir, assetIndex: assetIndex || (await assetIndexOf(rootId).catch(() => null)), lang });
   const book = createBook(sources, { langTable });
@@ -125,7 +150,7 @@ async function build({ jar, rootId, instanceDir, lang, assetIndex, mods, assetsD
     return out;
   }
   const session = {
-    info: { version: rootId, mods: sources.length - 1, modsFailed: failed, modsSkipped: list.skipped, recipes: book.recipeCount, items: book.size, translated: Boolean(langTable) },
+    info: { version: rootId, mods: sources.length - 1, modsFailed: failed, modsSkipped: list.skipped, modsPending: rest.length, recipes: book.recipeCount, items: book.size, translated: Boolean(langTable) },
     async search(query, limit) {
       const r = book.search(query, limit);
       return { ...r, icons: await icons(r.items.map((i) => i.id)) };
@@ -146,7 +171,7 @@ async function build({ jar, rootId, instanceDir, lang, assetIndex, mods, assetsD
 
 /**
  * Sesion de recetas de una version. El .jar del cliente tiene que estar (lo baja el launcher al preparar la partida).
- * opts: { rootId, instanceDir?, lang?, assetIndex?, mods?, jarPath?, assetsDir?, cacheDir? } (los tres ultimos, para las pruebas)
+ * opts: { rootId, instanceDir?, lang?, assetIndex?, mods?, jarPath?, assetsDir?, cacheDir?, budgetMs? } (los cuatro ultimos, para las pruebas)
  */
 async function open(opts) {
   const { rootId, instanceDir = null, lang = null, assetIndex = null, mods = false } = opts || {};
@@ -156,7 +181,8 @@ async function open(opts) {
   if (!st || !st.isFile()) throw coded('noJar');
   const key = JSON.stringify([jar, st.size, Math.round(st.mtimeMs), instanceDir, lang, mods]);
   if (!sessions.has(key)) {
-    const promise = build({ jar, rootId, instanceDir, lang, assetIndex, mods, assetsDir: opts.assetsDir || paths.assets(), cacheDir: opts.cacheDir || paths.cache('recipes') });
+    // Si quedaron mods para leer despues, al terminar se descarta esta sesion: la proxima apertura sale completa de la cache
+    const promise = build({ jar, rootId, instanceDir, lang, assetIndex, mods, assetsDir: opts.assetsDir || paths.assets(), cacheDir: opts.cacheDir || paths.cache('recipes'), budgetMs: opts.budgetMs, onComplete: () => sessions.get(key) === promise && sessions.delete(key) });
     sessions.set(key, promise);
     promise.catch(() => sessions.delete(key));
     while (sessions.size > SESSIONS) sessions.delete(sessions.keys().next().value);

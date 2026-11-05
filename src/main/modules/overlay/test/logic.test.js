@@ -106,3 +106,50 @@ test('los atajos que arma la interfaz los acepta el proceso principal', async ()
   ];
   for (const e of samples) assert.equal(validAccelerator(accelFromKey(e)), true, accelFromKey(e));
 });
+
+test('cola serial: un error no corta la cola y todo corre en orden', async () => {
+  const { createSerial } = await esm('logic.js');
+  const errors = [];
+  const run = createSerial((e) => errors.push(e.message));
+  const order = [];
+  run(async () => {
+    await new Promise((r) => setTimeout(r, 10));
+    order.push('a');
+  });
+  run(() => {
+    throw new Error('layout roto');
+  });
+  run(() => Promise.reject(new Error('idioma que no carga')));
+  await run(() => order.push('d'));
+  assert.deepEqual(order, ['a', 'd']);
+  assert.deepEqual(errors, ['layout roto', 'idioma que no carga']);
+  // Aunque el aviso de error tambien falle, sigue andando
+  const loud = createSerial(() => {
+    throw new Error('el aviso tambien');
+  });
+  loud(() => {
+    throw new Error('x');
+  });
+  let ran = false;
+  await loud(() => {
+    ran = true;
+  });
+  assert.equal(ran, true);
+});
+
+test('Voice Chat: si no entran todos, quien habla y uno mismo se ven antes que el resto', async () => {
+  const { pickVoiceRows } = await esm('logic.js');
+  const room = Array.from({ length: 12 }, (_, i) => ({ id: 'm' + i, speaking: i === 10, self: i === 3 }));
+  const shown = pickVoiceRows(room, 8);
+  assert.equal(shown.length, 8);
+  assert.ok(shown.some((m) => m.id === 'm10'), 'el que habla esta, aunque sea el 11');
+  assert.ok(shown.some((m) => m.id === 'm3'), 'uno mismo tambien');
+  assert.deepEqual(shown.map((m) => m.id), ['m0', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm10'], 'en el orden de la sala');
+  // Muchos hablando a la vez: se quedan los primeros 8 que hablan
+  const loud = room.map((m, i) => ({ ...m, speaking: i >= 2 }));
+  assert.equal(pickVoiceRows(loud, 8).filter((m) => m.speaking).length, 8);
+  // Si entran todos, no se toca nada
+  const small = room.slice(0, 5);
+  assert.equal(pickVoiceRows(small, 8), small);
+  assert.deepEqual(pickVoiceRows(null, 8), []);
+});

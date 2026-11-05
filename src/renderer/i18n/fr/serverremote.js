@@ -10,7 +10,6 @@ export default {
   errStart: "Impossible d’activer le contrôle à distance",
   errAction: "L’action a échoué",
   qrAlt: "Code QR pour ouvrir le contrôle à distance sur votre téléphone",
-  qrHidden: "Le code QR reste masqué en mode streamer : copiez le lien ou désactivez ce mode un instant.",
   stepQr: "Scannez le code QR avec l’appareil photo de votre téléphone.",
   stepCode: "Ou ouvrez cette adresse dans le navigateur de votre téléphone et saisissez le code :",
   copyLink: "Copier le lien avec le code",

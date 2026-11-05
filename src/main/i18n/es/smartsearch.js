@@ -1,6 +1,10 @@
 'use strict';
 // Buscador inteligente (proceso principal): errores y titulos de tareas.
 module.exports = {
+  errAi_noplan: 'La IA del buscador es solo para planes de pago de Venus IA.',
+  errAi_consent: 'Antes de usar la IA tenés que aceptar el aviso de privacidad.',
+  errAi_sourceUnavailable: 'Esa IA no está disponible ahora: revisá tu plan o la app instalada en tu PC.',
+  errAi_badSource: 'Esa opción de IA no existe.',
   errEmptyQuery: 'Escribí qué querés buscar.',
   errTooLong: 'El pedido es demasiado largo (máximo 400 caracteres).',
   errModrinth: 'No se pudo conectar con Modrinth: {error}',

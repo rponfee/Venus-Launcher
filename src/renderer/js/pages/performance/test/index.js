@@ -1,4 +1,4 @@
-// Punto de entrada para `node --test "src/renderer/js/pages/performance/test/"` (como pages/tools/test/index.js).
+// Punto de entrada para `node --test "src/renderer/js/pages/performance/test/"` (como features/playcare/test/index.js).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';

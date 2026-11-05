@@ -14,7 +14,22 @@ test.before(async () => {
 
 const UID = '0b5b9a3e-1f0c-4c55-9a51-2d1c7e3f4a10';
 const OTHER = '9d9d9d9d-1111-4222-8333-444455556666';
-const song = (uid = UID, v = '') => `https://abcdefgh.supabase.co/storage/v1/object/public/profile-audio/${uid}/song.webm${v}`;
+// Cancion de perfil (4.6): formato de Openverse (music-logic.js)
+const song = (extra = {}) => ({
+  provider: 'openverse',
+  id: '3de3576d-6bc6-4493-a75d-cd48e40e154d',
+  title: 'Tema',
+  creator: 'Autora',
+  license: 'by-sa',
+  licenseVersion: '4.0',
+  licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  landing: 'https://www.jamendo.com/track/1132192',
+  url: 'https://prod-1.storage.jamendo.com/?trackid=1132192&format=mp32',
+  start: 10,
+  len: 30,
+  ...extra,
+});
+const OLD_SONG = `https://abcdefgh.supabase.co/storage/v1/object/public/profile-audio/${UID}/song.webm`;
 
 // ---------- card_style ----------
 test('cardStyle: tema, burbuja, entrada, cancion y libro validos', () => {
@@ -24,7 +39,7 @@ test('cardStyle: tema, burbuja, entrada, cancion y libro validos', () => {
   assert.equal(M.validateField('cardStyle', { bubble: { style: 'pixel', color: '#7df9ff' } }, ctx), null);
   assert.equal(M.validateField('cardStyle', { bubble: { style: 'round', color: null } }, ctx), null);
   assert.equal(M.validateField('cardStyle', { entry: 'ender' }, ctx), null);
-  assert.equal(M.validateField('cardStyle', { song: { url: song(), title: 'Tema' } }, ctx), null);
+  assert.equal(M.validateField('cardStyle', { song: song() }, ctx), null);
   assert.equal(M.validateField('cardStyle', { song: null, guestbook: true }, ctx), null);
 });
 
@@ -38,28 +53,31 @@ test('cardStyle: rechaza lo que no esta en el catalogo o no es del usuario', () 
   assert.equal(M.validateField('cardStyle', { bubble: { style: 'round', color: 'red' } }, ctx), 'bad_cardStyle');
   assert.equal(M.validateField('cardStyle', { entry: 'fire' }, ctx), 'bad_cardStyle');
   assert.equal(M.validateField('cardStyle', { guestbook: 'yes' }, ctx), 'bad_cardStyle');
-  assert.equal(M.validateField('cardStyle', { song: { url: song(OTHER) } }, ctx), 'bad_cardStyle');
-  assert.equal(M.validateField('cardStyle', { song: { url: song(), title: 'x'.repeat(61) } }, ctx), 'bad_cardStyle');
-  assert.equal(M.validateField('cardStyle', { song: { url: song(), extra: 1 } }, ctx), 'bad_cardStyle');
+  assert.equal(M.validateField('cardStyle', { song: { url: OLD_SONG, title: 'Tema' } }, ctx), 'bad_cardStyle', 'el archivo propio de la 3.1 ya no vale');
+  assert.equal(M.validateField('cardStyle', { song: song({ url: 'https://evil.invalid/a.mp3' }) }, ctx), 'bad_cardStyle');
+  assert.equal(M.validateField('cardStyle', { song: song({ title: 'x'.repeat(81) }) }, ctx), 'bad_cardStyle');
+  assert.equal(M.validateField('cardStyle', { song: song({ license: 'by-nc', licenseUrl: 'https://creativecommons.org/licenses/by-nc/4.0/' }) }, ctx), 'bad_cardStyle');
+  assert.equal(M.validateField('cardStyle', { song: song({ title: '<b>Tema</b>' }) }, ctx), 'bad_cardStyle');
+  assert.equal(M.validateField('cardStyle', { song: song({ extra: 1 }) }, ctx), 'bad_cardStyle');
   assert.equal(M.validateField('cardStyle', { pattern: 'dots', tema: 'x' }, ctx), 'bad_cardStyle');
 });
 
 test('cardStyle: se normaliza y lo que queda por defecto no viaja en el patch', () => {
-  const n = M.normalizeProfile({ id: UID, card_style: { theme: { id: 'ocean', particles: true }, bubble: { style: 'sharp', color: '#ABCDEF' }, entry: 'snow', song: { url: song(UID, '?v=12'), title: 'Hola' }, guestbook: true } });
+  const n = M.normalizeProfile({ id: UID, card_style: { theme: { id: 'ocean', particles: true }, bubble: { style: 'sharp', color: '#ABCDEF' }, entry: 'snow', song: song({ title: 'Hola' }), guestbook: true } });
   assert.deepEqual(n.cardStyle.theme, { id: 'ocean', particles: true });
   assert.deepEqual(n.cardStyle.bubble, { style: 'sharp', color: '#abcdef' });
   assert.equal(n.cardStyle.entry, 'snow');
-  assert.deepEqual(n.cardStyle.song, { url: song(UID, '?v=12'), title: 'Hola' });
+  assert.deepEqual(n.cardStyle.song, song({ title: 'Hola' }));
   assert.equal(n.cardStyle.guestbook, true);
-  const bad = M.normalizeProfile({ id: UID, card_style: { theme: { id: 'nope' }, bubble: { style: 'x', color: 'y' }, entry: 'z', song: { url: 'https://evil.invalid/a.webm' } } });
+  const bad = M.normalizeProfile({ id: UID, card_style: { theme: { id: 'nope' }, bubble: { style: 'x', color: 'y' }, entry: 'z', song: { url: OLD_SONG, title: 'viejo' } } });
   assert.deepEqual(bad.cardStyle.theme, { id: 'none', particles: false });
   assert.deepEqual(bad.cardStyle.bubble, { style: 'default', color: null });
   assert.equal(bad.cardStyle.entry, 'none');
   assert.equal(bad.cardStyle.song, null);
   const c = M.canonical({ cardStyle: { theme: { id: 'none', particles: false }, bubble: { style: 'default', color: null }, entry: 'none', song: null, guestbook: false } });
   assert.deepEqual(c.cardStyle, {});
-  const c2 = M.canonical({ cardStyle: { theme: { id: 'aurora', particles: false }, bubble: { style: 'default', color: '#112233' }, entry: 'spark', song: { url: song(), title: '  Tema ' }, guestbook: true } });
-  assert.deepEqual(c2.cardStyle, { theme: { id: 'aurora' }, bubble: { style: 'default', color: '#112233' }, entry: 'spark', song: { url: song(), title: 'Tema' }, guestbook: true });
+  const c2 = M.canonical({ cardStyle: { theme: { id: 'aurora', particles: false }, bubble: { style: 'default', color: '#112233' }, entry: 'spark', song: song(), guestbook: true } });
+  assert.deepEqual(c2.cardStyle, { theme: { id: 'aurora' }, bubble: { style: 'default', color: '#112233' }, entry: 'spark', song: song(), guestbook: true });
   const patch = M.buildPatch({ cardStyle: { theme: { id: 'aurora' } } }, { cardStyle: { theme: { id: 'aurora', particles: false }, bubble: { style: 'default', color: null } } });
   assert.deepEqual(patch, {});
 });
@@ -128,10 +146,10 @@ test('regalos: las mismas reglas que gift_send', () => {
   assert.equal(M.validateGift({ kind: 'points', value: 500, balance: 1000, sentToday: 600 }), 'daily_limit');
   assert.equal(M.validateGift({ kind: 'points', value: 500, balance: 1000, sentToday: 500 }), null);
   assert.equal(M.validateGift({ kind: 'points', value: 200, balance: 150 }), 'not_enough_points');
-  const item = { id: 'frame_pulse', price: 1800, premiumOnly: false, active: true };
-  assert.equal(M.validateGift({ kind: 'item', value: 'frame_pulse', balance: 2000, item }), null);
-  assert.equal(M.validateGift({ kind: 'item', value: 'frame_pulse', balance: 1000, item }), 'not_enough_points');
-  assert.equal(M.validateGift({ kind: 'item', value: 'frame_pulse', balance: 2000, item, ownedByTarget: ['frame_pulse'] }), 'owned');
+  const item = { id: 'frame_cupid', price: 1800, premiumOnly: false, active: true };
+  assert.equal(M.validateGift({ kind: 'item', value: 'frame_cupid', balance: 2000, item }), null);
+  assert.equal(M.validateGift({ kind: 'item', value: 'frame_cupid', balance: 1000, item }), 'not_enough_points');
+  assert.equal(M.validateGift({ kind: 'item', value: 'frame_cupid', balance: 2000, item, ownedByTarget: ['frame_cupid'] }), 'owned');
   assert.equal(M.validateGift({ kind: 'item', value: 'frame_venus', balance: 2000, item: { id: 'frame_venus', price: 0, premiumOnly: true } }), 'premium_item');
   assert.equal(M.validateGift({ kind: 'item', value: 'nope', balance: 2000, item: null }), 'bad_item');
   assert.equal(M.validateGift({ kind: 'cosa', value: 1 }), 'bad_kind');
@@ -144,7 +162,7 @@ test('regalos: las mismas reglas que gift_send', () => {
   ];
   assert.equal(M.giftSentToday(hist, now), 100);
   assert.equal(M.giftSenderOf(`${OTHER}:20261103120000123`), OTHER);
-  assert.equal(M.giftSenderOf('frame_pulse'), null);
+  assert.equal(M.giftSenderOf('frame_cupid'), null);
 });
 
 // ---------- burbujas, KLIPY y audio ----------
@@ -169,35 +187,23 @@ test('mensajes: solo las direcciones de KLIPY son un GIF', () => {
   assert.ok(!M.isKlipyUrl('http://static.klipy.com/a.gif'));
 });
 
-test('audio: archivo aceptable y nombre seguro', () => {
-  assert.equal(M.audioFileName(), 'song.webm');
-  assert.equal(M.AUDIO_FILE, 'song.webm');
-  assert.equal(M.audioSourceError({ name: 'tema.mp3', type: 'audio/mpeg', size: 1000 }), null);
-  assert.equal(M.audioSourceError({ name: 'tema.m4a', type: '', size: 1000 }), null);
-  assert.equal(M.audioSourceError({ name: 'tema.ogg', type: 'audio/ogg; codecs=opus', size: 1000 }), null);
-  assert.equal(M.audioSourceError({ name: 'virus.exe', type: '', size: 1000 }), 'type');
-  assert.equal(M.audioSourceError({ name: 'tema.mp3', type: 'video/mp4', size: 1000 }), 'type');
-  assert.equal(M.audioSourceError({ name: 'tema.mp3', type: 'audio/mpeg', size: 21 * 1024 * 1024 }), 'too_big');
-  assert.equal(M.audioSourceError({ name: 'tema.mp3', type: 'audio/mpeg', size: 0 }), 'decode');
-  assert.equal(M.audioSourceError(null), 'type');
-  assert.ok(M.isProfileAudioUrl(song(), UID));
-  assert.ok(M.isProfileAudioUrl(song(UID, '?v=1730000000000'), UID));
-  assert.ok(!M.isProfileAudioUrl(song(OTHER), UID));
-  assert.ok(!M.isProfileAudioUrl(`https://abcdefgh.supabase.co/storage/v1/object/public/profile-audio/${UID}/otro.webm`));
-  assert.ok(!M.isProfileAudioUrl(`https://abcdefgh.supabase.co/storage/v1/object/public/profile-media/${UID}/song.webm`));
-  assert.match(M.audioUrlWithVersion(song(), 1730000000000), /\?v=1730000000000$/);
-  assert.match(M.audioUrlWithVersion(song(UID, '?v=5'), 7), /song\.webm\?v=7$/);
+test('cancion: lo de la 3.1 (archivo propio en profile-audio) ya no existe en el modelo', () => {
+  for (const name of ['isProfileAudioUrl', 'AUDIO_FILE', 'audioSourceError', 'audioUrlWithVersion', 'audioFileName']) assert.equal(M[name], undefined, name);
+  assert.equal(M.LIMITS.songTitle, 80);
+  assert.equal(M.LIMITS.songCreator, 60);
+  assert.equal(M.LIMITS.songSeconds, 30);
+  assert.equal(M.normalizeProfile({ id: UID, card_style: { song: { url: OLD_SONG } } }).cardStyle.song, null);
 });
 
 test('cosmeticos del pase y marcos nuevos en el catalogo', () => {
-  for (const f of ['season1', 'season1legend', 'season1free', 'max', 'pulse', 'orbit', 'halloween', 'xmas']) assert.ok(M.FRAMES.includes(f), f);
   for (const tt of ['season1', 'traveler', 'pro']) assert.ok(M.TITLES.includes(tt), tt);
-  assert.equal(M.frameStyle('frame_halloween'), 'halloween');
+  assert.equal(M.frameStyle('frame_spooky'), 'spooky');
+  assert.equal(M.frameStyle('pass_frame_8'), 'pass8');
   assert.equal(M.titleStyle('title_season1'), 'season1');
   assert.ok(M.EFFECTS.includes('season1'));
   // El efecto del pase pide el item aunque la cuenta sea premium
   assert.equal(M.canUseEffect('season1', { premium: true }), false);
   assert.equal(M.canUseEffect('season1', { premium: false, owned: ['effect_season1'], items: [{ id: 'effect_season1', kind: 'name_effect', style: 'season1', premiumOnly: false }] }), true);
-  assert.equal(M.validateField('equipped', { frame: 'frame_pulse' }, { owned: ['frame_pulse'] }), null);
-  assert.equal(M.validateField('equipped', { frame: 'frame_pulse' }, { owned: [] }), 'not_owned:frame_pulse');
+  assert.equal(M.validateField('equipped', { frame: 'frame_cupid' }, { owned: ['frame_cupid'] }), null);
+  assert.equal(M.validateField('equipped', { frame: 'frame_cupid' }, { owned: [] }), 'not_owned:frame_cupid');
 });

@@ -6,6 +6,12 @@
 // Cada mensaje va firmado con la clave de la sesion (ECDSA) que el servidor asocio al usuario autenticado,
 // asi nadie puede hacerse pasar por otro miembro ni por el anfitrion.
 //
+// Respaldo (siempre activo, sin interruptor): el audio ya va directo por WebRTC, asi que una llamada en curso no se corta si
+// cae la señalizacion. Si Realtime o las RPC dejan de responder, voice/paths.js abre solo un segundo camino (voice/backup.js:
+// MQTT sobre brokers publicos, todo cifrado con una clave de la sala y firmado igual que arriba) y todo sale por los dos. Las
+// salas se pueden crear y abrir sin servidor ("salas de emergencia" y salas guardadas con su clave). Detalle en
+// docs/wip/voz-respaldo-46.md.
+//
 //   import { voice } from './voice.js';
 //   voice.on('room', (room) => ...)        // sala actual o null
 //   voice.on('members', (list) => ...)     // miembros (incluido uno mismo)
@@ -22,6 +28,12 @@ import { LocalMic, FLOOR_DB, rmsDb, dbToUnit, micErrorCode } from './voice/mic.j
 import { Peer } from './voice/rtc.js';
 import { VOICE_QUALITIES, DEFAULT_QUALITY, qualityBitrate, bitrateCap } from './voice/net.js';
 import { VoiceLeveler, VOICE_COMPRESSOR, MIX_LIMITER, compressorMakeupDb } from './voice/leveler.js';
+import { Paths } from './voice/paths.js';
+import { BackupLine } from './voice/backup.js';
+import { fingerprint, SECRET_RE } from './voice/seal.js';
+import { envelopeText, chatEnvelope, presenceText } from './voice/envelope.js';
+import { RoomVault, isOutage, parseBackupCode, formatBackupCode, newEmergencyRoom, shareableSecret, stunServers } from './voice/rescue.js';
+import { shouldDropMember } from './voice/roster.js';
 import { SOUNDS, SOUND_IDS, playSound, playChime } from './voice/sfx.js';
 import { isModifierCode, isTypingTarget } from './voice/keys.js';
 import { normalizeEffect } from './voice/fx.js';
@@ -62,7 +74,11 @@ const TICK_MS = 40;
 const LEVELS_MS = 80;
 const AWAY_GRACE_MS = 15000;
 const MSG_MAX_AGE = 120000;
-const STUN = { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] };
+const RPC_TIMEOUT_MS = 10000; // una RPC que no contesta en esto se toma como servidor caido (antes podia colgar la pantalla)
+const CHANNEL_JOIN_MS = 8000; // el canal de la sala no abre: se sigue por el respaldo
+const SECRET_REFRESH_MS = 10 * 60 * 1000;
+const BEACON_TTL = 30000; // un aviso de presencia por el respaldo vale esto (se manda cada 10 s)
+const FB_PREFIX = 'fb:'; // quien entra por el respaldo sin que el servidor registre su clave: "fb:<huella de su clave>"
 
 // Servidores ICE válidos ({ urls: ['turn:…'], username?, credential? }) de app-config o de la Edge Function "voice-turn"
 function iceList(list) {
@@ -100,21 +116,44 @@ function isMissingSchema(error) {
   return ['PGRST202', 'PGRST205', '42883', '42P01'].includes(code) || /could not find the (function|table)|does not exist/i.test(error?.message || '');
 }
 
-function pgError(error) {
+function pgError(error, status = null, quiet = false) {
+  // Sin respuesta del servidor (red, puerta de enlace, proyecto pausado): se puede seguir por el respaldo
+  if (isOutage(error, status)) return verr('server_down');
   if (isMissingSchema(error)) {
     // Falta la migracion 0003_voice.sql en el servidor: el usuario ve "no disponible", el detalle queda en el log
-    console.warn('[voice] falta el esquema del Voice Chat (0003_voice.sql):', error?.code, error?.message);
+    if (!quiet) console.warn('[voice] falta el esquema del Voice Chat (0003_voice.sql):', error?.code, error?.message);
     return verr('not_installed');
   }
   if (error?.code === '42501') return verr('not_owner');
   return new VoiceError('server', error?.message || String(error));
 }
 
-async function rpc(engine, name, args) {
+// Promesa con tope de tiempo: un servidor colgado (no cae, no contesta) no puede dejar la pantalla esperando para siempre
+function withTimeout(thenable, ms) {
+  let timer;
+  const late = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(Object.assign(new Error('timeout'), { name: 'VoiceTimeout' })), ms);
+  });
+  return Promise.race([Promise.resolve(thenable), late]).finally(() => clearTimeout(timer));
+}
+
+async function rpc(engine, name, args, opts = {}) {
   const client = engine.client;
   if (!client || !engine.signedIn()) throw verr('auth');
-  const { data, error } = await client.rpc(name, args);
-  if (error) throw pgError(error);
+  let res;
+  try {
+    res = await withTimeout(client.rpc(name, args), opts.timeout || RPC_TIMEOUT_MS);
+  } catch {
+    engine.noteRpc(true);
+    throw verr('server_down');
+  }
+  const { data, error, status } = res || {};
+  if (error) {
+    const err = pgError(error, status, opts.quiet);
+    engine.noteRpc(err.code === 'server_down');
+    throw err;
+  }
+  engine.noteRpc(false);
   if (data && typeof data === 'object' && data.error) throw verr(data.error, { max: data.max });
   return data || {};
 }
@@ -176,19 +215,6 @@ function mapRoom(r, me = null) {
     admitted: typeof r.admitted === 'boolean' ? r.admitted : null,
     banned: Boolean(r.banned),
   };
-}
-
-function envelopeText(event, roomId, e) {
-  return `${event}|${roomId}|${e.f}|${e.fs}|${e.to || ''}|${e.tos || ''}|${e.ts}|${e.n}|${e.d}`;
-}
-
-// Sobre de un mensaje del chat (a toda la sala) con su firma original, para reenviarlo tal cual en el historial
-function chatEnvelope(e) {
-  return e && typeof e === 'object' && !e.to && !e.tos ? { f: e.f, fs: e.fs, ts: e.ts, n: e.n, d: e.d, sig: e.sig } : null;
-}
-
-function presenceText(roomId, userId, st) {
-  return `p|${roomId}|${userId}|${st.s}|${st.j}|${st.m ? 1 : 0}${st.d ? 1 : 0}${st.sp ? 1 : 0}${st.sh ? 1 : 0}`;
 }
 
 // Audio de otro miembro: un <audio> por pista (asi funciona la cancelacion de eco de Chromium) +
@@ -313,6 +339,27 @@ class RemoteAudio {
   }
 }
 
+// Las salas guardadas (con la clave de cada una) y la ultima clave TURN viven en el almacen cifrado del sistema (secure:*),
+// con una copia en memoria para leerlas sin esperar: se cargan al iniciar el motor.
+function secureStore(key) {
+  let cache = null;
+  return {
+    async load() {
+      try {
+        const raw = await api.invoke('secure:get', key);
+        cache = typeof raw === 'string' ? raw : null;
+      } catch {
+        cache = null;
+      }
+    },
+    getItem: () => cache,
+    setItem: (_k, value) => {
+      cache = value;
+      api.invoke('secure:set', key, value).catch(() => {});
+    },
+  };
+}
+
 function setCompressor(node, o) {
   node.threshold.value = o.threshold;
   node.knee.value = o.knee;
@@ -347,6 +394,11 @@ export class VoiceEngine {
     this.lastLevels = 0;
     this.lastSfx = 0;
     this.joining = null;
+    this.vaultStore = backend ? null : secureStore('voice.backupRooms');
+    this.turnStore = backend ? null : secureStore('voice.turnCache');
+    this.vault = new RoomVault(this.vaultStore); // salas con clave de respaldo guardada en este equipo
+    this.rpcDown = false;
+    this.stunLevel = 0; // 0 = STUN de siempre; 1 = con alternativas (cuando la conexion no logra salir o no hay servidor)
     this.socialHooked = false;
     this.levels = { self: 0, selfDb: FLOOR_DB, threshold: -50, open: false, voiced: false, users: {} };
     this.SOUNDS = SOUNDS;
@@ -375,8 +427,21 @@ export class VoiceEngine {
     return this.backend ? true : cloud.isConfigured();
   }
 
-  rpc(name, args) {
-    return rpc(this, name, args);
+  rpc(name, args, opts) {
+    return rpc(this, name, args, opts);
+  }
+
+  // Resultado de la ultima RPC: si no hay servidor se aceptan presentaciones sin verificar (ver claimedKey)
+  noteRpc(down) {
+    if (down) this.rpcDownAt = Date.now();
+    if (down === this.rpcDown) return;
+    this.rpcDown = down;
+    this.emit('server', { down });
+  }
+
+  // El servidor fallo hace pocos segundos: entrar por el respaldo directo, sin esperar otro tiempo de espera
+  serverKnownDown() {
+    return this.rpcDown && Date.now() - (this.rpcDownAt || 0) < 20000;
   }
 
   // ---------- Eventos ----------
@@ -433,7 +498,7 @@ export class VoiceEngine {
   }
 
   async doInit() {
-    await loadNs('voice').catch(() => {});
+    await Promise.all([loadNs('voice').catch(() => {}), this.vaultStore?.load(), this.turnStore?.load()]);
     this.cfg = readCfg(store.settings?.voice);
     store.on('settings', (s) => this.onSettings(s?.voice));
     try {
@@ -503,6 +568,7 @@ export class VoiceEngine {
   // la voz sigue con lo que haya (STUN alcanza en casi todas las redes) y se vuelve a probar al entrar a una sala.
   refreshTurn() {
     if (this.backend || !this.configured() || !this.signedIn()) return Promise.resolve();
+    this.restoreTurn();
     if (this.turnIce.length && Date.now() < this.turnUntil - 3600e3) return Promise.resolve();
     if (this.turnPending) return this.turnPending;
     const userId = this.user?.id || null;
@@ -516,6 +582,7 @@ export class VoiceEngine {
         this.turnIce = list.length && Number.isFinite(until) ? list : [];
         this.turnUntil = this.turnIce.length ? until : 0;
         this.turnUser = userId;
+        this.saveTurn();
         this.setIce();
       } catch (err) {
         console.warn('[voice] servidor TURN', err?.message || err);
@@ -528,6 +595,29 @@ export class VoiceEngine {
       }
     })();
     return this.turnPending;
+  }
+
+  // La ultima clave TURN (vale hasta 24 h) se guarda cifrada: si despues no hay servidor para pedir otra, las llamadas
+  // nuevas todavia pueden pasar por el relevo (el servidor TURN no depende de Supabase)
+  saveTurn() {
+    if (!this.turnStore || !this.turnIce.length || !this.turnUser) return;
+    this.turnStore.setItem('', JSON.stringify({ user: this.turnUser, until: this.turnUntil, list: this.turnIce }));
+  }
+
+  restoreTurn() {
+    if (this.turnIce.length || !this.turnStore) return;
+    try {
+      const raw = JSON.parse(this.turnStore.getItem() || 'null');
+      if (!raw || raw.user !== this.user?.id || !(raw.until > Date.now() + 60000)) return;
+      const list = iceList(raw.list).filter((x) => x.username && x.credential);
+      if (!list.length) return;
+      this.turnIce = list;
+      this.turnUntil = raw.until;
+      this.turnUser = raw.user;
+      this.setIce();
+    } catch {
+      /* copia ilegible: se pide de nuevo */
+    }
   }
 
   hookSocial() {
@@ -605,7 +695,7 @@ export class VoiceEngine {
   }
 
   rtcConfig() {
-    const servers = [STUN, ...this.iceServers];
+    const servers = [...stunServers(this.stunLevel), ...this.iceServers];
     return { iceServers: servers, iceTransportPolicy: this.cfg.relayOnly && this.hasTurn ? 'relay' : 'all', bundlePolicy: 'max-bundle' };
   }
 
@@ -1019,7 +1109,7 @@ export class VoiceEngine {
     this.cfg.userVolumes = { ...this.cfg.userVolumes, [userId]: volume };
     this.session?.audio.get(userId)?.apply();
     clearTimeout(this.volSaveTimer);
-    this.volSaveTimer = setTimeout(() => this.saveSettings({ userVolumes: { [userId]: volume } }).catch(() => {}), 500);
+    if (!String(userId).startsWith(FB_PREFIX)) this.volSaveTimer = setTimeout(() => this.saveSettings({ userVolumes: { [userId]: volume } }).catch(() => {}), 500);
     this.emitMembersSoon();
   }
 
@@ -1045,6 +1135,7 @@ export class VoiceEngine {
       pttDown: this.pttDown,
       transmitting: this.transmitting,
       sharing: Boolean(s?.screen),
+      backup: Boolean(s && (s.demoBackup || s.backupOnly || s.paths?.primaryState === 'down')),
       hasMic: s ? Boolean(s.demo || s.mic?.hasInput) : true,
       micError: s?.micError || null,
       talkingMuted: Boolean(s?.talkingMuted),
@@ -1060,7 +1151,27 @@ export class VoiceEngine {
   get room() {
     const s = this.session;
     if (!s) return null;
-    return { ...s.room, isOwner: s.room.ownerId === s.userId, status: s.status, demo: Boolean(s.demo), members: this.members };
+    const snap = s.paths?.snapshot();
+    return {
+      ...s.room,
+      isOwner: s.room.ownerId === s.userId,
+      status: s.status,
+      demo: Boolean(s.demo),
+      members: this.members,
+      // La llamada se sostiene por el respaldo (servidor caido o sala de emergencia). backupState: 'off' | 'connecting' | 'on'
+      backup: Boolean(s.demoBackup || s.backupOnly || snap?.primary === 'down'),
+      backupState: s.demoBackup ? 'on' : snap?.backup || 'off',
+      canBackup: s.demoBackup ? true : snap ? snap.canBackup : true,
+      emergency: Boolean(s.emergency),
+      unverified: Boolean(s.unverified),
+      backupCode: this.backupCodeOf(s),
+    };
+  }
+
+  // Codigo para dar a quien tiene que entrar por el respaldo (null si esta sala no lo permite)
+  backupCodeOf(s) {
+    if (!s || !s.secret || !shareableSecret(s.secret)) return null;
+    return formatBackupCode(s.room.code, s.secret, s.emergency ? null : s.room.id);
   }
 
   selfMember(s) {
@@ -1074,6 +1185,7 @@ export class VoiceEngine {
       deafened: this.deafened,
       ptt: this.cfg.pushToTalk && !this.pttDown && !this.muted,
       sharing: Boolean(s.screen),
+      unverified: Boolean(s.unverified),
       speaking: s.demo ? Boolean(s.demoSpeaking?.get('self')) : Boolean(s.mic?.speaking && this.transmitting),
       connection: s.status === 'connected' ? 'connected' : 'connecting',
       ping: null,
@@ -1111,6 +1223,7 @@ export class VoiceEngine {
         volume: ua.volume,
         localMute: ua.muted,
         joinedAt: m.joinedAt,
+        unverified: s.demo ? Boolean(m.demoUnverified) : Boolean(s.keys.get(m.userId)?.unverified),
       });
     }
     return list.sort((a, b) => (b.isOwner ? 1 : 0) - (a.isOwner ? 1 : 0) || a.joinedAt - b.joinedAt);
@@ -1157,9 +1270,39 @@ export class VoiceEngine {
     return t('voice.defaultRoomName', { name: this.myIdentity().name }).slice(0, 40);
   }
 
+  // ---------- Salas guardadas (respaldo) ----------
+  // Cada cuenta (o "anon" sin sesion) guarda en este equipo la clave de respaldo de las salas donde entra: asi puede volver
+  // a entrar si el servidor no responde y no se la puede pedir. Las claves viven en el almacen cifrado del sistema.
+  vaultScope() {
+    return this.user?.id || 'anon';
+  }
+
+  savedRooms() {
+    return this.vault.list(this.vaultScope()).map((e) => ({
+      code: e.code,
+      name: e.name || e.code,
+      emergency: Boolean(e.emergency),
+      roomId: e.roomId,
+      used: e.used,
+      backupCode: shareableSecret(e.secret) ? formatBackupCode(e.code, e.secret, e.emergency ? null : e.roomId) : null,
+    }));
+  }
+
+  forgetSaved(code) {
+    this.vault.remove(this.vaultScope(), code);
+  }
+
+  // Entrar a una sala guardada. Las de emergencia no existen en el servidor; las demas se prueban con servidor y, si no
+  // responde, por el respaldo (lo decide joinRoom).
+  joinSaved(code) {
+    const e = this.vault.get(this.vaultScope(), code);
+    if (!e) throw verr('server_down_nobackup');
+    return this.joinRoom(e.code, { skipServer: Boolean(e.emergency) });
+  }
+
   // ---------- Salas (base de datos) ----------
   async listRooms() {
-    const res = await this.rpc('voice_list_rooms', {});
+    const res = await this.rpc('voice_list_rooms', {}, { timeout: 6000 });
     const map = (l) => (Array.isArray(l) ? l.map((r) => mapRoom(r, this.user?.id)).filter(Boolean) : []);
     return { mine: map(res.mine), recent: map(res.recent), friends: map(res.friends), friendsSupported: res.friends_supported !== false };
   }
@@ -1167,26 +1310,49 @@ export class VoiceEngine {
   async roomInfo(input) {
     const code = normalizeCode(input);
     if (!code) throw verr('code_format');
-    const res = await this.rpc('voice_room_by_code', { p_code: code });
+    const res = await this.rpc('voice_room_by_code', { p_code: code }, { timeout: 6000 });
     return mapRoom(res.room, this.user?.id);
   }
 
   async createRoom(opts = {}) {
     await this.init();
-    if (!this.signedIn()) throw verr('auth');
     const name = cleanName(opts.name).slice(0, 40) || this.defaultRoomName();
+    // Sala de emergencia pedida a mano: sin servidor, con codigo y clave locales
+    if (opts.emergency) return this.createEmergencyRoom({ name: cleanName(opts.name).slice(0, 40) });
+    if (!this.signedIn()) throw verr('auth');
     const password = String(opts.password || '');
     if (password && (password.length < 4 || password.length > 64)) throw verr('bad_password_format');
-    const res = await this.rpc('voice_create_room', {
-      p_name: name,
-      p_private: Boolean(opts.private ?? opts.isPrivate),
-      p_password: password || null,
-      p_max_members: clamp(opts.maxMembers, 2, MAX_MEMBERS, MAX_MEMBERS),
-    });
+    let res;
+    try {
+      res = await this.rpc('voice_create_room', {
+        p_name: name,
+        p_private: Boolean(opts.private ?? opts.isPrivate),
+        p_password: password || null,
+        p_max_members: clamp(opts.maxMembers, 2, MAX_MEMBERS, MAX_MEMBERS),
+      });
+    } catch (err) {
+      // Sin servidor no se puede crear la sala de siempre: se arma una de emergencia (codigo y clave locales) y se avisa.
+      // Con contraseña no: sin servidor nadie la puede comprobar.
+      if (err.code === 'server_down' && opts.join !== false && !password) {
+        toast('info', t('voice.backupCreateTitle'), t('voice.backupCreateText'), 9000);
+        return this.createEmergencyRoom({ name: cleanName(opts.name).slice(0, 40) });
+      }
+      throw err;
+    }
     const room = mapRoom(res.room, this.user?.id);
     if (opts.join === false) return room;
     await this.joinRoom(room.code);
     return this.room;
+  }
+
+  // Sala sin servidor: un codigo de 6 y una clave de 24 al azar. Quien recibe el codigo de respaldo (completo) entra por
+  // los brokers; no hay anfitrion, contraseña, cupo ni bloqueos porque nadie los puede comprobar sin servidor.
+  async createEmergencyRoom({ name = '' } = {}) {
+    await this.init();
+    if (this.joining) throw verr('busy');
+    const { code, secret } = newEmergencyRoom();
+    const label = cleanName(name) || t('voice.emergencyRoomName');
+    return this.joinRoom(formatBackupCode(code, secret), { skipServer: true, emergencyName: label });
   }
 
   async updateRoom(id, patch = {}) {
@@ -1239,10 +1405,10 @@ export class VoiceEngine {
   // ---------- Entrar / salir ----------
   async joinRoom(input, opts = {}) {
     await this.init();
-    const code = normalizeCode(input);
+    const bk = parseBackupCode(input);
+    const code = bk ? bk.code : normalizeCode(input);
     if (!code) throw verr('code_format');
     if (this.session && !this.session.demo && this.session.room.code === code) return this.room;
-    if (!this.configured() || !this.signedIn()) throw verr('auth');
     if (this.joining) throw verr('busy');
     this.joining = code;
     let s = null;
@@ -1250,22 +1416,52 @@ export class VoiceEngine {
       if (this.session) await this.leaveRoom({ silent: true });
       this.stopMicTest();
       this.setStatus('joining');
-      // la clave TURN tiene que estar vigente antes de armar las conexiones (si tarda, se entra igual con STUN)
-      await Promise.race([this.refreshTurn(), new Promise((r) => setTimeout(r, 4000))]);
-      const identity = await createIdentity();
-      const sessionId = randomId(20);
-      const res = await this.rpc('voice_join', { p_code: code, p_password: opts.password || null, p_session: sessionId, p_key: identity.publicJwk });
-      s = this.newSession(mapRoom(res.room, this.user?.id), sessionId, identity);
+      this.stunLevel = 0;
+      const saved = this.vault.get(this.vaultScope(), code);
+      let plan = null; // null = por el servidor; si no, entra por el respaldo con esta clave
+      let res = null;
+      let identity = null;
+      let sessionId = null;
+      const known = this.serverKnownDown() && Boolean(bk || saved);
+      if (opts.skipServer || known || !(this.configured() && this.signedIn())) plan = this.backupPlan(code, bk, saved, opts);
+      else {
+        try {
+          // la clave TURN tiene que estar vigente antes de armar las conexiones (si tarda, se entra igual con STUN)
+          await Promise.race([this.refreshTurn(), new Promise((r) => setTimeout(r, 4000))]);
+          identity = await createIdentity();
+          sessionId = randomId(20);
+          res = await this.rpc('voice_join', { p_code: code, p_password: opts.password || null, p_session: sessionId, p_key: identity.publicJwk }, { timeout: 8000 });
+        } catch (err) {
+          // Servidor caido, o una sala de emergencia (el codigo no existe en el servidor): por el respaldo si hay clave
+          if (err.code === 'server_down' || (err.code === 'not_found' && bk)) plan = this.backupPlan(code, bk, saved, opts, err);
+          else throw err;
+        }
+      }
+      s = plan ? await this.newBackupSession(code, plan) : this.newSession(mapRoom(res.room, this.user?.id), sessionId, identity);
       this.session = s;
+      this.startPaths(s);
       await this.startMic(s);
-      await this.openChannel(s);
+      if (!plan) {
+        try {
+          await this.openChannel(s);
+        } catch (err) {
+          // El canal no abre (Realtime caido pero las RPC andan): se sigue por el respaldo y el canal se reintenta solo
+          if (err.code !== 'channel_timeout') throw err;
+          s.paths.forceDown();
+          this.scheduleReopen(s, 4000);
+        }
+      }
       s.status = 'connected';
       this.startTick();
-      s.timers.heartbeat = setInterval(() => this.heartbeat(s), HEARTBEAT_MS);
+      if (!plan) {
+        s.timers.heartbeat = setInterval(() => this.heartbeat(s), HEARTBEAT_MS);
+        s.timers.secret = setInterval(() => this.fetchSecret(s), SECRET_REFRESH_MS);
+        this.fetchSecret(s);
+        this.refreshKeys(s, true);
+      }
       s.timers.stats = setInterval(() => {
         for (const p of s.peers.values()) p.updateStats();
       }, STATS_MS);
-      this.refreshKeys(s, true);
       this.status = 'idle';
       this.chime('join');
       this.emitRoom();
@@ -1277,7 +1473,7 @@ export class VoiceEngine {
       if (s) {
         if (this.session === s) this.session = null;
         s.left = true;
-        await this.teardown(s, { bye: false, rpcLeave: true });
+        await this.teardown(s, { bye: false, rpcLeave: !s.backupOnly });
       }
       this.setStatus('idle');
       this.emitRoom();
@@ -1286,6 +1482,46 @@ export class VoiceEngine {
     } finally {
       this.joining = null;
     }
+  }
+
+  // Entrar sin servidor: hace falta la clave de la sala (la del codigo de respaldo que te pasaron o la que quedo guardada
+  // de la ultima vez que entraste con servidor)
+  backupPlan(code, bk, saved, opts = {}, cause = null) {
+    const secret = bk?.secret || saved?.secret;
+    if (!secret) throw cause?.code === 'server_down' ? verr('server_down_nobackup') : cause || verr('auth');
+    const roomId = bk?.roomId || saved?.roomId || null;
+    return { secret, roomId, name: saved?.name || opts.emergencyName || '', ownerId: saved?.ownerId || null, emergency: !roomId };
+  }
+
+  // Sesion que no pasa por el servidor: su clave de sesion no esta registrada, asi que se presenta sola (ver claimedKey) y
+  // los demas la ven "sin verificar". Se llama "fb:<huella de su clave>": nadie puede usar el nombre de otra cuenta.
+  async newBackupSession(code, plan) {
+    const identity = await createIdentity();
+    const sessionId = randomId(20);
+    const fp = await fingerprint(identity.publicJwk);
+    const room = {
+      id: plan.roomId || `bk:${code}`,
+      code,
+      name: plan.name || t('voice.emergencyRoomName'),
+      ownerId: plan.ownerId,
+      ownerName: null,
+      ownerAvatar: null,
+      isOwner: false,
+      isPrivate: true,
+      hasPassword: false,
+      maxMembers: MAX_MEMBERS,
+      locked: false,
+      createdAt: Date.now(),
+      lastActive: Date.now(),
+      active: 0,
+      people: [],
+      admitted: true,
+      banned: false,
+    };
+    const s = this.newSession(room, sessionId, identity);
+    Object.assign(s, { userId: `${FB_PREFIX}${fp}`, unverified: true, backupOnly: true, secret: plan.secret, emergency: plan.emergency });
+    this.vault.put(this.vaultScope(), { code, secret: plan.secret, name: room.name, roomId: plan.roomId, ownerId: plan.ownerId, emergency: plan.emergency });
+    return s;
   }
 
   newSession(room, sessionId, identity) {
@@ -1318,7 +1554,6 @@ export class VoiceEngine {
       pending: [],
       inbox: new Map(),
       outChain: Promise.resolve(),
-      sendQueue: [],
       screen: null,
       timers: {},
       presenceAt: 0,
@@ -1334,8 +1569,132 @@ export class VoiceEngine {
       histFrom: new Set(),
       byeSessions: new Set(),
       rebuilds: new Map(),
+      // Respaldo
+      paths: null, // voice/paths.js: principal + respaldo
+      secret: null, // clave de la sala para el respaldo (la da el servidor; las salas de emergencia la traen en el codigo)
+      secretMissing: false,
+      unverified: false, // entro por el respaldo sin que el servidor registrara su clave
+      backupOnly: false, // sin camino principal (sala de emergencia o entrada sin servidor)
+      emergency: false,
+      beacons: new Map(), // avisos de presencia que llegan por el respaldo: userId -> { meta, at }
+      backupHeard: new Map(), // userId -> ultima vez que se lo escucho por el respaldo
+      needBackup: false,
+      backupNoticed: false,
+      pathSnap: null,
       left: false,
     };
+  }
+
+  // ---------- Caminos de señalizacion ----------
+  startPaths(s) {
+    const WS = this.backend?.WebSocket || globalThis.WebSocket;
+    s.paths = new Paths({
+      clock: { now: () => Date.now(), setTimeout: (...a) => setTimeout(...a), clearTimeout: (...a) => clearTimeout(...a), setInterval: (...a) => setInterval(...a), clearInterval: (...a) => clearInterval(...a) },
+      backupOnly: s.backupOnly,
+      primary: s.backupOnly
+        ? null
+        : {
+            ready: () => Boolean(s.channel && s.channelReady),
+            connected: () => this.realtimeConnected(),
+            send: (event, env) => (s.channel && s.channelReady ? s.channel.send({ type: 'broadcast', event, payload: env }) : Promise.resolve('error')),
+            probe: () => this.probeServer(),
+          },
+      makeLine: (secret, hooks) => new BackupLine({ secret, WebSocketCtor: WS, onFrame: hooks.onFrame, onState: hooks.onState }),
+      getSecret: () => s.secret,
+      needBackup: () => s.needBackup,
+      beacon: () => this.makeBeacon(s),
+      onFrame: ({ event, env }) => this.onBroadcast(s, event, env),
+      onChange: (snap) => this.onPathsChange(s, snap),
+    });
+    s.paths.start();
+    s.timers.reconcile = setInterval(() => this.reconcileSoon(s), 10000);
+  }
+
+  realtimeConnected() {
+    if (this.backend) return this.backend.connected ? this.backend.connected() : true;
+    try {
+      return this.client?.realtime?.isConnected?.() ?? true;
+    } catch {
+      return true;
+    }
+  }
+
+  // Prueba al servidor de Venus (pasarela de la API: contesta aunque la base este ocupada). Un 4xx es "contesto".
+  async probeServer() {
+    if (this.backend?.probe) return this.backend.probe();
+    const cfg = cloud.config;
+    if (!cfg?.url || !cfg?.anonKey) return true; // sin datos para probar: no cuenta como falla
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    try {
+      const res = await fetch(`${cfg.url.replace(/\/$/, '')}/auth/v1/health`, { headers: { apikey: cfg.anonKey }, signal: ctrl.signal, cache: 'no-store' });
+      return res.status < 500;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  onPathsChange(s, snap) {
+    if (this.session !== s || s.left) return;
+    const was = s.pathSnap;
+    s.pathSnap = snap;
+    const onBackup = snap.primary === 'down' && !s.backupOnly;
+    if (onBackup) this.stunLevel = 1;
+    if (onBackup && !s.backupNoticed) {
+      s.backupNoticed = true;
+      toast('info', t('voice.backupOnTitle'), t(snap.canBackup ? 'voice.backupOnText' : 'voice.backupNoKeyText'), 7000);
+    } else if (!onBackup && s.backupNoticed && snap.primary === 'up') {
+      s.backupNoticed = false;
+      toast('info', t('voice.backupOffTitle'), t('voice.backupOffText'), 4000);
+    }
+    if (snap.primary === 'up' && was?.primary === 'down' && !s.backupOnly) {
+      // Volvio el servidor: claves y presencia al dia, sin tocar las conexiones de audio
+      this.refreshKeys(s, true);
+      this.fetchSecret(s);
+      this.trackPresence(s, true);
+    }
+    if (snap.backup === 'off') {
+      s.backupHeard.clear();
+      s.beacons.clear();
+    }
+    this.syncStatus(s);
+    this.emitRoom();
+    this.emitState();
+  }
+
+  // 'connected' si hay algun camino de señalizacion, 'reconnecting' si no
+  syncStatus(s) {
+    if (s.left || this.session !== s || s.status === 'joining') return;
+    const ok = s.backupOnly ? s.paths?.snapshot().backup === 'on' : s.channelReady || s.paths?.snapshot().backup === 'on';
+    this.setSessionStatus(s, ok ? 'connected' : 'reconnecting');
+  }
+
+  // Clave de la sala para el respaldo: se pide al entrar, cada 10 minutos y cuando el anfitrion cambia algo (se rota al
+  // bloquear a alguien, cerrar la sala o cambiar la contraseña) y se guarda cifrada para poder entrar despues sin servidor
+  async fetchSecret(s) {
+    if (!s || s.demo || s.backupOnly || s.left || this.session !== s) return;
+    try {
+      const res = await this.rpc('voice_fallback_secret', { p_room: s.room.id }, { timeout: 6000, quiet: true });
+      if (this.session !== s || typeof res.secret !== 'string' || !SECRET_RE.test(res.secret)) return;
+      s.secret = res.secret; // paths.js lo toma en su proximo repaso (cada segundo) y reabre el respaldo si cambio
+      s.secretMissing = false;
+      this.vault.put(this.vaultScope(), { code: s.room.code, secret: res.secret, name: s.room.name, roomId: s.room.id, ownerId: s.room.ownerId, emergency: false });
+    } catch (err) {
+      // not_installed: el servidor todavia no tiene la migracion 0047; la llamada anda igual, sin respaldo para esta sala
+      if (err.code === 'not_installed') s.secretMissing = true;
+      else if (!['server_down', 'locked', 'not_member', 'throttled', 'gone'].includes(err.code)) console.warn('[voice] clave de respaldo', err?.message || err);
+    }
+  }
+
+  // Aviso de presencia firmado para el respaldo: lo mismo que la presencia de Realtime, mas la clave publica de la sesion y
+  // el nombre, para que quien no tiene el servidor pueda verificar la firma (ver claimedKey)
+  async makeBeacon(s) {
+    if (this.session !== s || !s.identity) return null;
+    const st = this.presenceState(s);
+    const env = await this.signEnvelope(s, 'pres', { j: s.joinedAt, m: st.m, d: st.d, sp: st.sp, sh: st.sh, pk: s.identity.publicJwk, nm: s.name, av: s.avatar });
+    return { event: 'pres', env };
   }
 
   async openChannel(s) {
@@ -1353,7 +1712,7 @@ export class VoiceEngine {
         if (err) reject(err);
         else resolve();
       };
-      const timer = setTimeout(() => finish(verr('channel_timeout')), 15000);
+      const timer = setTimeout(() => finish(verr('channel_timeout')), CHANNEL_JOIN_MS);
       this.buildChannel(s, topic, (status, error) => {
         if (status === 'SUBSCRIBED') finish();
         else if (status === 'CHANNEL_ERROR') finish(/unauthori|permission|denied|not allowed|rls/i.test(String(error?.message || error || '')) ? verr('channel_denied') : verr('channel_timeout'));
@@ -1368,12 +1727,15 @@ export class VoiceEngine {
     s.channel = ch;
     ch.on('presence', { event: 'sync' }, () => {
       if (this.session !== s || s.channel !== ch) return;
+      s.paths?.heardPrimary();
       s.presenceSnapshot = ch.presenceState();
       this.reconcileSoon(s);
     });
     for (const ev of ['sig', 'chat', 'hist', 'sfx', 'sfxm', 'mod']) {
       ch.on('broadcast', { event: ev }, (msg) => {
-        if (this.session === s && s.channel === ch) this.onBroadcast(s, ev, msg?.payload);
+        if (this.session !== s || s.channel !== ch) return;
+        s.paths?.heardPrimary();
+        this.onBroadcast(s, ev, msg?.payload);
       });
     }
     let first = true;
@@ -1387,19 +1749,24 @@ export class VoiceEngine {
         const rejoin = !first;
         first = false;
         s.channelReady = true;
+        s.paths?.channelStatus('SUBSCRIBED');
         this.trackPresence(s, true);
-        this.flushSendQueue(s);
+        s.paths?.primaryOpened(); // vacia lo que quedo esperando camino
         if (rejoin) {
-          this.setSessionStatus(s, 'connected');
+          this.syncStatus(s);
           this.refreshKeys(s, true);
         }
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         s.channelReady = false;
-        if (!first) this.setSessionStatus(s, 'reconnecting');
+        if (!first) {
+          s.paths?.channelStatus(status);
+          this.syncStatus(s);
+        }
       } else if (status === 'CLOSED') {
         s.channelReady = false;
         if (!first && this.session === s) {
-          this.setSessionStatus(s, 'reconnecting');
+          s.paths?.channelStatus(status);
+          this.syncStatus(s);
           this.scheduleReopen(s);
         }
       }
@@ -1408,21 +1775,22 @@ export class VoiceEngine {
   }
 
   // El canal se cerro sin que salieramos (por ejemplo, el cliente de Realtime se reinicio): reabrirlo
-  scheduleReopen(s) {
+  scheduleReopen(s, delay = 3000) {
     clearTimeout(s.timers.reopen);
     s.timers.reopen = setTimeout(async () => {
-      if (this.session !== s || s.left || s.channelReady || !this.client) return;
+      if (this.session !== s || s.left || s.channelReady || !this.client || s.backupOnly) return;
       const topic = `voice:${s.room.code}`;
       const old = s.channel;
       s.channel = null;
       if (old) await this.client.removeChannel(old).catch(() => {});
       if (this.session !== s || s.left) return;
       this.buildChannel(s, topic, null);
-    }, 3000);
+      this.scheduleReopen(s, 15000); // si no llega a abrir (servidor caido), se vuelve a intentar mientras tanto
+    }, delay);
   }
 
   async heartbeat(s) {
-    if (this.session !== s || s.demo) return;
+    if (this.session !== s || s.demo || s.backupOnly) return;
     try {
       const res = await this.rpc('voice_heartbeat', { p_room: s.room.id, p_session: s.sessionId });
       if (this.session !== s) return;
@@ -1467,7 +1835,8 @@ export class VoiceEngine {
       clearTimeout(s.timers[k]);
     }
     clearTimeout(s.presenceTimer);
-    if (bye && s.channelReady && s.identity) await this.sendNow(s, 'sig', { k: 'bye' }).catch(() => {});
+    if (bye && s.identity && s.paths && (s.channelReady || s.paths.snapshot().backup === 'on')) await this.sendNow(s, 'sig', { k: 'bye' }).catch(() => {});
+    s.paths?.stop();
     if (s.screen) {
       s.screen.stream.getTracks().forEach((tr) => tr.stop());
       s.screen = null;
@@ -1486,7 +1855,7 @@ export class VoiceEngine {
       this.client?.removeChannel(ch).catch(() => {});
     }
     s.mic?.stop();
-    if (rpcLeave && this.client) this.rpc('voice_leave', { p_room: s.room.id, p_session: s.sessionId }).catch(() => {});
+    if (rpcLeave && !s.backupOnly && this.client) this.rpc('voice_leave', { p_room: s.room.id, p_session: s.sessionId }).catch(() => {});
   }
 
   // Cierre de la ventana: lo que se pueda sin esperar
@@ -1495,6 +1864,7 @@ export class VoiceEngine {
     if (!s || s.demo) return;
     this.session = null;
     s.left = true;
+    s.paths?.stop();
     for (const p of s.peers.values()) p.close();
     s.screen?.stream.getTracks().forEach((tr) => tr.stop());
     s.mic?.stop();
@@ -1504,7 +1874,7 @@ export class VoiceEngine {
     } catch {
       /* cerrando */
     }
-    this.rpc('voice_leave', { p_room: s.room.id, p_session: s.sessionId }).catch(() => {});
+    if (!s.backupOnly) this.rpc('voice_leave', { p_room: s.room.id, p_session: s.sessionId }).catch(() => {});
   }
 
   // ---------- Presencia ----------
@@ -1518,7 +1888,10 @@ export class VoiceEngine {
   }
 
   async trackPresence(s, force) {
-    if (this.session !== s || !s.channel || !s.channelReady) return;
+    if (this.session !== s) return;
+    const primary = Boolean(s.channel && s.channelReady);
+    const backup = s.paths?.snapshot().backup === 'on';
+    if (!primary && !backup) return;
     const st = this.presenceState(s);
     const key = `${st.m}${st.d}${st.sp}${st.sh}`;
     if (!force && key === s.presenceKey) return;
@@ -1533,6 +1906,8 @@ export class VoiceEngine {
     }
     s.presenceAt = Date.now();
     s.presenceKey = key;
+    if (backup) s.paths.sendBeacon(); // por el respaldo la presencia va en un aviso firmado (los brokers no tienen presencia)
+    if (!primary) return;
     try {
       st.sig = await signText(s.identity.privateKey, presenceText(s.room.id, s.userId, st));
       if (this.session === s && s.channelReady) await s.channel.track(st);
@@ -1552,7 +1927,7 @@ export class VoiceEngine {
 
   async reconcile(s) {
     if (this.session !== s || s.demo) return;
-    const state = s.presenceSnapshot || {};
+    const state = this.presenceInputs(s);
     const latest = new Map();
     for (const [uid, metas] of Object.entries(state)) {
       if (!Array.isArray(metas)) continue;
@@ -1576,7 +1951,8 @@ export class VoiceEngine {
         missing = this.noteMissingKey(s, uid, meta.s) || missing;
         continue;
       }
-      if (!(await verifyText(key, presenceText(s.room.id, uid, meta), meta.sig))) continue;
+      // Los avisos del respaldo ya llegaron en un sobre firmado y verificado; los de Realtime se verifican aca
+      if (!meta.bk && !(await verifyText(key, presenceText(s.room.id, uid, meta), meta.sig))) continue;
       const info = s.keys.get(uid);
       let m = s.members.get(uid);
       if (m && m.session !== meta.s) {
@@ -1584,7 +1960,9 @@ export class VoiceEngine {
         m = null;
       }
       const isNew = !m;
+      if (isNew && meta.bk && s.members.size >= Math.max(1, s.room.maxMembers - 1)) continue; // sin servidor no hay cupo: la sala llena no deja pasar mas
       m = m || { userId: uid, joinedAt: Number(meta.j) || now };
+      m.backupOnly = Boolean(meta.bk && !(s.presenceSnapshot?.[uid] || []).some((x) => x.s === meta.s));
       Object.assign(m, {
         session: meta.s,
         name: info?.name || t('voice.unknownUser'),
@@ -1601,6 +1979,7 @@ export class VoiceEngine {
       if (isNew) this.onMemberJoined(s, m);
       this.ensurePeer(s, uid, meta.s);
     }
+    const primaryUp = !s.paths || (s.paths.primaryState === 'up' && !s.backupOnly);
     for (const m of [...s.members.values()]) {
       if (latest.has(m.userId)) continue;
       if (!m.away) {
@@ -1609,12 +1988,32 @@ export class VoiceEngine {
         setTimeout(() => this.reconcileSoon(s), AWAY_GRACE_MS + 200);
       }
       const peer = s.peers.get(m.userId);
-      // Si la conexion directa sigue viva, esperar un poco (corte breve de Realtime)
-      if (now - m.awaySince >= AWAY_GRACE_MS || !peer || peer.state !== 'connected') this.removeMember(s, m.userId, true);
+      // Si la conexion directa sigue viva, esperar un poco (corte breve de Realtime). Si la señalizacion esta caida y de
+      // esta persona no se oye nada por el respaldo, que falte su presencia no dice que se fue: mientras su audio llegue
+      // directo se queda (una llamada en curso no se corta porque falle la señalizacion).
+      const trusted = primaryUp || s.backupHeard.has(m.userId);
+      if (shouldDropMember({ now, awaySince: m.awaySince, peerState: peer ? peer.state : null, trusted })) this.removeMember(s, m.userId, true);
     }
+    // Hay gente que solo llega por el respaldo (no esta en la presencia de Realtime): el respaldo no se cierra
+    s.needBackup = [...s.members.values()].some((m) => !m.away && (s.keys.get(m.userId)?.unverified || m.backupOnly));
     if (missing) this.refreshKeys(s);
     this.emitMembersSoon();
     this.emitScreensSoon();
+  }
+
+  // Presencia de la sala: la de Realtime cuando el principal anda y, ademas, los avisos que llegan por el respaldo. Con el
+  // principal caido, la presencia de Realtime es vieja y no se usa.
+  presenceInputs(s) {
+    const now = Date.now();
+    const out = {};
+    const primaryUp = !s.paths || (s.paths.primaryState === 'up' && !s.backupOnly);
+    if (primaryUp) for (const [uid, metas] of Object.entries(s.presenceSnapshot || {})) out[uid] = Array.isArray(metas) ? [...metas] : [];
+    for (const [uid, b] of s.beacons) {
+      if (now - b.at > BEACON_TTL) continue;
+      const metas = out[uid] || (out[uid] = []);
+      if (!metas.some((x) => x.s === b.meta.s)) metas.push({ ...b.meta, sig: 'backup', bk: true });
+    }
+    return out;
   }
 
   noteMissingKey(s, uid, session) {
@@ -1639,7 +2038,7 @@ export class VoiceEngine {
   }
 
   refreshKeys(s, force = false) {
-    if (s.demo) return Promise.resolve();
+    if (s.demo || s.backupOnly) return Promise.resolve(); // sin servidor las claves llegan en los avisos de presencia (claimedKey)
     if (s.keysPromise) {
       s.keysAgain = true;
       return s.keysPromise;
@@ -1663,7 +2062,9 @@ export class VoiceEngine {
           }
         }
       })
-      .catch((err) => console.warn('[voice] claves de la sala', err?.message || err))
+      .catch((err) => {
+        if (err?.code !== 'server_down') console.warn('[voice] claves de la sala', err?.message || err);
+      })
       .finally(() => {
         s.keysPromise = null;
         if (this.session !== s) return;
@@ -1729,7 +2130,14 @@ export class VoiceEngine {
         if (track.kind === 'audio' && s.peers.get(uid) === p) this.remoteAudio(s, uid).add(track);
       },
       onChange: (p) => {
-        if (p.state === 'connected') s.rebuilds.delete(uid);
+        if (p.state === 'connected') {
+          s.rebuilds.delete(uid);
+          s.natWarned?.delete(uid);
+        } else if (p.state === 'failed' && !s.natWarned?.has(uid)) {
+          // Ni los reinicios de ICE lograron conectar: casi siempre es NAT simetrico o CGNAT sin servidor de relevo. Se dice claro.
+          (s.natWarned ||= new Set()).add(uid);
+          toast('bad', t('voice.noticeNatTitle', { name: s.members.get(uid)?.name || t('voice.someone') }), t(this.hasTurn ? 'voice.connFailedRelay' : 'voice.connFailedNoRelay'), 14000);
+        }
         this.emitMembersSoon();
         this.emitScreensSoon();
       },
@@ -1743,6 +2151,8 @@ export class VoiceEngine {
   // Antes de reiniciar ICE: clave TURN vigente y lista de servidores al dia (la conexion pudo armarse sin TURN)
   async refreshPeerIce(p) {
     await Promise.race([this.refreshTurn(), new Promise((r) => setTimeout(r, 2000))]);
+    // Dos reinicios sin exito: puede que los STUN de siempre esten bloqueados en esta red, se suman los alternativos
+    if (p.failures >= 2) this.stunLevel = 1;
     if (!p.closed) p.pc.setConfiguration(this.rtcConfig());
   }
 
@@ -1761,6 +2171,7 @@ export class VoiceEngine {
 
   // Volvio la red: no hace falta esperar a que venzan los temporizadores de ICE
   onNetworkBack() {
+    this.session?.paths?.poll();
     for (const p of this.session?.peers.values() || []) {
       if (p.state !== 'connected') p.restartIce();
     }
@@ -1804,24 +2215,17 @@ export class VoiceEngine {
     return s.outChain;
   }
 
-  async sendNow(s, event, body, to = null, toSession = null) {
+  async signEnvelope(s, event, body, to = null, toSession = null) {
     const env = { f: s.userId, fs: s.sessionId, to, tos: toSession, ts: Date.now(), n: randomId(14), d: JSON.stringify(body) };
     env.sig = await signText(s.identity.privateKey, envelopeText(event, s.room.id, env));
-    if (!s.channel || !s.channelReady) {
-      if (s.left) return null;
-      s.sendQueue.push({ event, env });
-      if (s.sendQueue.length > 300) s.sendQueue.shift();
-      return env;
-    }
-    await s.channel.send({ type: 'broadcast', event, payload: env });
     return env;
   }
 
-  flushSendQueue(s) {
-    const items = s.sendQueue.splice(0);
-    for (const { event, env } of items) {
-      if (Date.now() - env.ts < 30000) s.channel?.send({ type: 'broadcast', event, payload: env }).catch(() => {});
-    }
+  // Sale por el principal si anda y por el respaldo si esta abierto (voice/paths.js); si no hay camino, queda en cola
+  async sendNow(s, event, body, to = null, toSession = null) {
+    const env = await this.signEnvelope(s, event, body, to, toSession);
+    if (s.paths) await s.paths.send(event, env);
+    return env;
   }
 
   onBroadcast(s, event, env) {
@@ -1841,7 +2245,8 @@ export class VoiceEngine {
     // asi una PC con la hora corrida no queda afuera)
     const clockKey = `${f}:${fs}`;
     if (!Number.isFinite(ts) || s.seen.has(n) || ts < (s.lastTs.get(clockKey) || 0) - MSG_MAX_AGE) return;
-    const key = await this.keyFor(s, f, fs);
+    let key = await this.keyFor(s, f, fs);
+    if (!key && event === 'pres') key = await this.claimedKey(s, env);
     if (!key) {
       s.pending.push({ event, env, at: Date.now() });
       if (s.pending.length > 120) s.pending.shift();
@@ -1875,12 +2280,57 @@ export class VoiceEngine {
   }
 
   dispatch(s, event, from, fromSession, body, env = null) {
-    if (event === 'sig') this.onSignalMsg(s, from, fromSession, body);
+    if (event === 'pres') this.onBackupPresence(s, from, fromSession, body);
+    else if (event === 'sig') this.onSignalMsg(s, from, fromSession, body);
     else if (event === 'chat') this.onChatMsg(s, from, body, env);
     else if (event === 'hist') return this.onHistory(s, from, body);
     else if (event === 'sfx') this.onSfx(s, from, body);
     else if (event === 'sfxm') this.onSfxMixed(s, from, body);
     else if (event === 'mod') this.onMod(s, from, body);
+  }
+
+  // Quien no tiene su clave registrada en el servidor (entro por el respaldo, o el servidor no responde y no se la puede
+  // pedir) se presenta en su aviso de presencia con su clave publica (pk). Se acepta si el aviso esta firmado con esa misma
+  // clave y, si usa un nombre "fb:", si el nombre sale de la clave. Queda "sin verificar": puede hablar y llamar, pero nunca
+  // actuar como anfitrion, y no puede pisar la clave que el servidor ya asocio a una cuenta.
+  async claimedKey(s, env) {
+    const { f, fs, d } = env;
+    const fb = f.startsWith(FB_PREFIX);
+    if (!fb && !(s.unverified || this.rpcDown)) return null; // con servidor, las claves de las cuentas salen de el
+    let body;
+    try {
+      body = JSON.parse(d);
+    } catch {
+      return null;
+    }
+    if (typeof body?.pk !== 'string' || body.pk.length > 400) return null;
+    const prev = s.keys.get(f);
+    if (prev && !prev.unverified) return null; // clave que registro el servidor
+    if (!prev && [...s.keys.values()].filter((k) => k.unverified).length >= 3 * MAX_MEMBERS) return null;
+    if (prev?.unverified && prev.session !== fs && Date.now() - (prev.seenAt || 0) < BEACON_TTL) return null; // no se pisa a quien sigue activo
+    try {
+      if (fb && f !== FB_PREFIX + (await fingerprint(body.pk))) return null;
+      const key = await importPublicKey(body.pk);
+      if (!(await verifyText(key, envelopeText('pres', s.room.id, env), env.sig))) return null;
+      s.keys.set(f, { session: fs, keyText: body.pk, key, name: cleanName(body.nm) || t('voice.unknownUser'), avatar: cleanAvatar(body.av), unverified: true, seenAt: Date.now() });
+      queueMicrotask(() => this.retryPending(s)); // lo que esta persona mando antes de presentarse
+      return key;
+    } catch {
+      return null;
+    }
+  }
+
+  // Aviso de presencia que llega por el respaldo (los brokers no tienen presencia: cada uno avisa que esta, cada 10 s)
+  onBackupPresence(s, from, fromSession, body) {
+    const now = Date.now();
+    const info = s.keys.get(from);
+    if (info?.unverified && info.session === fromSession) info.seenAt = now;
+    const meta = { s: fromSession, j: Number(body.j) || now, m: body.m ? 1 : 0, d: body.d ? 1 : 0, sp: body.sp ? 1 : 0, sh: body.sh ? 1 : 0 };
+    const first = !s.backupHeard.has(from) || now - s.backupHeard.get(from) > BEACON_TTL;
+    s.beacons.set(from, { meta, at: now });
+    s.backupHeard.set(from, now);
+    if (first) s.paths?.peerAppeared(from);
+    this.reconcileSoon(s);
   }
 
   onSignalMsg(s, from, fromSession, body) {
@@ -2073,8 +2523,10 @@ export class VoiceEngine {
   }
 
   onMod(s, from, body) {
-    if (from !== s.room.ownerId) return;
+    if (from !== s.room.ownerId || s.keys.get(from)?.unverified) return;
     const a = body.a;
+    // Bloqueos, cierres y cambios de contraseña rotan la clave de respaldo: se pide la nueva
+    if (['lock', 'update', 'kick'].includes(a)) setTimeout(() => this.fetchSecret(s), 500 + Math.random() * 2500);
     if (a === 'mute' && body.t === s.userId) {
       if (!this.muted) {
         this.setMuted(true);
@@ -2104,6 +2556,7 @@ export class VoiceEngine {
 
   async kick(userId, { ban = false } = {}) {
     const s = this.requireOwner();
+    if (String(userId).startsWith(FB_PREFIX)) throw verr('bad_request'); // quien entro por el respaldo no tiene cuenta que bloquear
     if (!s.demo) {
       await this.rpc('voice_kick', { p_room: s.room.id, p_user: userId, p_ban: Boolean(ban) });
       await this.send(s, 'mod', { a: 'kick', t: userId, b: Boolean(ban) });
@@ -2229,7 +2682,8 @@ export class VoiceEngine {
     return canvas.captureStream(2);
   }
 
-  async demo({ screen = false } = {}) {
+  // backup: la sala se sostiene por el respaldo (con una persona sin verificar); emergency: ademas es una sala de emergencia
+  async demo({ screen = false, backup = false, emergency = false } = {}) {
     if (!store.info?.devshot) return false;
     await this.init();
     if (this.session) await this.leaveRoom({ silent: true });
@@ -2254,6 +2708,12 @@ export class VoiceEngine {
     ];
     lines.forEach(([from, name, key], i) => s.chat.push({ id: `d${i}`, from, name, text: t(key), ts: now - (lines.length - i) * 45000, self: from === 'demo-self' }));
     s.chat.splice(2, 0, { id: 'dj', system: 'join', name: 'Bauti', ts: now - 100000 });
+    if (backup || emergency) {
+      Object.assign(s, { demoBackup: true, emergency, secret: 'KQ7MXT2PRN9WHJ4EC5VDB8YF' });
+      s.members.get('demo-bauti').demoUnverified = true;
+      s.room.code = emergency ? 'ZK4M7P' : s.room.code;
+      if (emergency) Object.assign(s.room, { name: t('voice.emergencyRoomName'), hasPassword: false });
+    }
     if (screen) {
       s.members.get('demo-sofi').sharing = true;
       s.demoScreen = { userId: 'demo-sofi', name: 'Sofi', stream: this.demoScreenStream(), self: false };

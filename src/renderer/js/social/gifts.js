@@ -7,7 +7,7 @@ import { t, loadNs } from '../i18n.js';
 import { cloud } from '../cloud.js';
 import { store } from '../store.js';
 import { social } from '../social.js';
-import { LIMITS, SHOP_CATALOG, validateGift, giftSentToday } from '../features/profile-editor/model.js';
+import { LIMITS, SHOP_CATALOG, validateGift, giftSentToday, registerItems } from '../features/profile-editor/model.js';
 import { ensureProfileStyle, applyFrame, titleLabel, premiumChip, styledName } from './profile-style.js';
 import { headImg, fetchPublicProfile, forgetPublicProfile } from './profile-ui.js';
 import { newGifts, latestGiftAt, hasNewGiftIn } from './logic.js';
@@ -32,10 +32,12 @@ async function itemLabel(id) {
 
 async function loadShop() {
   try {
-    const { data, error } = await cloud.client.from('shop_items').select('id,kind,price,premium_only,active,sort,data').order('sort');
+    const { data, error } = await cloud.client.from('shop_items').select('id,kind,price,premium_only,active,sort,data,source').order('sort');
     if (error) throw error;
+    registerItems(data);
+    // Lo del Venus Pass se gana jugando: no se regala
     const list = (data || [])
-      .filter((r) => ['frame', 'name_effect', 'badge_style', 'title'].includes(r.kind) && r.active !== false && !r.premium_only)
+      .filter((r) => ['frame', 'name_effect', 'badge_style', 'title'].includes(r.kind) && r.active !== false && !r.premium_only && (r.source || 'shop') === 'shop')
       .map((r) => ({ id: r.id, kind: r.kind, price: r.price, premiumOnly: false, active: true, style: r.data?.style || r.data?.effect || r.data?.title || r.id.replace(/^[a-z]+_/, '') }));
     return list.length ? list : SHOP_CATALOG.filter((i) => !i.premiumOnly);
   } catch (err) {

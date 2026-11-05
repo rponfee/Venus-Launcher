@@ -45,9 +45,6 @@ export default {
   resetMenu: "Réinitialiser",
   done: "Terminé",
   menuSaveFailed: "Impossible d’enregistrer le menu",
-  compete: "Compétition",
   clans: "Clans",
   communities: "Communautés",
-  seeds: "Explorateur de graines",
-  extensions: "Extensions",
 };

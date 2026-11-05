@@ -19,9 +19,8 @@ import * as passTab from './admin/pass.js';
 import * as reportsTab from './admin/reports.js';
 import * as reviewsTab from './admin/reviews.js';
 import * as stickersTab from './admin/stickers.js';
-import * as eventsTab from './admin/events.js';
 import * as galleryTab from './admin/gallery.js';
-import * as clansTab from './admin/clans.js';
+import * as clansTab from './admin/communities.js';
 
 const TABS = [
   { id: 'overview', icon: 'chart', mod: overviewTab },
@@ -30,7 +29,6 @@ const TABS = [
   { id: 'reports', icon: 'alert', mod: reportsTab },
   { id: 'reviews', icon: 'star', mod: reviewsTab },
   { id: 'stickers', icon: 'smile', mod: stickersTab },
-  { id: 'events', icon: 'calendar', mod: eventsTab },
   { id: 'gallery', icon: 'camera', mod: galleryTab },
   { id: 'communities', icon: 'users', mod: clansTab },
   { id: 'integrations', icon: 'plug', mod: integrationsTab },

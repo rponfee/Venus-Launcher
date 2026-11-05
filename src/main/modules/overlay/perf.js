@@ -113,6 +113,7 @@ async function pingServer(address) {
 function createSampler({ pid, startedAt, parentPid, getAddress, getFps, onSample, platform = process.platform, spawnFn = spawn, pingFn = pingServer, usage, now = Date.now, interval = INTERVAL_MS }) {
   if (!Number.isInteger(pid) || pid <= 0) return null;
   let stopped = false;
+  let ended = false; // el ayudante aviso que el juego termino
   let child = null;
   let timer = null;
   let last = { mem: null, cpu: null };
@@ -165,14 +166,24 @@ function createSampler({ pid, startedAt, parentPid, getAddress, getFps, onSample
         buf = buf.slice(nl + 1);
         const info = parseHelperLine(line);
         if (!info) continue;
-        if (info.end) return stop();
+        if (info.end) {
+          ended = true;
+          return stop();
+        }
         last = { mem: info.mem, cpu: info.cpu };
         emit();
       }
       return undefined;
     });
-    child.on?.('error', () => stop());
-    child.on?.('exit', () => stop());
+    // Si el ayudante no abre o se cae (PowerShell bloqueado, un antivirus) se pasa a medir con pidusage; solo si el juego
+    // sigue: cuando termina el juego el ayudante escribe su linea de fin antes de salir.
+    const lost = () => {
+      if (stopped || ended) return;
+      child = null;
+      startPolling();
+    };
+    child.on?.('error', lost);
+    child.on?.('close', lost);
     return true;
   };
 

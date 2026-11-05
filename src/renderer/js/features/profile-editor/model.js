@@ -1,9 +1,11 @@
 // Logica pura de los perfiles de Venus (sin DOM ni imports, para probarla con Node): normalizar el perfil que
 // llega en camelCase (profile_public) o crudo de la tabla profiles (snake_case), validar igual que
-// profile_customize (supabase/migrations/0020_perfiles.sql), armar el patch con solo lo que cambio, el CSS del
-// fade y de los banners prediseñados, y cuentas chicas para las imagenes.
+// profile_customize (supabase/migrations/0020_perfiles.sql y, desde la 4.6, 0039_perfil_circular_banners.sql), armar
+// el patch con solo lo que cambio, el CSS del fade, mirar por dentro una imagen (que no sea animada) y cuentas chicas.
 // La usan social/profile-style.js, social/profile-ui.js y features/profile-editor.js.
 import { EXTRA_FONTS } from './fonts.js';
+import { normalizeSong } from './music-logic.js';
+import { FRAME_CATALOG, frameStyleOf, registerFrameItems } from '../../social/frames.js';
 
 // ---------- Catalogo (lo mismo que conoce el servidor) ----------
 export const BASIC_FONTS = ['default', 'pixel', 'outfit', 'serif', 'mono', 'rounded', 'condensed'];
@@ -12,8 +14,7 @@ export const EFFECTS = ['none', 'glow', 'gradient', 'shimmer', 'rainbow', 'fire'
 export const PREMIUM_EFFECTS = ['shimmer', 'rainbow', 'fire', 'neon', 'ice', 'ocean', 'sakura', 'toxic', 'vapor', 'gold', 'galaxy', 'glitch'];
 // Efectos del Venus Pass: solo con el item (Premium no los incluye)
 export const PASS_EFFECTS = ['season1'];
-export const BANNER_PRESETS = ['stars', 'sunset', 'nebula', 'forest', 'ocean', 'nether', 'end', 'aurora', 'cherry', 'desert', 'snow', 'deepdark', 'lush', 'mesa', 'mushroom', 'void'];
-export const FRAMES = ['pixel', 'neon', 'gold', 'venus', 'ice', 'emerald', 'amethyst', 'redstone', 'fire', 'ender', 'rainbow', 'diamond', 'cosmic', 'season1', 'season1legend', 'season1free', 'max', 'pulse', 'orbit', 'halloween', 'xmas'];
+// Los marcos (catalogo, dibujo y estilos) estan en social/frames.js desde la 4.6
 export const TITLES = ['explorer', 'builder', 'redstoner', 'legend', 'supporter', 'miner', 'farmer', 'architect', 'modder', 'streamer', 'pvp', 'nightowl', 'speedrunner', 'collector', 'hardcore', 'veteran', 'vip', 'season1', 'traveler', 'pro'];
 // Venus 3.1: tema de la tarjeta, burbujas de chat, efecto de entrada en voz, poses y fondos de la skin
 export const CARD_THEMES = ['none', 'nether', 'end', 'ocean', 'cherry', 'space', 'aurora'];
@@ -36,7 +37,8 @@ export const PATCH_FIELDS = ['pronouns', 'bio', 'theme', 'nameStyle', 'banner', 
 // Rangos (solo los da un admin, admin_set_rank) y estilo de la tarjeta
 export const RANKS = ['owner', 'admin', 'mod', 'helper'];
 export const CARD_PATTERNS = ['none', 'dots', 'grid', 'stripes', 'stars', 'pixels', 'waves', 'hex', 'circuit'];
-export const AVATAR_SHAPES = ['square', 'round', 'hex'];
+// 4.6: el avatar es siempre circular y no se elige. El servidor solo acepta 'round' en cardStyle.avatar (lo fuerza al guardar).
+export const AVATAR_SHAPES = ['round'];
 export const CARD_LAYOUTS = ['classic', 'center'];
 // Redes del perfil: solo estos sitios (igual que private.profile_link_ok)
 export const LINK_KINDS = {
@@ -54,12 +56,10 @@ export const LINK_KINDS = {
 // Tipo de shop_items de cada lugar de equipped
 export const SLOT_KIND = { frame: 'frame', nameEffect: 'name_effect', badgeStyle: 'badge_style', title: 'title' };
 
-// Copia de los cosmeticos de 0021 (por si la tabla shop_items no responde): id, tipo, precio, solo premium y estilo
+// Copia de los cosmeticos (por si la tabla shop_items no responde): id, tipo, precio, solo premium y estilo. Los marcos salen de
+// social/frames.js; el resto es de 0021 y 0023.
 export const SHOP_CATALOG = [
-  { id: 'frame_pixel', kind: 'frame', price: 500, premiumOnly: false, style: 'pixel' },
-  { id: 'frame_neon', kind: 'frame', price: 800, premiumOnly: false, style: 'neon' },
-  { id: 'frame_gold', kind: 'frame', price: 1500, premiumOnly: false, style: 'gold' },
-  { id: 'frame_venus', kind: 'frame', price: 0, premiumOnly: true, style: 'venus' },
+  ...FRAME_CATALOG.filter((f) => f.source === 'shop').map((f) => ({ id: f.id, kind: 'frame', price: f.price, premiumOnly: f.premiumOnly, style: f.style, source: 'shop' })),
   { id: 'effect_shimmer', kind: 'name_effect', price: 1200, premiumOnly: false, style: 'shimmer' },
   { id: 'effect_rainbow', kind: 'name_effect', price: 2000, premiumOnly: false, style: 'rainbow' },
   { id: 'effect_fire', kind: 'name_effect', price: 2500, premiumOnly: false, style: 'fire' },
@@ -72,15 +72,6 @@ export const SHOP_CATALOG = [
   { id: 'title_legend', kind: 'title', price: 3000, premiumOnly: false, style: 'legend' },
   { id: 'title_supporter', kind: 'title', price: 0, premiumOnly: true, style: 'supporter' },
   // Cosmeticos de la 3.0 (0023)
-  { id: 'frame_ice', kind: 'frame', price: 900, premiumOnly: false, style: 'ice' },
-  { id: 'frame_emerald', kind: 'frame', price: 1000, premiumOnly: false, style: 'emerald' },
-  { id: 'frame_amethyst', kind: 'frame', price: 1000, premiumOnly: false, style: 'amethyst' },
-  { id: 'frame_redstone', kind: 'frame', price: 1100, premiumOnly: false, style: 'redstone' },
-  { id: 'frame_fire', kind: 'frame', price: 1400, premiumOnly: false, style: 'fire' },
-  { id: 'frame_ender', kind: 'frame', price: 1600, premiumOnly: false, style: 'ender' },
-  { id: 'frame_rainbow', kind: 'frame', price: 2200, premiumOnly: false, style: 'rainbow' },
-  { id: 'frame_diamond', kind: 'frame', price: 3000, premiumOnly: false, style: 'diamond' },
-  { id: 'frame_cosmic', kind: 'frame', price: 0, premiumOnly: true, style: 'cosmic' },
   { id: 'effect_neon', kind: 'name_effect', price: 1200, premiumOnly: false, style: 'neon' },
   { id: 'effect_ice', kind: 'name_effect', price: 1200, premiumOnly: false, style: 'ice' },
   { id: 'effect_ocean', kind: 'name_effect', price: 1200, premiumOnly: false, style: 'ocean' },
@@ -102,11 +93,6 @@ export const SHOP_CATALOG = [
   { id: 'title_hardcore', kind: 'title', price: 1200, premiumOnly: false, style: 'hardcore' },
   { id: 'title_veteran', kind: 'title', price: 2000, premiumOnly: false, style: 'veteran' },
   { id: 'title_vip', kind: 'title', price: 0, premiumOnly: true, style: 'vip' },
-  // Marcos de la 3.1 (0027): animados y de temporada (se venden todo el año)
-  { id: 'frame_pulse', kind: 'frame', price: 1800, premiumOnly: false, style: 'pulse' },
-  { id: 'frame_orbit', kind: 'frame', price: 2400, premiumOnly: false, style: 'orbit' },
-  { id: 'frame_halloween', kind: 'frame', price: 1200, premiumOnly: false, style: 'halloween' },
-  { id: 'frame_xmas', kind: 'frame', price: 1200, premiumOnly: false, style: 'xmas' },
 ];
 
 export const LIMITS = {
@@ -130,9 +116,8 @@ export const LIMITS = {
   mediaUrl: 400,
   // 3.1
   rareBadges: 3,
-  songTitle: 60,
-  songBytes: 1024 * 1024,
-  songSourceBytes: 20 * 1024 * 1024,
+  songTitle: 80,
+  songCreator: 60,
   songSeconds: 30,
   statusText: 80,
   statusBody: 70,
@@ -200,36 +185,20 @@ export function isProfileMediaUrl(url, userId = null) {
   return userId ? m[1].toLowerCase() === String(userId).toLowerCase() : true;
 }
 
+// Archivo de una imagen de banner propia (igual que private.banner_image_url de 0039): banner.<ext> o banner-<id>.<ext> en la
+// carpeta del usuario, solo webp, jpg o png. Nunca .gif ni .apng. La extension no prueba que la imagen este quieta: eso lo
+// mira el cliente por el contenido (inspectImage) antes de subirla.
+const BANNER_FILE = /^banner(-[A-Za-z0-9_-]{1,64})?\.(webp|jpe?g|png)$/;
+export function isBannerImageUrl(url, userId = null) {
+  if (!isProfileMediaUrl(url, userId)) return false;
+  return BANNER_FILE.test(mediaPathFromUrl(url).name);
+}
+
 // Direccion de un GIF de KLIPY tal como la devuelve su API (igual que private.klipy_url)
 export const isKlipyUrl = (url) => typeof url === 'string' && url.length <= 400 && KLIPY_URL.test(url);
 
-// URL publica de la cancion del perfil en profile-audio (igual que private.profile_audio_url): <uid>/song.webm (+ ?v=)
-export function isProfileAudioUrl(url, userId = null) {
-  if (typeof url !== 'string' || url.length > 300) return false;
-  const m = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/profile-audio\/([0-9a-fA-F-]{36})\/song\.webm(\?v=[0-9]{1,16})?$/.exec(url);
-  if (!m || !UUID.test(m[1])) return false;
-  return userId ? m[1].toLowerCase() === String(userId).toLowerCase() : true;
-}
-// Nombre fijo del archivo en el bucket (la politica solo acepta ese) y la URL con marca para refrescar la cache
-export const AUDIO_FILE = 'song.webm';
-export const AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/webm', 'audio/aac'];
-export const AUDIO_EXTS = ['mp3', 'ogg', 'oga', 'wav', 'm4a', 'webm', 'aac'];
-export const audioFileName = () => AUDIO_FILE;
-export function audioUrlWithVersion(url, now = Date.now()) {
-  const base = String(url || '').replace(/\?v=[0-9]+$/, '');
-  return `${base}?v=${Math.floor(now)}`;
-}
-// Archivo de audio aceptable para la cancion (por tipo o extension) y de hasta 20 MB. Devuelve null o un codigo de error.
-export function audioSourceError(file) {
-  if (!file || typeof file !== 'object') return 'type';
-  const name = String(file.name || '').toLowerCase();
-  const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
-  const type = String(file.type || '').toLowerCase().split(';')[0];
-  if (!(AUDIO_TYPES.includes(type) || (!type && AUDIO_EXTS.includes(ext)) || (type.startsWith('audio/') && AUDIO_EXTS.includes(ext)))) return 'type';
-  if (!(file.size > 0)) return 'decode';
-  if (file.size > LIMITS.songSourceBytes) return 'too_big';
-  return null;
-}
+// La cancion del perfil (4.6) ya no se sube: se elige de Openverse y su formato se valida en ./music-logic.js
+// (igual que private.card_song_ok de 0042_musica_perfil.sql).
 
 // Red del perfil: https y uno de los sitios conocidos (igual que private.profile_link_ok)
 export function isProfileLink(kind, url) {
@@ -238,7 +207,7 @@ export function isProfileLink(kind, url) {
 }
 
 // Vista previa local (imagen todavia sin subir o datos de ejemplo de las capturas)
-const isLocalMedia = (url) => typeof url === 'string' && /^(blob:|data:image\/(png|jpeg|webp|gif);base64,)/.test(url) && url.length < 4_000_000;
+const isLocalMedia = (url) => typeof url === 'string' && /^(blob:|data:image\/(png|jpeg|webp);base64,)/.test(url) && url.length < 4_000_000;
 
 export function mediaPathFromUrl(url) {
   const m = /\/profile-media\/([0-9a-fA-F-]{36})\/([A-Za-z0-9._-]{1,80})$/.exec(String(url || ''));
@@ -256,16 +225,36 @@ export function deepEqual(a, b) {
   return ka.length === kb.length && ka.every((k) => deepEqual(a[k], b[k]));
 }
 
-// 'frame_neon' o 'neon' -> 'neon' (si es conocido)
-function styleFromItem(value, prefix, known) {
+// Estilo de un item de la tienda o del Venus Pass. Manda lo que dice shop_items.data (style, title o effect): asi tambien se
+// dibujan los pass_*. Sin eso, el id con prefijo ('title_legend' -> 'legend') o el estilo solo.
+// Los del Pass que ya vienen cargados por si la tienda no se pudo leer (0026):
+const ITEM_STYLE = new Map([
+  ['pass_s1_title', ['title', 'season1']],
+  ['pass_s1_free_title', ['title', 'traveler']],
+  ['pass_pro_title', ['title', 'pro']],
+  ['pass_s1_effect', ['name_effect', 'season1']],
+]);
+const DATA_KEY = { frame: 'style', title: 'title', name_effect: 'effect', badge_style: 'style' };
+/** Anota los estilos de los items que trae shop_items (filas con id, kind y data). Los marcos los resuelve social/frames.js. */
+export function registerItems(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  registerFrameItems(list);
+  for (const r of list) {
+    const key = DATA_KEY[r?.kind];
+    const style = key && (r.data?.[key] ?? r.style);
+    if (typeof r?.id === 'string' && key && typeof style === 'string' && key !== 'style') ITEM_STYLE.set(r.id, [r.kind, style]);
+  }
+}
+function styleFromItem(value, prefix, known, kind) {
   if (typeof value !== 'string') return null;
-  const v = value.startsWith(prefix) ? value.slice(prefix.length) : value;
+  const reg = ITEM_STYLE.get(value);
+  const v = reg ? (reg[0] === kind ? reg[1] : null) : value.startsWith(prefix) ? value.slice(prefix.length) : value;
   return known.includes(v) ? v : null;
 }
-export const frameStyle = (id) => styleFromItem(id, 'frame_', FRAMES);
-export const titleStyle = (id) => styleFromItem(id, 'title_', TITLES);
-export const badgeStyleId = (id) => styleFromItem(id, 'badge_', BADGE_STYLES);
-export const effectFromItem = (id) => styleFromItem(id, 'effect_', PREMIUM_EFFECTS);
+export const frameStyle = (id) => frameStyleOf(id);
+export const titleStyle = (id) => styleFromItem(id, 'title_', TITLES, 'title');
+export const badgeStyleId = (id) => styleFromItem(id, 'badge_', BADGE_STYLES, 'badge_style');
+export const effectFromItem = (id) => styleFromItem(id, 'effect_', [...PREMIUM_EFFECTS, ...PASS_EFFECTS], 'name_effect');
 
 // ---------- Normalizar ----------
 const sanitizeTheme = (v) => {
@@ -293,18 +282,15 @@ const sanitizeNameStyle = (v) => {
   };
 };
 
-const sanitizeSong = (v) => {
-  if (!isObj(v) || !isProfileAudioUrl(v.url)) return null;
-  const title = cleanText(v.title, LIMITS.songTitle).replace(/[<>]/g, '');
-  return title ? { url: v.url, title } : { url: v.url };
-};
+const sanitizeSong = (v) => normalizeSong(v); // 4.6: formato de Openverse (music-logic.js); lo viejo (archivo propio) queda en null
 const sanitizeCardStyle = (v) => {
   const s = isObj(v) ? v : {};
   const theme = isObj(s.theme) ? s.theme : {};
   const bubble = isObj(s.bubble) ? s.bubble : {};
   return {
     pattern: CARD_PATTERNS.includes(s.pattern) ? s.pattern : 'none',
-    avatar: AVATAR_SHAPES.includes(s.avatar) ? s.avatar : 'square',
+    // Siempre redondo: lo que traiga el dato (cuadrado, hexagonal) de versiones viejas se ignora
+    avatar: 'round',
     layout: CARD_LAYOUTS.includes(s.layout) ? s.layout : 'classic',
     accent: isHex(s.accent) ? s.accent.toLowerCase() : null,
     theme: { id: CARD_THEMES.includes(theme.id) ? theme.id : 'none', particles: theme.particles === true },
@@ -348,8 +334,8 @@ const sanitizeShowcase = (v) => {
 
 const sanitizeBanner = (v, opts) => {
   if (!isObj(v)) return { kind: 'none' };
-  if (v.kind === 'preset' && BANNER_PRESETS.includes(v.preset)) return { kind: 'preset', preset: v.preset };
-  if ((v.kind === 'image' || v.kind === 'animated') && (isProfileMediaUrl(v.url) || (opts.allowLocalMedia && isLocalMedia(v.url)))) return { kind: v.kind, url: v.url };
+  // 4.6: los diseños (preset) y los GIF propios (animated) ya no existen: quedan como el color clasico
+  if (v.kind === 'image' && (isBannerImageUrl(v.url) || (opts.allowLocalMedia && isLocalMedia(v.url)))) return { kind: 'image', url: v.url };
   if (v.kind === 'klipy' && isKlipyUrl(v.url)) {
     const out = { kind: 'klipy', url: v.url };
     if (isKlipyUrl(v.still)) out.still = v.still;
@@ -533,166 +519,7 @@ export function glowFilter(glow, color, scale = 1) {
   return `drop-shadow(0 0 ${r}px ${c}${alpha})`;
 }
 
-// ---------- Banners prediseñados (CSS y lienzo salen de la misma descripcion) ----------
-// Capas de abajo hacia arriba: lin (degradado lineal), rad (eliptico: centro y radios en fraccion del tamaño),
-// poly (silueta escalonada estilo pixel, en fraccion del tamaño) y dots (estrellas o brasas).
-function rand(seed) {
-  let s = seed >>> 0 || 1;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-// Silueta escalonada: columnas con alturas al azar (estable por semilla). top: cuelga desde arriba
-function steps(seed, { y, amp, cols, top = false }) {
-  const r = rand(seed);
-  const pts = [];
-  for (let i = 0; i < cols; i++) {
-    const hgt = +(y + (top ? 1 : -1) * r() * amp).toFixed(3);
-    pts.push([+(i / cols).toFixed(4), hgt], [+((i + 1) / cols).toFixed(4), hgt]);
-  }
-  return top ? [[0, 0], ...pts, [1, 0]] : [[0, 1], ...pts, [1, 1]];
-}
-function dots(seed, n, color, [rMin, rMax], area = [0, 0, 1, 1]) {
-  const r = rand(seed);
-  return Array.from({ length: n }, () => ({
-    x: +(area[0] + r() * (area[2] - area[0])).toFixed(3),
-    y: +(area[1] + r() * (area[3] - area[1])).toFixed(3),
-    r: +(rMin + r() * (rMax - rMin)).toFixed(2),
-    c: color,
-  }));
-}
-const PRESETS = {
-  stars: [
-    { t: 'lin', a: 180, s: [['#070b1f', 0], ['#16123a', 0.6], ['#2b1b4f', 1]] },
-    { t: 'rad', x: 0.82, y: 0.2, rx: 0.32, ry: 0.9, s: [['rgba(255,214,140,0.28)', 0], ['rgba(255,214,140,0)', 1]] },
-    { t: 'dots', d: dots(11, 28, 'rgba(255,255,255,0.9)', [0.6, 1.3]) },
-    { t: 'dots', d: dots(23, 7, 'rgba(255,230,176,0.95)', [1.3, 2]) },
-  ],
-  sunset: [
-    { t: 'lin', a: 180, s: [['#2b1440', 0], ['#8a2f5c', 0.38], ['#ff6a4d', 0.7], ['#ffc46b', 1]] },
-    { t: 'rad', x: 0.72, y: 0.78, rx: 0.14, ry: 0.5, s: [['#fff1b8', 0], ['#ffd27a', 0.55], ['rgba(255,210,122,0)', 1]] },
-    { t: 'poly', c: 'rgba(74,24,60,0.9)', p: steps(5, { y: 0.74, amp: 0.2, cols: 20 }) },
-    { t: 'poly', c: '#1e0c22', p: steps(9, { y: 0.9, amp: 0.1, cols: 28 }) },
-  ],
-  nebula: [
-    { t: 'lin', a: 135, s: [['#120a24', 0], ['#2a0f3f', 0.5], ['#0f1a3a', 1]] },
-    { t: 'rad', x: 0.3, y: 0.45, rx: 0.42, ry: 1.1, s: [['rgba(214,76,180,0.55)', 0], ['rgba(214,76,180,0)', 1]] },
-    { t: 'rad', x: 0.72, y: 0.6, rx: 0.4, ry: 1, s: [['rgba(90,120,255,0.45)', 0], ['rgba(90,120,255,0)', 1]] },
-    { t: 'rad', x: 0.55, y: 0.3, rx: 0.22, ry: 0.7, s: [['rgba(255,170,220,0.38)', 0], ['rgba(255,170,220,0)', 1]] },
-    { t: 'dots', d: dots(31, 20, 'rgba(255,255,255,0.85)', [0.5, 1.2]) },
-  ],
-  forest: [
-    { t: 'lin', a: 180, s: [['#bfe7a0', 0], ['#86c46e', 0.45], ['#3f7d3c', 0.8], ['#1d4426', 1]] },
-    { t: 'rad', x: 0.16, y: 0.22, rx: 0.16, ry: 0.6, s: [['rgba(255,250,205,0.75)', 0], ['rgba(255,250,205,0)', 1]] },
-    { t: 'poly', c: '#4f8f4a', p: steps(13, { y: 0.66, amp: 0.14, cols: 16 }) },
-    { t: 'poly', c: '#1f4a28', p: steps(17, { y: 0.84, amp: 0.26, cols: 26 }) },
-  ],
-  ocean: [
-    { t: 'lin', a: 180, s: [['#a6ecff', 0], ['#3aa0e8', 0.45], ['#15528f', 0.78], ['#0b2a52', 1]] },
-    { t: 'rad', x: 0.8, y: 0.24, rx: 0.14, ry: 0.5, s: [['rgba(255,255,240,0.85)', 0], ['rgba(255,255,240,0)', 1]] },
-    { t: 'poly', c: 'rgba(255,255,255,0.2)', p: steps(41, { y: 0.62, amp: 0.05, cols: 30 }) },
-    { t: 'poly', c: 'rgba(10,40,90,0.6)', p: steps(43, { y: 0.8, amp: 0.06, cols: 22 }) },
-  ],
-  nether: [
-    { t: 'lin', a: 180, s: [['#3a0b07', 0], ['#7a1a0c', 0.45], ['#c2401a', 0.82], ['#ff8a3c', 1]] },
-    { t: 'rad', x: 0.5, y: 1.05, rx: 0.8, ry: 0.6, s: [['rgba(255,150,50,0.65)', 0], ['rgba(255,150,50,0)', 1]] },
-    { t: 'poly', c: '#2a0806', p: steps(53, { y: 0.12, amp: 0.3, cols: 18, top: true }) },
-    { t: 'dots', d: dots(57, 16, 'rgba(255,180,80,0.95)', [0.8, 1.8], [0, 0.35, 1, 1]) },
-  ],
-  end: [
-    { t: 'lin', a: 160, s: [['#0b0716', 0], ['#1d1236', 0.55], ['#3a2466', 1]] },
-    { t: 'rad', x: 0.76, y: 0.32, rx: 0.3, ry: 0.9, s: [['rgba(200,170,255,0.38)', 0], ['rgba(200,170,255,0)', 1]] },
-    { t: 'dots', d: dots(61, 22, 'rgba(230,220,255,0.9)', [0.5, 1.3], [0, 0, 1, 0.75]) },
-    { t: 'poly', c: '#8f8a5c', p: steps(67, { y: 0.9, amp: 0.06, cols: 14 }) },
-    { t: 'poly', c: '#e8e2a6', p: steps(71, { y: 0.86, amp: 0.08, cols: 14 }).map(([x, y]) => [x, y === 1 ? 0.95 : y]) },
-  ],
-  aurora: [
-    { t: 'lin', a: 180, s: [['#04121f', 0], ['#0a2a3a', 0.6], ['#10343c', 1]] },
-    { t: 'dots', d: dots(81, 18, 'rgba(255,255,255,0.85)', [0.5, 1.2], [0, 0, 1, 0.7]) },
-    { t: 'rad', x: 0.3, y: 0.38, rx: 0.5, ry: 0.32, s: [['rgba(125,255,190,0.55)', 0], ['rgba(125,255,190,0)', 1]] },
-    { t: 'rad', x: 0.66, y: 0.3, rx: 0.42, ry: 0.28, s: [['rgba(120,140,255,0.45)', 0], ['rgba(120,140,255,0)', 1]] },
-    { t: 'rad', x: 0.5, y: 0.5, rx: 0.6, ry: 0.22, s: [['rgba(180,110,255,0.3)', 0], ['rgba(180,110,255,0)', 1]] },
-    { t: 'poly', c: '#061018', p: steps(87, { y: 0.9, amp: 0.12, cols: 30 }) },
-  ],
-  cherry: [
-    { t: 'lin', a: 180, s: [['#ffe3ef', 0], ['#ffb7d5', 0.5], ['#e77fae', 0.85], ['#7b3a66', 1]] },
-    { t: 'rad', x: 0.78, y: 0.22, rx: 0.18, ry: 0.6, s: [['rgba(255,255,255,0.8)', 0], ['rgba(255,255,255,0)', 1]] },
-    { t: 'dots', d: dots(91, 26, 'rgba(255,240,247,0.95)', [0.8, 1.8]) },
-    { t: 'poly', c: '#c65f93', p: steps(93, { y: 0.74, amp: 0.14, cols: 18 }) },
-    { t: 'poly', c: '#5b2a4d', p: steps(97, { y: 0.9, amp: 0.1, cols: 26 }) },
-  ],
-  desert: [
-    { t: 'lin', a: 180, s: [['#8fd3ff', 0], ['#ffe9b5', 0.55], ['#f2c777', 0.8], ['#c98b3e', 1]] },
-    { t: 'rad', x: 0.2, y: 0.24, rx: 0.14, ry: 0.5, s: [['rgba(255,250,210,0.95)', 0], ['rgba(255,250,210,0)', 1]] },
-    { t: 'poly', c: '#e3b263', p: steps(101, { y: 0.74, amp: 0.1, cols: 12 }) },
-    { t: 'poly', c: '#b97c33', p: steps(103, { y: 0.9, amp: 0.08, cols: 20 }) },
-  ],
-  snow: [
-    { t: 'lin', a: 180, s: [['#22375f', 0], ['#5b84b8', 0.55], ['#c7e0f4', 1]] },
-    { t: 'dots', d: dots(107, 30, 'rgba(255,255,255,0.95)', [0.7, 1.6]) },
-    { t: 'poly', c: '#dcecf8', p: steps(109, { y: 0.72, amp: 0.2, cols: 14 }) },
-    { t: 'poly', c: '#ffffff', p: steps(113, { y: 0.9, amp: 0.08, cols: 24 }) },
-  ],
-  deepdark: [
-    { t: 'lin', a: 180, s: [['#03080d', 0], ['#06161f', 0.6], ['#0a2530', 1]] },
-    { t: 'rad', x: 0.5, y: 0.82, rx: 0.5, ry: 0.5, s: [['rgba(40,220,230,0.4)', 0], ['rgba(40,220,230,0)', 1]] },
-    { t: 'dots', d: dots(127, 22, 'rgba(90,240,240,0.9)', [0.6, 1.5], [0, 0.3, 1, 1]) },
-    { t: 'poly', c: '#02060a', p: steps(131, { y: 0.14, amp: 0.26, cols: 22, top: true }) },
-    { t: 'poly', c: '#051018', p: steps(137, { y: 0.9, amp: 0.1, cols: 26 }) },
-  ],
-  lush: [
-    { t: 'lin', a: 180, s: [['#123a2c', 0], ['#2c7a4c', 0.55], ['#7bd16a', 1]] },
-    { t: 'rad', x: 0.7, y: 0.4, rx: 0.3, ry: 0.8, s: [['rgba(255,214,110,0.5)', 0], ['rgba(255,214,110,0)', 1]] },
-    { t: 'dots', d: dots(139, 16, 'rgba(255,214,110,0.95)', [0.9, 1.9]) },
-    { t: 'poly', c: '#0e2c22', p: steps(149, { y: 0.16, amp: 0.3, cols: 20, top: true }) },
-    { t: 'poly', c: '#1c5a3a', p: steps(151, { y: 0.88, amp: 0.12, cols: 24 }) },
-  ],
-  mesa: [
-    { t: 'lin', a: 180, s: [['#ffd9a6', 0], ['#ff9f66', 0.55], ['#c9562f', 1]] },
-    { t: 'poly', c: '#b9542c', p: steps(157, { y: 0.62, amp: 0.24, cols: 8 }) },
-    { t: 'poly', c: '#e08a4a', p: steps(163, { y: 0.76, amp: 0.14, cols: 10 }) },
-    { t: 'poly', c: '#7c3219', p: steps(167, { y: 0.92, amp: 0.08, cols: 18 }) },
-  ],
-  mushroom: [
-    { t: 'lin', a: 180, s: [['#3a2a5c', 0], ['#7b4a8c', 0.6], ['#c98bb0', 1]] },
-    { t: 'rad', x: 0.3, y: 0.62, rx: 0.2, ry: 0.5, s: [['rgba(255,90,90,0.6)', 0], ['rgba(255,90,90,0)', 1]] },
-    { t: 'rad', x: 0.74, y: 0.68, rx: 0.18, ry: 0.45, s: [['rgba(220,170,110,0.55)', 0], ['rgba(220,170,110,0)', 1]] },
-    { t: 'dots', d: dots(173, 18, 'rgba(255,240,255,0.85)', [0.6, 1.4], [0, 0, 1, 0.7]) },
-    { t: 'poly', c: '#5c4470', p: steps(179, { y: 0.88, amp: 0.1, cols: 22 }) },
-  ],
-  void: [
-    { t: 'lin', a: 180, s: [['#000000', 0], ['#050208', 0.7], ['#10061c', 1]] },
-    { t: 'dots', d: dots(181, 34, 'rgba(255,255,255,0.8)', [0.4, 1.1]) },
-    { t: 'rad', x: 0.5, y: 0.5, rx: 0.2, ry: 0.55, s: [['rgba(150,90,255,0.3)', 0], ['rgba(150,90,255,0)', 1]] },
-  ],
-};
-
-export function presetLayers(id) {
-  return PRESETS[id] || null;
-}
-
-const pct = (v) => `${+(v * 100).toFixed(2)}%`;
-const stopsCss = (s) => s.map(([c, p]) => `${c} ${pct(p)}`).join(', ');
-// Fondo CSS (propiedad background) de un banner prediseñado
-export function presetCss(id) {
-  const layers = PRESETS[id];
-  if (!layers) return '';
-  const out = [];
-  for (const l of layers) {
-    if (l.t === 'lin') out.push(`linear-gradient(${l.a}deg, ${stopsCss(l.s)})`);
-    else if (l.t === 'rad') out.push(`radial-gradient(${pct(l.rx)} ${pct(l.ry)} at ${pct(l.x)} ${pct(l.y)}, ${stopsCss(l.s)})`);
-    else if (l.t === 'poly') {
-      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><polygon fill='${l.c}' points='${l.p.map(([x, y]) => `${+(x * 100).toFixed(2)},${+(y * 100).toFixed(2)}`).join(' ')}'/></svg>`;
-      out.push(`url("data:image/svg+xml,${encodeURIComponent(svg)}") 0 0 / 100% 100% no-repeat`);
-    } else if (l.t === 'dots') {
-      for (const d of l.d) out.push(`radial-gradient(circle at ${pct(d.x)} ${pct(d.y)}, ${d.c} 0 ${d.r}px, transparent ${(d.r + 0.8).toFixed(2)}px)`);
-    }
-  }
-  // En CSS la primera capa queda arriba
-  return out.reverse().join(', ');
-}
-
+// ---------- Lienzo ----------
 // Extremos del degradado lineal de CSS (angulo en grados) para un lienzo de w x h
 export function linearPoints(angle, w, h) {
   const a = (angle * Math.PI) / 180;
@@ -761,12 +588,7 @@ export function validateField(field, v, ctx = {}) {
     case 'banner':
       if (!isObj(v) || typeof v.kind !== 'string') return 'bad_banner';
       if (v.kind === 'none') return null;
-      if (v.kind === 'preset') return BANNER_PRESETS.includes(v.preset) ? null : 'bad_banner';
-      if (v.kind === 'image' || v.kind === 'animated') {
-        if (!isProfileMediaUrl(v.url, ctx.userId || null)) return 'bad_banner';
-        if (v.kind === 'animated' && !ctx.premium) return 'premium_required:banner';
-        return null;
-      }
+      if (v.kind === 'image') return isBannerImageUrl(v.url, ctx.userId || null) ? null : 'bad_banner';
       if (v.kind === 'klipy') {
         if (!isKlipyUrl(v.url) || (v.still !== undefined && !isKlipyUrl(v.still)) || (v.slug !== undefined && !KLIPY_SLUG.test(String(v.slug)))) return 'bad_banner';
         return null;
@@ -819,8 +641,8 @@ export function validateField(field, v, ctx = {}) {
       if (v.entry !== undefined && !ENTRY_EFFECTS.includes(v.entry)) return 'bad_cardStyle';
       if (v.guestbook !== undefined && typeof v.guestbook !== 'boolean') return 'bad_cardStyle';
       if (v.song !== undefined && v.song !== null) {
-        if (!isObj(v.song) || !onlyKeys(v.song, ['url', 'title']) || !isProfileAudioUrl(v.song.url, ctx.userId || null)) return 'bad_cardStyle';
-        if (v.song.title !== undefined && (typeof v.song.title !== 'string' || v.song.title.length > LIMITS.songTitle || CONTROL_OR_TAGS.test(v.song.title))) return 'bad_cardStyle';
+        // Igual que private.card_song_ok: exactamente el formato de Openverse y texto sin caracteres de control ni < >
+        if (!isObj(v.song) || !deepEqual(normalizeSong(v.song), v.song) || CONTROL_OR_TAGS.test(`${v.song.title}${v.song.creator}`)) return 'bad_cardStyle';
       }
       return null;
     }
@@ -904,8 +726,7 @@ export function canonical(d) {
   }
   if ('banner' in d) {
     const b = isObj(d.banner) ? d.banner : {};
-    if (b.kind === 'preset' && BANNER_PRESETS.includes(b.preset)) out.banner = { kind: 'preset', preset: b.preset };
-    else if ((b.kind === 'image' || b.kind === 'animated') && typeof b.url === 'string') out.banner = { kind: b.kind, url: b.url };
+    if (b.kind === 'image' && typeof b.url === 'string') out.banner = { kind: 'image', url: b.url };
     else if (b.kind === 'klipy' && typeof b.url === 'string') out.banner = { kind: 'klipy', url: b.url, ...(b.still ? { still: b.still } : {}), ...(b.slug ? { slug: b.slug } : {}) };
     else out.banner = { kind: 'none' };
   }
@@ -940,7 +761,7 @@ export function canonical(d) {
     const c = isObj(d.cardStyle) ? d.cardStyle : {};
     const cs = {};
     if (CARD_PATTERNS.includes(c.pattern) && c.pattern !== 'none') cs.pattern = c.pattern;
-    if (AVATAR_SHAPES.includes(c.avatar) && c.avatar !== 'square') cs.avatar = c.avatar;
+    // El avatar siempre es redondo: no se manda (el servidor lo fija)
     if (CARD_LAYOUTS.includes(c.layout) && c.layout !== 'classic') cs.layout = c.layout;
     if (isHex(c.accent)) cs.accent = c.accent.toLowerCase();
     // 3.1: tema, burbuja, entrada en voz, cancion y libro de visitas (lo que esta en su valor por defecto no se manda)
@@ -952,9 +773,8 @@ export function canonical(d) {
       if (isHex(bu.color)) cs.bubble.color = bu.color.toLowerCase();
     }
     if (ENTRY_EFFECTS.includes(c.entry) && c.entry !== 'none') cs.entry = c.entry;
-    if (isObj(c.song) && typeof c.song.url === 'string' && c.song.url) {
-      const title = typeof c.song.title === 'string' ? c.song.title.trim() : '';
-      cs.song = title ? { url: c.song.url, title } : { url: c.song.url };
+    if (isObj(c.song) && normalizeSong(c.song)) {
+      cs.song = normalizeSong(c.song);
     }
     if (c.guestbook === true) cs.guestbook = true;
     out.cardStyle = cs;
@@ -1167,11 +987,70 @@ export function fitSize(w, h, maxW, maxH) {
 }
 // Nombre del archivo en profile-media (lo que acepta la politica del bucket)
 export function mediaFileName(kind, ext, now = Date.now(), rnd = Math.random()) {
-  const e = ['png', 'jpg', 'webp', 'gif'].includes(ext) ? ext : 'webp';
+  const e = ['png', 'jpg', 'webp'].includes(ext) ? ext : 'webp';
   const k = kind === 'featured' ? 'featured' : 'banner';
   const name = `${k}-${Math.floor(now).toString(36)}${Math.floor(rnd * 1296).toString(36).padStart(2, '0')}.${e}`;
   return MEDIA_NAME.test(name) ? name : `${k}.${e}`;
 }
+// ---------- Mirar por dentro una imagen (4.6: el banner propio es solo una imagen quieta) ----------
+const be32 = (b, i) => ((b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3]) >>> 0;
+const le32 = (b, i) => (b[i] | (b[i + 1] << 8) | (b[i + 2] << 16) | (b[i + 3] << 24)) >>> 0;
+const tag = (b, i) => String.fromCharCode(b[i], b[i + 1], b[i + 2], b[i + 3]);
+
+/**
+ * Dice que es un archivo de imagen y si se mueve, mirando sus primeros bytes (la extension y el type del archivo no
+ * alcanzan: cualquiera puede renombrar un GIF a .png).
+ *   → { type: 'png' | 'jpeg' | 'webp' | 'gif' | null, animated: boolean }
+ * - GIF: siempre se trata como animado (el formato entero queda afuera, tenga uno o varios cuadros).
+ * - APNG: un PNG con un chunk acTL antes del primer IDAT.
+ * - WebP animado: el chunk VP8X con el bit de animacion (0x02) o chunks ANIM / ANMF.
+ * bytes: Uint8Array con el archivo entero (o al menos hasta donde empiezan los datos de la imagen).
+ */
+export function inspectImage(bytes) {
+  const b = bytes instanceof Uint8Array ? bytes : bytes && bytes.byteLength !== undefined ? new Uint8Array(bytes) : null;
+  if (!b || b.length < 12) return { type: null, animated: false };
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return { type: 'jpeg', animated: false };
+  if (tag(b, 0) === 'GIF8' && (b[4] === 0x37 || b[4] === 0x39) && b[5] === 0x61) return { type: 'gif', animated: true };
+  if (b[0] === 0x89 && tag(b, 1) === 'PNG\r' && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a) {
+    // Chunks: largo (4, grande a chico), tipo (4), datos y CRC (4). acTL siempre va antes del primer IDAT.
+    let animated = false;
+    let pos = 8;
+    for (let n = 0; n < 4096 && pos + 8 <= b.length; n++) {
+      const len = be32(b, pos);
+      const kind = tag(b, pos + 4);
+      if (kind === 'acTL') {
+        animated = true;
+        break;
+      }
+      if (kind === 'IDAT' || kind === 'IEND') break;
+      pos += 12 + len;
+    }
+    return { type: 'png', animated };
+  }
+  if (tag(b, 0) === 'RIFF' && tag(b, 8) === 'WEBP') {
+    let animated = false;
+    let pos = 12;
+    for (let n = 0; n < 4096 && pos + 8 <= b.length; n++) {
+      const kind = tag(b, pos);
+      const len = le32(b, pos + 4);
+      if (kind === 'VP8X' && pos + 8 < b.length && (b[pos + 8] & 0x02) !== 0) animated = true;
+      if (kind === 'ANIM' || kind === 'ANMF') animated = true;
+      if (animated) break;
+      pos += 8 + len + (len % 2);
+    }
+    return { type: 'webp', animated };
+  }
+  return { type: null, animated: false };
+}
+
+// Por que no sirve un archivo como banner propio: null si esta bien, 'type' (no es PNG, JPG ni WebP) o 'animated'
+// (GIF, APNG o WebP animado). Lo que dice la extension o el type no se mira: manda el contenido.
+export function bannerSourceError(bytes) {
+  const info = inspectImage(bytes);
+  if (info.type === 'gif' || info.animated) return 'animated';
+  return info.type ? null : 'type';
+}
+
 // Archivos propios que ya no usa nada (para hacer lugar antes de subir): nombres que no estan en keep
 export function orphanMedia(files, keepUrls) {
   const keep = new Set((keepUrls || []).map((u) => mediaPathFromUrl(u)?.name).filter(Boolean));

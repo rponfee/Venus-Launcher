@@ -17,7 +17,7 @@ function isInstanceRoute(params) {
 }
 
 export default {
-  ns: ['modrinth', 'install', 'searchfilters'],
+  ns: ['modrinth', 'install', 'searchfilters', 'curseforge'],
   css: ['pages/modrinth', 'features/install', 'features/searchfilters'],
   render(root, params) {
     const [a, b, c] = params;

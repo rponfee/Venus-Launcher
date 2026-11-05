@@ -9,13 +9,4 @@ module.exports = {
   playerJoinBody: "Votre serveur {name}.",
   taskDoneTitle: "Tâche terminée",
   taskFailedTitle: "Une tâche n’a pas pu aboutir",
-  streamerFriend: "Un ami",
-  streamerFriendN: "Ami {n}",
-  streamerYou: "Vous",
-  streamerMessage: "Vous a envoyé un message",
-  streamerRoom: "Salon vocal",
-  streamerFriendAlert: "Notification d’un ami",
-  streamerOnTitle: "Mode streamer activé",
-  streamerOnBody: "Ni noms, ni messages, ni codes, ni adresses à l’écran.",
-  streamerOffTitle: "Mode streamer désactivé",
 };

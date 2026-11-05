@@ -45,9 +45,6 @@ export default {
   resetMenu: "Redefinir",
   done: "Pronto",
   menuSaveFailed: "Não foi possível salvar o menu",
-  compete: "Competir",
   clans: "Clãs",
   communities: "Comunidades",
-  seeds: "Visualizador de sementes",
-  extensions: "Extensões",
 };

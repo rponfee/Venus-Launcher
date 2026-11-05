@@ -1,14 +1,19 @@
 // Vista del overlay: dibuja los widgets (Voice Chat, mensajes, avisos, capturas, musica y contadores) sobre un escenario del
 // tamano del juego. La usan la pagina del overlay (renderer/overlay.html, js/overlay/page.js) y la vista previa
 // de Ajustes (features/overlay.js), con los mismos estilos (styles/overlay.css, clases .ovl-).
-//   const view = new OverlayView(root, { tr, preview, onMove, onReset, onDone, isReduced })
+//   const view = new OverlayView(root, { tr, preview, onMove, onTweak, onReset, onDone, onSelect, isReduced })
 //   view.setLayout(layout)  -> { widgets, accent, motion, editing, mode } (lo arma el proceso principal)
-//   view.handle(evento)     -> evento ya validado por el proceso principal (overlay/events.js)
+//   view.handle(evento)     -> evento ya validado por el proceso principal (overlay/events.js), o { kind: 'shown', shown }
+//                              (la ventana se muestra o se esconde: oculta no hace falta ningun temporizador)
+//   view.select(id)         -> en la vista previa, marca un widget (el que se esta personalizando)
 //   view.destroy()
 // En el modo edicion (y siempre en la vista previa) los widgets se arrastran con el mouse o se mueven con el
-// teclado (flechas, Mayus+flechas, 1 a 9 para la grilla); onMove(id, { anchor, x?, y? }) avisa cada cambio.
+// teclado (flechas, Mayus+flechas, 1 a 9 para la grilla); onMove(id, { anchor, x?, y? }) avisa cada cambio. Con el widget
+// elegido, + y - cambian el tamano, [ y ] la opacidad y Supr (o H) lo oculta o lo muestra: onTweak(id, { scale?, opacity?, enabled? }).
+// Los apagados se ven como un fantasma mientras se edita, para poder volver a prenderlos.
 import { h, icon } from './dom.js';
-import { ANCHORS, DIGIT_ANCHOR, boxFor, snap, clampBox, nudge, sizeOf, clampScale } from './layout.js';
+import { ANCHORS, DIGIT_ANCHOR, boxFor, snap, clampBox, nudge, sizeOf, clampScale, mergeLocalMoves, fitFactor, stepValue } from './layout.js';
+import { pickVoiceRows } from './logic.js';
 import { drawPerf, samplePerf, hasPerfData, PERF_STALE_MS } from './perf.js';
 import { drawCounters, sampleCounters, hasCounters, COUNTERS_STALE_MS } from './counters.js';
 
@@ -49,13 +54,15 @@ function avatar(src, name, cls = 'ovl-av') {
 }
 
 export class OverlayView {
-  constructor(root, { tr, preview = false, onMove, onReset, onDone, isReduced, now } = {}) {
+  constructor(root, { tr, preview = false, onMove, onTweak, onReset, onDone, onSelect, isReduced, now } = {}) {
     this.root = root;
     this.tr = typeof tr === 'function' ? tr : (k) => k;
     this.preview = preview;
     this.onMove = onMove;
+    this.onTweak = onTweak;
     this.onReset = onReset;
     this.onDone = onDone;
+    this.onSelect = onSelect;
     this.isReduced = isReduced || (() => false);
     this.now = now || (() => Date.now());
     this.layout = null;
@@ -63,6 +70,11 @@ export class OverlayView {
     this.timer = null;
     this.drag = null;
     this.destroyed = false;
+    this.paused = false; // la ventana esta escondida: sin temporizadores (no se dibuja nada que nadie vea)
+    this.selected = null;
+    this.localMoves = new Map(); // widget -> { pos, at }: lo que se acaba de mover y todavia no volvio en un layout
+    this.failed = new Set(); // widgets que no se pudieron dibujar (se avisa una vez)
+    this.fit = 1;
     this.onKeyDoc = (e) => {
       if (e.key === 'Escape' && this.isEditing() && !this.preview) {
         e.preventDefault();
@@ -78,7 +90,9 @@ export class OverlayView {
     this.root.classList.toggle('ovl-preview', this.preview);
     this.stage = h('div', { class: 'ovl-stage' });
     this.guides = h('div', { class: 'ovl-guides', 'aria-hidden': 'true' }, ANCHORS.map((a) => h('span', { class: `ovl-guide ovl-at-${a}`, dataset: { anchor: a } })));
-    this.cells = Object.fromEntries(ANCHORS.map((a) => [a, h('div', { class: `ovl-cell ovl-at-${a}` })]));
+    this.cells = Object.fromEntries(ANCHORS.map((a) => [a, h('div', { class: `ovl-cell ovl-cell-${a}` })]));
+    // Las 9 posiciones son las celdas de una grilla de 3x3: lo que crece en una empuja a la de al lado en vez de taparla
+    this.grid = h('div', { class: 'ovl-grid' }, ...Object.values(this.cells));
     this.freeLayer = h('div', { class: 'ovl-free' });
     this.live = h('div', { class: 'ovl-sr', 'aria-live': 'polite' });
     this.els = {};
@@ -91,12 +105,27 @@ export class OverlayView {
       this.els[id] = el;
       this.inner[id] = inner;
     }
-    this.stage.append(this.guides, ...Object.values(this.cells), this.freeLayer);
+    this.stage.append(this.guides, this.grid, this.freeLayer);
     this.root.append(this.stage, this.live);
     if (typeof ResizeObserver === 'function') {
-      this.ro = new ResizeObserver(() => this.placeFree());
+      this.ro = new ResizeObserver(() => {
+        this.fitGrid();
+        this.placeFree();
+      });
       this.ro.observe(this.stage);
     }
+  }
+
+  // Si lo anclado no entra en el area de juego (ventana chica, widgets grandes), se achica todo junto en vez de salirse o
+  // taparse. Se mide a tamano completo y se aplica enseguida, sin pintar en el medio.
+  fitGrid() {
+    if (this.destroyed || this.preview) return;
+    const g = this.grid;
+    g.style.zoom = '1';
+    const area = g.getBoundingClientRect();
+    const f = fitFactor({ width: g.scrollWidth, height: g.scrollHeight }, { width: area.width, height: area.height });
+    if (f !== this.fit) this.fit = f;
+    g.style.zoom = f === 1 ? '' : String(f);
   }
 
   destroy() {
@@ -104,6 +133,7 @@ export class OverlayView {
     clearTimeout(this.timer);
     this.ro?.disconnect();
     document.removeEventListener('keydown', this.onKeyDoc, true);
+    this.cancelDrag();
     this.root.replaceChildren();
   }
 
@@ -128,8 +158,9 @@ export class OverlayView {
   setLayout(layout) {
     if (this.destroyed || !layout) return;
     const wasEditing = this.isEditing();
-    this.layout = { ...layout, widgets: JSON.parse(JSON.stringify(layout.widgets || {})) };
+    this.layout = { ...layout, widgets: mergeLocalMoves(JSON.parse(JSON.stringify(layout.widgets || {})), this.localMoves, this.now()) };
     const editing = this.isEditing();
+    if (!editing) this.cancelDrag(); // si se salio del modo edicion con un arrastre a medias, el widget no queda trabado
     this.root.classList.toggle('ovl-editing', editing);
     this.root.classList.toggle('ovl-reduce', this.reduced());
     if (/^#[0-9a-f]{6}$/i.test(layout.accent || '')) this.root.style.setProperty('--ovl-accent', layout.accent);
@@ -150,15 +181,37 @@ export class OverlayView {
       { class: 'ovl-toolbar', role: 'toolbar', 'aria-label': tr('editTitle') },
       h('span', { class: 'ovl-tb-icon' }, icon('grid')),
       h('div', { class: 'ovl-tb-text' }, h('strong', {}, tr('editTitle')), h('span', {}, this.layout.mode === 'screen' ? tr('editScreenHint') : tr('editHint'))),
-      h('button', { type: 'button', class: 'ovl-btn', onclick: () => this.onReset?.() }, icon('undo'), tr('editReset')),
+      h('button', { type: 'button', class: 'ovl-btn', onclick: () => {
+        this.localMoves.clear(); // lo que se restablece no lo pisa una posicion de hace un momento
+        this.onReset?.();
+      } }, icon('undo'), tr('editReset')),
       h('button', { type: 'button', class: 'ovl-btn primary', onclick: () => this.onDone?.() }, icon('check'), tr('editDone')),
     );
     this.root.append(this.toolbar);
   }
 
   renderAll() {
-    for (const id of WIDGETS) this.renderWidget(id);
+    for (const id of WIDGETS) this.safeRender(id);
     this.schedule();
+  }
+
+  // Un widget que no se puede dibujar (un dato raro) se esconde y no tira a los demas ni lo que llegue despues
+  safeRender(id) {
+    try {
+      this.renderWidget(id);
+    } catch (err) {
+      this.els[id].hidden = true;
+      if (!this.failed.has(id)) {
+        this.failed.add(id);
+        console.warn(`[overlay] no se pudo dibujar ${id}:`, err?.message || err);
+      }
+    }
+  }
+
+  // Vista previa de Ajustes: el widget marcado es el que se esta personalizando
+  select(id) {
+    this.selected = WIDGETS.includes(id) ? id : null;
+    for (const w of WIDGETS) this.els[w].classList.toggle('ovl-selected', w === this.selected);
   }
 
   renderWidget(id) {
@@ -166,15 +219,17 @@ export class OverlayView {
     const cfg = this.cfg(id);
     const el = this.els[id];
     const inner = this.inner[id];
-    if (!cfg?.enabled) {
+    // En la vista previa un widget apagado se ve como un fantasma: se sabe donde esta y se lo puede prender o mover
+    const ghost = this.isEditing() && Boolean(cfg) && !cfg.enabled;
+    if (!cfg || (!cfg.enabled && !ghost)) {
       el.hidden = true;
       return;
     }
     const editing = this.isEditing();
-    el.className = `ovl-w ovl-w-${id}${this.drag?.id === id ? ' ovl-dragging' : ''}`;
+    el.className = `ovl-w ovl-w-${id}${this.drag?.id === id ? ' ovl-dragging' : ''}${ghost ? ' ovl-ghost' : ''}${this.selected === id ? ' ovl-selected' : ''}`;
     inner.className = `ovl-in ovl-theme-${cfg.theme || 'dark'}`;
     inner.style.zoom = String(clampScale(cfg.scale));
-    el.style.opacity = String(Math.min(1, Math.max(0.3, Number(cfg.opacity) || 1)));
+    el.style.opacity = ghost ? '' : String(Math.min(1, Math.max(0.3, Number(cfg.opacity) || 1)));
     const shown = this[`draw_${id}`](inner, cfg, editing);
     el.hidden = !shown;
     if (editing) {
@@ -225,9 +280,19 @@ export class OverlayView {
     if (this.destroyed || !ev || typeof ev !== 'object') return;
     const now = this.now();
     const d = this.data;
+    if (ev.kind === 'shown') {
+      // El proceso principal esconde y muestra la ventana: escondida no hace falta ningun temporizador (ni volver a dibujar
+      // el reloj de la sesion cada segundo); al mostrarla se pone todo al dia de una vez.
+      this.paused = ev.shown === false;
+      if (this.paused) {
+        clearTimeout(this.timer);
+        this.timer = null;
+      } else this.tick();
+      return;
+    }
     if (ev.kind === 'voice') {
       d.voice = ev;
-      this.renderWidget('voice');
+      this.safeRender('voice');
     } else if (ev.kind === 'music') {
       const prev = d.music;
       const s = ev.state;
@@ -243,7 +308,7 @@ export class OverlayView {
           pausedAt: s.playing ? 0 : prev?.state?.playing || !prev ? now : prev.pausedAt,
         };
       }
-      this.renderWidget('music');
+      this.safeRender('music');
     } else if (ev.kind === 'capture') {
       if (ev.type === 'recording-start') d.recording = { since: Number(ev.at) || now };
       else {
@@ -254,12 +319,12 @@ export class OverlayView {
           d.captures = d.captures.slice(-MAX_CAPTURES);
         }
       }
-      this.renderWidget('captures');
+      this.safeRender('captures');
     } else if (ev.kind === 'message') {
       if (this.cfg('messages')?.enabled === false) return;
       d.messages.push({ key: `m${++seq}`, from: ev.from, avatar: ev.avatar, text: ev.text, until: now + this.duration('messages') });
       d.messages = d.messages.slice(-MAX_MESSAGES);
-      this.renderWidget('messages');
+      this.safeRender('messages');
     } else if (ev.kind === 'alert') {
       const cfg = this.cfg('alerts');
       if (cfg?.enabled === false) return;
@@ -267,15 +332,15 @@ export class OverlayView {
       const item = { key: `a${++seq}`, title: ev.title, body: ev.body, icon: ev.icon || 'info', ttl: ev.ttl };
       if (d.alerts.length < MAX_ALERTS) d.alerts.push(this.showAlert(item, now));
       else d.queue = [...d.queue, item].slice(-MAX_QUEUE);
-      this.renderWidget('alerts');
+      this.safeRender('alerts');
     } else if (ev.kind === 'perf') {
       // Una muestra cada 2 s; con todo en null (se cerro el juego) el widget se esconde.
       d.perf = hasPerfData(ev) ? { ...ev, at: now } : null;
-      this.renderWidget('perf');
+      this.safeRender('perf');
     } else if (ev.kind === 'counters') {
       // Una muestra cada 5 s (el reloj corre solo entre muestra y muestra); con todo en null, se esconde.
       d.counters = hasCounters(ev) ? { ...ev, at: now } : null;
-      this.renderWidget('counters');
+      this.safeRender('counters');
     }
     this.schedule();
   }
@@ -284,11 +349,22 @@ export class OverlayView {
     return { ...item, until: now + (item.ttl ? item.ttl * 1000 : this.duration('alerts')) };
   }
 
+  // Un cuadro despues de dibujar se vuelve a medir si lo anclado entra en el area de juego
+  queueFit() {
+    if (this.preview || this.fitQueued || this.destroyed || typeof requestAnimationFrame !== 'function') return;
+    this.fitQueued = true;
+    requestAnimationFrame(() => {
+      this.fitQueued = false;
+      this.fitGrid();
+    });
+  }
+
   // Un solo temporizador: el vencimiento mas cercano, o cada segundo si hay un reloj en pantalla.
   schedule() {
+    this.queueFit();
     clearTimeout(this.timer);
     this.timer = null;
-    if (this.destroyed || this.preview) return;
+    if (this.destroyed || this.preview || this.paused) return;
     const d = this.data;
     const now = this.now();
     let next = Infinity;
@@ -314,17 +390,17 @@ export class OverlayView {
     while (d.alerts.length < MAX_ALERTS && d.queue.length) d.alerts.push(this.showAlert(d.queue.shift(), now));
     d.messages = d.messages.filter((m) => m.until > now);
     d.captures = d.captures.filter((c) => c.until > now);
-    if (before[0] !== d.alerts.length || d.queue.length) this.renderWidget('alerts');
-    if (before[1] !== d.messages.length) this.renderWidget('messages');
-    this.renderWidget('captures');
-    if (d.music) this.renderWidget('music');
+    if (before[0] !== d.alerts.length || d.queue.length) this.safeRender('alerts');
+    if (before[1] !== d.messages.length) this.safeRender('messages');
+    this.safeRender('captures');
+    if (d.music) this.safeRender('music');
     if (d.perf && now - d.perf.at > PERF_STALE_MS) {
       d.perf = null; // sin muestras nuevas (se cerro el juego o el overlay dejo de medir)
-      this.renderWidget('perf');
+      this.safeRender('perf');
     }
     if (d.counters) {
       if (now - d.counters.at > COUNTERS_STALE_MS) d.counters = null;
-      this.renderWidget('counters');
+      this.safeRender('counters');
     }
     this.schedule();
   }
@@ -386,7 +462,7 @@ export class OverlayView {
       h('span', { class: 'ovl-vroom', title: v.room.name }, v.room.name || tr('w_voice')),
       state({ muted: v.self?.muted, deafened: v.self?.deafened }),
     );
-    const rows = members.slice(0, MAX_VOICE_ROWS).map((m) =>
+    const rows = pickVoiceRows(members, MAX_VOICE_ROWS).map((m) =>
       h('div', { class: ['ovl-vrow', m.speaking && 'speaking', (m.muted || m.deafened) && 'quiet'] }, avatar(m.avatar, m.name), h('span', { class: 'ovl-vname' }, m.self ? tr('voiceYou', { name: m.name }) : m.name), state(m)),
     );
     const more = members.length - MAX_VOICE_ROWS;
@@ -522,6 +598,10 @@ export class OverlayView {
   // ---------- Modo edicion: arrastrar ----------
   dragStart(id, e) {
     if (!this.isEditing() || e.button !== 0) return;
+    if (this.preview) {
+      this.select(id);
+      this.onSelect?.(id);
+    }
     const el = this.els[id];
     const area = this.stage.getBoundingClientRect();
     const r = el.getBoundingClientRect();
@@ -532,15 +612,33 @@ export class OverlayView {
     const size = sizeOf(r, area);
     this.drag = { id, x0: e.clientX, y0: e.clientY, start: { left: (r.left - area.left) / area.width, top: (r.top - area.top) / area.height }, size, area, moved: false, box: null };
     const move = (ev) => this.dragMove(ev);
-    const up = (ev) => {
+    const stop = () => {
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerup', up);
       el.removeEventListener('pointercancel', up);
+      el.removeEventListener('lostpointercapture', up);
+    };
+    const up = (ev) => {
+      stop();
       this.dragEnd(ev);
     };
+    this.drag.stop = stop;
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', up);
+    el.addEventListener('lostpointercapture', up);
+  }
+
+  // El arrastre se suelta sin guardar nada (se salio del modo edicion o se cerro la vista a la mitad)
+  cancelDrag() {
+    const d = this.drag;
+    if (!d) return;
+    this.drag = null;
+    d.stop?.();
+    this.els[d.id].classList.remove('ovl-dragging');
+    this.root.classList.remove('ovl-is-dragging');
+    for (const g of this.guides.children) g.classList.remove('on');
+    if (this.layout) this.place(d.id);
   }
 
   dragMove(e) {
@@ -579,9 +677,37 @@ export class OverlayView {
     const cfg = this.cfg(id);
     if (!cfg || !res) return;
     Object.assign(cfg, res);
-    this.renderWidget(id);
+    if (!this.preview) this.localMoves.set(id, { pos: { ...this.localMoves.get(id)?.pos, ...res }, at: this.now() });
+    this.safeRender(id);
     this.live.textContent = this.tr('movedTo', { name: this.tr(`w_${id}`), position: this.tr(`anchor_${cfg.anchor}`) });
     this.onMove?.(id, res);
+  }
+
+  // Tamano, opacidad y oculto con el teclado: + y -, [ y ] (o Re Pag y Av Pag), Supr o H. null si la tecla no es de estas.
+  // En los teclados en espanol los corchetes salen con AltGr (Ctrl+Alt): con AltGr se aceptan igual.
+  keyTweak(cfg, e) {
+    const altGr = typeof e.getModifierState === 'function' && e.getModifierState('AltGraph');
+    if (!altGr && (e.ctrlKey || e.altKey || e.metaKey)) return null;
+    const k = e.key;
+    if (k === '+' || k === '=') return { scale: stepValue(cfg.scale, 0.1, 0.6, 1.6, 0.05) };
+    if (k === '-' || k === '_') return { scale: stepValue(cfg.scale, -0.1, 0.6, 1.6, 0.05) };
+    if (k === ']' || k === '}' || k === 'PageUp') return { opacity: stepValue(cfg.opacity, 0.1, 0.3, 1, 0.01) };
+    if (k === '[' || k === '{' || k === 'PageDown') return { opacity: stepValue(cfg.opacity, -0.1, 0.3, 1, 0.01) };
+    if (k === 'Delete' || k === 'Backspace' || k === 'h' || k === 'H') return { enabled: !cfg.enabled };
+    return null;
+  }
+
+  applyTweak(id, patch) {
+    const cfg = this.cfg(id);
+    if (!cfg || !patch) return;
+    Object.assign(cfg, patch);
+    // En la pagina del overlay el layout vuelve del proceso principal con un guardado atrasado; la vista previa no tiene ese vuelo
+    if (!this.preview) this.localMoves.set(id, { pos: { ...this.localMoves.get(id)?.pos, ...patch }, at: this.now() });
+    this.safeRender(id);
+    const sum = patch.enabled !== undefined ? this.tr(patch.enabled ? 'tweakShown' : 'tweakHidden', { name: this.tr(`w_${id}`) }) : this.tr('tweakSize', { name: this.tr(`w_${id}`), scale: Math.round(cfg.scale * 100), opacity: Math.round(cfg.opacity * 100) });
+    this.live.textContent = sum;
+    this.onTweak?.(id, patch);
+    this.els[id].focus({ preventScroll: true });
   }
 
   // Teclado: flechas (Mayus: pasos grandes), 1 a 9 para la grilla, Enter o Escape para terminar.
@@ -589,6 +715,12 @@ export class OverlayView {
     if (!this.isEditing()) return;
     const cfg = this.cfg(id);
     if (!cfg) return;
+    const tweak = this.keyTweak(cfg, e);
+    if (tweak) {
+      e.preventDefault();
+      this.applyTweak(id, tweak);
+      return;
+    }
     const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     let res = null;
     if (arrows[e.key]) res = nudge(cfg, ...arrows[e.key], e.shiftKey ? 0.05 : 0.01);

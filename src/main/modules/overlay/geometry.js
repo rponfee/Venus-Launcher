@@ -62,6 +62,8 @@ function physicalToDip(rect, displays) {
 }
 
 const sameRect = (a, b) => Boolean(a && b && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height);
+// Igual salvo por `tol` pixeles (el redondeo de la escala de Windows)
+const nearRect = (a, b, tol = 1) => Boolean(a && b && ['x', 'y', 'width', 'height'].every((k) => Math.abs(a[k] - b[k]) <= tol));
 
 // Que juego sigue el overlay: el que esta en primer plano; si ninguno, el ultimo que abrio su ventana.
 function pickTarget(games) {
@@ -90,4 +92,18 @@ function decide({ enabled, userHidden, editing, testing, target, overlayHwnd, pa
   return { show: Boolean(front), mode: 'game' };
 }
 
-module.exports = { parseLine, physicalToDip, sameRect, pickTarget, decide, usableInfo };
+// Algun juego (o el propio overlay) esta adelante? Con eso se arman los atajos globales: si el jugador esta en otra
+// aplicacion, el atajo no se le saca. Mientras no se sabe nada de la ventana (el ayudante todavia arranca, o no pudo
+// abrirse) se supone que si: sin esa red, el atajo no funcionaria nunca.
+function gameInFront(games, overlayHwnd) {
+  const list = [...(games || [])];
+  if (!list.length) return false;
+  return list.some((g) => {
+    const info = g?.info;
+    if (!info?.found) return true;
+    if (info.minimized) return false;
+    return Boolean(info.foreground) && (info.foreground === info.hwnd || (Boolean(overlayHwnd) && info.foreground === String(overlayHwnd)));
+  });
+}
+
+module.exports = { parseLine, physicalToDip, sameRect, nearRect, pickTarget, decide, usableInfo, gameInFront };

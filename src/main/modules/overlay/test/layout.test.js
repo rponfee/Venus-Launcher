@@ -96,3 +96,44 @@ test('teclado: flechas y teclas 1 a 9', async () => {
   assert.equal(L.DIGIT_ANCHOR[3], 'br');
   assert.deepEqual(Object.values(L.DIGIT_ANCHOR).sort(), [...L.ANCHORS].sort());
 });
+
+test('posiciones que se acaban de mover: un layout viejo no las pisa, y al rato si', async () => {
+  const { mergeLocalMoves } = await esm('layout.js');
+  const moves = new Map([
+    ['voice', { pos: { anchor: 'free', x: 0.3, y: 0.5 }, at: 1000 }],
+    ['music', { pos: { anchor: 'tc' }, at: 100 }],
+  ]);
+  const stale = { voice: { anchor: 'tl', x: 0, y: 0, scale: 1 }, music: { anchor: 'br', x: 1, y: 1 }, alerts: { anchor: 'tr' } };
+  const out = mergeLocalMoves(stale, moves, 1500);
+  assert.deepEqual(out.voice, { anchor: 'free', x: 0.3, y: 0.5, scale: 1 });
+  assert.equal(out.music.anchor, 'br', 'la de hace mas de 1,2 s ya no cuenta');
+  assert.equal(out.alerts.anchor, 'tr');
+  assert.deepEqual([...moves.keys()], ['voice'], 'lo vencido se limpia solo');
+  assert.deepEqual(mergeLocalMoves(null, new Map(), 0), {});
+});
+
+test('si lo anclado no entra en el area de juego, se achica todo junto (nunca menos de 55 %)', async () => {
+  const { fitFactor } = await esm('layout.js');
+  assert.equal(fitFactor({ width: 600, height: 500 }, { width: 1280, height: 720 }), 1, 'entra: nada que hacer');
+  assert.equal(fitFactor({ width: 600, height: 900 }, { width: 1280, height: 720 }), 0.8);
+  assert.equal(fitFactor({ width: 1280, height: 400 }, { width: 640, height: 720 }), 0.55, 'el ancho tambien cuenta (y no baja de 55 %)');
+  assert.equal(fitFactor({ width: 5000, height: 5000 }, { width: 100, height: 100 }), 0.55);
+  for (const bad of [null, {}, { width: 0, height: 0 }, { width: NaN, height: 300 }]) assert.equal(fitFactor(bad, { width: 800, height: 600 }), 1);
+  assert.equal(fitFactor({ width: 900, height: 900 }, { width: 0, height: 0 }), 1, 'sin medidas del area (ventana escondida)');
+});
+
+test('pasos de teclado de tamano y opacidad: no se pasan del rango y quedan en multiplos del paso', async () => {
+  const { stepValue } = await esm('layout.js');
+  assert.equal(stepValue(1, 0.1, 0.6, 1.6, 0.05), 1.1);
+  assert.equal(stepValue(1.55, 0.1, 0.6, 1.6, 0.05), 1.6);
+  assert.equal(stepValue(0.65, -0.1, 0.6, 1.6, 0.05), 0.6);
+  assert.equal(stepValue(0.94, 0.1, 0.3, 1, 0.01), 1);
+  assert.equal(stepValue(0.94, -0.1, 0.3, 1, 0.01), 0.84);
+  assert.equal(stepValue(0.3, -0.1, 0.3, 1, 0.01), 0.3);
+  assert.equal(stepValue('x', 0.1, 0.6, 1.6, 0.05), 0.7, 'un valor que no es numero parte del minimo');
+  let v = 1;
+  for (let i = 0; i < 20; i++) v = stepValue(v, 0.1, 0.6, 1.6, 0.05);
+  assert.equal(v, 1.6);
+  for (let i = 0; i < 20; i++) v = stepValue(v, -0.1, 0.6, 1.6, 0.05);
+  assert.equal(v, 0.6);
+});

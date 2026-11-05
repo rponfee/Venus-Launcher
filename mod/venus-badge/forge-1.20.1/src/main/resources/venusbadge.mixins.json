@@ -4,7 +4,7 @@
   "package": "com.venuslauncher.badge.mixin",
   "refmap": "venusbadge.refmap.json",
   "compatibilityLevel": "JAVA_17",
-  "client": ["AbstractClientPlayerMixin", "PlayerTabOverlayMixin"],
+  "client": ["PlayerTabOverlayMixin"],
   "injectors": {
     "defaultRequire": 0
   }

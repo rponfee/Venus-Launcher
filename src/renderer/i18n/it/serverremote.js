@@ -10,7 +10,6 @@ export default {
   errStart: "Impossibile attivare il controllo remoto",
   errAction: "Non ha funzionato",
   qrAlt: "Codice QR per aprire il controllo remoto sul telefono",
-  qrHidden: "Il codice QR rimane nascosto in modalità streamer: copia il link o disattiva temporaneamente la modalità.",
   stepQr: "Scansiona il codice QR con la fotocamera del telefono.",
   stepCode: "Oppure apri questo indirizzo nel browser del telefono e inserisci il codice:",
   copyLink: "Copia link con il codice",

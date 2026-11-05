@@ -4,28 +4,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
 const activity = require('../../modules/discord/activity');
 
-test('autoload omite Extensiones y streamer antes de require; conserva OBS y mapa de mundos', async () => {
-  const required = [], events = [];
-  const names = ['extensions.js', 'streamer.js', 'mapviewer.js', 'obs.js', 'helpers'];
-  const module = { exports: {} };
-  const source = fs.readFileSync(path.join(__dirname, '../../modules-loader.js'), 'utf8');
-  vm.runInNewContext(source, {
-    module, __dirname: path.resolve(__dirname, '../..'), console,
-    require(id) {
-      if (id === 'path') return path;
-      if (id === 'fs') return { readdirSync: () => names.map(name => ({ name, isFile: () => name.endsWith('.js') })) };
-      const name = path.basename(id);
-      required.push(name);
-      return { preReady: () => events.push('pre:' + name), register: () => events.push('register:' + name) };
-    },
-  });
-  module.exports.preReady({});
-  await module.exports.register({});
-  assert.deepEqual(required, ['mapviewer.js', 'obs.js']);
-  assert.deepEqual(events, ['pre:mapviewer.js', 'pre:obs.js', 'register:mapviewer.js', 'register:obs.js']);
+const MODULES = path.join(__dirname, '../../modules');
+
+test('los módulos retirados en la 4.6 ya no existen y el cargador no guarda ninguna lista de excepciones', () => {
+  for (const name of ['compete', 'extensions', 'obs', 'streamer']) {
+    assert.equal(fs.existsSync(path.join(MODULES, name + '.js')), false, name + '.js');
+    assert.equal(fs.existsSync(path.join(MODULES, name)), false, name + '/');
+  }
+  assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '../../modules-loader.js'), 'utf8'), /RETIRED/);
 });
 
 test('Discord ignora privacy.streamer guardado y conserva sus propias opciones de privacidad', () => {

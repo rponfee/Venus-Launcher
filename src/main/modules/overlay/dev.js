@@ -1,7 +1,7 @@
 'use strict';
 // Solo para capturas de desarrollo (VENUS_DEVSHOT y sin empaquetar): deja ver la pagina del overlay y sus paneles sin
 // mostrar ninguna ventana ni tomar el foco. La ventana queda oculta y las capturas salen de capturePage.
-//   venus.invoke('overlay:dev', 'hold')              crea la ventana sin mostrarla
+//   venus.invoke('overlay:dev', 'hold', '1366x768')  crea la ventana sin mostrarla (y del tamano del "juego"; 1280x720 por defecto)
 //   venus.invoke('overlay:dev', 'panel', 'recipes')  abre un panel
 //   venus.invoke('overlay:dev', 'close')             lo cierra
 //   venus.invoke('overlay:dev', 'event', evento)     le manda un evento a la pagina
@@ -14,6 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 function register({ handle, win, hold, panel, close, deliver, layout, notice, open, info, front }) {
+  let hooked = null; // la ventana cuya consola ya se esta guardando
   // Quien gana y quien pierde el foco, con la hora (lo que importa para probar los paneles)
   const { app, BrowserWindow } = require('electron');
   const hwnd = (w) => {
@@ -30,11 +31,14 @@ function register({ handle, win, hold, panel, close, deliver, layout, notice, op
   handle('overlay:dev', async (cmd, arg) => {
     switch (cmd) {
       case 'hold':
-        hold();
+        hold(arg);
         // La consola de la pagina va a un archivo aparte (no se mezcla con la de la ventana principal)
-        win()?.webContents.on('console-message', (e) => {
-          fs.appendFileSync(path.join(process.env.VENUS_DEVSHOT, 'overlay-console.log'), `[${e.level}] ${e.message} (${e.sourceId}:${e.lineNumber})\n`);
-        });
+        if (win() && win() !== hooked) {
+          hooked = win();
+          hooked.webContents.on('console-message', (e) => {
+            fs.appendFileSync(path.join(process.env.VENUS_DEVSHOT, 'overlay-console.log'), `[${e.level}] ${e.message} (${e.sourceId}:${e.lineNumber})\n`);
+          });
+        }
         layout();
         return true;
       case 'panel':

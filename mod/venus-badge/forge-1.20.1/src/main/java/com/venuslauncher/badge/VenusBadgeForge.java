@@ -13,7 +13,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 /**
  * Insignia de Venus en Forge 1.20.1. Solo de cliente: en esta versión @Mod no se puede limitar al cliente, así que en un
  * servidor dedicado la clase carga y no hace nada (lo que toca clases de cliente está aparte, en {@link Client}).
- * La lista de Tab va por PlayerTabOverlayMixin y las capas por AbstractClientPlayerMixin; la lógica común está en {@link BadgeCore}.
+ * La lista de Tab va por PlayerTabOverlayMixin; la lógica común está en {@link BadgeCore}.
  */
 @Mod(BadgeCore.MOD_ID)
 public final class VenusBadgeForge {

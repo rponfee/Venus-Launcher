@@ -1,4 +1,4 @@
-// Textos del estudio de clips: Montaje de la semana, Timelapse, Subir clips, OBS y Galería pública.
+// Textos del estudio de clips: Montaje de la semana, Timelapse, Subir clips y Galería pública.
 export default {
   // Comunes
   seconds_one: '{count} segundo',
@@ -161,38 +161,6 @@ export default {
   accountsText: 'Para subir clips directo desde el visor de Clips. Solo se sube algo cuando apretás Subir.',
   accountConnected: 'Conectada',
   accountNotConnected: 'Sin conectar',
-
-  // OBS
-  obsTitle: 'Integración con OBS',
-  obsSubtitle: "Cambia de escena al abrir y cerrar el juego.",
-  obsEnable: 'Conectarse a OBS',
-  obsEnableSub: 'Necesita OBS 28 o más nuevo, con el servidor WebSocket prendido (Herramientas → Ajustes del servidor WebSocket). Si OBS está cerrado, reintenta sin avisar nada.',
-  obsHost: 'Dirección',
-  obsPort: 'Puerto',
-  obsPassword: 'Contraseña',
-  obsPasswordEmpty: 'Sin contraseña',
-  obsPasswordSaved: 'Guardada (cifrada)',
-  obsPasswordStored: 'Contraseña guardada',
-  obsPasswordRemoved: 'Contraseña borrada',
-  obsPasswordClear: 'Borrar la contraseña',
-  obsHelp: 'Solo esta PC o tu red local. La contraseña se guarda cifrada y nunca sale de tu red.',
-  obsTest: 'Probar conexión',
-  obsTestOk: 'Conectó con obs-websocket {version}: {count} escenas.',
-  obsRules: 'Reglas',
-  obsSceneOpen: 'Escena al abrir el juego',
-  obsSceneClose: 'Escena al cerrar el juego',
-  obsNoScene: 'No cambiar',
-  obsSceneMissing: '{name} (no está en OBS)',
-  obsStreamerRule: 'Modo streamer mientras transmitís o grabás',
-  obsStreamerRuleSub: 'Se prende cuando OBS empieza y se apaga al terminar, solo si lo prendió esta integración.',
-  obsState_off: 'Apagada',
-  obsState_connecting: 'Conectando…',
-  obsState_connected: 'Conectada',
-  obsState_waiting: 'Esperando a OBS',
-  obsState_authFailed: 'Contraseña incorrecta',
-  obsStreaming: 'Transmitiendo',
-  obsRecording: 'Grabando',
-  errObsNeedPassword: 'OBS pide una contraseña.',
 
   // Galería
   galleryTab: 'Galería',

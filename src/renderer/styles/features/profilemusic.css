@@ -1,0 +1,89 @@
+/* Musica de perfil (4.6): pestaña Musica del editor (.pm-*), atribucion de la cancion y avisos del reproductor de la
+   tarjeta (.pf-song-credit). Carga features/profile-editor/music-ui.js (ensureMusicCss). */
+
+.pm { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.pm-section { min-width: 0; }
+
+/* Atribucion: titulo, autor, licencia y fuente, siempre a la vista */
+.pm-credit { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--sp-1); min-width: 0; font-size: var(--fs-xs); color: var(--text-2); line-height: 1.5; }
+.pm-credit-title { font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+.pm-creator { overflow-wrap: anywhere; }
+.pm-dot { color: var(--muted); }
+.pm-link { color: var(--accent-hi); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent-hi) 45%, transparent); text-underline-offset: 2px; cursor: pointer; border-radius: 3px; }
+.pm-link:hover { text-decoration-color: currentColor; }
+.pm-link:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+.pm-credit-title.pm-link { color: var(--text); }
+.pf-song-credit { padding: 0 2px; }
+
+/* Aviso para activar la conexion */
+.pm-optin { align-items: center; gap: var(--sp-3); }
+.pm-optin-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pm-optin.compact { padding: var(--sp-2); }
+.pm-optin.compact .btn { flex-shrink: 0; }
+
+/* Tu cancion */
+.pm-current { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3); border: 1px solid var(--border-2); border-radius: var(--radius); background: var(--surface-2); }
+.pm-current-main { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.pm-current-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.pm-current-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; }
+.pm-len { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-xs); color: var(--muted); }
+.pm-len svg { width: 14px; height: 14px; }
+.pm-range { flex: 1; min-width: 120px; }
+.pm-current .pfe-range-value { white-space: nowrap; min-width: 0; }
+.pm-current .pfe-range-field { gap: var(--sp-3); }
+.pm-empty { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3); border: 1px dashed var(--border-2); border-radius: var(--radius); color: var(--muted); font-size: var(--fs-sm); list-style: none; }
+.pm-empty svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Buscador */
+.pm-search { display: flex; gap: var(--sp-2); }
+.pm-search .input { flex: 1; min-width: 0; }
+.pm-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-top: var(--sp-2); }
+.pm-chip {
+  height: 28px; padding: 0 var(--sp-3); border-radius: var(--radius-full); border: 1px solid var(--border-2); background: var(--surface-2);
+  color: var(--text-2); font: inherit; font-size: var(--fs-xs); font-weight: 600; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.pm-chip:hover:not(:disabled) { background: var(--surface-3); color: var(--text); }
+.pm-chip.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #1b130e); }
+.pm-chip:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+.pm-chip:disabled { opacity: 0.6; cursor: default; }
+.pm-filters { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-2); }
+.pm-filter { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-xs); color: var(--muted); min-width: 160px; flex: 1; }
+.pm-filter .select { width: 100%; }
+.pm-error { margin-top: var(--sp-2); }
+.pm-error .notice { align-items: center; }
+.pm-error .notice > span { flex: 1; }
+.pm-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); min-height: 20px; margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--muted); }
+.pm-note { display: inline-flex; align-items: center; gap: 4px; }
+.pm-note svg { width: 13px; height: 13px; }
+
+/* Resultados */
+.pm-list { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.pm-row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--border-2); border-radius: var(--radius); background: var(--surface-2); min-width: 0; }
+.pm-row.chosen { border-color: var(--accent); }
+.pm-row.playing, .pm-current.playing { border-color: var(--accent-hi); }
+.pm-row.failed { opacity: 0.75; }
+.pm-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pm-row-title { font-size: var(--fs-sm); font-weight: 700; }
+.pm-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--sp-2); font-size: var(--fs-xs); color: var(--muted); min-width: 0; }
+.pm-row-meta > .ellipsis { max-width: 220px; }
+.pm-badge { padding: 0 var(--sp-2); border-radius: var(--radius-full); background: var(--surface-3); color: var(--text-2); font-weight: 700; white-space: nowrap; }
+.pm-dur { white-space: nowrap; }
+.pm-src { white-space: nowrap; opacity: 0.85; }
+.pm-play { flex-shrink: 0; }
+.pm-bar { height: 3px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.pm-bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.25s linear; }
+.pm-failed { display: flex; align-items: center; gap: var(--sp-1); color: var(--bad, #e5484d); }
+.pm-failed svg { width: 14px; height: 14px; }
+.pm-loading { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3); color: var(--muted); list-style: none; }
+.pm-more { display: flex; justify-content: center; margin-top: var(--sp-2); }
+.pm-credits { display: flex; align-items: flex-start; gap: var(--sp-2); color: var(--muted); margin: 0; }
+.pm-credits svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+
+@media (max-width: 720px) {
+  .pm-row { flex-wrap: wrap; }
+  .pm-row-main { flex-basis: 60%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pm-bar > i, .pm-chip { transition: none; }
+}
+body.reduce-motion .pm-bar > i, body.reduce-motion .pm-chip { transition: none; }

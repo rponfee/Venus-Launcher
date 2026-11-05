@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { harness, flush } from '../../../features/clans/test/renderer-harness.js';
+import { harness, flush } from '../../../features/communities/test/renderer-harness.js';
 import * as logic from '../logic.js';
-import { COMMUNITY_LIMITS, safeColor } from '../../../features/clans/logic.js';
+import { COMMUNITY_LIMITS, safeColor } from '../../../features/communities/logic.js';
 
 function viewHarness() {
   const ui = harness(), chats = [];
@@ -62,13 +62,13 @@ test('si desaparece la comunidad se cierra el chat; un error de red no lo destru
   } finally { ui.close(); }
 });
 
-test('al perder staff un canal privado abierto se cierra aunque llegue en una respuesta vieja', async () => {
+test('al perder staff un canal privado abierto se cierra: el servidor ya no lo entrega', async () => {
   const ui=viewHarness();
   try {
     await flush();
     ui.set({id:'c',name:'Comunidad',myRole:'owner',channels:[{id:'a',kind:'text',name:'privado',isPrivate:true}]});
     await ui.refresh();
-    ui.set({id:'c',name:'Comunidad',myRole:'member',channels:[{id:'a',kind:'text',name:'privado',isPrivate:true},{id:'public',kind:'announcement',name:'noticias'}]});
+    ui.set({id:'c',name:'Comunidad',myRole:'member',channels:[{id:'public',kind:'announcement',name:'noticias'}]});
     await ui.refresh();
     assert.equal(ui.chats[0].stopped,true);
     assert.equal(ui.chats.at(-1).channel.id,'public');

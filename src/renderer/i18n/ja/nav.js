@@ -45,9 +45,6 @@ export default {
   resetMenu: "リセット",
   done: "完了",
   menuSaveFailed: "メニューを保存できませんでした",
-  compete: "競争",
   clans: "クラン",
   communities: "コミュニティ",
-  seeds: "シードビューアー",
-  extensions: "拡張機能",
 };

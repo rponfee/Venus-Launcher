@@ -60,13 +60,15 @@ test('libro de visitas: quien puede escribir y como se juntan las paginas', () =
 });
 
 test('cancion del perfil: cuando arranca sola y el paso del volumen', () => {
-  const song = { url: 'https://x.supabase.co/storage/v1/object/public/profile-audio/u/song.webm' };
+  const song = { url: 'https://prod-1.storage.jamendo.com/?trackid=1&format=mp32' };
   assert.equal(L.shouldAutoplaySong({ song, friend: true }), true);
   assert.equal(L.shouldAutoplaySong({ song, self: true }), true);
   assert.equal(L.shouldAutoplaySong({ song, friend: true, allowed: false }), false);
   assert.equal(L.shouldAutoplaySong({ song, friend: true, preview: true }), false);
   assert.equal(L.shouldAutoplaySong({ song }), false);
   assert.equal(L.shouldAutoplaySong({ song: null, friend: true }), false);
+  assert.equal(L.shouldAutoplaySong({ song, friend: true, busy: true }), false, 'con un juego abierto no arranca sola');
+  assert.equal(L.shouldAutoplaySong({ song, friend: true, busy: false }), true);
   assert.equal(L.volumeStep(0.6, 1), 0.7);
   assert.equal(L.volumeStep(1, 1), 1);
   assert.equal(L.volumeStep(0.05, -1), 0);

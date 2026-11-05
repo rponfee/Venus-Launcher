@@ -3,6 +3,7 @@
 // resource packs e instalacion en un clic.
 import { h, icon, mount, clear, fmtNumber, fmtAgo, emptyState, selectEl, switchEl, debounce, toast, registerIcons, instanceLoaderKey } from '../../ui.js';
 import { store, api } from '../../store.js';
+import { cloud } from '../../cloud.js';
 import { navigate } from '../../app.js';
 import { t } from '../../i18n.js';
 import {
@@ -39,7 +40,7 @@ import {
   tabKeys,
 } from './shared.js';
 import { openCompare } from './compare.js';
-import { cfUnavailableCard } from './curseforge.js';
+import { cfUnavailableCard, cfGate } from './curseforge.js';
 import { openInstallDialog } from '../../features/install.js';
 import { createMoreFilters, morePayload, morePills, moreCount, clearMore, radioKeys } from '../../features/searchfilters.js';
 
@@ -57,6 +58,8 @@ const MR_SORTS = ['relevance', 'downloads', 'follows', 'newest', 'updated'];
 const CF_SORTS = ['popularity', 'downloads', 'updated', 'released', 'name', 'rating'];
 const CF_MAX = 10000;
 const CF_LOADERS = ['forge', 'fabric', 'neoforge', 'quilt'];
+// Fallas que no dependen de la búsqueda ni de la cuenta: se ofrece seguir en Modrinth mientras se arregla.
+const CF_SERVER_CODES = new Set(['badkey', 'blocked', 'server', 'network']);
 
 function loaderLabelOf(inst) {
   const key = instanceLoaderKey(inst);
@@ -820,7 +823,7 @@ export function renderBrowser(root, route = {}) {
 
   function reload({ startPage = 0 } = {}) {
     if (!alive) return;
-    if (!isMr() && !cfStatus?.configured) {
+    if (!isMr() && cfGate(cfStatus)) {
       drawBody();
       return;
     }
@@ -901,7 +904,15 @@ export function renderBrowser(root, route = {}) {
       }
     } catch (err) {
       if (my !== reqToken || r !== S.results || !alive) return;
+      // Sin sesión o sin clave en el servidor no es un error de la búsqueda: es otra pantalla (con su botón).
+      if (r.source === 'curseforge' && (err?.code === 'noSession' || err?.code === 'nokey')) {
+        cfStatus = err.code === 'noSession' ? { ...cfStatus, configured: true, signedIn: false, source: cfStatus?.source === 'build' ? 'central' : cfStatus?.source } : { ...cfStatus, configured: false };
+        S.results = null;
+        drawBody();
+        return;
+      }
       r.error = err?.message || String(err);
+      r.errorCode = err?.code || null;
       if (r.first || r.placeholder) {
         clear(grid);
         r.first = false;
@@ -1069,6 +1080,7 @@ export function renderBrowser(root, route = {}) {
             icon('refresh'),
             t('modrinth.retry'),
           ),
+          r.source === 'curseforge' && CF_SERVER_CODES.has(r.errorCode) ? h('button', { class: 'btn sm modrinth soft', type: 'button', onclick: () => switchSource('modrinth') }, icon('package'), t('modrinth.cfOffBack')) : null,
         ),
       );
     } else if (r.stalled && r.hits.length) {
@@ -1358,8 +1370,9 @@ export function renderBrowser(root, route = {}) {
   }
 
   // ---------- CurseForge ----------
+  // Un estado que no servía (sin clave, sin sesión, error) se vuelve a preguntar cada vez: no queda pegado.
   async function ensureCfStatus(force = false) {
-    if (cfStatus && !force) return cfStatus;
+    if (cfStatus && !force && !cfGate(cfStatus)) return cfStatus;
     try {
       cfStatus = await api.invoke('curseforge:status');
     } catch (err) {
@@ -1368,9 +1381,18 @@ export function renderBrowser(root, route = {}) {
     return cfStatus;
   }
 
+  // "Revisar de nuevo" de la tarjeta: vuelve a preguntar el estado y, si ya se puede, busca.
+  async function recheckCurseForge() {
+    await ensureCfStatus(true);
+    if (!alive) return;
+    drawBody();
+    if (!cfGate(cfStatus)) reload();
+  }
+
   function drawBody() {
-    if (!isMr() && !cfStatus?.configured) {
-      mount(body, cfUnavailableCard({ onBack: () => switchSource('modrinth') }));
+    const gate = isMr() ? null : cfGate(cfStatus);
+    if (gate) {
+      mount(body, cfUnavailableCard({ kind: gate, message: cfStatus?.error, onRetry: recheckCurseForge, onBack: () => switchSource('modrinth') }));
       return;
     }
     if (catalog.parentNode !== body) mount(body, catalog);
@@ -1447,6 +1469,7 @@ export function renderBrowser(root, route = {}) {
       drawTarget();
       updateBadges();
     }),
+    cloud.on('auth', () => alive && !isMr() && recheckCurseForge()),
   );
   // Servidores locales y sus tipos (servers:types dice cuales reciben plugins o mods y con que loaders)
   Promise.all([api.servers.list(), loadServerTypes()])

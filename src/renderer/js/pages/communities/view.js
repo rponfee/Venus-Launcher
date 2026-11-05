@@ -4,17 +4,21 @@
 import { h, icon, mount, skeleton, emptyState, setBusy, ok, fail, confirmDialog, modal } from '../../ui.js';
 import { t, loadNs } from '../../i18n.js';
 import { navigate } from '../../app.js';
-import { errText } from '../../features/clans/backend.js';
-import { openGroupReport } from '../../features/clans/report.js';
+import { errText } from '../../features/communities/backend.js';
+import { openGroupReport } from '../../features/communities/report.js';
 import { headImg, openProfile, popMenu } from '../../social/profile-ui.js';
-import { COMMUNITY_LIMITS } from '../../features/clans/logic.js';
-import { communityColor, canModerate, isMuted, isStaff, MUTE_OPTIONS, personName, pickChannel, voiceSummary, categoryGroups, visibleChannels, channelIcon, safeCommunityIcon, iconGlyph, safeBanner, safeTheme, CATEGORY_LIMIT } from './logic.js';
+import { COMMUNITY_LIMITS } from '../../features/communities/logic.js';
+import { rolesOf, roleColor } from '../../features/communities/permissions.js';
+import { communityColor, canAssignRole, canModerate, isMuted, isStaff, MUTE_OPTIONS, personName, pickChannel, voiceSummary, categoryGroups, visibleChannels, channelIcon, safeCommunityIcon, iconGlyph, safeBanner, safeTheme, CATEGORY_LIMIT } from './logic.js';
 import { chatView } from './chat.js';
 import { forumView } from './forum.js';
 import { openAppearanceForm, openChannelForm, openCategoryForm, channelMenuItems } from './manage.js';
 import { openBansDialog, openChannelsDialog, openCommunityForm, openInviteDialog } from './forms.js';
+import { openGreetingsDialog } from './greetings.js';
+import { openRolesDialog, openMemberRolesDialog } from './roles.js';
+import { openMediaGallery } from './gallery.js';
 
-const C = (key, vars) => t(`clans.${key}`, vars);
+const C = (key, vars) => t(`communities.${key}`, vars);
 const REFRESH_MS = 20000;
 
 function muteLabel(minutes) {
@@ -94,7 +98,7 @@ export function communityView(root, id, wantedChannel, { b }) {
       total = Number(res?.total) || members.length;
       for (const m of members) people.set(m.userId, m);
     } catch (err) {
-      console.warn('[clans] miembros:', err?.message || err);
+      console.warn('[communities] miembros:', err?.message || err);
     }
   }
   async function refresh() {
@@ -156,6 +160,8 @@ export function communityView(root, id, wantedChannel, { b }) {
         const { voice } = await import('../../voice.js');
         await voice.joinRoom(room.code);
       }
+      // Sin el permiso de hablar el servidor no entrega tu clave de sesión: escuchás, pero no te oyen.
+      if (room?.canSpeak === false) ok(C('voiceListenOnly'), C('voiceListenOnlyText'));
       if (!destroyed) navigate('voice');
     } catch (err) {
       fail(C('voiceFailed'), err?.name === 'GroupError' ? errText(err) : err?.message || errText(err));
@@ -171,6 +177,9 @@ export function communityView(root, id, wantedChannel, { b }) {
       isStaff(role) ? { icon: 'hash', label: C('menuChannels'), run: () => openChannelsDialog(b, community, { reload: refresh }) } : null,
       isStaff(role) ? { icon: 'ban', label: C('menuBans'), run: () => openBansDialog(b, community) } : null,
       role === 'owner' ? { icon: 'palette', label: C('cmCustomize'), run: () => openAppearanceForm(b, community, { reload: refresh }) } : null,
+      role === 'owner' ? { icon: 'logIn', label: C('menuGreetings'), run: () => openGreetingsDialog(b, community, { reload: refresh }) } : null,
+      role === 'owner' ? { icon: 'tag', label: C('menuRoles'), run: () => openRolesDialog(b, community, { reload: refresh }) } : null,
+      isStaff(role) ? { icon: 'image', label: C('menuGallery'), run: () => openMediaGallery(b, community) } : null,
       role === 'owner' ? { icon: 'edit', label: C('menuEdit'), run: () => openCommunityForm(b, { community, onSaved: refresh }) } : null,
       role !== 'owner' ? { icon: 'alert', label: C('report'), run: () => openGroupReport({ kind: 'community', id, name: community.name }) } : null,
       role === 'owner' && total > 1 ? null : { icon: 'logout', label: C('leave'), danger: true, run: leave },
@@ -202,12 +211,17 @@ export function communityView(root, id, wantedChannel, { b }) {
     const staff = isStaff(community.myRole);
     const openMenu = (anchor) => { if (!destroyed && isStaff(community.myRole)) popMenu(anchor, channelMenuItems(b, community, ch, refresh)); };
     const menu = staff ? h('button', { class: 'icon-btn sm cm-channel-menu', type: 'button', title: C('cmChannelActions', { name: ch.name }), 'aria-label': C('cmChannelActions', { name: ch.name }), 'aria-haspopup': 'menu', onclick: (e) => openMenu(e.currentTarget) }, icon('more')) : null;
-    const button = h('button', { class: ['cm-channel', ch.id === channelId && 'active'], type: 'button',
-      title: C('cmKind_' + ch.kind) + (ch.topic ? ' · ' + ch.topic : ''), 'aria-current': ch.id === channelId ? 'true' : null },
+    const noVoice = ch.kind === 'voice' && ch.canConnect === false;
+    const button = h('button', { class: ['cm-channel', ch.id === channelId && 'active', noVoice && 'is-locked'], type: 'button',
+      title: noVoice ? C('voiceNoPermission') : C('cmKind_' + ch.kind) + (ch.topic ? ' · ' + ch.topic : ''), 'aria-current': ch.id === channelId ? 'true' : null, 'aria-disabled': noVoice ? 'true' : null },
       icon(channelIcon(ch)), h('span', { class: 'ellipsis' }, ch.name),
       ch.isPrivate ? h('span', { title: C('cmPrivate'), 'aria-label': C('cmPrivate') }, icon('lock')) : null,
+      noVoice ? h('span', { title: C('voiceNoPermission'), 'aria-label': C('voiceNoPermission') }, icon('shield')) : null,
       ch.kind === 'voice' && sum.count ? h('span', { class: 'cm-channel-count' }, String(sum.count)) : null);
-    button.addEventListener('click', () => ch.kind === 'voice' ? enterVoice(ch, button) : openChannel(ch));
+    button.addEventListener('click', () => {
+      if (noVoice) return fail(C('voiceFailed'), C('err_voice_forbidden'));
+      return ch.kind === 'voice' ? enterVoice(ch, button) : openChannel(ch);
+    });
     const row = h('li', {}, h('div', { class: 'cm-channel-row' }, button, menu),
       ch.kind === 'voice' && sum.count ? h('ul', { class: 'cm-voice-people' }, sum.shown.map((p) => h('li', {}, headImg(p, 18, 'cl-head'), h('span', { class: 'ellipsis' }, personName(p) || C('someone')))), sum.extra ? h('li', { class: 'cl-muted small' }, C('voiceMore', { n: sum.extra })) : null) : null);
     if (staff) {
@@ -272,6 +286,7 @@ export function communityView(root, id, wantedChannel, { b }) {
     const muted = isMuted(m.mutedUntil);
     const items = [
       { icon: 'user', label: C('viewProfile', { name }), run: () => openProfile(m.userId) },
+      canAssignRole(role, m.role) ? { icon: 'tag', label: C('memberRolesMenu'), run: () => openMemberRolesDialog(b, community, m, { reload: async () => { await fetchMembers(); drawMembers(); return refresh(); } }) } : null,
       role === 'owner' && !self && m.role !== 'owner' ? { icon: m.role === 'member' ? 'upCircle' : 'user', label: m.role === 'member' ? C('makeModerator') : C('removeModerator'), run: act(() => b.rpc('community_set_role', { p_community: id, p_user: m.userId, p_role: m.role === 'member' ? 'moderator' : 'member' }), C('roleChanged')) } : null,
       role === 'owner' && !self && m.role !== 'owner' ? { icon: 'crown', label: C('communityTransfer'), run: async () => {
         if (await confirmDialog(C('communityTransferTitle'), C('communityTransferText', { name }), { okText: C('communityTransfer') })) act(async () => {
@@ -289,6 +304,7 @@ export function communityView(root, id, wantedChannel, { b }) {
       h('button', { class: 'cm-member', type: 'button', 'aria-haspopup': 'menu', onclick: (e) => popMenu(e.currentTarget, items) },
         headImg(m, 28, 'cl-head'),
         h('span', { class: 'cm-member-name ellipsis' }, name),
+        rolesOf(community, m.roleIds).slice(0, 3).map((r) => h('span', { class: 'cm-role-dot', title: r.name, 'aria-label': r.name, style: { background: roleColor(r.color) } })),
         m.role !== 'member' ? h('span', { class: 'cm-role', title: C(`role_${m.role}`), 'aria-label': C(`role_${m.role}`) }, icon(m.role === 'owner' ? 'crown' : 'shield')) : null,
         muted ? h('span', { class: 'cm-role is-muted', title: C('mutedBadge'), 'aria-label': C('mutedBadge') }, icon('volumeX')) : null));
   }

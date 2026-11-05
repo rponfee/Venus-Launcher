@@ -51,7 +51,7 @@ export function voiceSnapshot({ room, members, state }, { avatarUrl = () => null
     kind: 'voice',
     room: { name: String(room.name || '').slice(0, 64), code: String(room.code || '').slice(0, 32) },
     self,
-    members: (Array.isArray(members) ? members : []).slice(0, max).map((m) => {
+    members: pickVoiceRows(Array.isArray(members) ? members : [], max).map((m) => {
       const muted = Boolean(m?.muted);
       return {
         id: String(m?.userId ?? m?.id ?? ''),
@@ -97,4 +97,38 @@ export function accelParts(accel) {
     .split('+')
     .filter(Boolean)
     .map((p) => (p === 'CommandOrControl' || p === 'CmdOrCtrl' || p === 'Control' ? 'Ctrl' : p === 'Super' || p === 'Meta' ? 'Win' : p));
+}
+
+// Cola de tareas una detras de otra que nunca se rompe: si una falla, se avisa y la siguiente corre igual. En la pagina del
+// overlay un error al dibujar un layout no puede dejar sin atender todo lo que llegue despues.
+export function createSerial(onError = () => {}) {
+  let tail = Promise.resolve();
+  return (fn) => {
+    tail = tail
+      .then(fn)
+      .catch((err) => {
+        try {
+          onError(err);
+        } catch {
+          /* el aviso tambien fallo: no se hace nada mas */
+        }
+      });
+    return tail;
+  };
+}
+
+// Que integrantes de la sala se dibujan cuando no entran todos: primero quien habla, despues uno mismo y despues el resto
+// (con el orden de la sala). Si no, alguien que habla puede quedar escondido en "+4 personas mas".
+export function pickVoiceRows(members, max) {
+  const list = Array.isArray(members) ? members : [];
+  if (list.length <= max) return list;
+  const rank = (m) => (m?.speaking ? 0 : m?.self ? 1 : 2);
+  const chosen = new Set(
+    list
+      .map((m, i) => [rank(m), i])
+      .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+      .slice(0, max)
+      .map((x) => x[1]),
+  );
+  return list.filter((m, i) => chosen.has(i));
 }

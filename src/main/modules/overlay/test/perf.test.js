@@ -158,3 +158,42 @@ test('muestreo con pidusage cuando no hay ayudante', async () => {
   assert.ok(samples[0].session >= 5);
   assert.equal(perf.createSampler({ pid: 0 }), null);
 });
+
+test('si el ayudante de PowerShell no abre o se cae, se sigue midiendo con pidusage; si termina el juego, se corta', async () => {
+  const make = (extra = {}) => {
+    const samples = [];
+    const children = [];
+    const spawnFn = () => {
+      const child = new (require('events').EventEmitter)();
+      child.stdout = new (require('events').EventEmitter)();
+      child.stdout.setEncoding = () => {};
+      child.kill = () => {};
+      children.push(child);
+      return child;
+    };
+    const sampler = perf.createSampler({ pid: 77, startedAt: Date.now(), getAddress: () => null, onSample: (s) => samples.push(s), platform: 'win32', spawnFn, usage: async () => ({ memory: 100 * 1048576, cpu: 10 }), interval: 5, ...extra });
+    return { samples, children, sampler };
+  };
+  // No abre (error asincrono de spawn): mide igual
+  let r = make();
+  r.children[0].emit('error', new Error('spawn powershell.exe ENOENT'));
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.ok(r.samples.length >= 2, 'muestras con pidusage: ' + r.samples.length);
+  assert.equal(r.samples[0].ram, 100);
+  r.sampler.stop();
+  // Se cae a mitad de camino
+  r = make();
+  r.children[0].stdout.emit('data', '{"ok":1,"mem":209715200,"cpu10":120}\n');
+  assert.equal(r.samples.length, 1);
+  assert.equal(r.samples[0].ram, 200);
+  r.children[0].emit('close', 1);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.ok(r.samples.length >= 3, 'siguio midiendo: ' + r.samples.length);
+  r.sampler.stop();
+  // Termina el juego: el ayudante lo avisa y no se pasa a pidusage
+  r = make();
+  r.children[0].stdout.emit('data', '{"end":1}\n');
+  r.children[0].emit('close', 0);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(r.samples.length, 0);
+});

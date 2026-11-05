@@ -4,12 +4,15 @@ import { h, icon, mount, ok, fail, setBusy, skeleton, emptyState, fmtAgo, fmtDat
 import { t, loadNs } from '../../i18n.js';
 import { cloud } from '../../cloud.js';
 import { cleanText, LIMITS } from '../../features/profile-editor/model.js';
+import { normalizeSong } from '../../features/profile-editor/music-logic.js'; // 4.6: la cancion es de Openverse
+import { attributionEl, ensureMusicCss } from '../../features/profile-editor/music-ui.js';
 
 const P = (k, vars) => t(`profile.${k}`, vars);
 
 export async function render(root) {
   ensureCss('features/profile-social');
-  await loadNs('profile');
+  ensureMusicCss();
+  await loadNs('profile', 'profilemusic');
   const list = h('div', { class: 'stack pf-rep-list' });
   const reload = h('button', { class: 'btn sm', type: 'button' }, icon('refresh'), P('adminReportsReload'));
   mount(root, h('div', { class: 'page-head' }, h('div', { class: 'ph-text' }, h('h2', { class: 'page-title' }, P('adminReportsTitle')), h('p', { class: 'page-sub' }, P('adminReportsSub'))), h('div', { class: 'page-actions' }, reload)), list);
@@ -47,7 +50,7 @@ export async function render(root) {
     };
     closeBtn.addEventListener('click', act(closeBtn, false));
     songBtn.addEventListener('click', act(songBtn, true));
-    const song = r.target?.song?.url;
+    const song = normalizeSong(r.target?.song); // null si no es de Openverse o no pasa la validacion: no se reproduce
     const at = Date.parse(r.at);
     return h(
       'div',
@@ -61,7 +64,7 @@ export async function render(root) {
       ),
       h('div', { class: 'pf-rep-who' }, h('strong', {}, P('adminReportTarget', { name: nameOf(r.target) })), h('span', { class: 'muted' }, ` · ${P('adminReportBy', { name: nameOf(r.reporter) })}`)),
       r.text ? h('p', { class: 'pf-rep-text selectable' }, cleanText(r.text, LIMITS.reportText)) : null,
-      song ? h('div', { class: 'pf-rep-song' }, h('span', { class: 'muted' }, `${P('adminReportSong')}: `), h('audio', { controls: true, preload: 'none', src: song }), r.target.song.title ? h('span', { class: 'ellipsis' }, cleanText(r.target.song.title, LIMITS.songTitle)) : null) : null,
+      song ? h('div', { class: 'pf-rep-song' }, h('span', { class: 'muted' }, `${P('adminReportSong')}: `), h('audio', { controls: true, preload: 'none', src: song.url }), attributionEl(song)) : null,
       h('div', { class: 'row wrap' }, closeBtn, songBtn),
     );
   }

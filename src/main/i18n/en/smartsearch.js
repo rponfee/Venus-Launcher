@@ -1,6 +1,10 @@
 'use strict';
 // Smart search (main process): errors and task titles.
 module.exports = {
+  errAi_noplan: 'The search AI is only for paid Venus IA plans.',
+  errAi_consent: 'Accept the privacy notice before using the AI.',
+  errAi_sourceUnavailable: 'That AI is not available right now: check your plan or the app installed on your PC.',
+  errAi_badSource: 'That AI option does not exist.',
   errEmptyQuery: 'Type what you want to search for.',
   errTooLong: 'The request is too long (400 characters max).',
   errModrinth: 'Could not connect to Modrinth: {error}',

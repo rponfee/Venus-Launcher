@@ -194,7 +194,6 @@
 .st-filter-field .select { width: 100%; max-width: none; }
 .st-filter-end { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; }
 .st-filter-busy { display: flex; align-items: center; gap: var(--sp-2); white-space: nowrap; }
-.st-adv-card .st-filter { margin-bottom: var(--sp-1); }
 
 /* ---------- En el juego ---------- */
 .st-ig-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); }
@@ -245,34 +244,6 @@
 .st-ms-progress { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .st-ms-progress .progress { flex: 1; height: 6px; }
 .st-ms-new { height: 20px; padding: 0 6px; font-family: var(--font); letter-spacing: 0; flex-shrink: 0; }
-
-.st-adv-head { display: flex; align-items: center; gap: 18px 26px; flex-wrap: wrap; margin: 14px 0 var(--sp-1); }
-.st-adv-cats { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 10px; }
-.st-adv-cat .progress { height: 8px; margin-top: 6px; }
-.st-adv-cat-name { font-weight: 600; font-size: var(--fs-sm); }
-.st-adv-section { margin-top: var(--sp-4); }
-.st-adv-section > .label { display: block; margin-bottom: var(--sp-2); }
-.st-adv-section > .btn svg { width: 14px; height: 14px; }
-.st-adv-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: var(--sp-2); }
-.st-adv-missing { margin-top: 10px; }
-.st-adv { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 11px; border: 1px solid var(--border); background: var(--well-bg); min-width: 0; }
-.st-adv-icon { width: 32px; height: 32px; border-radius: var(--radius-s); flex-shrink: 0; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent-hi); }
-.st-adv-icon svg { width: 16px; height: 16px; }
-.st-adv.f-goal .st-adv-icon { background: color-mix(in srgb, var(--cream) 12%, transparent); color: var(--cream); }
-.st-adv.f-challenge .st-adv-icon { background: var(--warn-wash); color: var(--warn-text); }
-.st-adv-main { flex: 1; min-width: 0; }
-.st-adv-title { font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.st-adv-desc { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.st-adv-meta { text-align: right; flex-shrink: 0; max-width: 120px; min-width: 0; font-variant-numeric: tabular-nums; }
-.st-adv-missing .st-adv { opacity: 0.85; }
-.st-adv-worlds { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-2); }
-.st-adv-world {
-  display: flex; flex-direction: column; gap: var(--sp-1); padding: 10px var(--sp-3); border-radius: 11px; border: 1px solid var(--border); background: var(--well-bg); color: var(--text); text-align: left; cursor: pointer; min-width: 0;
-  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
-}
-.st-adv-world:hover { border-color: var(--border-3); background: var(--hover-bg); }
-.st-adv-world .progress { height: 6px; margin-top: 2px; }
-.st-adv-world-name { font-weight: 600; min-width: 0; }
 
 /* ---------- Detalle de un mundo ---------- */
 .modal.st-world-modal { width: min(880px, 100%); }

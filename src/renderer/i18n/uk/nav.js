@@ -45,9 +45,6 @@ export default {
   resetMenu: "Скинути",
   done: "Готово",
   menuSaveFailed: "Не вдалося зберегти меню",
-  compete: "Змагання",
   clans: "Клани",
   communities: "Спільноти",
-  seeds: "Переглядач сідів",
-  extensions: "Розширення",
 };

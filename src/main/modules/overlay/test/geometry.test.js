@@ -89,3 +89,28 @@ test('cuenta completa: juego al 150 %, widget con escala 1,5 en la esquina infer
   assert.ok(Math.abs(center.left + size.w / 2 - 0.5) < 1e-9);
   assert.ok(Math.abs(center.top + size.h / 2 - 0.5) < 1e-9);
 });
+
+test('atajos globales: solo con un juego adelante (o el overlay); sin noticias de la ventana se supone que si', () => {
+  const { gameInFront } = require('../geometry');
+  const g = (info) => ({ info });
+  const up = { found: true, hwnd: '10', foreground: '10', minimized: false };
+  assert.equal(gameInFront([], '77'), false, 'sin juegos');
+  assert.equal(gameInFront([g(up)], '77'), true);
+  assert.equal(gameInFront([g({ ...up, foreground: '55' })], '77'), false, 'otra aplicacion adelante');
+  assert.equal(gameInFront([g({ ...up, foreground: '77' })], '77'), true, 'el propio overlay con el foco (edicion, paneles)');
+  assert.equal(gameInFront([g({ ...up, foreground: '77' })], ''), false, 'sin ventana de overlay no hay nada que comparar');
+  assert.equal(gameInFront([g({ ...up, minimized: true })], '77'), false);
+  assert.equal(gameInFront([g({ found: false })], '77'), true, 'todavia no se encontro la ventana');
+  assert.equal(gameInFront([g({ ...up, foreground: '55' }), g({ found: false })], '77'), true, 'con dos juegos alcanza con uno');
+  assert.equal(gameInFront(new Set([g({ ...up, foreground: '0' })]).values(), '77'), false, 'acepta cualquier iterable');
+});
+
+test('rectangulos casi iguales: un pixel de redondeo no cuenta, varios si', () => {
+  const { nearRect } = require('../geometry');
+  const a = { x: 100, y: 50, width: 1280, height: 720 };
+  assert.equal(nearRect(a, { ...a, width: 1281 }), true);
+  assert.equal(nearRect(a, { ...a, x: 99, y: 51 }), true);
+  assert.equal(nearRect(a, { ...a, width: 1287 }), false);
+  assert.equal(nearRect(a, null), false);
+  assert.equal(nearRect(a, a, 0), true);
+});

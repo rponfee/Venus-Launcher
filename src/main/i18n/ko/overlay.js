@@ -9,13 +9,4 @@ module.exports = {
   playerJoinBody: "내 서버 {name}에 접속했어요.",
   taskDoneTitle: "작업 완료",
   taskFailedTitle: "작업을 완료하지 못했어요",
-  streamerFriend: "친구",
-  streamerFriendN: "친구 {n}",
-  streamerYou: "나",
-  streamerMessage: "메시지를 보냈어요",
-  streamerRoom: "음성 방",
-  streamerFriendAlert: "친구 알림",
-  streamerOnTitle: "스트리머 모드 켜짐",
-  streamerOnBody: "화면에 이름, 메시지, 코드, 주소를 표시하지 않아요.",
-  streamerOffTitle: "스트리머 모드 꺼짐",
 };

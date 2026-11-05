@@ -294,6 +294,69 @@ for (const [status, expected, code] of [
   });
 }
 
+// Qué respondió CurseForge cuando rechazó el pedido: se clasifica sin devolver ni registrar su texto.
+const plain = (body: string, status: number, headers: Record<string, string> = {}) =>
+  new Response(body, { status, headers: { 'content-type': 'text/plain', ...headers } });
+const logged = () => {
+  const entries: Record<string, string | number>[] = [];
+  return { entries, deps: { log: (entry: Record<string, string | number>) => { entries.push(entry); } } };
+};
+const SEARCH = { method: 'GET', path: '/v1/mods/search?gameId=432&classId=6&pageSize=1' };
+const DOWNLOAD = { method: 'GET', path: '/v1/mods/42/files/99/download-url' };
+
+for (const [label, status, reply, payload, code] of [
+  ['texto de clave inválida', 403, () => plain('Forbidden: API Key missing or invalid', 403, { server: 'Kestrel' }), SEARCH, 'badkey'],
+  ['mismo texto con 401', 401, () => plain('Forbidden: API Key missing or invalid', 401), SEARCH, 'badkey'],
+  ['403 vacío de CloudFront', 403, () => new Response(null, { status: 403, headers: { 'x-cache': 'Error from cloudfront', via: '1.1 fixture.cloudfront.net (CloudFront)' } }), SEARCH, 'blocked'],
+  ['página HTML del borde', 403, () => new Response('<!DOCTYPE html><html><body>Blocked</body></html>', { status: 403, headers: { 'content-type': 'text/html' } }), SEARCH, 'blocked'],
+  ['HTML enorme', 403, () => new Response('<html>' + 'x'.repeat(9000) + '</html>', { status: 403, headers: { 'content-type': 'text/html' } }), SEARCH, 'blocked'],
+  ['JSON desconocido en una búsqueda', 403, () => json({ message: 'Fixture' }, 403), SEARCH, 'badkey'],
+  ['descarga que el autor no permite', 403, () => json({ message: 'Fixture' }, 403), DOWNLOAD, 'denied'],
+  ['descarga con clave inválida', 403, () => plain('Forbidden: API Key missing or invalid', 403), DOWNLOAD, 'badkey'],
+] as const) {
+  test('rechazo de CurseForge: ' + label + ' -> ' + code, async () => {
+    const { entries, deps } = logged();
+    const { handler } = setup({ upstream: reply, deps });
+    const res = await handler(request(payload));
+    await errorIs(res, 403, code);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].evt, 'curseforge.rejected');
+    assert.equal(entries[0].kind, code);
+    assert.equal(entries[0].status, status);
+  });
+}
+
+test('el registro de diagnóstico no contiene la clave, la sesión ni el texto del proveedor', async () => {
+  const { entries, deps } = logged();
+  const { handler } = setup({ deps, upstream: () => plain('Forbidden: ' + KEY + ' ' + TOKEN, 403, { server: KEY, 'x-cache': 'Error from cloudfront ' + TOKEN }) });
+  const res = await handler(request(SEARCH));
+  const raw = await res.text();
+  for (const secret of [KEY, TOKEN, SERVICE]) {
+    assert.ok(!raw.includes(secret));
+    assert.ok(!JSON.stringify(entries).includes(secret));
+  }
+  assert.equal(entries.length, 1);
+});
+
+test('si el registro falla, la respuesta sale igual', async () => {
+  const { handler } = setup({ deps: { log: () => { throw new Error('fixture-log'); } }, upstream: () => plain('Forbidden: API Key missing or invalid', 403) });
+  await errorIs(await handler(request(SEARCH)), 403, 'badkey');
+});
+
+test('429, 5xx y caída de red también dejan una línea sin datos del proveedor', async () => {
+  for (const [reply, evt] of [
+    [() => plain('slow down', 429), 'curseforge.limited'],
+    [() => plain('boom', 503), 'curseforge.upstream'],
+    [() => { throw new Error(KEY); }, 'curseforge.network'],
+  ] as const) {
+    const { entries, deps } = logged();
+    const { handler } = setup({ upstream: reply, deps });
+    await handler(request(SEARCH));
+    assert.deepEqual(entries.map((entry) => entry.evt), [evt]);
+    assert.ok(!JSON.stringify(entries).includes(KEY));
+  }
+});
+
 test('fallo de fetch no devuelve detalles internos', async () => {
   const { handler } = setup({ upstream: () => { throw new Error(KEY); } });
   await errorIs(await handler(request()), 502, 'upstream');

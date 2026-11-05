@@ -45,9 +45,6 @@ export default {
   resetMenu: "Zresetuj",
   done: "Gotowe",
   menuSaveFailed: "Nie udało się zapisać menu",
-  compete: "Rywalizacja",
   clans: "Klany",
   communities: "Społeczności",
-  seeds: "Podgląd ziaren",
-  extensions: "Rozszerzenia",
 };

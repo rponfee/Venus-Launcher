@@ -64,6 +64,56 @@ function validAccelerator(accel) {
   return mods.length > 0 || /^F(1[3-9]|2[0-4])$/.test(key);
 }
 
+// ---------- Choques entre atajos ----------
+// Un atajo global le saca la combinacion a quien este adelante. Mientras se juega, el que adelante es Minecraft: una
+// combinacion con solo Ctrl o Mayus (correr, agacharse, soltar, chat) o con Ctrl+Alt (que es AltGr en los teclados con
+// la arroba, el euro y la barra invertida en esa tecla) le romperia el teclado al juego. Y entre los de Venus (Voice
+// Chat, capturas, musica y los del propio overlay) no se pueden repetir: el segundo que se registra se quedaria sin
+// atajo, en silencio.
+const MOD_CANON = { Command: 'Super', Cmd: 'Super', Super: 'Super', Meta: 'Super', Control: 'Ctrl', Ctrl: 'Ctrl', CommandOrControl: 'Ctrl', CmdOrCtrl: 'Ctrl', Alt: 'Alt', Option: 'Alt', AltGr: 'AltGr', Shift: 'Shift' };
+const MOD_ORDER = ['Ctrl', 'Alt', 'AltGr', 'Shift', 'Super'];
+const KEY_CANON = { Esc: 'Escape', Return: 'Enter', Plus: '+' };
+
+// "Shift+Alt+o" -> { mods: ['Alt', 'Shift'], key: 'O', text: 'Alt+Shift+O' } (null si no es un atajo valido)
+function parseAccelerator(accel) {
+  if (!validAccelerator(accel)) return null;
+  const parts = accel.trim().split('+');
+  const raw = parts[parts.length - 1];
+  const key = KEY_CANON[raw] || (raw.length === 1 ? raw.toUpperCase() : raw);
+  // Sin repetidas y siempre en el mismo orden: Alt+Shift+O y Shift+Alt+O son el mismo atajo
+  const mods = [...new Set(parts.slice(0, -1).map((m) => MOD_CANON[m]))].sort((a, b) => MOD_ORDER.indexOf(a) - MOD_ORDER.indexOf(b));
+  return { mods, key, text: [...mods, key].join('+') };
+}
+
+const canonAccelerator = (accel) => parseAccelerator(accel)?.text || '';
+
+// Combinaciones de Windows que no se le pueden sacar al sistema
+const SYSTEM_KEYS = new Set(['Alt+F4', 'Alt+Tab', 'Alt+Shift+Tab', 'Alt+Enter', 'Alt+Space', 'Alt+Escape', 'Ctrl+Escape', 'Ctrl+Shift+Escape', 'Ctrl+Alt+Tab', 'Super+L', 'Super+D', 'Super+Tab']);
+const PRINTABLE = /^([A-Z0-9]|Plus|[`~!@#$%^&*()\-_=[\]{};:'",.<>/?\\|+])$/;
+
+// Por que un atajo no conviene (aunque sea valido): 'system', 'minecraft' o 'altgr'; null si esta bien.
+//   system     combinacion de Windows (Alt+F4, Alt+Tab...)
+//   minecraft  solo Ctrl y/o Mayus (con cualquier tecla salvo F13 a F24): son las teclas de correr y agacharse
+//   altgr      Ctrl+Alt con una tecla que se escribe (es AltGr en muchos teclados)
+function shortcutIssue(accel) {
+  const p = parseAccelerator(accel);
+  if (!p) return 'invalid';
+  if (SYSTEM_KEYS.has(p.text)) return 'system';
+  if (/^F(1[3-9]|2[0-4])$/.test(p.key)) return null;
+  const alt = p.mods.includes('Alt') || p.mods.includes('AltGr');
+  if (!alt && !p.mods.includes('Super')) return 'minecraft';
+  if (p.mods.includes('AltGr') || (alt && p.mods.includes('Ctrl'))) return PRINTABLE.test(p.key) ? 'altgr' : null;
+  return null;
+}
+
+// Primer atajo de la lista ({ id, accel }) que es el mismo que accel (sin importar el orden de las teclas ni los sinonimos)
+function findConflict(accel, list) {
+  const want = canonAccelerator(accel);
+  if (!want) return null;
+  for (const item of Array.isArray(list) ? list : []) if (item && canonAccelerator(item.accel) === want) return item;
+  return null;
+}
+
 function normalizeWidget(id, raw) {
   const d = DEFAULTS.widgets[id];
   const r = raw && typeof raw === 'object' ? raw : {};
@@ -99,9 +149,16 @@ function normalize(raw) {
   if (r.shortcut === '' || r.shortcut === null) shortcut = '';
   else if (validAccelerator(r.shortcut)) shortcut = r.shortcut.trim();
   const ps = r.panelShortcuts && typeof r.panelShortcuts === 'object' ? r.panelShortcuts : {};
+  // Dos atajos iguales no pueden convivir (el segundo no se registraria): gana el de arriba, el otro queda sin atajo
+  const taken = new Set([canonAccelerator(shortcut)].filter(Boolean));
   const panelShortcuts = Object.fromEntries(PANELS.map((id) => {
-    if (ps[id] === '' || ps[id] === null) return [id, ''];
-    return [id, validAccelerator(ps[id]) ? ps[id].trim() : PANEL_SHORTCUTS[id]];
+    let value = '';
+    if (ps[id] === '' || ps[id] === null) value = '';
+    else value = validAccelerator(ps[id]) ? ps[id].trim() : PANEL_SHORTCUTS[id];
+    const canon = canonAccelerator(value);
+    if (canon && taken.has(canon)) value = '';
+    else if (canon) taken.add(canon);
+    return [id, value];
   }));
   return {
     enabled: bool(r.enabled, DEFAULTS.enabled),
@@ -127,6 +184,17 @@ function positionPatch(id, pos) {
   return { [id]: out };
 }
 
+// Tamano, opacidad y "oculto" de un widget desde el modo edicion (mismas reglas que normalizeWidget) -> parche o null.
+function tweakPatch(id, patch) {
+  if (!WIDGETS.includes(id) || !patch || typeof patch !== 'object') return null;
+  const d = DEFAULTS.widgets[id];
+  const out = {};
+  if (typeof patch.enabled === 'boolean') out.enabled = patch.enabled;
+  if (typeof patch.scale === 'number' && Number.isFinite(patch.scale)) out.scale = round(clamp(patch.scale, 0.6, 1.6, d.scale), 0.05);
+  if (typeof patch.opacity === 'number' && Number.isFinite(patch.opacity)) out.opacity = round(clamp(patch.opacity, 0.3, 1, d.opacity), 0.01);
+  return Object.keys(out).length ? { [id]: out } : null;
+}
+
 // Parche que vuelve todas las posiciones a las de fabrica (Restablecer).
 function resetPatch() {
   return Object.fromEntries(WIDGETS.map((id) => {
@@ -135,4 +203,4 @@ function resetPatch() {
   }));
 }
 
-module.exports = { WIDGETS, ANCHORS, THEMES, ALERT_GROUPS, PERF_METRICS, COUNTER_METRICS, PANELS, PANEL_SHORTCUTS, DEFAULTS, DEFAULT_SHORTCUT, normalize, normalizeWidget, positionPatch, resetPatch, validAccelerator };
+module.exports = { WIDGETS, ANCHORS, THEMES, ALERT_GROUPS, PERF_METRICS, COUNTER_METRICS, PANELS, PANEL_SHORTCUTS, DEFAULTS, DEFAULT_SHORTCUT, normalize, normalizeWidget, positionPatch, tweakPatch, resetPatch, validAccelerator, canonAccelerator, shortcutIssue, findConflict };

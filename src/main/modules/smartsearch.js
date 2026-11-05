@@ -10,12 +10,16 @@ const interpreter = require('./smartsearch/interpreter');
 const engine = require('./smartsearch/engine');
 const aiPlan = require('./smartsearch/ai-plan');
 const kit = require('./smartsearch/kit');
+const aiSource = require('./smartsearch/ai-source');
+const localAi = require('./smartsearch/local-ai');
+const fake = require('./smartsearch/fake');
 const L = require('./smartsearch/lexicon');
 // Filtros extra (frase exacta, palabras excluidas, autor, descargas, fecha, codigo abierto, entorno): los mismos del catalogo.
 const searchFilters = require('../core/search-filters');
 
 const HISTORY_MAX = 20;
-const DEFAULT_PREFS = { perType: 5, compatibleOnly: true, useAi: true };
+// La IA es opt-in y solo de pago (ver smartsearch/ai-source.js): por defecto apagada y sin aviso aceptado.
+const DEFAULT_PREFS = { perType: 5, compatibleOnly: true, useAi: false, aiSource: null, aiConsent: { venus: null, local: null } };
 const LOADER_FILTERS = ['auto', 'fabric', 'forge', 'neoforge', 'quilt', 'vanilla'];
 const ID_RE = /^[\w.-]{1,64}$/;
 
@@ -41,15 +45,50 @@ async function releases() {
   return releasesCache;
 }
 
-async function aiStatus() {
-  try {
-    // La IA va por el backend del launcher: lista si esta activada y hay sesion de Venus (provider 'backend')
-    const st = await ai().status();
-    const ready = Boolean(st.provider);
-    return { configured: ready, enabled: ready && st.enabled !== false };
-  } catch {
-    return { configured: false, enabled: false };
+// Estado de la IA del buscador: plan de la cuenta, fuentes disponibles (Venus IA o la IA local de la PC), cual esta
+// elegida y si se acepto el aviso de privacidad. Si algo no se puede comprobar (sin conexion, sin sesion) la IA queda
+// apagada: el buscador usa el interprete local. refresh = volver a preguntar el plan y detectar las apps locales.
+async function aiView({ refresh = false } = {}) {
+  // Capturas y pruebas de desarrollo (VENUS_SMARTSEARCH_AI_FAKE con VENUS_DEVSHOT): plan y apps locales simulados
+  const simulated = fake.inputs();
+  if (simulated) {
+    const { prefs } = await prefsAndHistory();
+    return aiSource.describe({ ...simulated, preferredEngine: 'claude', prefs });
   }
+  let status = null;
+  try {
+    status = await ai().status({ refresh });
+  } catch {
+    status = null;
+  }
+  const { prefs } = await prefsAndHistory();
+  const paid = aiSource.planOf(status).state === 'paid';
+  let engines = null;
+  let entitled = false;
+  if (paid) {
+    try {
+      const eng = require('./assistant/engines');
+      if (refresh || eng.stale()) await Promise.race([eng.detect({ refresh }).catch(() => {}), new Promise((r) => setTimeout(r, refresh ? 8000 : 1200))]);
+      engines = eng.cached();
+    } catch {
+      engines = null;
+    }
+    try {
+      entitled = (await require('./mcp').planState({ wait: refresh ? 8000 : 1500, refresh })).entitled === true;
+    } catch {
+      entitled = false;
+    }
+  }
+  const s = await settings.get();
+  return aiSource.describe({ status, engines, entitled, preferredEngine: s.ai?.engine, prefs });
+}
+
+// Quien responde segun la fuente elegida: la misma forma ({ json }) para Venus IA y para la IA local.
+function runnerFor(view) {
+  if (fake.mode()) return fake.runner();
+  if (view.source !== 'local') return ai();
+  const engine = view.sources.find((x) => x.id === 'local')?.engine;
+  return { json: (o) => localAi.json({ ...o, engine }) };
 }
 
 async function prefsAndHistory() {
@@ -59,8 +98,8 @@ async function prefsAndHistory() {
 }
 
 async function context() {
-  const [rel, st, ph] = await Promise.all([releases(), aiStatus(), prefsAndHistory()]);
-  return { ai: st.enabled, aiConfigured: st.configured, latestRelease: rel.latest, releases: rel.list, ...ph };
+  const [rel, view, ph] = await Promise.all([releases(), aiView(), prefsAndHistory()]);
+  return { ai: view, latestRelease: rel.latest, releases: rel.list, ...ph };
 }
 
 async function resolveTarget(instanceId) {
@@ -108,7 +147,7 @@ function sanitize(query, filters = {}) {
       types: Array.isArray(f.types) ? f.types.filter((tp) => L.TYPES.includes(tp)) : [],
       perType: Math.max(1, Math.min(interpreter.MAX_PER_TYPE, Number(f.perType) || DEFAULT_PREFS.perType)),
       compatibleOnly: f.compatibleOnly !== false,
-      useAi: f.useAi !== false,
+      useAi: f.useAi === true,
       instanceId: typeof f.instanceId === 'string' && ID_RE.test(f.instanceId) ? f.instanceId : null,
       serverId: typeof f.serverId === 'string' && ID_RE.test(f.serverId) ? f.serverId : null,
       runId: typeof f.runId === 'string' && /^[\w-]{4,40}$/.test(f.runId) ? f.runId : null,
@@ -143,20 +182,27 @@ async function makePlan(query, filters, { signal, progress = () => {}, warnings 
   const ctx = await buildContext(f);
   progress('interpret', {});
   let plan = interpreter.plan(q, ctx);
+  let runner = null;
   if (f.useAi) {
-    const st = await aiStatus();
-    if (st.enabled) {
-      progress('ai', {});
+    const view = await aiView();
+    if (view.active) {
+      runner = runnerFor(view);
+      progress('ai', { source: view.source });
       try {
-        plan = await aiPlan.improve(plan, ctx, { signal, turnId });
+        plan = await aiPlan.improve(plan, ctx, { signal, turnId, ai: runner });
+        plan.aiVia = view.source;
       } catch (err) {
         if (signal?.aborted) throw err;
         console.warn('[smartsearch] IA:', err.message);
-        warnings.push({ key: 'aiFailed', vars: { error: err.message } });
+        runner = null;
+        warnings.push({ key: err?.code === 'network' ? 'aiOffline' : 'aiFailed', vars: { error: String(err.message || err).slice(0, 160) } });
       }
+    } else {
+      const why = aiSource.whyNot(view);
+      if (why) warnings.push({ key: why });
     }
   }
-  return { plan, ctx, filters: f, query: q };
+  return { plan, ctx, filters: f, query: q, runner };
 }
 
 async function saveHistory(query, filters, result) {
@@ -184,12 +230,12 @@ async function saveHistory(query, filters, result) {
 }
 
 // Motivos de la IA en segundo plano: llegan despues como 'smartsearch:reasons'.
-function annotateLater(result, send) {
+function annotateLater(result, send, runner) {
   annotating?.abort(new Error('superseded'));
   const controller = new AbortController();
   annotating = controller;
   aiPlan
-    .reasons(result.query, result.groups, getLanguage(), { signal: controller.signal, turnId: `ss:${result.runId}` })
+    .reasons(result.query, result.groups, getLanguage(), { signal: controller.signal, turnId: `ss:${result.runId}`, ai: runner || ai() })
     .then((items) => send?.('smartsearch:reasons', { runId: result.runId, items }))
     .catch((err) => {
       if (controller.signal.aborted) return;
@@ -215,7 +261,7 @@ async function run(query, filters, { send, onProgress } = {}) {
   };
   try {
     const warnings = [];
-    const { plan, ctx, filters: f, query: q } = await makePlan(query, filters, { signal, progress, warnings, turnId: `ss:${runId}` });
+    const { plan, ctx, filters: f, query: q, runner } = await makePlan(query, filters, { signal, progress, warnings, turnId: `ss:${runId}` });
     const result = await engine.run(plan, ctx, { signal, progress });
     result.runId = runId;
     result.warnings = [...warnings, ...result.warnings];
@@ -223,7 +269,7 @@ async function run(query, filters, { send, onProgress } = {}) {
     result.filters = f;
     progress('done', {});
     await saveHistory(q, f, result);
-    if (result.aiReasons === 'pending') annotateLater(result, send);
+    if (result.aiReasons === 'pending') annotateLater(result, send, runner);
     return result;
   } catch (err) {
     if (signal.aborted) throw new Error(t('smartsearch.errCanceled'));
@@ -264,13 +310,28 @@ function register({ handle, send, onQuit }) {
     return [];
   });
   handle('smartsearch:savePrefs', async (prefs = {}) => {
+    // La IA (useAi, fuente y aviso aceptado) se cambia solo con smartsearch:aiSet: ahi se comprueba el plan.
     const clean = {
       perType: Math.max(1, Math.min(interpreter.MAX_PER_TYPE, Number(prefs.perType) || DEFAULT_PREFS.perType)),
       compatibleOnly: prefs.compatibleOnly !== false,
-      useAi: prefs.useAi !== false,
     };
     await settings.set({ smartsearch: { prefs: clean } });
     return clean;
+  });
+  // Estado de la IA (refresh = volver a preguntar el plan y detectar Claude Code / Codex)
+  handle('smartsearch:ai', (opts) => aiView({ refresh: Boolean(opts && opts.refresh) }));
+  // Prender o apagar la IA, elegir la fuente y aceptar el aviso. { useAi?, source?: 'venus' | 'local', consent?: true }
+  handle('smartsearch:aiSet', async (change) => {
+    const view = await aiView();
+    const { prefs } = await prefsAndHistory();
+    let next;
+    try {
+      next = aiSource.applyChange(view, prefs, change && typeof change === 'object' ? change : {});
+    } catch (err) {
+      throw Object.assign(new Error(t(`smartsearch.errAi_${err.code}`)), { code: err.code });
+    }
+    await settings.set({ smartsearch: { prefs: { useAi: next.useAi, aiSource: next.aiSource, aiConsent: next.aiConsent } } });
+    return aiView();
   });
   handle('smartsearch:createInstance', (opts) => kit.createInstance(opts, { send }));
   handle('smartsearch:installKit', (opts) => kit.installKit(opts, { send }));
@@ -280,6 +341,8 @@ module.exports = {
   register,
   // Para otros modulos o pruebas:
   interpret: (query, ctx) => interpreter.interpret(query, ctx),
+  aiView,
+  _makePlan: (query, filters, opts) => makePlan(query, filters, opts),
   plan: async (query, filters) => (await makePlan(query, filters)).plan,
   run,
   cancel,

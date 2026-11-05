@@ -1,13 +1,14 @@
 // Imagenes del perfil: se recortan, se achican y se comprimen en la PC antes de subirlas al bucket publico
-// profile-media (carpeta <userId>/, hasta 12 archivos de 4 MB; los GIF solo con premium: 0020_perfiles.sql).
-// Los errores llevan err.code: 'type', 'too_big', 'decode', 'limit', 'denied', 'unavailable', 'network', 'session'.
+// profile-media (carpeta <userId>/, hasta 12 archivos de 4 MB; desde la 4.6 sin GIF para nadie: 0039_perfil_circular_banners.sql).
+// El banner propio es solo una imagen quieta: GIF, APNG y WebP animado se rechazan mirando el contenido (bannerSourceError).
+// Los errores llevan err.code: 'type', 'animated', 'too_big', 'decode', 'limit', 'denied', 'unavailable', 'network', 'session'.
 import { cloud } from '../../cloud.js';
-import { LIMITS, cropRect, fitSize, mediaFileName, orphanMedia } from './model.js';
+import { LIMITS, bannerSourceError, cropRect, fitSize, mediaFileName, orphanMedia } from './model.js';
 
 const BUCKET = 'profile-media';
 const SOURCE_MAX = 30 * 1024 * 1024; // archivo de origen (antes de comprimir)
 const TARGET = LIMITS.fileBytes - 200 * 1024; // margen bajo el limite del bucket
-const STATIC_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const STATIC_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 export class MediaError extends Error {
   constructor(code, message) {
@@ -27,10 +28,22 @@ export function loadImage(src, { cors = false } = {}) {
   });
 }
 
-// Archivo elegido -> imagen cargada (para recortar varias veces sin volver a leerlo)
-export async function readImageFile(file) {
-  if (!file || !STATIC_TYPES.includes(file.type)) throw new MediaError('type');
+// Archivo elegido -> imagen cargada (para recortar varias veces sin volver a leerlo).
+// still: true (el banner) mira el contenido del archivo y rechaza lo que se mueve (GIF, APNG, WebP animado) o no es PNG, JPG ni WebP,
+// diga lo que diga la extension o el type.
+export async function readImageFile(file, { still = false } = {}) {
+  if (!file || (!still && !STATIC_TYPES.includes(file.type))) throw new MediaError('type');
   if (file.size > SOURCE_MAX) throw new MediaError('too_big');
+  if (still) {
+    let bytes;
+    try {
+      bytes = new Uint8Array(await file.arrayBuffer());
+    } catch {
+      throw new MediaError('decode');
+    }
+    const why = bannerSourceError(bytes);
+    if (why) throw new MediaError(why);
+  }
   const url = URL.createObjectURL(file);
   try {
     const img = await loadImage(url);
@@ -89,20 +102,6 @@ export async function featuredFromImage(img) {
   const size = fitSize(rect.sw, rect.sh, LIMITS.featuredW, LIMITS.featuredH);
   const { blob, ext } = await encode(draw(img, rect, size));
   return { blob, ext, url: URL.createObjectURL(blob), width: size.width, height: size.height };
-}
-
-// Banner animado: el GIF tal cual (recomprimirlo perderia la animacion); solo se controla tipo y peso
-export async function gifBanner(file) {
-  if (!file || file.type !== 'image/gif') throw new MediaError('type');
-  if (file.size > LIMITS.fileBytes) throw new MediaError('too_big');
-  const url = URL.createObjectURL(file);
-  try {
-    const img = await loadImage(url);
-    return { blob: file, ext: 'gif', url, width: img.naturalWidth, height: img.naturalHeight };
-  } catch {
-    URL.revokeObjectURL(url);
-    throw new MediaError('decode');
-  }
 }
 
 // Imagen que llega de otra parte del launcher (Capturas y clips): URL file:/data:/blob: o un Blob
@@ -168,8 +167,13 @@ export async function makeRoom(keepUrls, needed = 1) {
 export async function uploadMedia(blob, { kind, ext }) {
   const { client, uid } = requireSession();
   if (!blob || blob.size > LIMITS.fileBytes) throw new MediaError('too_big');
+  // Ultima barrera: lo que sube un banner nunca es un GIF, un APNG ni un WebP animado (sale de un lienzo, pero se mira igual)
+  if (kind === 'banner') {
+    const why = bannerSourceError(new Uint8Array(await blob.arrayBuffer()));
+    if (why) throw new MediaError(why);
+  }
   const name = mediaFileName(kind, ext);
-  const type = { webp: 'image/webp', jpg: 'image/jpeg', png: 'image/png', gif: 'image/gif' }[ext] || 'image/webp';
+  const type = { webp: 'image/webp', jpg: 'image/jpeg', png: 'image/png' }[ext] || 'image/webp';
   const { error } = await client.storage.from(BUCKET).upload(`${uid}/${name}`, blob, { contentType: type, cacheControl: '31536000', upsert: false });
   if (error) throw storageError(error);
   const { data } = client.storage.from(BUCKET).getPublicUrl(`${uid}/${name}`);

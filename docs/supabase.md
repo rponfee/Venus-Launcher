@@ -56,12 +56,12 @@ En el proyecto de Venus (`dzchklzaxyygbvfpagvx`), cada migración quedó registr
 | `0028_sync_ajustes.sql` | Ajustes de apariencia por cuenta, versión optimista y objeto de hasta 64 KB | [Datos](implementacion/datos.md) |
 | `0029_resenas_servidores.sql` | Reseñas, votos, denuncias y moderación de servidores destacados | [Servidores](implementacion/servidores.md) |
 | `0030_stickers.sql` | Stickers por cuenta y cuotas de subida serializadas por usuario | [Mensajes y voz](implementacion/mensajes-voz.md) |
-| `0031_competencia.sql` | Rankings consentidos, desafíos, eventos e inscripciones; motivo `challenge` | [Competir](implementacion/competir.md) |
+| `0031_competencia.sql` | Rankings consentidos, desafíos, eventos e inscripciones; motivo `challenge` | Competir (retirada en la 4.6) |
 | `0032_galeria_clips.sql` | Publicaciones, me gusta y denuncias; validación de URL y vencimiento de clips | [Clips](implementacion/clips.md) |
 | `0033_clanes_comunidades.sql` | Clanes, comunidades, canales y `clan_prefs.share_playtime`, separado y apagado por defecto | [Clanes y comunidades](implementacion/clanes-comunidades.md) |
 | `0034_capas.sql` | Ítems de capa, elección por cuenta y consulta pública por UUID Minecraft verificado | [Capas](implementacion/capas.md) |
 | `0035_app_celular.sql` | Push opcional, bandeja móvil y clips recibidos; conserva `media-share` | [App para celular](implementacion/app-celular.md) |
-| `0036_extensiones.sql` | Catálogo moderado, versiones inmutables y blocklist pública | [Extensiones](implementacion/extensiones.md) |
+| `0036_extensiones.sql` | Catálogo moderado, versiones inmutables y blocklist pública | Extensiones (retiradas en la 4.6) |
 | `0037_curseforge_admin.sql` | Configuración administrativa de CurseForge en Vault, estado público y acceso del servidor con cuota de 240/minuto por cuenta | [Administración](admin.md) |
 
 La [revisión SQL permanente](implementacion/revision-sql-0028-0036.md) conserva el inventario de **183 funciones / 32 tablas**, las correcciones, ACL/RLS y el ensayo local **ejecutado** el 3 de noviembre: **1282 comprobaciones, incluidas 57 de escenarios**. El 4 de noviembre se aplicaron completas 0028–0036 en producción; se comprobaron **183/183 funciones, 32/32 tablas con RLS y la conservación del motivo `challenge`**. Las nueve versiones registradas y la activación posterior de 0037 figuran en [activación del backend](activacion-backend-4.5.0.md). 0037 pasó **84/84 comprobaciones SQL locales** sobre 0001–0036 completas, con rollback que restauró esquema/ACL, filas y secuencias. Su fixture de Vault solo usó valores ficticios y no prueba cifrado real.

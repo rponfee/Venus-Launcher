@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { uiHarness, deferred, flush } from './ui-harness.js';
 const community = {id:'c',name:'Prueba',myRole:'owner',channels:[],categories:[{id:'cat',name:'Proyectos',position:0}]};
 const control = (ui,key) => {
-  const label=ui.nodes.findLast(n=>n.tag==='label'&&n.children.includes('clans.'+key));
+  const label=ui.nodes.findLast(n=>n.tag==='label'&&n.children.includes('communities.'+key));
   return ui.nodes.find(n=>n.id===label?.for);
 };
 
@@ -59,7 +59,7 @@ test('eliminar requiere confirmación y el menú mueve con el orden completo', a
   await module.deleteCategory(b,c,c.categories[0],()=>{});
   assert.equal(confirmations,2);assert.equal(calls.length,0);
   const items=module.channelMenuItems(b,c,c.channels[2],()=>{});
-  await items.find(it=>it.label==='clans.moveUp').run();
+  await items.find(it=>it.label==='communities.moveUp').run();
   assert.deepEqual(JSON.parse(JSON.stringify(calls[0])),{name:'community_channels_reorder',args:{p_community:'c',p_ids:['two','other','one']}});
   assert.deepEqual(Array.from(module.channelMenuItems(b,{...c,myRole:'member'},c.channels[0],()=>{})),[]);
 });

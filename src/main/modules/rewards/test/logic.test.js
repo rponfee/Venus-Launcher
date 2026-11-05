@@ -190,9 +190,9 @@ test('códigos de invitación', async () => {
 
 const SHOP = [
   { id: 'title_explorer', kind: 'title', price: 300, premium_only: false, sort: 110 },
-  { id: 'frame_neon', kind: 'frame', price: 800, premium_only: false, sort: 20 },
-  { id: 'frame_venus', kind: 'frame', price: 0, premium_only: true, sort: 40 },
-  { id: 'frame_gold', kind: 'frame', price: 1500, premium_only: false, sort: 30 },
+  { id: 'frame_flame', kind: 'frame', price: 800, premium_only: false, sort: 20 },
+  { id: 'frame_wings', kind: 'frame', price: 0, premium_only: true, sort: 40 },
+  { id: 'frame_storm', kind: 'frame', price: 1500, premium_only: false, sort: 30 },
   { id: 'badge_gold', kind: 'badge_style', price: 0, premium_only: true, sort: 100 },
   { id: 'effect_fire', kind: 'name_effect', price: 2500, premium_only: false, sort: 70 },
   { id: 'banner_x', kind: 'banner', price: 10, premium_only: false, sort: 1 },
@@ -200,10 +200,10 @@ const SHOP = [
 
 test('vista de la tienda: grupos, orden y estado de cada ítem', async () => {
   const L = await load();
-  const groups = L.shopView(SHOP, { owned: ['frame_neon', 'title_explorer'], premium: false, balance: 1000, equipped: { frame: 'frame_neon' } });
+  const groups = L.shopView(SHOP, { owned: ['frame_flame', 'title_explorer'], premium: false, balance: 1000, equipped: { frame: 'frame_flame' } });
   assert.deepEqual(groups.map((g) => g.kind), ['frame', 'name_effect', 'badge_style', 'title'], 'sin los banners (no se equipan)');
   const frames = groups[0].items;
-  assert.deepEqual(frames.map((v) => v.item.id), ['frame_neon', 'frame_gold', 'frame_venus']);
+  assert.deepEqual(frames.map((v) => v.item.id), ['frame_flame', 'frame_storm', 'frame_wings']);
   assert.deepEqual(frames.map((v) => v.state), ['equipped', 'short', 'premium']);
   assert.equal(frames[1].missing, 500);
   assert.equal(groups[3].items[0].state, 'owned');
@@ -211,29 +211,32 @@ test('vista de la tienda: grupos, orden y estado de cada ítem', async () => {
   // Con premium, lo premium viene incluido
   const prem = L.shopView(SHOP, { owned: [], premium: true, balance: 5000, equipped: { badgeStyle: 'badge_gold' } });
   assert.equal(prem.find((g) => g.kind === 'badge_style').items[0].state, 'equipped');
-  assert.equal(prem[0].items.find((v) => v.item.id === 'frame_venus').state, 'owned');
-  assert.equal(prem[0].items.find((v) => v.item.id === 'frame_gold').state, 'buy');
+  assert.equal(prem[0].items.find((v) => v.item.id === 'frame_wings').state, 'owned');
+  assert.equal(prem[0].items.find((v) => v.item.id === 'frame_storm').state, 'buy');
   assert.deepEqual(L.shopView(null), []);
 });
 
 test('equipar: manda todos los casilleros y descarta lo que ya no corresponde', async () => {
   const L = await load();
-  const opts = { items: SHOP, owned: ['frame_neon', 'title_explorer'], premium: false };
-  assert.deepEqual(L.equipPatch({}, 'frame', 'frame_neon', opts), { frame: 'frame_neon', nameEffect: null, badgeStyle: null, title: null });
+  const opts = { items: SHOP, owned: ['frame_flame', 'title_explorer'], premium: false };
+  assert.deepEqual(L.equipPatch({}, 'frame', 'frame_flame', opts), { frame: 'frame_flame', nameEffect: null, badgeStyle: null, title: null });
   // Desequipar un casillero conserva los otros
-  assert.deepEqual(L.equipPatch({ frame: 'frame_neon', title: 'title_explorer' }, 'frame', null, opts), { frame: null, nameEffect: null, badgeStyle: null, title: 'title_explorer' });
+  assert.deepEqual(L.equipPatch({ frame: 'frame_flame', title: 'title_explorer' }, 'frame', null, opts), { frame: null, nameEffect: null, badgeStyle: null, title: 'title_explorer' });
   // Lo premium equipado sin premium se descarta (el servidor lo rechazaría con not_owned)
-  assert.deepEqual(L.equipPatch({ frame: 'frame_venus', badgeStyle: 'badge_gold' }, 'title', 'title_explorer', opts), { frame: null, nameEffect: null, badgeStyle: null, title: 'title_explorer' });
+  assert.deepEqual(L.equipPatch({ frame: 'frame_wings', badgeStyle: 'badge_gold' }, 'title', 'title_explorer', opts), { frame: null, nameEffect: null, badgeStyle: null, title: 'title_explorer' });
   // No se puede equipar algo que no se tiene, ni en el casillero equivocado
-  assert.equal(L.equipPatch({}, 'frame', 'frame_gold', opts).frame, null);
-  assert.equal(L.equipPatch({}, 'title', 'frame_neon', opts).title, null);
+  assert.equal(L.equipPatch({}, 'frame', 'frame_storm', opts).frame, null);
+  assert.equal(L.equipPatch({}, 'title', 'frame_flame', opts).title, null);
   // Con premium, lo premium sí
-  assert.equal(L.equipPatch({}, 'frame', 'frame_venus', { ...opts, premium: true }).frame, 'frame_venus');
+  assert.equal(L.equipPatch({}, 'frame', 'frame_wings', { ...opts, premium: true }).frame, 'frame_wings');
 });
 
 test('historial e ids sin traducción', async () => {
   const L = await load();
-  assert.deepEqual(L.historyEntry({ delta: '25', reason: 'daily', ref: '2026-11-01', at: '2026-11-01T12:00:00Z' }), { reason: 'daily', icon: 'calendar', ref: '2026-11-01', delta: 25, at: Date.parse('2026-11-01T12:00:00Z') });
+  assert.deepEqual(L.historyEntry({ delta: '25', reason: 'daily', ref: '2026-11-01', at: '2026-11-01T12:00:00Z' }), { reason: 'daily', icon: 'calendar', ref: '2026-11-01', refund: false, delta: 25, at: Date.parse('2026-11-01T12:00:00Z') });
+  const back = L.historyEntry({ reason: 'shop', delta: 1500, ref: 'refund:frame_gold' });
+  assert.equal(back.refund, true);
+  assert.equal(back.icon, 'undo', 'el reintegro de un marco retirado (0040)');
   const odd = L.historyEntry({ delta: -800, reason: 'raro', ref: null, at: 'no-es-fecha' });
   assert.equal(odd.reason, 'admin');
   assert.equal(odd.at, null);

@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('overlayBridge', {
   ready: () => tell({ type: 'ready' }),
   // Modo edicion: id del widget y { anchor: 'tl'...'br' } o { anchor: 'free', x, y } (fracciones de 0 a 1)
   move: (id, pos) => tell({ type: 'move', id: String(id), pos: pos && typeof pos === 'object' ? { anchor: String(pos.anchor), x: Number(pos.x), y: Number(pos.y) } : null }),
+  // Modo edicion: tamano (scale), opacidad y oculto (enabled) de un widget; el proceso principal los acota y los guarda
+  tweak: (id, patch) => tell({ type: 'tweak', id: String(id), patch: patch && typeof patch === 'object' ? Object.fromEntries(['enabled', 'scale', 'opacity'].filter((k) => patch[k] !== undefined).map((k) => [k, k === 'enabled' ? Boolean(patch[k]) : Number(patch[k])])) : null }),
   reset: () => tell({ type: 'reset' }),
   done: () => tell({ type: 'done' }),
   // Paneles: lo que pide la pagina se revisa en el proceso principal, y solo vale con un panel abierto

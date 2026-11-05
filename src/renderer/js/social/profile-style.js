@@ -1,5 +1,6 @@
 // Estilo de los perfiles de Venus (contrato 5 de la 2.0): nombre con tipografia, efecto, color, brillo y titulo,
-// marco equipado, banner (prediseñado, imagen, animado o el color clasico) y el fade del perfil.
+// marco equipado (dibujos propios de social/frames.js), banner (imagen quieta, GIF de KLIPY o el color clasico) y el fade del perfil.
+// Desde la 4.6 el avatar es siempre circular (no se elige) y no hay banners prediseñados ni GIF propios.
 // Lo usan las tarjetas de perfil (profile-ui.js), el editor (features/profile-editor.js), Mensajes y otras partes.
 // Acepta el perfil en camelCase (profile_public) o la fila cruda de profiles (snake_case). Si la fila no trae el
 // estilo (las de social.js), styledName lo pide aparte en un solo pedido para todos y se pinta cuando llega.
@@ -9,6 +10,7 @@ import { t, has, loadNs } from '../i18n.js';
 import { cloud } from '../cloud.js';
 import { bannerBackground, rankInfo } from './cosmetics.js';
 import { EXTRA_FONTS, fontStack } from '../features/profile-editor/fonts.js';
+import { drawFrame } from './frames.js';
 import {
   normalizeProfile,
   effectiveEffect,
@@ -17,22 +19,22 @@ import {
   titleStyle,
   badgeStyleOf,
   gradientCss as fadeCss,
-  presetCss,
   readableColor,
   fadeSurface,
   glowFilter,
   DEFAULT_NAME_COLOR,
   FONTS,
-  FRAMES,
   bubbleColors,
 } from '../features/profile-editor/model.js';
 
 const NS = 'profile';
 const CSS = 'features/profile-style';
 const FONTS_CSS = 'features/profile-fonts'; // las 28 tipografias de la 3.0 (el navegador baja solo las que se usan)
+const FRAMES_CSS = 'features/frames'; // los marcos de la 4.6 (social/frames.js)
 const ensureStyles = () => {
   ensureCss(CSS);
   ensureCss(FONTS_CSS);
+  ensureCss(FRAMES_CSS);
 };
 
 // Tipografias del nombre: pilas de fuentes del sistema o las que trae el launcher (sin bajar nada).
@@ -222,34 +224,15 @@ export function styledName(profile, { size = 'md', title = false, animate } = {}
 // Pone (o saca) el marco equipado en un elemento, normalmente el contenedor de la cabeza
 export function applyFrame(el, profile) {
   if (!el) return el;
-  ensureCss(CSS);
-  const n = normalize(profile);
-  const style = frameOf(n);
-  for (const c of [...el.classList]) if (c === 'pf-frame' || c.startsWith('pf-frame-') || c.startsWith('pf-avatar-')) el.classList.remove(c);
-  if (n.cardStyle?.avatar && n.cardStyle.avatar !== 'square') el.classList.add(`pf-avatar-${n.cardStyle.avatar}`);
-  if (style && FRAMES.includes(style)) {
-    el.classList.add('pf-frame', `pf-frame-${style}`);
-    el.dataset.frame = style;
-  } else delete el.dataset.frame;
-  return el;
+  ensureCss(FRAMES_CSS);
+  // El avatar siempre es redondo (main.css) y el marco es un dibujo SVG que lo rodea (frames.js); sin marco, queda limpio
+  return drawFrame(el, frameOf(normalize(profile)));
 }
 
 // ---------- Banner ----------
-// Cuadro estatico de un GIF (movimiento reducido): se dibuja una vez en un <canvas> del mismo tamaño
-function freezeGif(img, holder) {
-  try {
-    const canvas = h('canvas', { class: 'pf-banner-img', width: img.naturalWidth, height: img.naturalHeight, 'aria-hidden': 'true' });
-    canvas.getContext('2d').drawImage(img, 0, 0);
-    img.replaceWith(canvas);
-  } catch {
-    holder.classList.add('pf-banner-fallback');
-  }
-}
-
-// Fondo CSS del banner sin imagen (prediseñado, color clasico o el de Venus)
+// Fondo CSS del banner sin imagen: el color clasico (degradado o color del tema; el de Venus si no eligio ninguno)
 export function bannerBackgroundCss(profile) {
   const n = normalize(profile);
-  if (n.banner.kind === 'preset') return presetCss(n.banner.preset);
   return bannerBackground(n.legacyBanner || 'venus');
 }
 
@@ -257,13 +240,10 @@ export function bannerEl(profile, { cls = '' } = {}) {
   ensureCss(CSS);
   const n = normalize(profile, { allowLocalMedia: true });
   const el = h('div', { class: ['pf-banner', cls], dataset: { kind: n.banner.kind } });
-  if (n.banner.kind === 'image' || n.banner.kind === 'animated') {
+  if (n.banner.kind === 'image') {
+    // Imagen propia (siempre quieta: se recorta y se comprime en la PC antes de subirla)
     el.style.background = bannerBackground(n.legacyBanner || 'venus');
     const img = h('img', { class: 'pf-banner-img', src: n.banner.url, alt: '', decoding: 'async', draggable: 'false' });
-    if (n.banner.kind === 'animated' && reducedMotion()) {
-      img.crossOrigin = 'anonymous';
-      img.addEventListener('load', () => freezeGif(img, el), { once: true });
-    }
     img.addEventListener('error', () => img.remove(), { once: true });
     el.append(img);
   } else if (n.banner.kind === 'klipy') {

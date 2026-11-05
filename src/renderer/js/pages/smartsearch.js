@@ -78,6 +78,10 @@ function hasModLoader(inst) {
   return Boolean(inst && MOD_LOADERS.includes(inst.loader));
 }
 
+// Estado de la IA mientras no se sabe (lo calcula el proceso principal: modules/smartsearch/ai-source.js)
+const NO_AI = { plan: 'unknown', planName: null, sources: [], choose: false, source: null, consent: {}, wants: false, active: false, needsConsent: false };
+const PROVIDER = { claude: 'Anthropic', chatgpt: 'OpenAI' };
+
 export default {
   ns: ['smartsearch', 'searchfilters'],
   css: ['pages/smartsearch', 'features/searchfilters'],
@@ -86,7 +90,7 @@ export default {
     const offs = [];
     const cardRefs = new Map(); // projectId -> { el, reason, it }
     const state = {
-      ctx: { ai: false, aiConfigured: false, latestRelease: null, releases: [], prefs: { perType: 5, compatibleOnly: true, useAi: true }, history: [] },
+      ctx: { ai: NO_AI, latestRelease: null, releases: [], prefs: { perType: 5, compatibleOnly: true }, history: [] },
       filters: session.filters,
       running: null,
       result: session.result,
@@ -103,19 +107,146 @@ export default {
     );
 
     function drawAiPill() {
-      if (state.ctx.ai) {
-        mount(aiPill, h('span', { class: 'ss-ai-pill on', title: T('useAiHint') }, icon('sparkles'), T('aiOn')));
+      const ai = state.ctx.ai;
+      if (ai.active) {
+        mount(aiPill, h('span', { class: 'ss-ai-pill on', title: T('aiSwitchHintOn') }, icon('sparkles'), T(`aiPillOn_${ai.source}`, { app: appOf(ai.source) })));
         return;
       }
       mount(
         aiPill,
         h(
           'span',
-          { class: 'ss-ai-pill', title: T('aiOffHint') },
+          { class: 'ss-ai-pill', title: T('aiPillOffTitle') },
           icon('cpu'),
-          h('span', {}, T('aiOff')),
-          h('button', { class: 'ss-ai-link', type: 'button', onclick: () => navigate('settings/ai') }, icon('settings'), T('aiConfigure')),
+          h('span', {}, T('aiPillOff')),
+          ai.plan === 'none' ? h('button', { class: 'ss-ai-link', type: 'button', onclick: () => openPlans() }, icon('crown'), T('aiSeePlans')) : null,
         ),
+      );
+    }
+
+    // ---------- IA del buscador: solo de pago y una sola fuente ----------
+    const openPlans = () => import('../features/plans.js').then((m) => m.openPlans()).catch((err) => console.warn('[smartsearch] planes', err));
+    const appOf = (id) => state.ctx.ai.sources.find((x) => x.id === id)?.app || '';
+    const engineOf = (id) => state.ctx.ai.sources.find((x) => x.id === id)?.engine || null;
+    const sourceVars = (id) => ({ app: appOf(id), provider: PROVIDER[engineOf(id)] || '', plan: state.ctx.ai.planName || '' });
+    const sourceLabel = (id) => (id === 'local' ? T('aiSource_local', sourceVars(id)) : T('aiSource_venus'));
+
+    // Cambia la IA en el proceso principal (que vuelve a comprobar el plan) y vuelve a dibujar todo.
+    async function aiSet(change) {
+      try {
+        state.ctx.ai = await api.invoke('smartsearch:aiSet', change);
+        if (change.useAi === true) ok(T('aiNowOn', { source: sourceLabel(state.ctx.ai.source) }));
+        else if (change.useAi === false) ok(T('aiNowOff'));
+      } catch (err) {
+        fail(T('aiSetFailed'), err?.message || String(err));
+        await refreshAi();
+      } finally {
+        drawAiPill();
+        drawFilters();
+      }
+    }
+
+    async function refreshAi(refresh = false) {
+      try {
+        state.ctx.ai = await api.invoke('smartsearch:ai', { refresh });
+      } catch (err) {
+        console.warn('[smartsearch] IA:', err);
+      }
+      if (disposed) return;
+      drawAiPill();
+      drawFilters();
+    }
+
+    // Aviso de privacidad: antes de mandar lo que escribe a un proveedor, y una vez por fuente.
+    function askConsent(sourceId) {
+      return new Promise((resolve) => {
+        let done = false;
+        const finish = (v) => {
+          if (done) return;
+          done = true;
+          m.close();
+          resolve(v);
+        };
+        const vars = sourceVars(sourceId);
+        const m = modal({
+          title: T('aiConsentTitle'),
+          icon: 'shield',
+          size: 'sm',
+          body: h(
+            'div',
+            { class: 'ss-consent' },
+            h('p', { class: 'text-2' }, T('aiConsentIntro')),
+            h(
+              'ul',
+              { class: 'ss-consent-list' },
+              h('li', {}, icon('upload'), h('span', {}, T('aiConsentSend'))),
+              h('li', {}, icon('lock'), h('span', {}, T('aiConsentNoSend'))),
+              h('li', {}, icon(sourceId === 'local' ? 'cpu' : 'cloud'), h('span', {}, T(`aiConsentTo_${sourceId}`, vars))),
+            ),
+            h('p', { class: 'ss-toggle-hint' }, T('aiConsentOff')),
+          ),
+          footer: [h('button', { class: 'btn ghost', type: 'button', onclick: () => finish(false) }, T('aiConsentCancel')), h('button', { class: 'btn primary', type: 'button', onclick: () => finish(true) }, icon('sparkles'), T('aiConsentOk'))],
+          onClose: () => finish(false),
+        });
+      });
+    }
+
+    async function onAiToggle(on) {
+      const ai = state.ctx.ai;
+      if (!on) return aiSet({ useAi: false });
+      if (ai.plan !== 'paid' || !ai.source) return drawFilters();
+      const needs = !ai.consent[ai.source];
+      if (needs && !(await askConsent(ai.source))) return drawFilters();
+      return aiSet({ useAi: true, ...(needs ? { consent: true } : {}) });
+    }
+
+    async function onAiSource(id) {
+      const ai = state.ctx.ai;
+      if (id === ai.source) return;
+      // Con la IA prendida, cambiar de fuente manda lo que se escribe a OTRO proveedor: hay que aceptar su aviso
+      if (!ai.wants && !ai.active) return aiSet({ source: id });
+      const needs = !ai.consent[id];
+      if (needs && !(await askConsent(id))) return drawFilters();
+      return aiSet({ source: id, useAi: true, ...(needs ? { consent: true } : {}) });
+    }
+
+    // Una fuente = una opcion de un grupo de radio (se elige una sola)
+    function sourceOption(src) {
+      const id = src.id;
+      const vars = sourceVars(id);
+      const input = h('input', { type: 'radio', name: 'ss-ai-source', value: id, checked: state.ctx.ai.source === id, 'aria-describedby': `ss-ai-source-${id}-text` });
+      input.addEventListener('change', () => onAiSource(id));
+      return h(
+        'label',
+        { class: ['ss-ai-source', state.ctx.ai.source === id && 'active'] },
+        input,
+        h('span', { class: 'ss-ai-source-body' }, h('span', { class: 'ss-ai-source-name' }, icon(id === 'local' ? 'cpu' : 'sparkles'), sourceLabel(id)), h('span', { class: 'ss-toggle-hint', id: `ss-ai-source-${id}-text` }, T(`aiSource_${id}Text`, vars))),
+      );
+    }
+
+    function aiSection() {
+      const ai = state.ctx.ai;
+      const paid = ai.plan === 'paid';
+      const note = {
+        none: { text: T('aiNoPlanText'), action: [icon('crown'), T('aiSeePlans'), () => openPlans()] },
+        signedOut: { text: T('aiSignedOutText'), action: [icon('logIn'), T('aiSignIn'), () => navigate('settings/cloud/venus')] },
+        unknown: { text: T('aiUnknownText'), action: [icon('refresh'), T('aiRetry'), () => refreshAi(true)] },
+        disabled: { text: T('aiDisabledText'), action: [icon('settings'), T('aiOpenSettings'), () => navigate('settings/ai')] },
+      }[ai.plan];
+      const local = ai.sources.find((x) => x.id === 'local');
+      const hint = paid ? (ai.active ? T('aiSwitchHintOn') : T('aiSwitchHintOff', { plan: ai.planName || '' })) : T(`aiTitle_${ai.plan}`);
+      return h(
+        'div',
+        { class: ['ss-ai', paid && 'paid'] },
+        toggleRow(T('aiSwitch'), hint, ai.active, onAiToggle, !paid),
+        !paid && note
+          ? h('div', { class: 'ss-ai-note', role: 'status' }, icon('info'), h('span', { class: 'spacer' }, note.text), h('button', { class: 'btn sm', type: 'button', onclick: note.action[2] }, note.action[0], note.action[1]))
+          : null,
+        paid && ai.choose
+          ? h('div', { class: 'ss-ai-choice', role: 'radiogroup', 'aria-label': T('aiSourceTitle') }, h('span', { class: 'ss-field-label' }, T('aiSourceTitle')), ai.sources.filter((x) => x.available).map(sourceOption), h('span', { class: 'ss-toggle-hint' }, T('aiSourceOnlyOne')))
+          : null,
+        paid && !ai.choose && local && !local.available ? h('span', { class: 'ss-toggle-hint ss-ai-local-hint' }, T(local.installed ? 'aiLocalHint_needsPlan' : 'aiLocalHint_notFound')) : null,
+        paid && ai.source ? h('span', { class: 'ss-toggle-hint ss-ai-privacy' }, icon('shield'), T(`aiPrivacy_${ai.source}`, sourceVars(ai.source))) : null,
       );
     }
 
@@ -198,13 +329,13 @@ export default {
     const currentTarget = () => store.instances.find((i) => i.id === state.filters.instanceId) || null;
     const releases = () => state.ctx.releases || [];
     const savePrefs = debounce(() => {
-      const { perType, compatibleOnly, useAi } = state.filters;
-      api.invoke('smartsearch:savePrefs', { perType, compatibleOnly, useAi }).catch(() => {});
+      const { perType, compatibleOnly } = state.filters;
+      api.invoke('smartsearch:savePrefs', { perType, compatibleOnly }).catch(() => {});
     }, 400);
 
     function filtersPayload() {
       const f = state.filters;
-      return { instanceId: f.instanceId || null, mcVersion: f.mcVersion, loader: f.loader, types: f.types, perType: f.perType, compatibleOnly: f.compatibleOnly, useAi: f.useAi && state.ctx.ai, ...morePayload(f, moreCaps()) };
+      return { instanceId: f.instanceId || null, mcVersion: f.mcVersion, loader: f.loader, types: f.types, perType: f.perType, compatibleOnly: f.compatibleOnly, useAi: state.ctx.ai.active, ...morePayload(f, moreCaps()) };
     }
 
     // "Mas filtros": el panel comparte con el catalogo de Modrinth (features/searchfilters.js). Los cambios de texto no
@@ -436,16 +567,7 @@ export default {
             f.compatibleOnly = v;
             savePrefs();
           }),
-          toggleRow(
-            T('useAi'),
-            state.ctx.ai ? T('useAiHint') : T('aiOffHint'),
-            f.useAi && state.ctx.ai,
-            (v) => {
-              f.useAi = v;
-              savePrefs();
-            },
-            !state.ctx.ai,
-          ),
+          aiSection(),
         ),
       );
     }
@@ -834,7 +956,7 @@ export default {
           { class: 'ss-u-head' },
           h('span', { class: 'ss-u-label' }, icon('sparkles'), T('understood')),
           h('div', { class: 'ss-u-summary selectable' }, summaryText(res)),
-          h('span', { class: ['badge', plan.source === 'ai' ? 'info' : ''], title: plan.source === 'ai' ? T('useAiHint') : T('aiOffHint') }, icon(plan.source === 'ai' ? 'sparkles' : 'cpu'), plan.source === 'ai' ? T('srcAi') : T('srcLocal')),
+          h('span', { class: ['badge', plan.source === 'ai' ? 'info' : ''], title: plan.source === 'ai' ? T('aiSwitchHintOn') : T('aiPillOffTitle') }, icon(plan.source === 'ai' ? 'sparkles' : 'cpu'), plan.source === 'ai' ? T('srcAi') : T('srcLocal')),
         ),
         h('div', { class: 'ss-chips' }, planChips(plan)),
         appliedRow(res),
@@ -1472,13 +1594,13 @@ export default {
         types: [],
         perType: nearestPerType(p.perType),
         compatibleOnly: p.compatibleOnly !== false,
-        useAi: p.useAi !== false,
         ...emptyMore(),
       };
       session.filters = state.filters;
     }
     drawAiPill();
     drawFilters();
+    offs.push(api.on('billing:changed', () => refreshAi(true)));
     api.servers
       .list()
       .then((list) => {

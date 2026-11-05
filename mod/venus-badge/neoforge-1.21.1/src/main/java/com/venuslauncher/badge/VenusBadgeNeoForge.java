@@ -11,7 +11,7 @@ import net.neoforged.neoforge.common.NeoForge;
 
 /**
  * Insignia de Venus en NeoForge (1.21 y 1.21.1). Solo de cliente: en un servidor dedicado esta clase ni se carga.
- * La lista de Tab va por PlayerTabOverlayMixin y las capas por AbstractClientPlayerMixin; la lógica común está en {@link BadgeCore}.
+ * La lista de Tab va por PlayerTabOverlayMixin; la lógica común está en {@link BadgeCore}.
  */
 @Mod(value = BadgeCore.MOD_ID, dist = Dist.CLIENT)
 public final class VenusBadgeNeoForge {

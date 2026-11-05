@@ -204,8 +204,8 @@ function merge(plan, ai, ctx = {}) {
 }
 
 // Pide el plan a la IA y lo une al local. Lanza un error si la IA falla (el llamador decide).
-async function improve(plan, ctx = {}, { signal, turnId } = {}) {
-  const ai = aiModule();
+// ai: quien responde (Venus IA o la IA local de la PC; ver ai-source.js). Sin ai, Venus IA.
+async function improve(plan, ctx = {}, { signal, turnId, ai = aiModule() } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new Error('timeout')), 45000);
   const onAbort = () => controller.abort(signal.reason);
@@ -220,8 +220,7 @@ async function improve(plan, ctx = {}, { signal, turnId } = {}) {
 }
 
 // Escribe un motivo corto por resultado. Devuelve { [projectId]: { reason, fit } }.
-async function reasons(query, groups, uiLang, { signal, turnId } = {}) {
-  const ai = aiModule();
+async function reasons(query, groups, uiLang, { signal, turnId, ai = aiModule() } = {}) {
   const items = groups.flatMap((g) => g.items.filter((i) => !i.helper).map((i) => ({ id: i.id, type: i.type, title: i.title, categories: i.categories.slice(0, 4), description: i.description.slice(0, 180) })));
   if (!items.length) return {};
   const system = [

@@ -311,3 +311,33 @@ test('sesion: lee el .jar una vez, usa la cache, los mods y los nombres de los a
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('con muchos mods la primera apertura no espera a todos: lo que falta se lee en segundo plano y la proxima sale completa', async () => {
+  const dir = tmp();
+  try {
+    const versions = path.join(dir, 'v');
+    fs.mkdirSync(versions);
+    const jar = makeJar(versions, 'test.jar', { 'data/minecraft/recipe/palo.json': { type: 'minecraft:crafting_shapeless', ingredients: ['minecraft:a'], result: { id: 'minecraft:palo' } } });
+    const instance = path.join(dir, 'inst');
+    fs.mkdirSync(path.join(instance, 'mods'), { recursive: true });
+    for (let i = 0; i < 6; i++) {
+      makeJar(path.join(instance, 'mods'), `mod${i}.jar`, { [`data/mod${i}/recipe/cosa.json`]: { type: 'minecraft:crafting_shapeless', ingredients: ['minecraft:palo'], result: { id: `mod${i}:cosa` } } });
+    }
+    const opts = { rootId: '1.21.1', jarPath: jar, instanceDir: instance, mods: true, assetsDir: path.join(dir, 'assets'), cacheDir: path.join(dir, 'cache') };
+    // Sin tiempo de sobra (budgetMs negativo): ningun mod entra en la primera lectura
+    const first = await recipes.open({ ...opts, budgetMs: -1 });
+    assert.equal(first.info.mods, 0);
+    assert.equal(first.info.modsPending, 6, 'se avisa cuantos faltan');
+    assert.equal((await first.search('palo')).items.length > 0, true, 'lo del juego ya se puede buscar');
+    // En segundo plano se terminan de leer y la sesion incompleta se descarta
+    for (let i = 0; i < 200 && (await recipes.open(opts)) === first; i++) await new Promise((r) => setTimeout(r, 10));
+    const full = await recipes.open(opts);
+    assert.notEqual(full, first);
+    assert.equal(full.info.mods, 6);
+    assert.equal(full.info.modsPending, 0);
+    assert.ok((await full.card('mod5:cosa')), 'la receta del ultimo mod esta');
+  } finally {
+    recipes.forget();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

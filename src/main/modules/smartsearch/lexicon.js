@@ -645,7 +645,7 @@ const SHADER_HELPERS = {
 };
 const IRIS_ID = 'YL57xq9U';
 
-module.exports = {
+const lexicon = {
   TYPES,
   CATEGORIES,
   MOD_LOADERS,
@@ -669,3 +669,7 @@ module.exports = {
   SHADER_HELPERS,
   IRIS_ID,
 };
+
+// Vocabulario ampliado (sinonimos, jerga, errores de escritura, generos, "como X"): se suma a lo de arriba.
+// Para entrenar el buscador con palabras nuevas se editan los archivos de vocab/, no este.
+module.exports = require('./vocab').apply(lexicon);

@@ -10,7 +10,6 @@ export default {
   errStart: "Bediening op afstand kon niet worden ingeschakeld",
   errAction: "Dat is niet gelukt",
   qrAlt: "QR-code om de bediening op afstand op je telefoon te openen",
-  qrHidden: "De QR-code blijft verborgen in de streamermodus: kopieer de link of schakel die modus even uit.",
   stepQr: "Scan de QR-code met de camera van je telefoon.",
   stepCode: "Of open dit adres in de browser op je telefoon en voer de code in:",
   copyLink: "Link met code kopiëren",

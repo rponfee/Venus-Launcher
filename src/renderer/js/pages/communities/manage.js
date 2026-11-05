@@ -1,11 +1,12 @@
 // Administración de comunidades: formularios con RPC reales y controles bloqueados durante cada envío.
 import { h, icon, mount, modal, ok, fail, confirmDialog } from '../../ui.js';
 import { t } from '../../i18n.js';
-import { errText } from '../../features/clans/backend.js';
-import { COMMUNITY_LIMITS } from '../../features/clans/logic.js';
+import { errText } from '../../features/communities/backend.js';
+import { COMMUNITY_LIMITS } from '../../features/communities/logic.js';
 import { communityColor, CATEGORY_LIMIT, CHANNEL_KINDS, COMMUNITY_ICONS, COMMUNITY_BANNERS, COMMUNITY_THEMES, categoryGroups, channelIcon, iconGlyph, safeCommunityIcon, safeBanner, safeTheme, validateAppearance, validateCategoryName, validateChannelSettings, moveChannel, moveWithinCategory, isStaff } from './logic.js';
+import { openChannelPermsDialog } from './perms.js';
 
-const C = (key, vars) => t('clans.' + key, vars);
+const C = (key, vars) => t('communities.' + key, vars);
 let formSeq = 0;
 const field = (label, input, help) => {
   input.id ||= 'cm-edit-' + (++formSeq);
@@ -151,6 +152,7 @@ export function channelMenuItems(b, community, channel, reload) {
   const move = (delta) => moveWithinCategory(community.channels, channel.id, delta);
   return [
     { icon: 'edit', label: C('cmChannelEdit'), run: () => openChannelForm(b, community, { channel, reload }) },
+    { icon: 'shield', label: C('permMenu'), run: () => openChannelPermsDialog(b, community, channel, { reload }) },
     ...[-1, 1].filter((delta) => move(delta)).map((delta) => ({ icon: delta < 0 ? 'upCircle' : 'chevronDown', label: C(delta < 0 ? 'moveUp' : 'moveDown'),
       run: () => changeCommunity(b, community.id, () => b.rpc('community_channels_reorder', { p_community: community.id, p_ids: move(delta) }), reload) })),
     { icon: 'folder', label: C('cmMoveCategory'), run: () => {
@@ -204,6 +206,7 @@ export function openChannelsManager(b, initial, { reload }) {
           ...[-1, 1].map((delta) => button(delta < 0 ? 'moveUp' : 'moveDown', delta < 0 ? 'upCircle' : 'chevronDown',
             () => run(() => b.rpc('community_channels_reorder', { p_community: community.id, p_ids: moveWithinCategory(community.channels, ch.id, delta) })), !moveWithinCategory(community.channels, ch.id, delta))),
           button('cmChannelEdit', 'edit', () => openChannelForm(b, community, { channel: ch, reload: refresh })),
+          button('permMenu', 'shield', () => openChannelPermsDialog(b, community, ch, { reload: refresh })),
           button('delete', 'trash', () => deleteChannel(b, community, ch, refresh))))))));
   }
   draw();

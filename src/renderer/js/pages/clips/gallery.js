@@ -1,6 +1,6 @@
 // Galeria publica de clips (#/clips/gallery): los clips que los usuarios publicaron a proposito, por recientes o por likes de
 // la semana, con like, denunciar y despublicar. Todo por las RPC de 0032_galeria_clips.sql; los titulos y nombres ajenos van
-// siempre como texto y en modo streamer se difuminan (.priv). Publicar es un acto explicito: el clip tiene que estar
+// siempre como texto. Publicar es un acto explicito: el clip tiene que estar
 // compartido, se avisa que lo ve cualquiera con sesion y no alarga el vencimiento del link.
 //   galleryPanel() -> Element (con .destroy()) · openPublish(item, { onDone })
 import { h, icon, mount, modal, ok, fail, setBusy, emptyState, skeleton, fmtAgo, fmtDate, confirmDialog, avatarImg, selectEl } from '../../ui.js';
@@ -177,9 +177,6 @@ function openClip(clip) {
     body: h('div', { class: 'cap-share-view' }, video, errBox),
     footer: [h('button', { class: 'btn ghost', type: 'button', onclick: () => m.close() }, C('close'))],
   });
-  // El titulo y el nombre son de otro usuario: en modo streamer se difuminan
-  m.el.querySelector('.modal-head-text h3')?.classList.add('priv');
-  m.el.querySelector('.modal-sub')?.classList.add('priv');
 }
 
 // ---------- Denunciar ----------
@@ -200,7 +197,7 @@ function openReport(clip) {
     title: C('galleryReportTitle'),
     icon: 'csFlag',
     size: 'sm',
-    body: h('div', { class: 'stack' }, h('p', { class: 'cl-modal-text priv' }, clip.title), h('div', { class: 'cs-field' }, h('label', { class: 'cs-label' }, C('galleryReportReason')), reasonSel), h('div', { class: 'cs-field' }, h('label', { class: 'cs-label' }, C('galleryReportDetail')), textIn)),
+    body: h('div', { class: 'stack' }, h('p', { class: 'cl-modal-text' }, clip.title), h('div', { class: 'cs-field' }, h('label', { class: 'cs-label' }, C('galleryReportReason')), reasonSel), h('div', { class: 'cs-field' }, h('label', { class: 'cs-label' }, C('galleryReportDetail')), textIn)),
     footer: [h('button', { class: 'btn ghost', type: 'button', onclick: () => m.close() }, t('common.cancel')), send],
   });
   send.addEventListener('click', async () => {
@@ -310,8 +307,8 @@ export function galleryPanel() {
       : h('button', { class: ['btn sm ghost cs-gl-like', clip.liked && 'on'], type: 'button', 'aria-pressed': String(clip.liked), title: `${clip.liked ? C('galleryUnlike') : C('galleryLike')} · ${weekly}`, 'aria-label': clip.liked ? C('galleryUnlikeName', { name: clip.title }) : C('galleryLikeName', { name: clip.title }), onclick: () => toggleLike(clip, card) }, icon('heart'), h('span', { class: 'num' }, String(clip.likes)));
     const reportBtn = !own ? h('button', { class: 'icon-btn sm', type: 'button', title: C('galleryReport'), 'aria-label': C('galleryReportName', { name: clip.title }), onclick: () => openReport(clip) }, icon('csFlag')) : null;
     const removeBtn = mineView && state !== 'hidden' ? h('button', { class: 'btn sm ghost', type: 'button', onclick: () => unpublish(clip) }, icon('x'), C('galleryUnpublishOk')) : null;
-    const title = h('h3', { class: ['cs-gl-title', 'ellipsis', !mineView && !clip.mine && 'priv'], title: clip.title }, clip.title);
-    const who = clip.author?.name ? h('div', { class: 'cs-gl-who' }, avatarImg(clip.author.mc || clip.author.name, 32, 'cs-gl-av'), h('span', { class: ['ellipsis', !clip.mine && 'priv'] }, clip.author.name)) : null;
+    const title = h('h3', { class: ['cs-gl-title', 'ellipsis'], title: clip.title }, clip.title);
+    const who = clip.author?.name ? h('div', { class: 'cs-gl-who' }, avatarImg(clip.author.mc || clip.author.name, 32, 'cs-gl-av'), h('span', { class: 'ellipsis' }, clip.author.name)) : null;
     let note = null;
     if (mineView && state === 'hidden') note = h('div', { class: 'cs-gl-note bad' }, icon('alert'), h('span', {}, clip.hiddenReason ? C('galleryHiddenReason', { reason: clip.hiddenReason }) : C('galleryHidden')));
     else if (mineView && state === 'expired') note = h('div', { class: 'cs-gl-note warn' }, icon('clock'), h('span', {}, C('galleryExpired')));

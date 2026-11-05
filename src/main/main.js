@@ -196,7 +196,7 @@ if (!DEVSHOT && !app.requestSingleInstanceLock()) {
     instances.setTrash((p) => shell.trashItem(p));
     servers.setTrash((p) => shell.trashItem(p));
 
-    // Solo la página del launcher recibe permisos, nunca los marcos de las extensiones.
+    // Solo la página del launcher recibe permisos, nunca un marco incrustado.
     const { isAppPage, isPermissionRequester } = require('./core/permissions');
     const rendererFile = path.join(__dirname, '..', 'renderer', 'index.html');
     // Microfono para el Voice Chat; el resto de permisos se deniega.

@@ -1,6 +1,9 @@
-import { harness as baseHarness, deferred, flush } from '../../../features/clans/test/renderer-harness.js';
+import { harness as baseHarness, deferred, flush } from '../../../features/communities/test/renderer-harness.js';
 import * as logic from '../logic.js';
-import * as shared from '../../../features/clans/logic.js';
+import * as shared from '../../../features/communities/logic.js';
+import * as greeting from '../../../features/communities/greeting.js';
+import * as permissions from '../../../features/communities/permissions.js';
+import * as media from '../../../features/communities/media.js';
 export { deferred, flush };
 export function uiHarness() {
   const ui = baseHarness(), dialogs = [];
@@ -22,7 +25,9 @@ export function uiHarness() {
     } };
     dialogs.push(dialog); return dialog;
   };
-  const load = (file, extra = {}, names = []) => ui.load(new URL('../' + file, import.meta.url), { ...shared, ...logic, h, modal, ...extra }, names);
-  return { ...ui, h, modal, dialogs, load, byLabel: (label) => ui.nodes.findLast((n) => n['aria-label'] === 'clans.' + label && n.isConnected),
-    byText: (text) => ui.nodes.findLast((n) => n.tag === 'button' && n.children.includes('clans.' + text) && n.isConnected) };
+  // Lo que no es lógica pura (selector de GIF, galería, diálogos de otras pantallas) se reemplaza por funciones vacías.
+  const stubs = { openGifPicker() {}, closeGifPicker() {}, openMediaGallery() {}, mediaImage: () => h('media'), openGreetingsDialog() {}, openRolesDialog() {}, openMemberRolesDialog() {}, openChannelPermsDialog() {}, openGroupReport() {} };
+  const load = (file, extra = {}, names = []) => ui.load(new URL('../' + file, import.meta.url), { ...shared, ...greeting, ...permissions, ...media, ...logic, ...stubs, h, modal, ...extra }, names);
+  return { ...ui, h, modal, dialogs, load, byLabel: (label) => ui.nodes.findLast((n) => n['aria-label'] === 'communities.' + label && n.isConnected),
+    byText: (text) => ui.nodes.findLast((n) => n.tag === 'button' && n.children.includes('communities.' + text) && n.isConnected) };
 }

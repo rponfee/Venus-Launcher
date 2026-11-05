@@ -11,7 +11,6 @@ export default {
   errStart: 'Remote control could not be turned on',
   errAction: 'That did not work',
   qrAlt: 'QR code to open remote control on your phone',
-  qrHidden: 'The QR code stays hidden in streamer mode: copy the link or turn that mode off for a moment.',
   stepQr: "Scan the QR code with your phone's camera.",
   stepCode: "Or open this address in your phone's browser and type the code:",
   copyLink: 'Copy link with the code',

@@ -9,12 +9,9 @@ Documentación permanente de los doce frentes. Conserva sus tablas de archivos, 
 | [Overlay y mapa: recetas, contadores, marcadores y asistente](overlay.md) | Contratos, uso, datos y límites |
 | [Servidores: control remoto, Discord y reseñas](servidores.md) | Contratos, uso, datos y límites |
 | [Mensajes y voz: stickers, traducción, soundboard y efectos](mensajes-voz.md) | Contratos, uso, datos y límites |
-| [Competir: rankings, desafíos y eventos](competir.md) | Contratos, uso, datos y límites |
 | [Capas de Venus y FPS del mod](capas.md) | Contratos, uso, datos y límites |
-| [Extensiones: contratos, instalación y aislamiento](extensiones.md) | Referencia histórica de la función retirada; contratos y límites preservados |
 | [Estudio de clips: montaje, timelapse, subida, OBS y galería](clips.md) | Contratos, uso, datos y límites |
 | [Clanes y comunidades](clanes-comunidades.md) | Comunidades permanece; Clanes se retiró del launcher. Se conservan los contratos anteriores |
-| [Visor de semillas: algoritmo, cobertura y límites](semillas.md) | Referencia histórica de la función retirada; cobertura y límites preservados |
 | [App para celular: PWA, mensajes, clips y avisos](app-celular.md) | Contratos, uso, datos y límites |
 
 Los doce borradores de funciones y el informe SQL se reconciliaron con estas referencias el 3 de noviembre de 2026. Después de revisar los cambios se retiró `docs/wip/`, con un respaldo temporal indicado en el estado de integración. Las guías de usuario y los comentarios de fuentes apuntan a estas rutas permanentes.
@@ -33,12 +30,9 @@ Los nombres de origen son antecedentes de los grupos 3.2–3.4; el destino docum
 | `capas-34.md` | [capas.md](capas.md) |
 | `clanes-comunidades-34.md` | [clanes-comunidades.md](clanes-comunidades.md) |
 | `clips-33.md` | [clips.md](clips.md) |
-| `competir-33.md` | [competir.md](competir.md) |
 | `datos-32.md` | [datos.md](datos.md) |
-| `extensiones-34.md` | [extensiones.md](extensiones.md) |
 | `instancias-32.md` | [instancias.md](instancias.md) |
 | `mensajes-voz-33.md` | [mensajes-voz.md](mensajes-voz.md) |
 | `overlay-32.md` | [overlay.md](overlay.md) |
 | `revision-sql-0028-0036.md` | [revision-sql-0028-0036.md](revision-sql-0028-0036.md) |
-| `semillas-34.md` | [semillas.md](semillas.md) |
 | `servidores-32.md` | [servidores.md](servidores.md) |

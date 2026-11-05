@@ -10,7 +10,6 @@ export default {
   errStart: "Uzaktan kontrol açılamadı",
   errAction: "İşlem başarısız",
   qrAlt: "Telefonda uzaktan kontrolü açmak için QR kodu",
-  qrHidden: "Yayıncı modunda QR kodu gizli kalır; bağlantıyı kopyala veya modu kısa süre kapat.",
   stepQr: "QR kodunu telefonunun kamerasıyla tara.",
   stepCode: "Ya da telefon tarayıcısında bu adresi açıp kodu gir:",
   copyLink: "Kodu içeren bağlantıyı kopyala",

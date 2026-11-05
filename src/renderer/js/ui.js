@@ -213,22 +213,11 @@ export function reducedMotion() {
 const EXIT_MS = 180;
 
 // ---------- Toasts ----------
-// Filtro de los textos de los toasts (modo streamer, features/streamer.js: tapa codigos y direcciones).
-let textFilter = null;
-export function setTextFilter(fn) {
-  textFilter = typeof fn === 'function' ? fn : null;
-}
-export function filterText(s) {
-  return textFilter && typeof s === 'string' ? textFilter(s) : s;
-}
-
 // Los errores ('bad') usan role="alert" para que el lector de pantalla los lea enseguida.
 // Pasar el mouse por encima pausa el cierre automatico (vuelve a contar al salir).
 export function toast(type, title, msg, ms = 4500) {
   const host = document.getElementById('toasts');
   const icn = type === 'good' ? 'check' : type === 'bad' ? 'alert' : 'info';
-  title = filterText(title);
-  msg = filterText(msg);
   const el = h('div', { class: `toast ${type}`, role: type === 'bad' ? 'alert' : 'status' }, icon(icn), h('div', {}, h('div', { class: 't-title' }, title), msg ? h('div', { class: 't-msg' }, msg) : null));
   host.append(el);
   let timer = null;

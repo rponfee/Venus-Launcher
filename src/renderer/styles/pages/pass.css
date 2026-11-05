@@ -1,9 +1,8 @@
 /* Venus Pass (pages/pass.js) */
 .ps-season { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
 .ps-season-label { font-size: var(--fs-sm); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-.ps-season strong { font-size: 17px; }
-.ps-season-when { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }
-.ps-season-when svg { width: 14px; height: 14px; }
+.ps-season-when { display: inline-flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 600; color: var(--text); }
+.ps-season-when svg { width: 16px; height: 16px; color: var(--accent-hi); }
 .ps-season-when.is-ended { color: var(--danger, #e5484d); }
 .ps-body { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
 .ps-signed-out { max-width: 560px; }
@@ -21,80 +20,91 @@
 .ps-planet-option[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-wash); }
 .ps-planet-option img { width: 48px; height: 48px; object-fit: contain; }
 .ps-appearance-color { width: 100%; min-height: 38px; border: 1px solid var(--border); border-radius: 8px; padding: 3px; background: var(--well-bg); cursor: pointer; }
-.ps-col-level .va-level { flex-shrink: 0; }
 @media (max-width: 700px) { .ps-appearance { grid-template-columns: 1fr; } .ps-appearance-preview { position: static; } }
 .ps-progress-wrap { min-width: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
-.ps-progress-head { display: flex; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.ps-progress-head { display: flex; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; align-items: baseline; }
+.ps-progress-head strong { font-size: 18px; }
 .ps-progress { height: 12px; border-radius: 999px; background: var(--card-bg-flat); border: 1px solid var(--border); overflow: hidden; }
 .ps-progress > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-hi)); transition: width var(--dur) var(--ease-out); }
+.ps-progress-foot { margin-top: -2px; }
 .ps-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .ps-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 16%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); font-size: var(--fs-sm); font-weight: 600; }
 .ps-chip svg { width: 14px; height: 14px; }
 .ps-chip-muted { background: var(--card-bg-flat); border-color: var(--border); font-weight: 500; color: var(--muted); }
-.ps-chip.is-max { background: linear-gradient(135deg, #3a1c0a, #6b2a0f); border-color: #f29a2e; color: #ffd27a; }
-.ps-chip.is-pro { background: color-mix(in srgb, #a879f2 20%, transparent); border-color: #a879f2; }
+.ps-chip.is-capped { color: var(--ok, #58c27d); border-color: color-mix(in srgb, var(--ok, #58c27d) 45%, var(--border)); }
+.ps-next { display: flex; align-items: flex-start; gap: var(--sp-2); margin: var(--sp-1) 0 0; font-size: var(--fs-sm); line-height: 1.45; color: var(--text-2, var(--text)); }
+.ps-next svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: var(--accent-hi); }
 .ps-hero-actions { display: flex; flex-direction: column; gap: var(--sp-2); align-items: stretch; }
 
-/* Ediciones */
-.ps-section-head h2 { display: flex; align-items: center; gap: var(--sp-2); margin: 0 0 var(--sp-1); font-size: 18px; }
-.ps-section-head h2 svg { width: 20px; height: 20px; color: var(--accent-hi); }
-.ps-section-head p { margin: 0 0 var(--sp-4); color: var(--muted); font-size: var(--fs-sm); }
-.ps-tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--sp-4); }
-.ps-tier { display: flex; flex-direction: column; gap: var(--sp-3); }
-.ps-tier.is-current { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
-.ps-tier.is-max { background: linear-gradient(180deg, color-mix(in srgb, #f29a2e 12%, var(--card-bg)), var(--card-bg)); }
-.ps-tier-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
-.ps-tier-name { font-family: var(--font-display, inherit); font-size: 22px; font-weight: 700; }
-.ps-tier-price { font-size: 18px; font-weight: 600; color: var(--accent-hi); }
-.ps-perks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.ps-perks li { display: flex; gap: 8px; align-items: flex-start; font-size: var(--fs-sm); line-height: 1.4; }
-.ps-perks svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--ok, #58c27d); margin-top: 1px; }
-.ps-tier-foot { display: flex; }
-.ps-tier-foot .btn { flex: 1; justify-content: center; }
-.ps-owned { display: inline-flex; align-items: center; gap: 6px; color: var(--ok, #58c27d); font-weight: 600; font-size: var(--fs-sm); }
-.ps-owned svg { width: 16px; height: 16px; }
-
-/* Pista de niveles */
-.ps-track-wrap { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-2); min-width: 0; }
-.ps-legend { display: grid; grid-template-rows: 84px 150px 150px; gap: var(--sp-2); align-items: center; }
-.ps-legend-row { display: inline-flex; align-items: center; gap: 6px; writing-mode: vertical-rl; transform: rotate(180deg); font-size: var(--fs-sm); font-weight: 600; color: var(--muted); justify-content: center; }
-.ps-legend-row.is-premium { color: #ffd27a; }
-.ps-legend-row svg { width: 14px; height: 14px; transform: rotate(90deg); }
-.ps-track { display: flex; gap: var(--sp-2); overflow-x: auto; padding: 4px 4px var(--sp-3); scroll-snap-type: x proximity; min-width: 0; }
-.ps-col { display: grid; grid-template-rows: 84px 150px 150px; gap: var(--sp-2); flex: 0 0 150px; scroll-snap-align: center; }
-.ps-col-level { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 10px; background: var(--card-bg-flat); border: 1px solid var(--border); color: var(--muted); font-weight: 700; }
-.ps-col.is-reached .ps-col-level { color: var(--text); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
-.ps-col.is-current .ps-col-level { background: color-mix(in srgb, var(--accent) 22%, var(--card-bg-flat)); border-color: var(--accent); color: var(--accent-hi); }
-.ps-col-num { font-size: 18px; line-height: 1; }
-.ps-col-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
-.ps-tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: var(--sp-2); border-radius: 12px; border: 1px solid var(--border); background: var(--card-bg-flat); text-align: center; min-width: 0; }
-.ps-tile-empty { border-style: dashed; opacity: 0.5; }
-.ps-tile.is-premium { background: linear-gradient(180deg, color-mix(in srgb, #f29a2e 14%, var(--card-bg-flat)), var(--card-bg-flat)); border-color: color-mix(in srgb, #f29a2e 45%, var(--border)); }
-.ps-tile.is-locked { opacity: 0.6; }
+/* Premios (mosaico) */
+.ps-tile { position: relative; display: flex; flex-direction: column; gap: 6px; padding: var(--sp-3); min-height: 148px; min-width: 0; border-radius: 12px; border: 1px solid var(--border); background: var(--card-bg-flat); text-align: center; }
+.ps-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ps-tile-empty { border-style: dashed; justify-content: center; align-items: center; opacity: 0.6; }
+.ps-tile-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 18px; }
+.ps-tile-level { font-size: var(--fs-sm); font-weight: 700; color: var(--text-2, var(--text)); }
+.ps-col-tag { position: absolute; top: -9px; right: 10px; padding: 1px 8px; border-radius: 999px; background: var(--accent-hi); color: #1b0f06; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; box-shadow: 0 1px 4px #0006; }
+.ps-tile-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
+.ps-tile.is-item { background: linear-gradient(180deg, color-mix(in srgb, #a879f2 14%, var(--card-bg-flat)), var(--card-bg-flat)); border-color: color-mix(in srgb, #a879f2 45%, var(--border)); }
+.ps-tile.is-locked .ps-tile-body { opacity: 0.72; }
 .ps-tile.is-claimed { border-color: color-mix(in srgb, var(--ok, #58c27d) 50%, var(--border)); }
+.ps-tile.is-claimed .ps-tile-body { opacity: 0.8; }
 .ps-tile.is-claimable { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+.ps-tile.is-current { border-color: var(--accent-hi); }
+.ps-tile.is-current .ps-tile-level { color: var(--accent-hi); }
+.ps-tile.is-flash { animation: ps-flash 1.6s ease-out; }
+@keyframes ps-flash { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-hi) 70%, transparent); } 40% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent-hi) 35%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
 .ps-tile-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent-hi); }
 .ps-tile-icon svg { width: 20px; height: 20px; }
+/* Marco del Pase: la cabeza circular con el marco puesto (social/frames.js) */
+.ps-tile-frame { display: grid; place-items: center; width: 100%; height: 56px; }
+.ps-tile .fr-rarity { justify-content: center; font-size: 11px; color: color-mix(in srgb, var(--rar) 78%, var(--text)); }
 .ps-tile-item { background: color-mix(in srgb, #a879f2 22%, transparent); color: #d9c3ff; }
 .ps-tile-name { font-weight: 700; font-size: 14px; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .ps-tile-sub { font-size: 11px; color: var(--muted); }
-.ps-tile-state { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.ps-tile-state { display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; color: var(--muted); min-height: 26px; }
 .ps-tile-state svg { width: 12px; height: 12px; }
 .ps-tile.is-claimed .ps-tile-state { color: var(--ok, #58c27d); }
-.ps-claim { margin-top: 2px; }
+.ps-claim { justify-content: center; }
+
+/* Premios especiales: una tira que se desplaza */
+.ps-strip { position: relative; display: flex; gap: var(--sp-2); overflow-x: auto; padding: 4px 4px var(--sp-3); scroll-snap-type: x proximity; min-width: 0; }
+.ps-strip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 12px; }
+.ps-strip .ps-tile { flex: 0 0 172px; scroll-snap-align: start; }
+.ps-strip-nav { display: flex; gap: var(--sp-1); flex-shrink: 0; }
+
+/* Todos los niveles: páginas de 50 */
+.ps-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.ps-ranges { display: flex; flex-wrap: wrap; gap: 6px; }
+.ps-range { position: relative; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-bg-flat); color: var(--text); font: inherit; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; cursor: pointer; }
+.ps-range:hover { background: var(--hover-bg); }
+.ps-range[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, var(--card-bg-flat)); font-weight: 700; }
+.ps-range-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-hi); box-shadow: 0 0 0 2px var(--card-bg); }
+.ps-toolbar-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.ps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: var(--sp-2); }
 
 /* Cómo subir de nivel */
 .ps-how-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-3); }
 .ps-how-list li { display: flex; gap: var(--sp-3); align-items: flex-start; font-size: var(--fs-sm); line-height: 1.45; }
 .ps-how-list svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--accent-hi); margin-top: 1px; }
 
-/* Compra */
-.ps-co .notice { margin-bottom: var(--sp-3); }
-
 @media (max-width: 900px) {
   .ps-hero { grid-template-columns: auto 1fr; }
   .ps-hero-actions { grid-column: 1 / -1; flex-direction: row; }
 }
+@media (max-width: 560px) {
+  .ps-hero { grid-template-columns: 1fr; justify-items: center; }
+  .ps-progress-wrap { width: 100%; }
+  .ps-season { align-items: flex-start; text-align: left; }
+}
 html[data-ui-lite] .ps-progress > i, body.reduce-motion .ps-progress > i { transition: none; }
+html[data-ui-lite] .ps-tile.is-flash, body.reduce-motion .ps-tile.is-flash { animation: none; outline: 2px solid var(--accent-hi); }
 
 .ps-appearance-dialog .modal-sub { white-space: normal; overflow: visible; text-overflow: clip; }
+
+/* Administración > Venus Pass (pages/admin/pass.js) */
+.ps-adm-note { margin: 0 0 var(--sp-3); color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; }
+.ps-adm-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.ps-adm-stack { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.ps-adm-inline { display: flex; align-items: center; gap: var(--sp-2); }
+.ps-adm-inline select { flex: 0 0 150px; }
+.ps-adm-inline input { flex: 1; min-width: 0; }

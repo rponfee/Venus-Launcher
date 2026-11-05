@@ -110,9 +110,12 @@ test('formatos', () => {
   assert.deepEqual(L.voiceSummary(null), { count: 0, full: false, shown: [], extra: 0 });
 });
 
-test('categorías ordenadas, vacías y canales privados para staff', () => {
-  const c={myRole:'member',categories:[{id:'b',name:'B',position:1},{id:'a',name:'A',position:0}],channels:[{id:'private',kind:'text',isPrivate:true,categoryId:'a'},{id:'forum',kind:'forum',categoryId:'b',position:2},{id:'news',kind:'announcement',categoryId:'gone',position:1}]};
+test('categorías ordenadas, vacías y canales privados solo si el servidor los entrega', () => {
+  // El servidor ya filtra los canales que esa cuenta puede ver (también por roles): la pantalla no vuelve a filtrar.
+  const c={myRole:'member',categories:[{id:'b',name:'B',position:1},{id:'a',name:'A',position:0}],channels:[{id:'forum',kind:'forum',categoryId:'b',position:2},{id:'news',kind:'announcement',categoryId:'gone',position:1}]};
   assert.deepEqual(L.categoryGroups(c).map(g=>[g.id,g.channels.map(ch=>ch.id)]),[['a',[]],['b',['forum']],[null,['news']]]);
+  const viaRole={...c,channels:[{id:'private',kind:'text',isPrivate:true,categoryId:'a',canPost:true},...c.channels]};
+  assert.deepEqual(L.categoryGroups(viaRole).map(g=>[g.id,g.channels.map(ch=>ch.id)]),[['a',['private']],['b',['forum']],[null,['news']]],'un rol con permiso de ver recibe el canal privado');
   assert.equal(L.pickChannel(L.visibleChannels(c),'private').id,'news');
   assert.equal(L.pickChannel(L.visibleChannels(c),'forum').id,'forum');
 });

@@ -84,9 +84,9 @@
 .pf-static .pf-name-text, .pf-static .pf-name-text::after { animation: none !important; }
 .pf-static.pf-fx-shimmer .pf-name-text { background-position: 30% 0; }
 @media (prefers-reduced-motion: reduce) {
-  .pf-name-text, .pf-name-text::after, .pf-frame::before, .pf-frame::after { animation: none !important; }
+  .pf-name-text, .pf-name-text::after { animation: none !important; }
 }
-body.reduce-motion .pf-name-text, body.reduce-motion .pf-name-text::after, body.reduce-motion .pf-frame::before, body.reduce-motion .pf-frame::after { animation: none !important; }
+body.reduce-motion .pf-name-text, body.reduce-motion .pf-name-text::after { animation: none !important; }
 /* Alto contraste: nombre liso */
 html.ax-hc .pf-name-text { color: var(--text) !important; -webkit-text-fill-color: currentColor; background: none !important; filter: none !important; }
 html.ax-hc .pf-name-text::after { content: none; }
@@ -130,40 +130,8 @@ html.ax-hc .pf-name-text::after { content: none; }
 .pf-rank[data-rank='mod'] { color: #ffffff; background: linear-gradient(135deg, #6fb2ff, #2a6fd4); }
 .pf-rank[data-rank='helper'] { color: #06230f; background: linear-gradient(135deg, #a5f2bf, #3fbf6e); }
 
-/* ---------- Marcos (en el contenedor de la cabeza) ---------- */
-.pf-frame { --pf-frame-w: 3px; --pf-frame-r: 12px; position: relative; isolation: isolate; }
-.pf-frame::before { content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -1); z-index: -1; border-radius: var(--pf-frame-r); pointer-events: none; }
-.pf-frame .sc-head { box-shadow: none !important; }
-.pf-frame-pixel::before {
-  border-radius: 0; background: repeating-conic-gradient(#ffe6b0 0 25%, #f29a2e 0 50%) 0 0 / 8px 8px;
-  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
-}
-.pf-frame-pixel .sc-head { border-radius: 2px !important; }
-.pf-frame-neon::before { background: linear-gradient(135deg, #7df9ff, #b06bff 50%, #ff4fd8); box-shadow: 0 0 10px rgba(125, 249, 255, 0.55), 0 0 22px rgba(255, 79, 216, 0.35); }
-.pf-frame-neon::after {
-  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -2); z-index: -2; border-radius: calc(var(--pf-frame-r) + var(--pf-frame-w)); pointer-events: none;
-  box-shadow: 0 0 18px 2px rgba(125, 249, 255, 0.45); animation: pf-pulse 2.2s ease-in-out infinite alternate;
-}
-.pf-frame-gold::before { background: linear-gradient(135deg, #fff1a8, #f0b429 30%, #8a5a12 55%, #ffd27a 78%, #b07a1c); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 2px 10px rgba(240, 180, 41, 0.35); }
-@property --pf-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-.pf-frame-venus::before { background: conic-gradient(from var(--pf-ang), #ffc562, #f29a2e, #c2457a, #7e5bd6, #5aa7f0, #ffc562); box-shadow: 0 0 14px rgba(242, 154, 46, 0.45); animation: pf-spin 6s linear infinite; }
-@keyframes pf-spin { to { --pf-ang: 360deg; } }
-/* Marcos de la 3.0 */
-.pf-frame-ice::before { background: linear-gradient(135deg, #ffffff, #c4f4ff 40%, #7ad7f7 70%, #ffffff); box-shadow: 0 0 12px rgba(122, 215, 247, 0.5); }
-.pf-frame-emerald::before { background: linear-gradient(135deg, #b6ffcf, #17c964 45%, #067a3a 75%, #6dffa8); box-shadow: 0 0 10px rgba(23, 201, 100, 0.45); }
-.pf-frame-amethyst::before { background: linear-gradient(135deg, #ecd6ff, #a64dd6 45%, #4d1f7a 75%, #cda2ff); box-shadow: 0 0 10px rgba(166, 77, 214, 0.45); }
-.pf-frame-redstone::before { background: repeating-linear-gradient(45deg, #ff2a1a 0 6px, #7a0d0d 6px 12px); box-shadow: 0 0 12px rgba(255, 42, 26, 0.5); }
-.pf-frame-fire::before { background: conic-gradient(from var(--pf-ang), #ff3d00, #ff9800, #ffe36b, #ff7a00, #ff3d00); box-shadow: 0 0 16px rgba(255, 110, 20, 0.65); animation: pf-spin 2.5s linear infinite; }
-.pf-frame-ender::before { background: conic-gradient(from var(--pf-ang), #0c3b34, #1fd3a6, #0b1f3a, #7e5bd6, #0c3b34); box-shadow: 0 0 14px rgba(31, 211, 166, 0.45); animation: pf-spin 7s linear infinite; }
-.pf-frame-rainbow::before { background: conic-gradient(from var(--pf-ang), #ff6b6b, #ffb36b, #ffe66b, #7dff8a, #6bd5ff, #9a8cff, #ff7ad9, #ff6b6b); box-shadow: 0 0 12px rgba(255, 255, 255, 0.25); animation: pf-spin 4s linear infinite; }
-.pf-frame-diamond::before { background: conic-gradient(from var(--pf-ang), #ffffff, #7df9ff, #c4f4ff, #5aa7f0, #ffffff, #7df9ff, #ffffff); box-shadow: 0 0 18px rgba(125, 249, 255, 0.7), 0 0 34px rgba(90, 167, 240, 0.35); animation: pf-spin 5s linear infinite; }
-.pf-frame-cosmic::before { background: conic-gradient(from var(--pf-ang), #ff4fd8, #7e5bd6, #2a3a8f, #5aa7f0, #ffc562, #ff4fd8); box-shadow: 0 0 20px rgba(255, 79, 216, 0.55), 0 0 40px rgba(126, 91, 214, 0.4); animation: pf-spin 3.5s linear infinite; }
-/* Forma de la cabeza */
-.pf-avatar-round .sc-head { border-radius: 50% !important; }
-.pf-avatar-round.pf-frame::before, .pf-avatar-round.pf-frame::after { border-radius: 50%; clip-path: none; }
-.pf-avatar-hex .sc-head { border-radius: 0 !important; clip-path: polygon(50% 0, 96% 25%, 96% 75%, 50% 100%, 4% 75%, 4% 25%); box-shadow: none !important; }
-.pf-avatar-hex.pf-frame::before { border-radius: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
-.pf-avatar-hex.pf-frame::after { content: none; }
+/* ---------- Marcos ---------- */
+/* Desde la 4.6 los marcos son dibujos SVG originales (social/frames.js) y su hoja es styles/features/frames.css. */
 
 /* ---------- Banner ---------- */
 .pf-banner { position: relative; overflow: hidden; background-color: var(--surface-3); background-size: cover; background-position: center; }
@@ -172,7 +140,7 @@ html.ax-hc .pf-name-text::after { content: none; }
   content: ''; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: overlay; background-size: 8px 8px;
   background-image: linear-gradient(rgba(0, 0, 0, 0.08) 50%, transparent 50%), linear-gradient(90deg, rgba(255, 255, 255, 0.06) 50%, transparent 50%);
 }
-.pf-banner[data-kind='image']::after, .pf-banner[data-kind='animated']::after { content: none; }
+.pf-banner[data-kind='image']::after { content: none; }
 
 /* ---------- Tarjeta de perfil (profile-ui.js) ---------- */
 .pf-card {
@@ -203,9 +171,9 @@ html.ax-hc .pf-name-text::after { content: none; }
 .pf-card.has-fade .pf-card-body { background: linear-gradient(180deg, rgba(14, 9, 6, 0.55), rgba(14, 9, 6, 0.72)), var(--pf-fade); }
 .pf-card.compact .pf-card-body { padding: 0 var(--sp-4) var(--sp-4); gap: var(--sp-2); }
 .pf-card-top { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-3); margin-top: -42px; min-width: 0; }
-.pf-card-head { --pf-frame-w: 4px; --pf-frame-r: calc(var(--radius-l) + 4px); }
-.pf-card-head .sc-head { border-radius: var(--radius-l); box-shadow: 0 0 0 4px var(--ring); }
-.pf-card-head .sc-dot { right: -4px; bottom: -4px; width: 20px; height: 20px; box-shadow: 0 0 0 4px var(--ring); }
+.pf-card-head .sc-head { box-shadow: 0 0 0 4px var(--ring); }
+/* El punto de presencia va sobre el borde del circulo, a las cuatro y media */
+.pf-card-head .sc-dot { right: 1px; bottom: 1px; width: 20px; height: 20px; box-shadow: 0 0 0 4px var(--ring); }
 .pf-card-head .sc-dot.busy::after { height: 3px; top: calc(50% - 1.5px); }
 .pf-card-head .sc-dot.offline, .pf-card-head .sc-dot.invisible { box-shadow: 0 0 0 4px var(--ring), inset 0 0 0 4px var(--faint); }
 .pf-card-chips { display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; justify-content: flex-end; min-width: 0; padding-bottom: var(--sp-1); }
@@ -294,49 +262,7 @@ html.ax-hc .pf-name-text::after { content: none; }
 .pf-profile-note { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
 .pf-profile-note svg { width: 14px; height: 14px; }
 
-/* ---------- 3.1: marcos del Venus Pass ---------- */
-/* Temporada 1: anillo dorado y violeta que gira despacio */
-.pf-frame-season1::before { background: conic-gradient(from var(--pf-ang), #ffd27a, #f0b429 30%, #7e5bd6 55%, #b06bff 75%, #ffd27a); box-shadow: 0 0 12px rgba(176, 107, 255, 0.4); animation: pf-spin 14s linear infinite; }
-/* Legendario: el mismo con brillo y particulas */
-.pf-frame-season1legend::before { background: conic-gradient(from var(--pf-ang), #fff1a8, #f0b429 30%, #7e5bd6 55%, #d8b4ff 75%, #fff1a8); box-shadow: 0 0 16px rgba(255, 210, 122, 0.6), 0 0 32px rgba(176, 107, 255, 0.45); animation: pf-spin 10s linear infinite; }
-.pf-frame-season1legend::after {
-  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -4); z-index: -2; border-radius: calc(var(--pf-frame-r) + var(--pf-frame-w) * 3); pointer-events: none;
-  background: radial-gradient(circle at 18% 12%, #ffe6b0 0 1.6px, transparent 2.6px), radial-gradient(circle at 84% 26%, #d8b4ff 0 1.5px, transparent 2.5px), radial-gradient(circle at 68% 88%, #ffd27a 0 1.3px, transparent 2.3px), radial-gradient(circle at 12% 74%, #b06bff 0 1.3px, transparent 2.3px), radial-gradient(circle at 48% 4%, #ffffff 0 1px, transparent 2px);
-  animation: pf-particles 2.8s ease-in-out infinite;
-}
-@keyframes pf-particles { 0%, 100% { opacity: 0.35; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
-/* Gratis: linea doble dorada, sin animacion */
-.pf-frame-season1free { --pf-frame-w: 2px; }
-.pf-frame-season1free::before { background: #f0b429; box-shadow: 0 0 0 2px #1d1410, 0 0 0 3px #ffd27a; }
-/* Max: marco negro con borde animado estilo legendario, dorado y rojo */
-.pf-frame-max { --pf-frame-w: 4px; }
-.pf-frame-max::before { background: #0b0608; box-shadow: inset 0 0 0 1px rgba(255, 210, 122, 0.35); }
-.pf-frame-max::after {
-  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -1 - 2px); z-index: -2; border-radius: calc(var(--pf-frame-r) + 2px); pointer-events: none;
-  background: conic-gradient(from var(--pf-ang), #ffd27a, #ff3b3b 30%, #3a0b07 50%, #ffd27a 65%, #ff3b3b 85%, #ffd27a); box-shadow: 0 0 16px rgba(255, 59, 59, 0.5), 0 0 30px rgba(255, 210, 122, 0.3);
-  animation: pf-spin 3s linear infinite;
-}
-/* ---------- 3.1: marcos de la tienda (animados y de temporada) ---------- */
-.pf-frame-pulse::before { background: linear-gradient(135deg, #ff7eb3, #ff4fd8 50%, #c58cff); animation: pf-beat 1.8s ease-in-out infinite; }
-@keyframes pf-beat { 0%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(255, 79, 216, 0.4); } 50% { transform: scale(1.07); box-shadow: 0 0 18px rgba(255, 79, 216, 0.8); } }
-.pf-frame-orbit::before { background: linear-gradient(135deg, #7fb2ff, #2a3a8f 70%, #5aa7f0); box-shadow: 0 0 10px rgba(90, 167, 240, 0.45); }
-.pf-frame-orbit::after {
-  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -4); z-index: 1; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle at 50% 0%, #fff1a8 0 3px, transparent 4px), radial-gradient(circle at 50% 100%, #7df9ff 0 2.4px, transparent 3.4px);
-  animation: pf-orbit 4s linear infinite;
-}
-@keyframes pf-orbit { to { transform: rotate(360deg); } }
-.pf-frame-halloween::before { background: repeating-linear-gradient(45deg, #ff7a00 0 6px, #3b1450 6px 12px); box-shadow: 0 0 10px rgba(255, 122, 0, 0.45); }
-.pf-frame-halloween::after { content: '🎃'; position: absolute; right: -9px; top: -11px; z-index: 1; font-size: 14px; line-height: 1; pointer-events: none; animation: pf-bob 2.4s ease-in-out infinite; }
-@keyframes pf-bob { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-2px) rotate(8deg); } }
-.pf-frame-xmas::before { background: repeating-linear-gradient(135deg, #d32f2f 0 8px, #1f8a3a 8px 16px); box-shadow: 0 0 10px rgba(211, 47, 47, 0.4); }
-.pf-frame-xmas::after {
-  content: ''; position: absolute; inset: calc(var(--pf-frame-w) * -1); z-index: 1; border-radius: var(--pf-frame-r); pointer-events: none;
-  background: radial-gradient(circle at 10% 0%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 50% 0%, #ffe066 0 1.5px, transparent 2.5px), radial-gradient(circle at 90% 0%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 0% 50%, #ffe066 0 1.5px, transparent 2.5px), radial-gradient(circle at 100% 50%, #ffe066 0 1.5px, transparent 2.5px), radial-gradient(circle at 10% 100%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 50% 100%, #ffe066 0 1.5px, transparent 2.5px), radial-gradient(circle at 90% 100%, #fff 0 1.5px, transparent 2.5px);
-  animation: pf-twinkle 1.6s steps(2) infinite;
-}
-@keyframes pf-twinkle { 50% { opacity: 0.35; } }
-html[data-ui-lite] .pf-frame::before, html[data-ui-lite] .pf-frame::after, html[data-ui-lite] .pf-particles::after, html[data-ui-lite] .pf-name-text { animation: none !important; }
+html[data-ui-lite] .pf-particles::after, html[data-ui-lite] .pf-name-text { animation: none !important; }
 
 /* ---------- 3.1: efecto de nombre del Venus Pass (aurora dorada y violeta que se desplaza) ---------- */
 .pf-fx-season1 .pf-name-text {

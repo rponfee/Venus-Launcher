@@ -17,8 +17,6 @@ const DATE_SHORT = { day: 'numeric', month: 'short', hour: '2-digit', minute: '2
 
 const everyLabel = (s) => (s < 60 ? C('everySeconds', { count: s }) : C('everyMinutes', { count: s / 60 }));
 const capLabel = (mb) => fmtBytes(mb * 1048576);
-// El nombre de una carpeta de servidor lleva la direccion: en modo streamer se difumina (.priv)
-const isServerFolder = (name) => String(name).startsWith('server_');
 
 /** Un cuadro de la carpeta como ImageBitmap */
 async function loadFrame(instanceId, folder, name) {
@@ -146,7 +144,7 @@ export function openTimelapse({ instanceId: wanted = '', onSaved } = {}) {
     if (!status?.instanceId || status.instanceId !== instanceId) return null;
     if (status.stopped) return h('div', { class: 'notice warn' }, icon('alert'), h('div', {}, status.stopped === 'full' ? C('timelapseStoppedFull') : C('timelapseStoppedDisk')));
     if (!status.active) return null;
-    return h('div', { class: 'notice good' }, icon('clock'), h('div', {}, status.folder ? h('span', { class: isServerFolder(status.folder) ? 'priv' : '' }, C('timelapseRecording', { folder: status.folder, count: status.frames })) : C('timelapseWaiting')));
+    return h('div', { class: 'notice good' }, icon('clock'), h('div', {}, status.folder ? h('span', {}, C('timelapseRecording', { folder: status.folder, count: status.frames })) : C('timelapseWaiting')));
   }
 
   function configCard() {
@@ -195,7 +193,7 @@ export function openTimelapse({ instanceId: wanted = '', onSaved } = {}) {
       h(
         'div',
         { class: 'cs-mt-main' },
-        h('div', { class: ['cs-mt-name', 'ellipsis', isServerFolder(f.folder) && 'priv'], title: f.folder }, f.folder),
+        h('div', { class: ['cs-mt-name', 'ellipsis'], title: f.folder }, f.folder),
         h('div', { class: 'cs-mt-sub' }, h('span', { class: 'num' }, C('timelapseCount', { count: f.count })), h('span', { class: 'num' }, fmtBytes(f.bytes)), from ? h('span', {}, `${fmtDate(from, DATE_SHORT)} → ${fmtDate(to, DATE_SHORT)}`) : null),
       ),
       h('div', { class: 'cs-mt-btns' }, speedSelect(f.count), genBtn, openBtn, delBtn),
@@ -210,7 +208,7 @@ export function openTimelapse({ instanceId: wanted = '', onSaved } = {}) {
       bar.firstChild.style.width = `${pct}%`;
       txt.textContent = `${pct}%`;
     };
-    return h('div', { class: 'cs-progress', role: 'status', 'aria-live': 'polite' }, h('div', { class: 'row between' }, h('span', { class: isServerFolder(running.folder) ? 'priv' : '' }, C('timelapseGenerating', { folder: running.folder })), txt), bar, h('button', { class: 'btn sm ghost', type: 'button', onclick: () => cancel() }, t('common.cancel')));
+    return h('div', { class: 'cs-progress', role: 'status', 'aria-live': 'polite' }, h('div', { class: 'row between' }, h('span', {}, C('timelapseGenerating', { folder: running.folder })), txt), bar, h('button', { class: 'btn sm ghost', type: 'button', onclick: () => cancel() }, t('common.cancel')));
   }
 
   function draw() {

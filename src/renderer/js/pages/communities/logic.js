@@ -1,6 +1,6 @@
-import { cleanLine, cleanText } from '../../features/clans/logic.js';
+import { cleanLine, cleanText } from '../../features/communities/logic.js';
 // Comunidades: lógica pura de canales y mensajes, sin DOM. Los permisos son para mostrar u ocultar botones: el servidor los
-// vuelve a comprobar en cada RPC (0033_clanes_comunidades.sql).
+// vuelve a comprobar en cada RPC (0033_clanes_comunidades.sql y 0038_comunidades.sql).
 export const PAGE_SIZE = 50;
 export const MUTE_OPTIONS = [10, 60, 1440, 10080];
 const GROUP_WINDOW_MS = 5 * 60000;
@@ -13,8 +13,12 @@ export function canModerate(actor, target, { self = false } = {}) {
   return actor === 'owner' || (actor === 'moderator' && target === 'member');
 }
 
-export const canDeleteMessage = (msg, me, role) => !!msg && !msg.deleted && !!role && (msg.authorId === me || isStaff(role));
-export const canReportMessage = (msg, me) => !!msg && !msg.deleted && msg.authorId !== me;
+/** Roles propios: los asigna el equipo y solo a miembros comunes (dueño y moderadores ya saltean los permisos). */
+export const canAssignRole = (actor, target) => isStaff(actor) && target === 'member';
+
+// Los avisos de bienvenida y despedida los borra solo el equipo.
+export const canDeleteMessage = (msg, me, role) => !!msg && !msg.deleted && !!role && ((msg.authorId === me && !msg.system) || isStaff(role));
+export const canReportMessage = (msg, me) => !!msg && !msg.deleted && !msg.system && msg.authorId !== me;
 
 /** Canales en el orden del servidor, separados por tipo. */
 export function channelsByKind(channels) {
@@ -40,13 +44,21 @@ export function moveChannel(ids, id, delta) {
 
 const atOf = (m) => Date.parse(m?.at) || 0;
 
+/** Un GIF subido que llega por Realtime trae solo el id: no pisa al que ya tiene la ruta. Un borrado se lleva el GIF. */
+function mergeMedia(old, next, gone) {
+  if (gone) return null;
+  if (next?.kind === 'upload' && !next.path && old?.kind === 'upload' && old.id === next.id) return old;
+  return next ?? old ?? null;
+}
+
 /** Junta mensajes por id (el que llega último manda, pero un borrado no se deshace), del más viejo al más nuevo. */
 export function mergeMessages(list, incoming) {
   const map = new Map((list || []).map((m) => [m.id, m]));
   for (const m of incoming || []) {
     if (!m?.id) continue;
     const old = map.get(m.id);
-    map.set(m.id, old ? { ...old, ...m, deleted: old.deleted || m.deleted, body: old.deleted || m.deleted ? '' : m.body, author: m.author || old.author } : m);
+    const gone = !!(old?.deleted || m.deleted);
+    map.set(m.id, old ? { ...old, ...m, deleted: gone, body: gone ? '' : m.body, media: mergeMedia(old.media, m.media, gone), reactions: gone ? [] : m.reactions || old.reactions || [], author: m.author || old.author } : m);
   }
   return [...map.values()].sort((a, b) => atOf(a) - atOf(b) || String(a.id).localeCompare(String(b.id)));
 }
@@ -65,21 +77,24 @@ export function messageFromRow(row, { people, isBlocked } = {}) {
     at: row.created_at,
     deleted: row.deleted === true,
     hidden,
+    system: row.system === 'join' || row.system === 'leave' ? row.system : null,
+    // Las reacciones no viajan por Realtime: se actualizan con la consulta periódica y con la propia acción.
+    media: hidden || row.deleted || !row.media || typeof row.media !== 'object' ? null : row.media,
     body: hidden || row.deleted ? '' : String(row.body ?? ''),
     author: people?.get(row.author) || null,
   };
 }
 
-/** Bloques de mensajes seguidos de una misma cuenta (hasta 5 minutos entre uno y otro). */
+/** Bloques de mensajes seguidos de una misma cuenta (hasta 5 minutos entre uno y otro). Los avisos del sistema van solos. */
 export function groupMessages(list, { windowMs = GROUP_WINDOW_MS } = {}) {
   const out = [];
   for (const m of list || []) {
     const last = out[out.length - 1];
-    if (last && last.authorId === m.authorId && atOf(m) - last.lastAt <= windowMs) {
+    if (!m.system && last && !last.system && last.authorId === m.authorId && atOf(m) - last.lastAt <= windowMs) {
       last.items.push(m);
       last.lastAt = atOf(m);
     } else {
-      out.push({ authorId: m.authorId, author: m.author, at: m.at, lastAt: atOf(m), items: [m] });
+      out.push({ authorId: m.authorId, author: m.author, at: m.at, lastAt: atOf(m), system: m.system || null, items: [m] });
     }
   }
   return out;
@@ -110,7 +125,8 @@ export const iconGlyph = (value) => ({ book: 'file', 'message-circle': 'message'
 export const channelIcon = (ch) => iconGlyph(safeCommunityIcon(ch?.icon, { text: 'hash', voice: 'headphones', announcement: 'megaphone', forum: 'message-circle' }[ch?.kind] || 'hash'));
 export const safeBanner = (value) => COMMUNITY_BANNERS.includes(value) ? value : 'none';
 export const safeTheme = (value) => COMMUNITY_THEMES.includes(value) ? value : 'default';
-export const visibleChannels = (community) => (community?.channels || []).filter((ch) => !ch.isPrivate || isStaff(community?.myRole));
+// El servidor ya entrega solo los canales que esa cuenta puede ver (dueño, moderadores y roles con "ver" en un canal privado).
+export const visibleChannels = (community) => community?.channels || [];
 /** Categorías vacías también se ven para poder agregar su primer canal. */
 export function categoryGroups(community) {
   const categories = [...(community?.categories || [])].sort((a, b) => a.position - b.position);
@@ -131,9 +147,19 @@ export function moveWithinCategory(channels, id, delta) {
   return all.map((ch) => same(ch) ? moved[at++] : ch.id);
 }
 export function canPostIn(community, channel) {
-  if (!community?.myRole || isMuted(community.mutedUntil) || !channel || channel.kind === 'voice' || channel.canPost === false) return false;
+  if (!community?.myRole || isMuted(community.mutedUntil) || !channel || channel.kind === 'voice') return false;
+  // canPost trae los permisos por canal y por rol; sin él (datos viejos) rige solo el canal.
+  if (typeof channel.canPost === 'boolean') return channel.canPost;
   return !((channel.isPrivate || channel.kind === 'announcement' || channel.postingRole === 'staff') && !isStaff(community.myRole));
 }
+/** Enlaces y GIFs: además de escribir, el canal tiene que permitirlos. */
+export const canEmbedIn = (community, channel) => canPostIn(community, channel) && channel?.canEmbed !== false;
+export const canReactIn = (community, channel) => !!community?.myRole && !!channel && channel.kind !== 'voice' && !isMuted(community.mutedUntil) && channel.canReact !== false;
+/** Misma heurística que private.community_has_link: el servidor decide, esto solo avisa antes de mandar. */
+export const hasLink = (text) => /(https?:\/\/|www\.|discord\.gg\/|discord(app)?\.com\/invite)/i.test(String(text ?? ''));
+export const REACTIONS = ['like', 'love', 'laugh', 'wow', 'sad', 'party', 'fire', 'eyes'];
+export const REACTION_GLYPHS = { like: '👍', love: '❤️', laugh: '😂', wow: '😮', sad: '😢', party: '🎉', fire: '🔥', eyes: '👀' };
+export const safeReactions = (list) => (Array.isArray(list) ? list : []).filter((r) => REACTIONS.includes(r?.emoji) && Number(r.count) > 0).map((r) => ({ emoji: r.emoji, count: Number(r.count), mine: r.mine === true }));
 export function waitSeconds(community, channel, now = Date.now()) {
   return isStaff(community?.myRole) ? 0 : Math.max(0, Math.ceil(((Date.parse(channel?.nextPostAt) || 0) - now) / 1000));
 }

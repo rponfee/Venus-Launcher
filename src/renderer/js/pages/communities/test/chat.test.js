@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { harness, deferred, flush } from '../../../features/clans/test/renderer-harness.js';
-import { COMMUNITY_LIMITS, validateMessage } from '../../../features/clans/logic.js';
+import { harness, deferred, flush } from '../../../features/communities/test/renderer-harness.js';
+import { COMMUNITY_LIMITS, validateMessage } from '../../../features/communities/logic.js';
 import * as logic from '../logic.js';
+import * as greeting from '../../../features/communities/greeting.js';
 
 function chatHarness() {
   const ui = harness(), pending = deferred(), sent = [];
@@ -17,7 +18,7 @@ function chatHarness() {
     watchChannel: (id, handlers) => { watch = handlers; return () => stops++; },
   };
   const community = { id: 'community', name: 'Prueba', myRole: 'member', mutedUntil: null };
-  const { chatView } = ui.load(new URL('../chat.js', import.meta.url), { ...logic, COMMUNITY_LIMITS, validateMessage }, ['chatView']);
+  const { chatView } = ui.load(new URL('../chat.js', import.meta.url), { ...logic, ...greeting, COMMUNITY_LIMITS, validateMessage, closeGifPicker() {}, openGifPicker() {}, openMediaGallery() {}, mediaImage: () => ui.deps.h('media'), openGroupReport() {} }, ['chatView']);
   const chat = chatView(ui.root, { b, community, channel: { id: 'channel', name: 'general' }, people: new Map() });
   return { ...ui, pending, sent, chat, community, watch, stops: () => stops, input: ui.find('cm-input'), send: ui.find('cm-send') };
 }

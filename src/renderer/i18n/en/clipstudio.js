@@ -1,4 +1,4 @@
-// Clip studio texts: Weekly montage, Timelapse, Upload clips, OBS and the public Gallery.
+// Clip studio texts: Weekly montage, Timelapse, Upload clips and the public Gallery.
 export default {
   // Common
   seconds_one: '{count} second',
@@ -161,38 +161,6 @@ export default {
   accountsText: 'To upload clips directly from the Clips viewer. Nothing is uploaded until you press Upload.',
   accountConnected: 'Connected',
   accountNotConnected: 'Not connected',
-
-  // OBS
-  obsTitle: 'OBS integration',
-  obsSubtitle: "Switches scenes when the game starts and closes.",
-  obsEnable: 'Connect to OBS',
-  obsEnableSub: "Needs OBS 28 or newer, with the WebSocket server turned on (Tools → WebSocket Server Settings). If OBS is closed, it keeps retrying without saying anything.",
-  obsHost: 'Address',
-  obsPort: 'Port',
-  obsPassword: 'Password',
-  obsPasswordEmpty: 'No password',
-  obsPasswordSaved: 'Saved (encrypted)',
-  obsPasswordStored: 'Password saved',
-  obsPasswordRemoved: 'Password deleted',
-  obsPasswordClear: 'Delete the password',
-  obsHelp: 'This PC or your local network only. The password is stored encrypted and never leaves your network.',
-  obsTest: 'Test connection',
-  obsTestOk: 'Connected to obs-websocket {version}: {count} scenes.',
-  obsRules: 'Rules',
-  obsSceneOpen: 'Scene when the game opens',
-  obsSceneClose: 'Scene when the game closes',
-  obsNoScene: "Don't change",
-  obsSceneMissing: '{name} (not in OBS)',
-  obsStreamerRule: 'Streamer mode while streaming or recording',
-  obsStreamerRuleSub: 'Turns on when OBS starts and off when it ends, only if this integration turned it on.',
-  obsState_off: 'Off',
-  obsState_connecting: 'Connecting…',
-  obsState_connected: 'Connected',
-  obsState_waiting: 'Waiting for OBS',
-  obsState_authFailed: 'Wrong password',
-  obsStreaming: 'Streaming',
-  obsRecording: 'Recording',
-  errObsNeedPassword: 'OBS is asking for a password.',
 
   // Gallery
   galleryTab: 'Gallery',

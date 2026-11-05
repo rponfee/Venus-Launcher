@@ -17,7 +17,6 @@ La rama **4.5.0 está implementada; el launcher y la web siguen sin publicar**. 
 | [admin.md](admin.md) | Dueño (administradores) | Panel de administración (`#/admin`): quién tiene acceso, usuarios, moderación, cupones, planes, registro y la Edge Function `admin`. |
 | [mcp.md](mcp.md) | Usuarios y desarrolladores | Usar Venus desde Claude Desktop, Claude Code, ChatGPT y claude.ai (MCP): conexión, seguridad, túnel, actividad y el protocolo. |
 | [asistente-ia.md](asistente-ia.md) | Desarrolladores | Cómo funciona el Asistente IA por dentro: bucle de herramientas, permisos, restricciones, Deshacer, configuración y privacidad. |
-| [extensiones.md](extensiones.md) y [ejemplos](extensiones-ejemplo/) | Referencia histórica | Manifiesto, permisos, API y paquetes de ejemplo de la función retirada; ya no se cargan extensiones en el launcher. |
 | [../supabase/functions/README.md](../supabase/functions/README.md) | Dueño y desarrolladores | Desplegar y probar las Edge Functions (secretos, `curl` y pruebas automáticas). |
 | [insignia.md](insignia.md) | Dueño y desarrolladores | Insignia de Venus en el juego: el mod (Fabric, NeoForge y Forge), cómo se verifica la cuenta con Mojang sin mandar el token, la consulta del mod, el despliegue y cómo probarla. |
 | [musica.md](musica.md) | Desarrolladores | Música: el ayudante de los controles multimedia de Windows, volumen por app, atajos, canales y errores. |

@@ -1,14 +1,12 @@
-// Logros de Venus (#/achievements[/<logros, misiones o minecraft>]): logros con niveles y rareza, misiones diarias y
-// semanales y los logros de Minecraft de cada mundo. Catalogo en achievements/catalog.js; datos en features/achievements.js
-// y features/missions.js; servidor en supabase/migrations/0023_venus3.sql. Guia: docs/venus-points.md.
+// Logros de Venus (#/achievements[/<list o missions>]): logros con niveles y rareza, y misiones diarias y semanales. Son
+// solo de Venus (el launcher y la cuenta): desde la 4.6 no hay logros ni progresos de Minecraft, y #/achievements/minecraft
+// abre la lista de logros. Catalogo en achievements/catalog.js; datos en features/achievements.js y features/missions.js;
+// servidor en supabase/migrations/0023_venus3.sql y 0043_logros_venus.sql. Guia: docs/venus-points.md.
 import { h, icon, mount, skeleton, emptyState, setBusy, fmtDate, fmtDuration } from '../ui.js';
-import { api } from '../store.js';
 import { t, locale } from '../i18n.js';
 import { navigate } from '../app.js';
 import { ACHIEVEMENTS, GROUPS, TIERS, families, familyState, rarityOf, roman, RARITY_MIN_USERS } from './achievements/catalog.js';
 import { familyName, achievementDesc, tierLabel, missionText } from './achievements/names.js';
-import { advancementsCard } from './achievements/minecraft.js';
-import { openWorldStats } from './stats/world.js';
 import { checkAchievements, loadAchievements, getAchievements, onAchievements } from '../features/achievements.js';
 import { loadMissions, getMissions, onMissions, claimMission, missionValue } from '../features/missions.js';
 import { formatPoints } from './rewards/logic.js';
@@ -17,7 +15,6 @@ const A = (key, vars) => t(`achievements.${key}`, vars);
 const TABS = [
   { id: 'list', icon: 'trophy' },
   { id: 'missions', icon: 'target' },
-  { id: 'minecraft', icon: 'pickaxe' },
 ];
 const pts = (n) => formatPoints(n, locale());
 
@@ -33,13 +30,14 @@ function fmtNum(n, max = 0) {
 const memo = { group: 'all', status: 'all', query: '', open: new Set() };
 
 export default {
-  ns: ['achievements', 'stats'],
-  css: ['pages/achievements', 'pages/stats'],
+  ns: ['achievements'],
+  css: ['pages/achievements'],
   async render(root, params) {
-    const st = { tab: TABS.some((x) => x.id === params?.[0]) ? params[0] : 'list', ingame: null, ingameError: null, ingameLoading: false, scope: { instanceId: null, world: null }, report: { milestones: [] } };
+    const st = { tab: TABS.some((x) => x.id === params?.[0]) ? params[0] : 'list' };
+    // Una pestaña que ya no existe (la de Minecraft de las versiones anteriores) abre la lista y corrige la dirección
+    if (params?.[0] && st.tab !== params[0]) history.replaceState(null, '', `#/achievements/${st.tab}`);
     const offs = [];
     let disposed = false;
-    const modals = new Set();
 
     const head = h('div', { class: 'page-head' }, h('div', { class: 'ph-text' }, h('h1', { class: 'page-title' }, A('title')), h('p', { class: 'page-sub' }, A('subtitle'))));
     const summary = h('div', { class: 'ac-summary' });
@@ -242,32 +240,6 @@ export default {
       );
     }
 
-    // ---------- Minecraft ----------
-    const minecraftCtx = {
-      state: st,
-      openWorld: (instanceId, folder) => {
-        const d = openWorldStats(instanceId, folder, () => modals.delete(d));
-        modals.add(d);
-      },
-      async loadIngame(scope = st.scope, { force = false } = {}) {
-        const next = { instanceId: scope?.instanceId || null, world: scope?.instanceId ? scope?.world || null : null };
-        const cur = st.ingame?.scope;
-        if (!force && st.ingame && cur && cur.instanceId === next.instanceId && cur.world === next.world) return st.ingame;
-        st.scope = next;
-        st.ingameLoading = true;
-        try {
-          st.ingame = await api.invoke('stats:ingame', next);
-          st.ingameError = null;
-        } catch (err) {
-          st.ingameError = err;
-        } finally {
-          st.ingameLoading = false;
-        }
-        if (!disposed && st.tab === 'minecraft') drawBody();
-        return st.ingame;
-      },
-    };
-
     // ---------- Pestañas ----------
     function drawTabs() {
       const ready = (getMissions().data ? ['daily', 'weekly'] : []).flatMap((p) => getMissions().data[p]?.missions?.filter((x) => !x.claimed && missionValue(p, x.metric) >= x.target) || []).length;
@@ -287,8 +259,7 @@ export default {
 
     function drawBody() {
       if (st.tab === 'list') mount(body, listPanel());
-      else if (st.tab === 'missions') mount(body, missionsPanel());
-      else mount(body, advancementsCard(minecraftCtx));
+      else mount(body, missionsPanel());
     }
 
     function select(id) {
@@ -318,7 +289,6 @@ export default {
     return () => {
       disposed = true;
       offs.splice(0).forEach((off) => off());
-      for (const d of modals) d?.close?.();
     };
   },
 };

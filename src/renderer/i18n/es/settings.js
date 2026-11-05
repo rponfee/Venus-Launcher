@@ -389,22 +389,8 @@ export default {
   credIcons: 'Íconos (licencia ISC).',
   credHeads: 'Avatares de los jugadores.',
   aboutLegal: 'Venus Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Synergies AB.',
-  // Modo streamer (Privacidad; features/streamer.js)
-  streamerTitle: 'Modo streamer',
-  streamerSub: 'Para transmitir o grabar sin mostrar datos de más. También se activa desde Ctrl+K.',
-  streamerToggle: 'Activar el modo streamer',
-  streamerToggleSub: 'Queda activado hasta que lo apagues; mientras tanto se ve un indicador en la barra de título.',
-  streamerCodes: 'Códigos',
-  streamerCodesSub: 'Tu código de amigo, los códigos de pack y los de las salas de voz se ven difuminados.',
-  streamerAddresses: 'Direcciones',
-  streamerAddressesSub: 'IPs, direcciones de servidores y túneles, en el launcher y en los avisos.',
-  streamerFriends: 'Amigos y mensajes',
-  streamerFriendsSub: 'Nombres de amigos y contenido de los mensajes, en Mensajes, Inicio y los avisos.',
-  streamerGame: 'En el juego y en Discord',
-  streamerGameSub: 'El overlay muestra "Un amigo" y "Amigo 1, 2…" en lugar de nombres, y Discord no muestra el mundo ni el servidor.',
-  streamerNote: 'No cambia lo que ven tus amigos ni toca el chat de Minecraft: solo lo que Venus muestra en tu pantalla.',
 
-  // Descansos, resumen y versiones nuevas (3.1, features/tools)
+  // Descansos, resumen y versiones nuevas (3.1, features/playcare)
   careTitle: 'Descansos y resumen',
   careSub: 'Avisos mientras jugás y un resumen al cerrar el juego.',
   breaksToggle: 'Recordatorio de descansos',

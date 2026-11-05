@@ -72,3 +72,51 @@ test('parche de posicion del modo edicion', () => {
   assert.deepEqual(Object.keys(reset), config.WIDGETS);
   assert.equal(reset.voice.anchor, config.DEFAULTS.widgets.voice.anchor);
 });
+
+test('atajos: los que le sacan la tecla a Minecraft, a Windows o a AltGr se rechazan', () => {
+  for (const [accel, issue] of [
+    ['Ctrl+W', 'minecraft'], ['Shift+K', 'minecraft'], ['Ctrl+Shift+M', 'minecraft'], ['CommandOrControl+F9', 'minecraft'], ['Shift+Space', 'minecraft'],
+    ['Ctrl+Alt+Q', 'altgr'], ['Ctrl+Alt+1', 'altgr'], ['AltGr+E', 'altgr'], ['Alt+Control+O', 'altgr'],
+    ['Alt+F4', 'system'], ['Alt+Tab', 'system'], ['Alt+Enter', 'system'], ['Ctrl+Shift+Esc', 'system'],
+  ]) assert.equal(config.shortcutIssue(accel), issue, accel);
+  for (const accel of ['Alt+Shift+O', 'Alt+Shift+F9', 'Alt+K', 'Ctrl+Alt+Space', 'Ctrl+Alt+Left', 'Super+K', 'F13', 'F24', 'Alt+Shift+num5']) assert.equal(config.shortcutIssue(accel), null, accel);
+  assert.equal(config.shortcutIssue('Hyper+X'), 'invalid');
+});
+
+test('atajos: dos escritos distinto son el mismo si tienen las mismas teclas', () => {
+  assert.equal(config.canonAccelerator('Shift+Alt+o'.replace('o', 'O')), 'Alt+Shift+O');
+  assert.equal(config.canonAccelerator('CommandOrControl+Alt+Esc'), 'Ctrl+Alt+Escape');
+  assert.equal(config.canonAccelerator('Ctrl+Alt+Return'), config.canonAccelerator('Control+Alt+Enter'));
+  assert.equal(config.canonAccelerator('nada'), '');
+  const list = [{ id: 'voice', accel: 'CommandOrControl+Shift+M' }, { id: 'capture', accel: 'Alt+Shift+F9' }, { id: 'x', accel: '' }, null];
+  assert.equal(config.findConflict('Shift+Alt+F9', list).id, 'capture');
+  assert.equal(config.findConflict('Ctrl+Shift+M', list).id, 'voice');
+  assert.equal(config.findConflict('Alt+Shift+F10', list), null);
+  assert.equal(config.findConflict('basura', list), null);
+  assert.equal(config.findConflict('Alt+Shift+F9', undefined), null);
+});
+
+test('ajustes viejos: un atajo de panel igual al principal queda sin atajo y no se registra dos veces', () => {
+  const c = config.normalize({ shortcut: 'Alt+Shift+R', panelShortcuts: { recipes: 'Alt+Shift+R', assistant: 'Shift+Alt+R' } });
+  assert.equal(c.shortcut, 'Alt+Shift+R');
+  assert.deepEqual(c.panelShortcuts, { recipes: '', assistant: '' });
+  const d = config.normalize({ shortcut: 'Alt+Shift+O', panelShortcuts: { recipes: 'Alt+Shift+A', assistant: 'Alt+Shift+A' } });
+  assert.deepEqual(d.panelShortcuts, { recipes: 'Alt+Shift+A', assistant: '' });
+  // Lo que no es de este modulo no se toca: valores raros en los widgets viejos vuelven a los de fabrica
+  const e = config.normalize({ widgets: { voice: { scale: '1.2', opacity: 'x', x: null, anchor: 5 }, perf: { show: 'fps' }, counters: null } });
+  assert.equal(e.widgets.voice.scale, 1.2);
+  assert.equal(e.widgets.voice.opacity, config.DEFAULTS.widgets.voice.opacity);
+  assert.equal(e.widgets.voice.anchor, 'tl');
+  assert.deepEqual(e.widgets.perf.show, config.DEFAULTS.widgets.perf.show);
+  assert.deepEqual(e.widgets.counters, config.normalizeWidget('counters', {}));
+});
+
+test('tamano, opacidad y oculto desde el modo edicion: solo esos tres campos y siempre acotados', () => {
+  assert.deepEqual(config.tweakPatch('voice', { scale: 1.2, opacity: 0.5, enabled: false }), { voice: { scale: 1.2, opacity: 0.5, enabled: false } });
+  assert.deepEqual(config.tweakPatch('music', { scale: 9, opacity: 0 }), { music: { scale: 1.6, opacity: 0.3 } });
+  assert.deepEqual(config.tweakPatch('perf', { scale: 1.23 }), { perf: { scale: 1.25 } });
+  // Nada mas pasa: ni otros campos, ni widgets que no existen, ni tipos raros
+  assert.deepEqual(config.tweakPatch('voice', { scale: 1.1, anchor: 'br', theme: 'light', x: 3, show: 'speaking' }), { voice: { scale: 1.1 } });
+  for (const bad of [null, 'x', 5, [], {}, { scale: '1.2' }, { scale: NaN }, { enabled: 'si' }, { opacity: null }, { scale: Infinity }]) assert.equal(config.tweakPatch('voice', bad), null, JSON.stringify(bad));
+  for (const id of ['__proto__', 'constructor', 'otro', '', null, 7]) assert.equal(config.tweakPatch(id, { scale: 1.2 }), null, String(id));
+});

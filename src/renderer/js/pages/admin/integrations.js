@@ -2,6 +2,7 @@
 // CurseForge se consulta por el servicio de Venus. KLIPY conserva su contrato para pedidos desde los launchers.
 import { h, icon, mount, setBusy, ok, fail } from '../../ui.js';
 import { cloud } from '../../cloud.js';
+import { t, loadNs } from '../../i18n.js';
 import { T, card, errorBox, skeletonRows, field } from './parts.js';
 
 function savedStatus(data) {
@@ -11,8 +12,23 @@ function savedStatus(data) {
   return { configured: data.configured, hint };
 }
 
+// Códigos propios del proxy que la prueba sabe explicar. Los textos de CurseForge nunca se muestran.
+const SAFE_CODES = ['badkey', 'blocked', 'denied', 'forbidden', 'unauthorized', 'rate_limit', 'not_configured', 'unavailable', 'upstream'];
+const DIAGNOSTICS = {
+  badkey: () => T('curseforgeKeyRejected'),
+  blocked: () => t('curseforge.testBlocked'),
+  denied: () => t('curseforge.testUpstream'),
+  forbidden: () => T('curseforgeAccessDenied'),
+  unauthorized: () => T('curseforgeSessionExpired'),
+  rate_limit: () => T('curseforgeRateLimit'),
+  not_configured: () => t('curseforge.testNotConfigured'),
+  unavailable: () => t('curseforge.testUnavailable'),
+  upstream: () => t('curseforge.testUpstream'),
+};
+
 export function render(root) {
   let alive = true;
+  loadNs('curseforge');
   async function rpc(name, args) {
     const { data, error } = await cloud.client.rpc(name, args);
     if (error) throw error;
@@ -78,7 +94,7 @@ export function render(root) {
                 const detail = await error.context.clone().json().catch(() => null);
                 code = detail?.error?.code;
               }
-              throw Object.assign(new Error('test_failed'), { safeCode: ['badkey', 'forbidden', 'unauthorized', 'rate_limit'].includes(code) ? code : '' });
+              throw Object.assign(new Error('test_failed'), { safeCode: SAFE_CODES.includes(code) ? code : '' });
             }
             if (active()) ok(T('curseforgeTestOk'));
           } else {
@@ -91,9 +107,8 @@ export function render(root) {
         } catch (err) {
           if (active()) {
             // Los errores pueden contener datos de la petición: nunca los pasamos al toast ni a la consola.
-            const diagnostics = { badkey: 'curseforgeKeyRejected', forbidden: 'curseforgeAccessDenied', unauthorized: 'curseforgeSessionExpired', rate_limit: 'curseforgeRateLimit' };
-            const detail = test && diagnostics[err?.safeCode] ? diagnostics[err.safeCode] : !test && typeof err?.message === 'string' && err.message.includes('bad_key') ? id + 'BadKey' : id + 'RetryHint';
-            fail(T(test ? 'curseforgeTestFailed' : id + 'Failed'), T(detail));
+            const detail = test && DIAGNOSTICS[err?.safeCode] ? DIAGNOSTICS[err.safeCode]() : !test && typeof err?.message === 'string' && err.message.includes('bad_key') ? T(id + 'BadKey') : T(id + 'RetryHint');
+            fail(T(test ? 'curseforgeTestFailed' : id + 'Failed'), detail);
           }
         } finally {
           secret.value = '';

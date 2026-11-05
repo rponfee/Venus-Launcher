@@ -10,6 +10,7 @@ const { spawn } = require('child_process');
 const { parseLine } = require('./geometry');
 
 const WAIT_WINDOW_MIN = 15; // los modpacks grandes tardan en abrir la ventana
+const EXIT_GRACE_MS = 300;
 
 const SCRIPT = String.raw`
 $ErrorActionPreference = 'Stop'
@@ -154,7 +155,9 @@ function command({ pid, parentPid = process.pid }) {
 }
 
 // Abre el ayudante para un juego en marcha. onUpdate(info) con cada linea valida (ver geometry.parseLine),
-// onEnd() una sola vez cuando termina. Devuelve { stop() } o null si no corresponde (otro sistema, pid malo).
+// onEnd({ clean, lines }) una sola vez cuando termina: clean = termino por su cuenta con su ultima linea (se cerro el
+// juego o el launcher); sin eso (no abrio, lo mato un antivirus, PowerShell bloqueado) el modulo lo vuelve a intentar.
+// Despues de stop() ya no avisa nada. Devuelve { stop() } o null si no corresponde (otro sistema, pid malo).
 function track({ pid, parentPid, onUpdate, onEnd, platform = process.platform, spawnFn = spawn }) {
   if (platform !== 'win32' || !Number.isInteger(pid) || pid <= 0) return null;
   const cmd = command({ pid, parentPid });
@@ -165,12 +168,15 @@ function track({ pid, parentPid, onUpdate, onEnd, platform = process.platform, s
     return null;
   }
   let ended = false;
+  let exited = false; // el proceso ya no esta (aunque su ultima linea todavia pueda llegar)
+  let sawEnd = false;
+  let lines = 0;
   let buf = '';
   const finish = () => {
     if (ended) return;
     ended = true;
     try {
-      onEnd?.();
+      onEnd?.({ clean: sawEnd, lines });
     } catch (err) {
       console.warn('[overlay] fin del seguimiento', err?.message || err);
     }
@@ -185,17 +191,30 @@ function track({ pid, parentPid, onUpdate, onEnd, platform = process.platform, s
       buf = buf.slice(nl + 1);
       const info = parseLine(line);
       if (!info) continue;
-      if (info.end) finish();
-      else onUpdate?.(info);
+      // Lo que ya venia en el buffer cuando se llamo a stop() no le interesa a nadie
+      if (ended) return;
+      if (info.end) {
+        sawEnd = true;
+        finish();
+      } else {
+        lines++;
+        onUpdate?.(info);
+      }
     }
   });
   child.on?.('error', finish);
-  child.on?.('exit', finish);
+  child.on?.('close', finish);
+  // 'exit' puede llegar antes que la ultima linea del ayudante ({"end":1}): se le da un momento para no tomarlo por una caida
+  child.on?.('exit', () => {
+    exited = true;
+    const timer = setTimeout(finish, EXIT_GRACE_MS);
+    timer.unref?.();
+  });
   child.stdin?.on?.('error', () => {}); // el ayudante pudo terminar justo antes de escribirle
   return {
     // Pone adelante una ventana (el juego, o el overlay si Windows no le dio el foco). hwnd: el texto que dio el ayudante.
     front(hwnd) {
-      if (ended || !/^-?\d{1,20}$/.test(String(hwnd))) return false;
+      if (ended || exited || !/^-?\d{1,20}$/.test(String(hwnd))) return false;
       try {
         return Boolean(child.stdin?.write?.(`front ${hwnd}\n`));
       } catch {

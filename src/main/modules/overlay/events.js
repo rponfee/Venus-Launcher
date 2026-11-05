@@ -102,9 +102,13 @@ function voice(ev) {
   }
   const selfRaw = ev.self && typeof ev.self === 'object' ? ev.self : {};
   if (ev.members !== undefined && !Array.isArray(ev.members)) throw bad('members');
-  const members = (ev.members || [])
-    .filter((m) => m && typeof m === 'object')
-    .slice(0, MAX_MEMBERS)
+  // Si la sala tiene mas de 16, quedan primero quien habla y uno mismo (con el orden de la sala): si no, el que habla puede
+  // ser justo el que se corta
+  const all = (ev.members || []).filter((m) => m && typeof m === 'object');
+  const rank = (m) => (m.speaking === true ? 0 : m.self === true ? 1 : 2);
+  const keep = new Set(all.map((m, i) => [rank(m), i]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, MAX_MEMBERS).map((x) => x[1]));
+  const members = all
+    .filter((m, i) => keep.has(i))
     .map((m, i) => ({
       id: text(m.id, 64) || `m${i}`,
       name: text(m.name, 48) || '?',

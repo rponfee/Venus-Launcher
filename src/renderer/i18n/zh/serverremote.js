@@ -10,7 +10,6 @@ export default {
   errStart: "无法开启远程控制",
   errAction: "操作未成功",
   qrAlt: "在手机上打开远程控制的二维码",
-  qrHidden: "主播模式下会隐藏二维码。请复制链接或暂时关闭该模式。",
   stepQr: "用手机相机扫描二维码。",
   stepCode: "也可在手机浏览器中打开此地址并输入代码：",
   copyLink: "复制含代码的链接",

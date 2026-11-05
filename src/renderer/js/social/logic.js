@@ -70,9 +70,10 @@ export function oldestGuestbookAt(entries) {
 }
 
 // ---------- Cancion del perfil ----------
-// Si arranca sola al abrir la tarjeta: solo para amigos (o el dueño), con el ajuste prendido y nunca en vista previa
-export function shouldAutoplaySong({ song = null, allowed = true, preview = false, self = false, friend = false } = {}) {
-  return Boolean(song && song.url) && allowed !== false && !preview && (self || friend);
+// Si arranca sola al abrir la tarjeta: solo para amigos (o el dueño), con el ajuste prendido, nunca en vista previa y
+// nunca con un juego abierto (busy: store.running tiene algo, ver gameBusy de features/profile-editor/music-logic.js)
+export function shouldAutoplaySong({ song = null, allowed = true, preview = false, self = false, friend = false, busy = false } = {}) {
+  return Boolean(song && song.url) && allowed !== false && !preview && !busy && (self || friend);
 }
 export function volumeStep(v, dir) {
   const cur = Number.isFinite(v) ? v : 0.6;

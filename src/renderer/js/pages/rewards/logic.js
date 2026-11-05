@@ -38,12 +38,10 @@ export const ACHIEVEMENT_ID = /^[a-z0-9_]{2,40}$/;
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
 
-// Tienda: tipo de cosmético -> casillero de profiles.equipped (profile_customize).
+// Tienda: tipo de cosmético -> casillero de profiles.equipped (profile_customize). Las capas se retiraron en la 4.6.
 export const SLOT_BY_KIND = { frame: 'frame', name_effect: 'nameEffect', badge_style: 'badgeStyle', title: 'title' };
-// Las capas (0034) tienen su propia tabla y su RPC: no van en profiles.equipped ni pasan por equipPatch.
-export const CAPE_SLOT = 'cape';
-const slotOf = (kind) => (kind === 'cape' ? CAPE_SLOT : SLOT_BY_KIND[kind]);
-export const KIND_ORDER = ['frame', 'name_effect', 'badge_style', 'cape', 'title'];
+const slotOf = (kind) => SLOT_BY_KIND[kind];
+export const KIND_ORDER = ['frame', 'name_effect', 'badge_style', 'title'];
 
 // Errores de las RPC de 0020/0021 (texto de la excepción) y los que arma el cliente.
 export const SERVER_CODES = [
@@ -221,7 +219,7 @@ export function errorDetail(err) {
 
 // ---------- Tienda ----------
 /**
- * Arma la vista de la tienda: grupos por tipo (en KIND_ORDER) con el estado de cada ítem. equipped trae también .cape.
+ * Arma la vista de la tienda: grupos por tipo (en KIND_ORDER) con el estado de cada ítem.
  *   state: 'equipped' | 'owned' (comprado o incluido con premium) | 'buy' | 'short' (faltan puntos) | 'premium' (solo premium)
  */
 export function shopView(items, { owned = [], premium = false, balance = 0, equipped = {} } = {}) {
@@ -269,11 +267,13 @@ export function equipPatch(equipped, slot, itemId, { items = [], owned = [], pre
 // ---------- Historial ----------
 const REASON_ICONS = { daily: 'calendar', achievement: 'trophy', referral: 'userPlus', referred: 'heart', shop: 'tag', admin: 'shieldCheck', gift_in: 'sparkles', gift_out: 'heart', mission: 'target', pass: 'rocket', pass_refund: 'undo', challenge: 'swords' };
 
-/** Normaliza una fila del historial de points_me para dibujarla. */
+/** Normaliza una fila del historial de points_me para dibujarla. refund: el reintegro de un cosmético retirado (0040: ref 'refund:<item>'). */
 export function historyEntry(row) {
   const reason = REASON_ICONS[row?.reason] ? row.reason : 'admin';
   const at = Date.parse(row?.at);
-  return { reason, icon: REASON_ICONS[reason], ref: String(row?.ref ?? ''), delta: Math.trunc(Number(row?.delta) || 0), at: Number.isFinite(at) ? at : null };
+  const ref = String(row?.ref ?? '');
+  const refund = reason === 'shop' && ref.startsWith('refund:');
+  return { reason, icon: refund ? 'undo' : REASON_ICONS[reason], ref, refund, delta: Math.trunc(Number(row?.delta) || 0), at: Number.isFinite(at) ? at : null };
 }
 
 /** Texto genérico para un id sin traducción ("title_explorer" -> "Title explorer"). */

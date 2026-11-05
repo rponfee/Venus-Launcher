@@ -1,13 +1,13 @@
 // Comunidades: diálogos de crear y editar, canales (ordenar, renombrar, agregar y borrar), invitación y expulsados.
 import { h, icon, mount, modal, ok, fail, setBusy, skeleton, emptyState, confirmDialog, copyText, fmtAgo } from '../../ui.js';
 import { t } from '../../i18n.js';
-import { errText } from '../../features/clans/backend.js';
-import { COMMUNITY_LIMITS, validateCommunityName, validateDescription } from '../../features/clans/logic.js';
+import { errText } from '../../features/communities/backend.js';
+import { COMMUNITY_LIMITS, validateCommunityName, validateDescription } from '../../features/communities/logic.js';
 import { headImg } from '../../social/profile-ui.js';
 import { personName } from './logic.js';
 import { openChannelsManager } from './manage.js';
 
-const C = (key, vars) => t(`clans.${key}`, vars);
+const C = (key, vars) => t(`communities.${key}`, vars);
 
 export function openCommunityForm(b, { community = null, onSaved } = {}) {
   let pending = false, closed = false;

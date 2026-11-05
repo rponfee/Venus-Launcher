@@ -266,6 +266,36 @@ test('los textos nuevos existen en es/en y errSignIn en los catorce idiomas con 
   assert.equal(require(path.join(ROOT, 'src/main/i18n/es/curseforge.js')).errSignIn, 'Iniciá sesión con tu cuenta de Venus para usar CurseForge.');
 });
 
+// Códigos nuevos del servidor (4.6): cada uno explica una cosa distinta, sin mostrar texto remoto.
+for (const [code, status, expected] of [['blocked', 403, 'curseforge.testBlocked'], ['not_configured', 503, 'curseforge.testNotConfigured'], ['unavailable', 503, 'curseforge.testUnavailable'], ['upstream', 502, 'curseforge.testUpstream'], ['denied', 403, 'curseforge.testUpstream']]) {
+  test('la prueba explica ' + code + ' con su propio mensaje y sin reflejar el cuerpo remoto', async () => {
+    const r = await rig(async () => result(true, '0001'), async () => ({ error: { context: new Response(JSON.stringify({ error: { code }, detail: 'FAKE_PRIVATE_BODY' }), { status }) } }));
+    await button(r.card('curseforge'), 'curseforgeTest').click();
+    assert.equal(r.failures[0][1], expected);
+    assert.equal(JSON.stringify(r.failures).includes('FAKE_PRIVATE_BODY'), false);
+    r.api.destroy();
+  });
+}
+
+test('un código desconocido cae en el mensaje genérico de reintento', async () => {
+  const r = await rig(async () => result(true, '0001'), async () => ({ error: { context: new Response(JSON.stringify({ error: { code: 'something_new' } }), { status: 418 }) } }));
+  await button(r.card('curseforge'), 'curseforgeTest').click();
+  assert.equal(r.failures[0][1], T('curseforgeRetryHint'));
+  r.api.destroy();
+});
+
+test('los textos nuevos de CurseForge existen en español e inglés con las mismas variables', () => {
+  const es = readDict(path.join(ROOT, 'src/renderer/i18n/es/curseforge.js'));
+  const en = readDict(path.join(ROOT, 'src/renderer/i18n/en/curseforge.js'));
+  assert.deepEqual(Object.keys(en).sort(), Object.keys(es).sort());
+  for (const [key, value] of Object.entries(es)) {
+    assert.equal(typeof value, 'string', key);
+    assert.ok(value.trim().length > 0 && en[key].trim().length > 0, key);
+  }
+  const main = ['es', 'en'].map((lang) => require(path.join(ROOT, 'src/main/i18n', lang, 'curseforge.js')));
+  for (const key of ['errBlocked', 'errDenied']) assert.ok(main[0][key] && main[1][key], key);
+});
+
 for (const [code, key] of [['badkey', 'curseforgeKeyRejected'], ['forbidden', 'curseforgeAccessDenied'], ['unauthorized', 'curseforgeSessionExpired'], ['rate_limit', 'curseforgeRateLimit']]) {
   test('la prueba explica ' + code + ' sin reflejar el cuerpo remoto', async () => {
     const r = await rig(async () => result(true, '0001'), async () => ({ error: { context: new Response(JSON.stringify({ error: { code }, detail: 'FAKE_PRIVATE_BODY' }), { status: code === 'unauthorized' ? 401 : code === 'rate_limit' ? 429 : 403 }) } }));

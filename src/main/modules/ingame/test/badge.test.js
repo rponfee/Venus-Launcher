@@ -98,6 +98,15 @@ test('instala el mod y la config con el servidor, y no reescribe si no cambio', 
   assert.deepEqual(fs.readdirSync(path.join(inst, 'mods')), [badgeMod.MOD_FILE]); // sin temporales
 });
 
+test('la config que dejo la 4.5 con showCapes se reescribe solo con el servidor (las capas se retiraron)', async () => {
+  const inst = tmpDir();
+  fs.mkdirSync(path.dirname(cfgFile(inst)), { recursive: true });
+  fs.writeFileSync(cfgFile(inst), JSON.stringify({ ...SERVER, showCapes: false }, null, 2));
+  const res = await badgeMod.apply({ instanceDir: inst, loader: 'fabric', mcVersion: '1.21.1', enabled: true, server: SERVER, bundledDir: bundle(), showCapes: false });
+  assert.deepEqual(res, { state: 'installed', written: true });
+  assert.deepEqual(JSON.parse(fs.readFileSync(cfgFile(inst), 'utf8')), SERVER); // aunque alguien todavia pase showCapes
+});
+
 test('apagada o en una instancia incompatible, lo quita', async () => {
   const inst = tmpDir();
   const bundledDir = bundle();

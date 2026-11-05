@@ -1,27 +1,28 @@
 // Editor del perfil de Venus ("Mi perfil"): datos basicos, pronombres y descripcion; fade, tipografia, efecto,
-// color y brillo del nombre; banner (diseños, imagen propia, GIF de KLIPY gratis o GIF propio con Premium); servidores favoritos,
+// color y brillo del nombre; banner (color clasico, GIF de KLIPY o imagen propia quieta); servidores favoritos,
 // estadisticas publicadas y capturas destacadas; y lo equipado de la tienda. Vista previa en vivo a la izquierda.
 // Lo personalizado se guarda con profile_customize (0020_perfiles.sql); nombre, nombre de Minecraft, estado y el
 // color clasico del banner con la tabla profiles (como siempre). Las imagenes se preparan en la PC (media.js).
 //   import('../features/profile-editor.js').then((m) => m.openProfileEditor({ tab: 'style' }))
 // Tambien: openShareProfile() (imagen PNG de la tarjeta) y featureCapture({ src, title }) para Capturas y clips.
-import { h, icon, mount, modal, ok, fail, toast, ensureCss, switchEl, setBusy, skeleton, emptyState, copyText, confirmDialog, fmtDate, fmtBytes, fmtDuration, LOADERS } from '../ui.js';
+import { h, icon, mount, modal, ok, fail, toast, ensureCss, switchEl, setBusy, skeleton, emptyState, copyText, confirmDialog, fmtDate, fmtBytes, fmtDuration, reducedMotion, LOADERS } from '../ui.js';
 import { api, store } from '../store.js';
-import { t, locale, getLanguage, loadNs } from '../i18n.js';
+import { t, has, locale, getLanguage, loadNs } from '../i18n.js';
 import { navigate } from '../app.js';
 import { cloud } from '../cloud.js';
 import { social } from '../social.js';
 import { BANNERS, bannerBackground, bannerName, encodeBanner, parseBanner, isMcName, presenceLabel, MY_STATUSES, publicAddress } from '../social/cosmetics.js';
-import { ensureProfileStyle, styledName, normalize, setStyleCache, titleLabel, premiumChip, applyFrame, bubbleAttrs } from '../social/profile-style.js';
+import { ensureProfileStyle, styledName, normalize, setStyleCache, titleLabel, premiumChip, applyFrame, bubbleAttrs, bannerEl } from '../social/profile-style.js';
 import { profileCard, presenceDot, headImg, headWithDot, prepareSocialUi, fetchPublicProfile, forgetPublicProfile } from '../social/profile-ui.js';
 import { openEmojiPicker } from '../social/richtext.js';
 import * as M from './profile-editor/model.js';
+import { FRAME_CATEGORIES, frameItem, filterFrames, frameImageUrl } from '../social/frames.js';
 import { EXTRA_FONTS, FONT_GROUPS } from './profile-editor/fonts.js';
 import { searchGifs, reportShare } from './profile-editor/klipy.js';
-import { audioSupported, decodeAudio, clipBuffer, encodeWebm, uploadSong, removeSong } from './profile-editor/audio.js';
+import { buildMusicPanel } from './profile-editor/music.js';
 import { achievementName, achievementInfo } from '../pages/achievements/names.js';
 import { rarityOf, RARITY_MIN_USERS } from '../pages/achievements/catalog.js';
-import { MediaError, readImageFile, bannerFromImage, featuredFromImage, featuredFromSource, gifBanner, uploadMedia, removeMedia, makeRoom, loadImage } from './profile-editor/media.js';
+import { MediaError, readImageFile, bannerFromImage, featuredFromImage, featuredFromSource, uploadMedia, removeMedia, makeRoom, loadImage } from './profile-editor/media.js';
 import { drawShareCard, loadFonts } from './profile-editor/share.js';
 
 const NS = 'profile';
@@ -31,6 +32,7 @@ const TABS = [
   { id: 'style', icon: 'type' },
   { id: 'banner', icon: 'image' },
   { id: 'showcase', icon: 'star' },
+  { id: 'music', icon: 'music', label: () => t('profilemusic.tab') }, // 4.6: la cancion se elige de Openverse (profile-editor/music.js)
   { id: 'items', icon: 'sparkles' },
 ];
 const FIELD_TAB = { pronouns: 'identity', bio: 'identity', theme: 'style', nameStyle: 'style', banner: 'banner', cardStyle: 'style', links: 'showcase', showcase: 'showcase', favoriteServers: 'showcase', publicStats: 'showcase', featured: 'showcase', equipped: 'items' };
@@ -40,7 +42,7 @@ const SLOTS = [
   { slot: 'badgeStyle', kind: 'badge_style' },
   { slot: 'nameEffect', kind: 'name_effect' },
 ];
-const MEDIA_CODES = ['type', 'too_big', 'decode', 'limit', 'denied', 'unavailable', 'network', 'session'];
+const MEDIA_CODES = ['type', 'animated', 'too_big', 'decode', 'limit', 'denied', 'unavailable', 'network', 'session'];
 const PLACEHOLDER_HOST = 'https://pending.supabase.co/storage/v1/object/public/profile-media';
 
 let current = null; // editor abierto (no se abren dos)
@@ -48,7 +50,9 @@ let premiumModule; // undefined: sin probar; null: todavia no existe
 
 async function ensureUi() {
   ensureCss('features/profile-editor');
-  await Promise.all([prepareSocialUi(), ensureProfileStyle(), loadNs('achievements').catch(() => null)]);
+  ensureCss('features/frames');
+  // rewards trae los nombres de los marcos (item_frame_*) y las categorias de la tienda
+  await Promise.all([prepareSocialUi(), ensureProfileStyle(), loadNs('achievements').catch(() => null), loadNs('profilemusic').catch(() => null), loadNs('rewards').catch(() => null)]);
 }
 
 const isDevshot = () => Boolean(store.info?.devshot);
@@ -86,11 +90,11 @@ async function loadOwned() {
 
 async function loadShop() {
   try {
-    const { data, error } = await cloud.client.from('shop_items').select('id,kind,price,premium_only,active,sort,data').order('sort');
+    const { data, error } = await cloud.client.from('shop_items').select('id,kind,price,premium_only,active,sort,data,source').order('sort');
     if (error) throw error;
-    const list = (data || [])
-      .filter((r) => ['frame', 'name_effect', 'badge_style', 'title'].includes(r.kind))
-      .map((r) => ({ id: r.id, kind: r.kind, price: r.price, premiumOnly: Boolean(r.premium_only), active: r.active !== false, style: r.data?.style || r.data?.effect || r.data?.title || r.id.replace(/^[a-z]+_/, '') }));
+    const rows = (data || []).filter((r) => ['frame', 'name_effect', 'badge_style', 'title'].includes(r.kind));
+    M.registerItems(rows); // asi se dibujan tambien los marcos, titulos y efectos del Venus Pass (pass_*)
+    const list = rows.map((r) => ({ id: r.id, kind: r.kind, price: r.price, premiumOnly: Boolean(r.premium_only), active: r.active !== false, source: r.source || 'shop', style: r.data?.style || r.data?.effect || r.data?.title || r.id.replace(/^[a-z]+_/, '') }));
     return list.length ? list : M.SHOP_CATALOG;
   } catch (err) {
     console.warn('[profile] shop_items:', err?.message || err);
@@ -110,7 +114,7 @@ function combine(row, pub, opts) {
       public_stats: pub.publicStats,
       featured: pub.featured,
       equipped: pub.equipped,
-      card_style: pub.cardStyle,
+      card_style: pub.song ? { ...(pub.cardStyle || {}), song: pub.song } : pub.cardStyle, // profile_public manda la canción aparte: se vuelve a meter para que el editor la conserve al guardar
       links: pub.links,
       showcase: pub.showcase,
       rank: pub.rank ?? base.rank,
@@ -182,6 +186,12 @@ async function goPlans() {
     console.warn('[profile] planes:', err?.message || err);
     navigate('settings/plan');
   }
+}
+
+// Los marcos, titulos y efectos del Venus Pass se ganan jugando: llevan a la pagina del Pase
+async function goPass(close) {
+  close?.();
+  navigate('pass');
 }
 
 async function goShop(close) {
@@ -376,14 +386,13 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
   const st0 = M.splitStatus(S.saved.basics.status_text);
   S.status = { emoji: st0.emoji, text: st0.text, until: n.statusUntil && !M.statusExpired(n.statusUntil) ? n.statusUntil : null };
   S.status.choice = S.status.until ? 'keep' : 'never';
-  S.pending.song = null; // { blob } listo para subir al guardar
-  S.removeSong = false;
   const ctx = () => ({ userId: S.uid, premium: S.premium, owned: S.owned, items: S.items });
   const locked = !S.available;
 
   // ---------- Vista previa ----------
   const previewBox = h('div', { class: 'pfe-preview-card' });
   const listBox = h('div', { class: 'pfe-preview-list' });
+  const bannerStrip = h('div', { class: 'pfe-banner-strip-box' }); // el banner solo, a su proporcion (pestaña Banner)
   function previewRaw() {
     const c = S.draft.custom;
     const b = S.draft.basics;
@@ -431,6 +440,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       const raw = previewRaw();
       const presence = socialReady ? (S.draft.prefs.status === 'invisible' ? 'invisible' : S.draft.prefs.status) : 'online';
       mount(previewBox, profileCard(raw, { full: true, preview: true, self: true, presence, statusText: S.draft.basics.status_text.trim() }));
+      mount(bannerStrip, bannerEl(M.normalizeProfile(raw, { allowLocalMedia: true }), { cls: 'pfe-banner-strip' }));
       const n2 = normalize(M.normalizeProfile(raw, { allowLocalMedia: true }));
       mount(
         listBox,
@@ -487,7 +497,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         'button',
         { class: 'tab', type: 'button', role: 'tab', id: `pfe-tab-${x.id}`, 'aria-controls': `pfe-panel-${x.id}`, onclick: () => selectTab(x.id) },
         icon(x.icon),
-        h('span', {}, P(`tab_${x.id}`)),
+        h('span', {}, x.label ? x.label() : P(`tab_${x.id}`)),
       );
       tabButtons[x.id] = b;
       return b;
@@ -501,6 +511,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     tabButtons[next].focus();
   });
   function selectTab(id) {
+    const changed = id !== activeTab;
     activeTab = id;
     for (const x of TABS) {
       const on = x.id === id;
@@ -510,6 +521,8 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       if (panels[x.id]) panels[x.id].hidden = !on;
     }
     if (id === 'showcase') ensureShowcaseData();
+    // Al cambiar de pestaña se vuelve arriba (el cuerpo del dialogo es lo que se desplaza)
+    if (changed) body.closest('.modal-body')?.scrollTo?.({ top: 0 });
   }
   const panel = (id, ...children) => {
     panels[id] = h('div', { class: 'pfe-panel', role: 'tabpanel', id: `pfe-panel-${id}`, 'aria-labelledby': `pfe-tab-${id}`, tabindex: '0', hidden: true }, children);
@@ -866,7 +879,6 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       },
     });
   const patternGroup = cardRadio('pattern', M.CARD_PATTERNS, 'pfe-patterns', (o) => [h('span', { class: ['pfe-pattern-art', `pf-pattern-${o.id}`], 'aria-hidden': 'true' }, h('span', { class: 'pf-card-body' })), h('span', { class: 'pfe-radio-label' }, o.label)]);
-  const avatarGroup = cardRadio('avatar', M.AVATAR_SHAPES, 'pfe-avatars');
   const layoutGroup = cardRadio('layout', M.CARD_LAYOUTS, 'pfe-avatars');
   const accentInput = h('input', { type: 'color', class: 'pfe-color', value: card().accent || '#f29a2e', 'aria-label': P('card_accent'), disabled: locked });
   const accentClear = h('button', { class: 'btn ghost sm', type: 'button', disabled: locked, onclick: () => (delete card().accent, schedule()) }, icon('x'), P('card_accentClear'));
@@ -936,144 +948,73 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       schedule();
     },
   });
-  // ----- 3.1: cancion de perfil (recorte de 30 s hecho en la PC, se sube al guardar) -----
-  const songBox = h('div', { class: 'pfe-song' });
-  const sg = { file: null, buffer: null, start: 0, encoding: false, progress: 0, abort: null, ready: null };
-  const songInput = h('input', { type: 'file', accept: 'audio/*,.mp3,.ogg,.oga,.wav,.m4a,.webm,.aac', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' });
-  songInput.addEventListener('change', () => {
-    const f = songInput.files?.[0];
-    songInput.value = '';
-    if (f) pickSong(f);
-  });
-  const audioMessage = (err) => (['type', 'too_big', 'decode'].includes(err?.code) ? P(`errAudio_${err.code}`) : ['unsupported', 'cancelled'].includes(err?.code) ? P(`errMedia_${err.code}`) : mediaMessage(err));
-  async function pickSong(file) {
-    showError('');
-    const code = M.audioSourceError(file);
-    if (code) return showError(P(`errAudio_${code}`));
-    try {
-      sg.buffer = await decodeAudio(file);
-      sg.file = file;
-      sg.start = 0;
-      sg.ready = null;
-      drawSong();
-    } catch (err) {
-      showError(audioMessage(err));
-    }
-  }
-  async function encodeSong() {
-    if (!sg.buffer || sg.encoding) return;
-    sg.encoding = true;
-    sg.progress = 0;
-    sg.abort = new AbortController();
-    drawSong();
-    try {
-      const blob = await encodeWebm(clipBuffer(sg.buffer, sg.start), {
-        signal: sg.abort.signal,
-        onProgress: (k) => {
-          sg.progress = k;
-          songBox.querySelector('.pfe-song-progress > i')?.style.setProperty('width', `${Math.round(k * 100)}%`);
-          const out = songBox.querySelector('.pfe-song-progress-text');
-          if (out) out.textContent = P('songEncoding', { pct: Math.round(k * 100) });
-        },
-      });
-      sg.ready = { blob, size: blob.size };
-      S.pending.song = { blob };
-      S.removeSong = false;
-      card().song = { url: 'pending', ...(card().song?.title ? { title: card().song.title } : {}) };
-      schedule();
-    } catch (err) {
-      if (err?.code !== 'cancelled') showError(audioMessage(err));
-    } finally {
-      sg.encoding = false;
-      sg.abort = null;
-      drawSong();
-    }
-  }
-  function clearSong() {
-    sg.file = null;
-    sg.buffer = null;
-    sg.ready = null;
-    S.pending.song = null;
-    S.removeSong = Boolean(S.saved.custom.cardStyle?.song);
-    card().song = null;
-    drawSong();
-    schedule();
-  }
-  function drawSong() {
-    if (!audioSupported()) return mount(songBox, h('div', { class: 'notice info' }, icon('info'), h('div', {}, P('songUnsupported'))));
-    const saved = Boolean(card().song?.url) && card().song.url !== 'pending';
-    const pickBtn = h('button', { class: 'btn tonal', type: 'button', disabled: locked || sg.encoding }, icon('music'), saved || sg.file ? P('songReplace') : P('songPick'));
-    pickBtn.addEventListener('click', () => songInput.click());
-    const titleInput = h('input', { class: 'input', value: card().song?.title || '', maxlength: M.LIMITS.songTitle, placeholder: P('songTitlePlaceholder'), 'aria-label': P('songTitle'), disabled: locked || !card().song });
-    titleInput.addEventListener('input', () => {
-      if (!card().song) return;
-      const title = titleInput.value.trim();
-      if (title) card().song.title = title;
-      else delete card().song.title;
-      schedule();
-    });
-    const parts = [h('div', { class: 'pfe-upload-actions' }, pickBtn, songInput, card().song || sg.file ? h('button', { class: 'btn ghost', type: 'button', disabled: locked, onclick: clearSong }, icon('trash'), P('songRemove')) : null)];
-    if (sg.buffer && !sg.ready) {
-      const maxStart = Math.max(0, Math.floor(sg.buffer.duration - M.LIMITS.songSeconds));
-      const range = h('input', { type: 'range', class: 'pfe-range', min: 0, max: maxStart, step: 1, value: Math.min(sg.start, maxStart), disabled: sg.encoding || maxStart === 0 });
-      const out = h('output', { class: 'pfe-range-value num' }, fmtDuration(Math.min(sg.start, maxStart) * 1000));
-      range.addEventListener('input', () => {
-        sg.start = Number(range.value);
-        out.textContent = fmtDuration(sg.start * 1000);
-      });
-      const encodeBtn = h('button', { class: 'btn primary sm', type: 'button', disabled: sg.encoding, onclick: encodeSong }, icon('check'), P('songEncode'));
-      parts.push(
-        h('div', { class: 'field-help' }, `${sg.file.name} · ${fmtDuration(sg.buffer.duration * 1000)}`),
-        h('label', { class: 'pfe-range-field' }, h('span', {}, P('songStart')), range, out),
-        sg.encoding
-          ? h('div', { class: 'pfe-song-encoding' }, h('div', { class: 'progress pfe-song-progress' }, h('i', { style: { width: `${Math.round(sg.progress * 100)}%` } })), h('span', { class: 'pfe-song-progress-text' }, P('songEncoding', { pct: Math.round(sg.progress * 100) })), h('button', { class: 'btn ghost sm', type: 'button', onclick: () => sg.abort?.abort() }, P('songCancel')))
-          : encodeBtn,
-      );
-    }
-    if (sg.ready) parts.push(h('div', { class: 'pill info' }, icon('cloudUpload'), P('songReady', { size: fmtBytes(sg.ready.size) })));
-    else if (saved) parts.push(h('div', { class: 'field-help' }, icon('check'), ` ${P('songCurrent')}`));
-    parts.push(fieldBox(P('songTitle'), titleInput), h('div', { class: 'field-help' }, P('songFileHint')));
-    mount(songBox, parts);
-  }
-  drawSong();
+  // Secciones de la pestaña Estilo (4.6): Tarjeta, Nombre y Chat y voz, con un atajo para ir de una a otra
+  const SECTIONS = ['card', 'name', 'chat'];
+  const section = (id, ...groups) =>
+    h('section', { class: 'pfe-section', id: `pfe-sec-${id}`, 'aria-labelledby': `pfe-sec-${id}-t` }, h('div', { class: 'pfe-section-head' }, h('h3', { class: 'pfe-section-title', id: `pfe-sec-${id}-t` }, P(`sec_${id}`)), h('p', { class: 'pfe-section-sub' }, P(`sec_${id}Hint`))), ...groups);
+  const sectionNav = h(
+    'nav',
+    { class: 'chips pfe-secnav', 'aria-label': P('sec_nav') },
+    SECTIONS.map((id) => h('button', { type: 'button', class: 'chip', onclick: () => document.getElementById(`pfe-sec-${id}`)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }) }, P(`sec_${id}`))),
+  );
   panel(
     'style',
     locked ? unavailableNote() : null,
-    h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('fade'), P('fadeHint')), fadeSwitch), fadeControls),
-    h('div', { class: 'pfe-group' }, groupTitle(P('font'), P('fontHint', { n: M.FONTS.length })), fontFilterBox, fontGroup.el, h('div', { class: 'pfe-toggles' }, styleToggle('caps'), styleToggle('italic'), styleToggle('outline'))),
-    h('div', { class: 'pfe-group' }, groupTitle(P('effect'), P('effectHint')), effectGroup.el),
-    h(
-      'div',
-      { class: 'pfe-group pfe-two' },
-      h('div', {}, groupTitle(P('nameColor')), colorGroup, colorNote),
-      h('div', {}, groupTitle(P('glow'), P('glowHint')), h('label', { class: 'pfe-range-field compact' }, h('span', { class: 'sr-only' }, P('glow')), glowInput, glowOut)),
+    sectionNav,
+    section(
+      'card',
+      h('div', { class: 'pfe-group' }, h('div', { class: 'pfe-group-row' }, groupTitle(P('fade'), P('fadeHint')), fadeSwitch), fadeControls),
+      h('div', { class: 'pfe-group' }, groupTitle(P('card_pattern'), P('card_patternHint')), patternGroup.el),
+      h('div', { class: 'pfe-group' }, groupTitle(P('cardTheme'), P('cardThemeHint')), themeGroup.el, h('div', { class: 'pfe-toggles' }, particlesRow)),
+      h('div', { class: 'pfe-group' }, groupTitle(P('card_layout')), layoutGroup.el),
+      h('div', { class: 'pfe-group' }, groupTitle(P('card_accent'), P('card_accentHint')), h('div', { class: 'row' }, accentInput, accentClear)),
     ),
-    h('div', { class: 'pfe-group' }, groupTitle(P('card_pattern'), P('card_patternHint')), patternGroup.el),
-    h('div', { class: 'pfe-group pfe-two' }, h('div', {}, groupTitle(P('card_avatar')), avatarGroup.el), h('div', {}, groupTitle(P('card_layout')), layoutGroup.el)),
-    h('div', { class: 'pfe-group' }, groupTitle(P('card_accent'), P('card_accentHint')), h('div', { class: 'row' }, accentInput, accentClear)),
-    h('div', { class: 'pfe-group' }, groupTitle(P('cardTheme'), P('cardThemeHint')), themeGroup.el, h('div', { class: 'pfe-toggles' }, particlesRow)),
-    h('div', { class: 'pfe-group' }, groupTitle(P('bubble'), P('bubbleHint')), bubbleGroup.el, h('div', { class: 'row wrap' }, bubbleColor, bubbleClear), bubbleSample),
-    h('div', { class: 'pfe-group' }, groupTitle(P('entry'), P('entryHint')), entryGroup.el),
-    h('div', { class: 'pfe-group' }, groupTitle(P('song'), P('songHint')), songBox),
+    section(
+      'name',
+      h('div', { class: 'pfe-group' }, groupTitle(P('font'), P('fontHint', { n: M.FONTS.length })), fontFilterBox, fontGroup.el, h('div', { class: 'pfe-toggles' }, styleToggle('caps'), styleToggle('italic'), styleToggle('outline'))),
+      h('div', { class: 'pfe-group' }, groupTitle(P('effect'), P('effectHint')), effectGroup.el),
+      h(
+        'div',
+        { class: 'pfe-group pfe-two' },
+        h('div', {}, groupTitle(P('nameColor')), colorGroup, colorNote),
+        h('div', {}, groupTitle(P('glow'), P('glowHint')), h('label', { class: 'pfe-range-field compact' }, h('span', { class: 'sr-only' }, P('glow')), glowInput, glowOut)),
+      ),
+    ),
+    section(
+      'chat',
+      h('div', { class: 'pfe-group' }, groupTitle(P('bubble'), P('bubbleHint')), bubbleGroup.el, h('div', { class: 'row wrap' }, bubbleColor, bubbleClear), bubbleSample),
+      h('div', { class: 'pfe-group' }, groupTitle(P('entry'), P('entryHint')), entryGroup.el),
+    ),
   );
-  if (locked) for (const g of [fontGroup.el, effectGroup.el, patternGroup.el, avatarGroup.el, layoutGroup.el, themeGroup.el, bubbleGroup.el, entryGroup.el]) g.querySelectorAll('button').forEach((b) => (b.disabled = true));
+  if (locked) for (const g of [fontGroup.el, effectGroup.el, patternGroup.el, layoutGroup.el, themeGroup.el, bubbleGroup.el, entryGroup.el]) g.querySelectorAll('button').forEach((b) => (b.disabled = true));
+
+  // ===== Musica (4.6): la cancion se elige de Openverse, ya no se sube (profile-editor/music.js) =====
+  panel(
+    'music',
+    locked ? unavailableNote() : null,
+    buildMusicPanel({
+      getSong: () => card().song,
+      setSong: (song) => {
+        card().song = song;
+        schedule();
+      },
+      locked,
+    }),
+  );
 
   // ===== Banner =====
+  // 4.6: sin diseños prediseñados ni GIF propios. El banner es el color clasico (el de siempre), un GIF de KLIPY o una imagen
+  // propia quieta (PNG, JPG o WebP: GIF, APNG y WebP animado se rechazan mirando el contenido del archivo, ver media.js).
   const banner = () => S.draft.custom.banner;
-  const bannerKindOf = () => (banner().kind === 'preset' ? 'preset' : banner().kind === 'image' ? 'image' : banner().kind === 'animated' ? 'animated' : banner().kind === 'klipy' ? 'klipy' : 'color');
+  const bannerKindOf = () => (banner().kind === 'image' ? 'image' : banner().kind === 'klipy' ? 'klipy' : 'color');
   let bannerTab = bannerKindOf();
   const bannerArea = h('div', { class: 'pfe-banner-area' });
   const bannerSeg = h('div', { class: 'segmented pfe-banner-seg', role: 'group', 'aria-label': P('bannerKind') });
   function drawBannerSeg() {
     mount(
       bannerSeg,
-      ['preset', 'klipy', 'image', 'animated', 'color'].map((k) =>
-        h(
-          'button',
-          { type: 'button', class: bannerTab === k ? 'active' : '', 'aria-pressed': String(bannerTab === k), onclick: () => ((bannerTab = k), drawBannerSeg(), drawBannerArea()) },
-          k === 'animated' && !S.premium ? icon('crown') : null,
-          P(`bannerKind_${k}`),
-        ),
+      ['color', 'klipy', 'image'].map((k) =>
+        h('button', { type: 'button', class: bannerTab === k ? 'active' : '', 'aria-pressed': String(bannerTab === k), onclick: () => ((bannerTab = k), drawBannerSeg(), drawBannerArea()) }, P(`bannerKind_${k}`)),
       ),
     );
   }
@@ -1095,7 +1036,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     const done = setBusy(btn);
     showError('');
     try {
-      const src = await readImageFile(file);
+      const src = await readImageFile(file, { still: true });
       if (S.bannerSource) URL.revokeObjectURL(S.bannerSource.url);
       S.bannerSource = src;
       S.bannerFocus = 0.5;
@@ -1114,36 +1055,9 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     setBanner({ kind: 'image', url: out.url });
     drawBannerArea();
   }
-  async function pickGif(file, btn) {
-    const done = setBusy(btn);
-    showError('');
-    try {
-      const out = await gifBanner(file);
-      track(out.url);
-      if (S.pending.banner?.url) URL.revokeObjectURL(S.pending.banner.url);
-      S.pending.banner = { ...out, kind: 'animated' };
-      setBanner({ kind: 'animated', url: out.url });
-      drawBannerArea();
-    } catch (err) {
-      showError(mediaMessage(err));
-    } finally {
-      done();
-    }
-  }
   function drawBannerArea() {
     const b = banner();
-    if (bannerTab === 'preset') {
-      const group = radioGroup({
-        label: P('bannerKind_preset'),
-        cls: 'pfe-presets',
-        options: M.BANNER_PRESETS.map((id) => ({ id, label: P(`banner_${id}`) })),
-        value: b.kind === 'preset' ? b.preset : null,
-        render: (o) => [h('span', { class: 'pfe-preset-art', style: { background: M.presetCss(o.id) }, 'aria-hidden': 'true' }), h('span', { class: 'pfe-radio-label' }, o.label)],
-        onPick: (id) => setBanner({ kind: 'preset', preset: id }),
-      });
-      if (locked) group.el.querySelectorAll('button').forEach((x) => (x.disabled = true));
-      mount(bannerArea, group.el);
-    } else if (bannerTab === 'image') {
+    if (bannerTab === 'image') {
       const has = b.kind === 'image';
       const pickBtn = h('button', { class: 'btn tonal', type: 'button', disabled: locked }, icon('upload'), has ? P('bannerReplace') : P('bannerPick'));
       const input = fileInput('image/png,image/jpeg,image/webp', (f) => pickBannerImage(f, pickBtn));
@@ -1162,7 +1076,8 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         h(
           'div',
           { class: 'pfe-upload' },
-          has ? h('div', { class: 'pfe-upload-preview', style: { backgroundImage: `url("${b.url}")` }, role: 'img', 'aria-label': P('bannerKind_image') }) : h('div', { class: 'pfe-upload-empty' }, icon('image'), h('span', {}, P('bannerImageHint'))),
+          // Con una imagen elegida, la tira de arriba ("Así se ve tu banner") ya la muestra; sin imagen, el recuadro vacio
+          has ? null : h('div', { class: 'pfe-upload-empty' }, icon('image'), h('span', {}, P('bannerImageHint'))),
           h(
             'div',
             { class: 'pfe-upload-actions' },
@@ -1173,47 +1088,13 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
           ),
           has && S.bannerSource ? h('label', { class: 'pfe-range-field' }, h('span', {}, P('bannerFocus')), focusInput) : null,
           has ? h('div', { class: 'field-help' }, P('bannerImageHint')) : null,
+          h('div', { class: 'pfe-still-note' }, icon('info'), h('span', {}, P('bannerStill'))),
         ),
       );
     } else if (bannerTab === 'klipy') {
       drawKlipyArea();
-    } else if (bannerTab === 'animated') {
-      if (!S.premium) {
-        mount(
-          bannerArea,
-          h(
-            'div',
-            { class: 'pfe-locked' },
-            h('span', { class: 'pfe-locked-icon' }, icon('lock')),
-            h('div', { class: 'pfe-locked-text' }, h('strong', {}, P('bannerGifLocked')), h('span', {}, P('bannerGifLockedText'))),
-            h('button', { class: 'btn tonal sm', type: 'button', onclick: goPlans }, icon('crown'), P('seePlans')),
-          ),
-        );
-        return;
-      }
-      const has = b.kind === 'animated';
-      const pickBtn = h('button', { class: 'btn tonal', type: 'button', disabled: locked }, icon('upload'), P('bannerGifPick'));
-      const input = fileInput('image/gif', (f) => pickGif(f, pickBtn));
-      pickBtn.addEventListener('click', () => input.click());
-      mount(
-        bannerArea,
-        h(
-          'div',
-          { class: 'pfe-upload' },
-          has ? h('div', { class: 'pfe-upload-preview', style: { backgroundImage: `url("${b.url}")` }, role: 'img', 'aria-label': P('bannerKind_animated') }) : h('div', { class: 'pfe-upload-empty' }, icon('sparkles'), h('span', {}, P('bannerGifHint'))),
-          h(
-            'div',
-            { class: 'pfe-upload-actions' },
-            pickBtn,
-            input,
-            has ? h('button', { class: 'btn ghost', type: 'button', onclick: () => (S.pending.banner = null, setBanner({ kind: 'none' }), (bannerTab = 'color'), drawBannerSeg(), drawBannerArea()) }, icon('trash'), P('bannerRemove')) : null,
-            S.pending.banner?.kind === 'animated' ? h('span', { class: 'pill info' }, icon('cloudUpload'), P('pendingUpload')) : null,
-          ),
-          has ? h('div', { class: 'field-help' }, P('bannerGifHint')) : null,
-        ),
-      );
     } else {
-      // Color clasico (columna banner de siempre): se ve cuando no hay diseño ni imagen
+      // Color clasico (columna banner de siempre): se ve cuando no hay imagen ni GIF
       const cur = parseBanner(S.draft.basics.banner);
       const colorA = h('input', { type: 'color', class: 'pfe-color', value: cur.kind === 'preset' ? '#f29a2e' : cur.colors[0], 'aria-label': t('social.bannerColorA') });
       const colorB = h('input', { type: 'color', class: 'pfe-color', value: cur.kind === 'preset' ? '#3b1450' : cur.colors[1], 'aria-label': t('social.bannerColorB') });
@@ -1332,7 +1213,12 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
   }
   drawBannerSeg();
   drawBannerArea();
-  panel('banner', locked ? unavailableNote() : null, h('div', { class: 'pfe-group' }, bannerSeg, bannerArea));
+  panel(
+    'banner',
+    locked ? unavailableNote() : null,
+    h('div', { class: 'pfe-group' }, groupTitle(P('bannerPreview')), bannerStrip),
+    h('div', { class: 'pfe-group' }, groupTitle(P('bannerKind')), bannerSeg, bannerArea),
+  );
 
   // ===== Vitrina =====
   const servers = () => S.draft.custom.favoriteServers;
@@ -1771,7 +1657,7 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
   const itemsBox = h('div', { class: 'pfe-items' });
   const eq = () => S.draft.custom.equipped;
   const itemName = (it) => {
-    if (it.kind === 'frame') return P(`frame_${it.style}`);
+    if (it.kind === 'frame') return has(`rewards.item_${it.id}`) ? t(`rewards.item_${it.id}`) : it.id;
     if (it.kind === 'title') return titleLabel(it.style) || it.id;
     if (it.kind === 'badge_style') return P(`badge_${it.style}`);
     if (it.kind === 'name_effect') return P(`effect_${it.style}`);
@@ -1795,6 +1681,30 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
     if (it.kind === 'name_effect') return sample({ ...ns(), effect: it.style });
     return null;
   }
+  // Selector de marcos: categorias y buscador (la barra se arma una sola vez: no pierde el foco al escribir)
+  const frameUi = { cat: 'all', q: '', group: null };
+  const frameSearch = h('input', { class: 'input', type: 'search', placeholder: t('rewards.frames_search'), 'aria-label': t('rewards.frames_search'), spellcheck: 'false', maxlength: 40 });
+  const frameChips = h('div', { class: 'chips pfe-frame-chips', role: 'group', 'aria-label': t('rewards.frames_filter') });
+  const frameBar = h('div', { class: 'pfe-frame-bar' }, frameSearch, frameChips);
+  const frameCats = ['all', 'mine', ...FRAME_CATEGORIES, 'pass'];
+  function drawFrameChips() {
+    mount(
+      frameChips,
+      frameCats.map((c) => h('button', { type: 'button', class: ['chip', frameUi.cat === c && 'active'], 'aria-pressed': String(frameUi.cat === c), onclick: () => ((frameUi.cat = c), drawFrameChips(), frameUi.group?.refresh()) }, t(`rewards.frames_cat_${c}`))),
+    );
+  }
+  frameSearch.addEventListener('input', () => {
+    frameUi.q = frameSearch.value;
+    frameUi.group?.refresh();
+  });
+  drawFrameChips();
+  const frameShown = (it) => {
+    const fr = frameItem(it.id);
+    if (frameUi.cat === 'pass' && it.source !== 'pass') return false;
+    if (!['all', 'mine', 'pass'].includes(frameUi.cat) && fr?.category !== frameUi.cat) return false;
+    if (frameUi.cat === 'mine' && !M.canEquip('frame', it.id, ctx())) return false;
+    return Boolean(filterFrames([it], { query: frameUi.q, nameOf: () => itemName(it) }).length);
+  };
   function drawItems() {
     const groups = SLOTS.map(({ slot, kind }) => {
       const list = S.items.filter((i) => i.kind === kind && i.active !== false);
@@ -1802,14 +1712,16 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
       for (const it of list) {
         const usable = M.canEquip(slot, it.id, ctx());
         const premiumLock = !usable && it.premiumOnly;
+        const passLock = !usable && it.source === 'pass';
         options.push({
           id: it.id,
           label: itemName(it),
           item: it,
           locked: !usable || locked,
-          lockIcon: premiumLock ? 'crown' : 'lock',
-          lockText: usable ? null : premiumLock ? P('lockedPremium') : P('lockedShop', { price: it.price }),
-          aria: usable ? itemName(it) : premiumLock ? P('lockedPremiumTitle', { name: itemName(it) }) : P('lockedShopTitle', { name: itemName(it), price: it.price }),
+          lockIcon: premiumLock ? 'crown' : passLock ? 'trophy' : 'lock',
+          lockText: usable ? null : premiumLock ? P('lockedPremium') : passLock ? t('rewards.lockedPass') : P('lockedShop', { price: it.price }),
+          aria: usable ? itemName(it) : premiumLock ? P('lockedPremiumTitle', { name: itemName(it) }) : passLock ? t('rewards.lockedPassTitle', { name: itemName(it) }) : P('lockedShopTitle', { name: itemName(it), price: it.price }),
+          hide: kind === 'frame' ? () => !frameShown(it) : undefined,
         });
       }
       const group = radioGroup({
@@ -1817,8 +1729,12 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         cls: 'pfe-item-grid',
         options,
         value: eq()[slot] || '',
-        render: (o) => [h('span', { class: 'pfe-item-art' }, o.item ? itemPreview(o.item) : icon('x')), h('span', { class: 'pfe-radio-label' }, o.label)],
-        onLocked: (o) => (locked ? null : o.item?.premiumOnly ? goPlans() : goShop(() => dialog.close())),
+        render: (o) => [
+          h('span', { class: 'pfe-item-art' }, o.item ? itemPreview(o.item) : icon('x')),
+          h('span', { class: 'pfe-radio-label' }, o.label),
+          kind === 'frame' && o.item && frameItem(o.item.id) ? h('span', { class: ['fr-rar', `r-${frameItem(o.item.id).rarity}`], title: t(`rewards.rarity_${frameItem(o.item.id).rarity}`) }) : null,
+        ],
+        onLocked: (o) => (locked ? null : o.item?.premiumOnly ? goPlans() : o.item?.source === 'pass' ? goPass(() => dialog.close()) : goShop(() => dialog.close())),
         onPick: (id) => {
           if (id) eq()[slot] = id;
           else delete eq()[slot];
@@ -1830,7 +1746,8 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
           schedule();
         },
       });
-      return h('div', { class: 'pfe-group' }, groupTitle(P(`slot_${slot}`), slot === 'badgeStyle' ? P('badgeStyleHint') : null), group.el);
+      if (kind === 'frame') frameUi.group = group;
+      return h('div', { class: 'pfe-group' }, groupTitle(P(`slot_${slot}`), slot === 'badgeStyle' ? P('badgeStyleHint') : null), kind === 'frame' ? frameBar : null, group.el);
     });
     mount(itemsBox, groups);
   }
@@ -1858,9 +1775,8 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
   function placeholderUrls(custom) {
     const c = clone(custom);
     const fake = (i) => `${PLACEHOLDER_HOST}/${S.uid}/pending-${i}.webp`;
-    if ((c.banner?.kind === 'image' || c.banner?.kind === 'animated') && S.pending.banner?.url === c.banner.url) c.banner.url = fake(0);
+    if (c.banner?.kind === 'image' && S.pending.banner?.url === c.banner.url) c.banner.url = `${PLACEHOLDER_HOST}/${S.uid}/banner-pending.webp`;
     c.featured = (c.featured || []).map((f, i) => (S.pending.featured.has(f.url) ? { ...f, url: fake(i + 1) } : f));
-    if (c.cardStyle?.song?.url === 'pending') c.cardStyle.song.url = `https://pending.supabase.co/storage/v1/object/public/profile-audio/${S.uid}/${M.AUDIO_FILE}`;
     return c;
   }
   function failWith(info) {
@@ -1920,11 +1836,6 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
             if (p) f.url = await uploadMedia(p.blob, { kind: 'featured', ext: p.ext });
           }
         }
-        // Cancion de perfil (3.1): el recorte se sube recien ahora (un solo archivo por usuario)
-        if (S.available && S.pending.song && custom.cardStyle?.song?.url === 'pending') {
-          dirtyNote.textContent = P('uploading');
-          custom.cardStyle.song.url = await uploadSong(S.pending.song.blob);
-        }
         // Estado con emoji y vencimiento (3.1): la RPC valida el emoji y guarda hasta cuando vale; el texto va ademas
         // por la tabla, como siempre, para que la lista de amigos lo tome al instante
         if (S.available && ('status_text' in basics || statusChanged())) {
@@ -1949,15 +1860,12 @@ export async function openProfileEditor({ tab = 'identity', demo = false } = {})
         const mine = old.map((u) => M.mediaPathFromUrl(u)).filter((p) => p && p.userId.toLowerCase() === S.uid.toLowerCase()).map((p) => p.name);
         if (mine.length) removeMedia(mine).catch((err) => console.warn('[profile] borrar imagenes viejas:', err?.message || err));
         if (custom.banner?.kind === 'klipy' && custom.banner.url !== S.saved.custom.banner?.url) reportShare(custom.banner.slug);
-        if (S.removeSong && !custom.cardStyle?.song) removeSong().catch((err) => console.warn('[profile] borrar cancion:', err?.message || err));
         forgetPublicProfile(S.uid);
         setStyleCache(S.uid, { ...previewRaw(), banner_style: custom.banner, featured: custom.featured, hasStyle: true });
         cloud.loadProfile().catch(() => null);
       }
       S.pending.banner = null;
       S.pending.featured.clear();
-      S.pending.song = null;
-      S.removeSong = false;
       dialog.close();
       ok(P('saved'));
     } catch (err) {
@@ -2000,14 +1908,16 @@ async function loadShareImages(n) {
   })();
   const safe = (p) => p.catch(() => null);
   // Del GIF de KLIPY se dibuja el cuadro fijo
-  const bannerUrl = n.banner.kind === 'image' || n.banner.kind === 'animated' ? n.banner.url : n.banner.kind === 'klipy' ? n.banner.still || null : null;
-  const [headImgEl, bannerImg, logo] = await Promise.all([
+  const bannerUrl = n.banner.kind === 'image' ? n.banner.url : n.banner.kind === 'klipy' ? n.banner.still || null : null;
+  const frameUrl = M.frameOf(n) ? frameImageUrl(M.frameOf(n)) : '';
+  const [headImgEl, bannerImg, logo, frame] = await Promise.all([
     safe(loadImage(avatarUrl(head, 128), { cors: true })),
     bannerUrl ? safe(loadImage(bannerUrl, { cors: !/^(blob:|data:)/.test(bannerUrl) })) : null,
     safe(loadImage('assets/logo-256.png')),
+    frameUrl ? safe(loadImage(frameUrl)) : null,
     loadFonts(n.nameStyle?.font),
   ]);
-  return { head: headImgEl, banner: bannerImg, logo };
+  return { head: headImgEl, banner: bannerImg, logo, frame };
 }
 
 /**

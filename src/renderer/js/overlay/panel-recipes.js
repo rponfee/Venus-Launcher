@@ -21,7 +21,8 @@ export class RecipesPanel {
     this.icons = new Map();
     this.state = { info: null, query: '', results: [], total: 0, card: null, tab: 'recipes', error: null, wikiAllowed: false, optIn: false };
     this.history = [];
-    this.token = 0;
+    this.token = 0; // busquedas: gana la ultima
+    this.itemToken = 0; // fichas: gana la ultima (aparte de las busquedas: escribir mientras se abre un item no lo cancela)
     this.timer = null;
 
     this.input = h('input', { class: 'ovl-input', type: 'search', placeholder: tr('rc_searchPlaceholder'), 'aria-label': tr('rc_searchPlaceholder'), maxlength: 80, spellcheck: 'false', autocomplete: 'off' });
@@ -56,7 +57,7 @@ export class RecipesPanel {
   }
 
   fail(r) {
-    const key = { noJar: 'rc_err_noJar', noVersion: 'rc_err_noJar', noGame: 'rc_err_noGame' }[r.code] || 'rc_err_read';
+    const key = { noJar: 'rc_err_noJar', noVersion: 'rc_err_noJar', noGame: 'rc_err_noGame', timeout: 'rc_err_timeout' }[r.code] || 'rc_err_read';
     this.showDetail(h('div', { class: 'ovr-empty bad', role: 'alert' }, icon('info'), this.tr(key)));
   }
 
@@ -69,6 +70,12 @@ export class RecipesPanel {
     const notes = [];
     if (info.modsFailed) notes.push(this.tr('rc_modsFailed', { count: info.modsFailed }));
     if (info.modsSkipped) notes.push(this.tr('rc_modsSkipped', { count: info.modsSkipped }));
+    // Faltan mods por leer (hay muchos): se siguen leyendo de fondo y la proxima vez que se abra el panel ya estan
+    if (info.modsPending) {
+      notes.push(this.tr('rc_modsPending', { count: info.modsPending }));
+      parts.push(this.tr('rc_modsPendingShort', { count: info.modsPending }));
+      this.foot.textContent = parts.join(' · ');
+    }
     this.foot.title = [...notes, this.tr('rc_sourceHint')].join(' ');
   }
 
@@ -153,9 +160,9 @@ export class RecipesPanel {
   async openItem(id, { fresh = false } = {}) {
     if (!fresh && this.state.card) this.history.push(this.state.card.id);
     if (fresh) this.history = [];
-    const token = ++this.token;
+    const token = ++this.itemToken;
     const r = await this.ask({ action: 'recipes.item', id });
-    if (token !== this.token) return;
+    if (token !== this.itemToken) return;
     if (!r.ok) return this.fail(r);
     if (!r.data) return;
     this.remember(r.data.icons);

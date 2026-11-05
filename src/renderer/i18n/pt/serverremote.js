@@ -10,7 +10,6 @@ export default {
   errStart: "Não foi possível ativar o controle remoto",
   errAction: "Não foi possível concluir",
   qrAlt: "Código QR para abrir o controle remoto no celular",
-  qrHidden: "O código QR fica oculto no modo streamer: copie o link ou desative esse modo por um momento.",
   stepQr: "Leia o código QR com a câmera do celular.",
   stepCode: "Ou abra este endereço no navegador do celular e digite o código:",
   copyLink: "Copiar link com o código",

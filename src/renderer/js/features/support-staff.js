@@ -40,6 +40,8 @@ export async function refreshStaffAccess() {
 export async function startup() {
   if (started) return refreshStaffAccess();
   started = true;
+  // Aviso de respuestas del equipo para quien consulta (tiene su propio interruptor; ver support/notify.js).
+  import('./support/notify.js').then((m) => m.startup()).catch(() => {});
   await cloud.ready();
   cloud.on('auth', refreshStaffAccess);
   window.addEventListener('focus', refreshStaffAccess);

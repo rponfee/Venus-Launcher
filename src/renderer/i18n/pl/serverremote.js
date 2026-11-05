@@ -10,7 +10,6 @@ export default {
   errStart: "Nie udało się włączyć zdalnego sterowania",
   errAction: "Nie udało się wykonać działania",
   qrAlt: "Kod QR otwierający zdalne sterowanie na telefonie",
-  qrHidden: "Kod QR jest ukryty w trybie streamera: skopiuj link lub wyłącz ten tryb na chwilę.",
   stepQr: "Zeskanuj kod QR aparatem telefonu.",
   stepCode: "Lub otwórz ten adres w przeglądarce telefonu i wpisz kod:",
   copyLink: "Kopiuj link z kodem",

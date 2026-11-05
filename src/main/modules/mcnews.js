@@ -1,7 +1,7 @@
 'use strict';
 // Aviso de version nueva de Minecraft (3.1): al arrancar y cada 6 horas lee el manifiesto de versiones (core/minecraft
 // lo baja con cache) y compara latest.release y latest.snapshot con lo ultimo visto (settings.news.seenVersions).
-// Si hay una nueva manda el evento mcnews:new ({ id, type, releaseTime }) y la interfaz (features/tools) muestra el
+// Si hay una nueva manda el evento mcnews:new ({ id, type, releaseTime }) y la interfaz (features/playcare/mcnews.js) muestra el
 // aviso con "Crear instancia" y "Ya vi". Solo consulta si la conexion opcional "news" esta activada
 // (settings.privacy.news) y el interruptor settings.news.newVersions (true por defecto) esta prendido.
 // La primera vez (sin nada visto) el manifiesto se toma como base: no avisa por versiones que ya existian.

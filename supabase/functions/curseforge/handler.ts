@@ -19,6 +19,8 @@ export interface CurseforgeDeps {
   supabaseUrl: string;
   anonKey: string;
   serviceKey: string;
+  // Registro de diagnóstico (sin claves, sesiones ni contenido). Por defecto va a los logs de la función.
+  log?: (entry: Record<string, string | number>) => void;
 }
 
 type ProxyRequest = { method: 'GET' | 'POST'; path: string; body?: Record<string, unknown> };
@@ -135,6 +137,45 @@ function discard(response: Response) {
   void response.body?.cancel().catch(() => {});
 }
 
+// Qué dijo CurseForge cuando rechazó un pedido (401/403). Antes todo se devolvía como "clave rechazada" y se
+// tiraba la respuesta: desde afuera era imposible distinguir una clave mala de un corte de CloudFront o de un
+// archivo cuyo autor no permite la descarga. Nunca se devuelve ni se registra su texto: solo esta clasificación.
+//   badkey  -> la clave llegó y CurseForge dijo que falta o no sirve ("Forbidden: API Key missing or invalid")
+//   blocked -> el pedido no llegó a la aplicación de CurseForge (página HTML o 403 vacío de CloudFront)
+//   denied  -> CurseForge entendió el pedido pero ese recurso no se puede pedir (autor sin distribución)
+type Rejection = 'badkey' | 'blocked' | 'denied';
+const KEY_REJECTED = /api[\s_-]*key[^.\n]{0,40}(?:missing|invalid|not valid|wrong|expired)|invalid[\s_-]*api[\s_-]*key/i;
+const CLASSIFY_LIMIT = 4096;
+
+const headerNote = (response: Response, name: string): string => {
+  const value = (response.headers.get(name) ?? '').trim();
+  return /^[A-Za-z0-9 .,;=\/_-]{1,60}$/.test(value) ? value : '';
+};
+
+async function classifyRejection(response: Response, path: string, signal: AbortSignal, secrets: string[]): Promise<{ kind: Rejection; note: Record<string, string | number> }> {
+  const contentType = headerNote(response, 'content-type').toLowerCase();
+  const cache = headerNote(response, 'x-cache').toLowerCase();
+  const via = headerNote(response, 'via').toLowerCase();
+  let text = '';
+  let large = false;
+  try {
+    text = await readText(response, CLASSIFY_LIMIT, signal);
+  } catch (error) {
+    large = error instanceof BodyLimitError;
+    discard(response);
+  }
+  const html = contentType.includes('html') || /^\s*<(?:!doctype|html|head|body)/i.test(text);
+  const fromEdge = cache.includes('cloudfront') || via.includes('cloudfront');
+  const resource = /\/download-url$|\/files\/\d+(?:\/changelog)?$/.test(path.split('?')[0]) ? 'file' : 'other';
+  let kind: Rejection;
+  if (KEY_REJECTED.test(text)) kind = 'badkey';
+  else if (html || (large && !text) || (!text.trim() && fromEdge)) kind = 'blocked';
+  else kind = resource === 'file' ? 'denied' : 'badkey';
+  const note: Record<string, string | number> = { status: response.status, kind, resource, type: contentType, server: headerNote(response, 'server'), edge: fromEdge ? 1 : 0, bytes: text.length };
+  for (const [name, value] of Object.entries(note)) if (typeof value === 'string' && secrets.some((secret) => secret && value.includes(secret))) note[name] = '';
+  return { kind, note };
+}
+
 // Evita devolver una clave incluso si una respuesta JSON válida la incluyera por error.
 // Se revisan valores decodificados: una representación escapada no cambia el resultado.
 function includesSecret(value: unknown, secrets: string[]): boolean {
@@ -160,6 +201,10 @@ export function createCurseforgeHandler(deps: CurseforgeDeps) {
     const url = new URL(deps.supabaseUrl);
     if (url.protocol === 'https:' && !url.username && !url.password && url.pathname === '/' && !url.search && !url.hash) supabase = url.origin;
   } catch { /* Configuración incompleta: respuesta fija, sin exponer valores. */ }
+
+  const report = (entry: Record<string, string | number>) => {
+    try { (deps.log ?? ((value) => console.error(JSON.stringify(value))))(entry); } catch { /* el diagnóstico nunca rompe la respuesta */ }
+  };
 
   return async function handle(request: Request): Promise<Response> {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -225,13 +270,19 @@ export function createCurseforgeHandler(deps: CurseforgeDeps) {
         redirect: 'error', signal,
       });
     } catch {
+      if (!signal.aborted) report({ evt: 'curseforge.network' });
       return signal.aborted ? fail(504, 'timeout') : fail(502, 'upstream');
     }
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        const { kind, note } = await classifyRejection(response, proxy.path, signal, [apiKey, deps.serviceKey, token]);
+        report({ evt: 'curseforge.rejected', ...note });
+        return fail(403, kind);
+      }
       discard(response);
-      if (response.status === 401 || response.status === 403) return fail(403, 'badkey');
-      if (response.status === 429) return fail(429, 'rate_limit', { 'retry-after': '60' });
+      if (response.status === 429) { report({ evt: 'curseforge.limited', status: 429 }); return fail(429, 'rate_limit', { 'retry-after': '60' }); }
       if (response.status === 404) return fail(404, 'not_found');
+      report({ evt: 'curseforge.upstream', status: response.status });
       return fail(response.status >= 400 && response.status <= 599 ? response.status : 502, 'upstream');
     }
     if (response.status === 204 || response.status === 205) {

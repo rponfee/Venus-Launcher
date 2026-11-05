@@ -9,13 +9,16 @@
 // Canales:
 //   overlay:push(evento)          -> true (lanza err.code 'badEvent' si el evento no cumple el contrato)
 //   overlay:status()              -> { supported, enabled, active, running, found, fullscreen, minimized, visible,
-//                                      hidden, editing, testing, mode, shortcut, shortcutOk, config, defaults }
+//                                      hidden, editing, testing, mode, shortcut, shortcutOk, tracker ('off' | 'starting' |
+//                                      'ok' | 'failed'), pageFailed, panel, panelShortcuts, panelShortcutsOk, shortcutIssue,
+//                                      panelShortcutIssues, config, defaults }
 //   overlay:edit(bool)            -> status (modo edicion: arrastrar los widgets sobre el juego o la pantalla)
 //   overlay:test([eventos])       -> status (muestra el overlay unos segundos con eventos de ejemplo)
 //   overlay:reset()               -> status (posiciones de fabrica)
-//   overlay:setShortcut(accel)    -> { ok, shortcut } (atajo para mostrar u ocultar; '' lo apaga)
+//   overlay:setShortcut(accel)    -> { ok, shortcut, code?, who? } (atajo para mostrar u ocultar; '' lo apaga). code: 'invalid',
+//                                      'taken' (otra aplicacion), 'minecraft', 'system', 'altgr' o 'venus' (who: voice, capture, music, overlay)
 //   overlay:accent('#rrggbb')     -> true (color de acento del launcher para el tema "Acento")
-//   overlay:setPanelShortcut(id, accel) -> { ok, shortcut, code? } (atajo del panel 'recipes' o 'assistant')
+//   overlay:setPanelShortcut(id, accel) -> { ok, shortcut, code?, who? } (atajo del panel 'recipes' o 'assistant', mismos codigos)
 //   overlay:assistantEvent(conversacion, evento) -> la interfaz le pasa al overlay los eventos del asistente
 // Eventos a la interfaz: overlay:state (lo mismo que status, sin config ni defaults), overlay:config (la
 // configuracion normalizada cada vez que cambia, por ejemplo al mover un widget en el modo edicion) y overlay:route
@@ -46,6 +49,15 @@ const RETURN_RETRY_MS = 450;
 const PANEL_BLUR_GRACE_MS = 500; // al abrir, Windows puede avisar un cambio de foco que no es del usuario
 const PANEL_FS_BOUNCE_MS = 6000; // en pantalla completa el juego se minimiza al perder el foco
 const LANG_RELOAD_MS = 1500;
+const TRACKER_RETRY_MS = [1000, 3000, 8000]; // si el ayudante se cae solo, se vuelve a abrir (hasta 3 veces seguidas)
+const PAGE_READY_MS = 10000; // la pagina del overlay tiene que avisar que esta lista
+const PAGE_FAILS_MAX = 3; // intentos seguidos de abrir la pagina antes de rendirse hasta la proxima partida o prueba
+const MOVE_FLUSH_MS = 150; // las posiciones del modo edicion se juntan antes de guardarlas (una flecha apretada manda 30 por segundo)
+const RECIPES_MS = 90000; // leer los archivos del juego no puede dejar al panel esperando para siempre
+const PARTIAL_RECHECK_MS = 20000; // una lectura de recetas incompleta (faltaban mods) se vuelve a pedir pasado este tiempo
+const ASSISTANT_STATUS_MS = 8000;
+const SHORTCUT_RETRY_MS = 5000; // un atajo que otra aplicacion tiene tomado no se vuelve a probar en cada vuelta
+const FAULT_LOG_MS = 30000; // un mismo tipo de error se avisa una vez cada 30 s
 
 const st = {
   ctx: null,
@@ -87,12 +99,58 @@ const st = {
   lastStatus: '',
   quitting: false,
   mainGone: false,
+  readyTimer: null,
+  pageFails: 0, // veces seguidas que la pagina no llego a estar lista
+  pageFailed: false, // se rindio: no se abre mas hasta la proxima partida, prueba o edicion
+  moves: new Map(), // widget -> posicion que mando el modo edicion y todavia no se guardo
+  moveTimer: null,
+  faultAt: 0,
+  screenOff: null,
 };
 
 const supported = () => process.platform === 'win32';
 const testing = () => Date.now() < st.testUntil;
 const wanted = () => st.devHold || st.editing || testing() || (st.cfg.enabled && supported() && st.games.size > 0);
 const alive = (w) => Boolean(w && !w.isDestroyed());
+
+// Nada del overlay puede tirar el launcher ni trabar el juego: lo que corre solo (ayudante, atajos, temporizadores,
+// eventos) va envuelto para que un error se avise una vez y no se propague.
+function report(label, err) {
+  const now = Date.now();
+  if (now - st.faultAt < FAULT_LOG_MS) return;
+  st.faultAt = now;
+  console.warn(`[overlay] ${label}:`, err?.message || err);
+}
+
+function guard(label, fn) {
+  return (...args) => {
+    try {
+      const out = fn(...args);
+      return out && typeof out.catch === 'function' ? out.catch((err) => report(label, err)) : out;
+    } catch (err) {
+      report(label, err);
+      return undefined;
+    }
+  };
+}
+
+// Espera una promesa, pero no para siempre (err.code queda como code)
+function withTimeout(promise, ms, code) {
+  let timer;
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(Object.assign(new Error(code), { code })), ms);
+    timer.unref?.();
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
+function netOnline() {
+  try {
+    return require('electron').net.isOnline();
+  } catch {
+    return true;
+  }
+}
 
 function coded(key, code, vars) {
   const err = new Error(t(`overlay.${key}`, vars));
@@ -103,6 +161,14 @@ function coded(key, code, vars) {
 // ---------- Estado para la interfaz ----------
 function target() {
   return geometry.pickTarget(st.games.values());
+}
+
+// Del ayudante que sigue la ventana: 'off' (no hace falta), 'starting' (arrancando o esperando la ventana), 'ok' o 'failed'
+function trackerState() {
+  if (!st.games.size || !needsTracker()) return 'off';
+  const list = [...st.games.values()];
+  if (list.some((g) => g.track && g.trackLines > 0)) return 'ok';
+  return list.some((g) => g.track || g.retryTimer) ? 'starting' : 'failed';
 }
 
 function status({ full = true } = {}) {
@@ -122,6 +188,11 @@ function status({ full = true } = {}) {
     mode: st.mode,
     shortcut: st.cfg.shortcut,
     shortcutOk: st.shortcut.ok,
+    // Atajos guardados que le sacan teclas a Minecraft o a Windows ('minecraft', 'system', 'altgr'): la tarjeta los avisa
+    shortcutIssue: st.cfg.shortcut ? config.shortcutIssue(st.cfg.shortcut) : null,
+    panelShortcutIssues: Object.fromEntries(config.PANELS.map((id) => [id, st.cfg.panelShortcuts[id] ? config.shortcutIssue(st.cfg.panelShortcuts[id]) : null])),
+    tracker: trackerState(),
+    pageFailed: st.pageFailed,
     panel: st.panel,
     panelShortcuts: st.cfg.panelShortcuts,
     panelShortcutsOk: Object.fromEntries(config.PANELS.map((id) => [id, st.panelKeys[id].ok])),
@@ -158,12 +229,34 @@ function sendLayout(force = false) {
   toPage('overlay:layout', data);
 }
 
+// La pagina no se pudo abrir (o se cerro sola): se cuenta, y a la tercera vez seguida se deja de insistir
+function pageFailure(why) {
+  st.pageFails++;
+  console.warn(`[overlay] la pagina del overlay fallo (${why})`);
+  if (st.pageFails >= PAGE_FAILS_MAX && !st.pageFailed) {
+    st.pageFailed = true;
+    emitStatus();
+  }
+}
+
+// Una partida, una prueba o abrir la edicion es un pedido nuevo: se vuelve a intentar abrir la pagina
+function retryPage() {
+  st.pageFails = 0;
+  st.pageFailed = false;
+}
+
 function ensureWindow() {
   clearTimeout(st.idleTimer);
   st.idleTimer = null;
-  if (alive(st.win) || st.quitting || st.mainGone) return st.win;
+  if (alive(st.win) || st.quitting || st.mainGone || st.pageFailed) return st.win;
   const { createOverlayWindow, hwndOf } = require('./overlay/window');
-  const win = createOverlayWindow();
+  let win;
+  try {
+    win = createOverlayWindow();
+  } catch (err) {
+    pageFailure(err?.message || err);
+    return null;
+  }
   st.win = win;
   st.winReady = false;
   st.shown = false;
@@ -171,27 +264,52 @@ function ensureWindow() {
   st.bounds = null;
   st.winHwnd = hwndOf(win);
   st.lastLayout = '';
-  win.on('closed', () => {
+  win.on('closed', guard('ventana', () => {
     if (st.win !== win) return;
+    clearTimeout(st.readyTimer);
     st.win = null;
     st.winReady = false;
     st.shown = false;
     st.queue = [];
     emitStatus();
-  });
-  win.webContents.on('render-process-gone', () => {
-    if (st.win === win && !win.isDestroyed()) win.destroy();
-  });
+  }));
+  win.webContents.on('render-process-gone', guard('pagina', (e, details) => {
+    if (st.win !== win || win.isDestroyed() || details?.reason === 'clean-exit') return;
+    pageFailure('el proceso de la pagina se cerro');
+    win.destroy();
+  }));
+  win.webContents.on('did-fail-load', guard('pagina', (e, code, desc, url, isMainFrame) => {
+    if (st.win !== win || win.isDestroyed() || isMainFrame === false || code === -3) return; // -3: carga cancelada (se cerro la ventana)
+    pageFailure(`no cargo: ${desc}`);
+    win.destroy();
+  }));
+  // Si la pagina no avisa que esta lista, la ventana queda tapando el juego sin mostrar nada: se descarta y se arma de nuevo
+  clearTimeout(st.readyTimer);
+  st.readyTimer = setTimeout(guard('pagina', () => {
+    if (st.win !== win || st.winReady || win.isDestroyed()) return;
+    pageFailure('no aviso que estaba lista');
+    win.destroy();
+  }), PAGE_READY_MS);
+  st.readyTimer.unref?.();
   // El usuario se fue a otra ventana con un panel abierto: se cierra (no puede quedar interactivo por error)
-  win.on('blur', () => {
+  win.on('blur', guard('ventana', () => {
     if (st.panel && st.win === win && !st.devHold && Date.now() - st.panelAt > PANEL_BLUR_GRACE_MS) closePanel({ refocus: false });
-  });
+  }));
+  // Una pagina colgada con el mouse tomado dejaria al jugador trabado: se sueltan los modos interactivos y se arma de nuevo
+  win.on('unresponsive', guard('ventana', () => {
+    if (st.win !== win || st.devHold) return;
+    closePanel({ refocus: true });
+    if (st.editing) stopEdit();
+    pageFailure('la pagina dejo de responder');
+    if (!win.isDestroyed()) win.destroy();
+  }));
   return win;
 }
 
 function closeWindow() {
   clearTimeout(st.idleTimer);
   st.idleTimer = null;
+  clearTimeout(st.readyTimer);
   if (alive(st.win)) st.win.destroy();
   st.win = null;
   st.winReady = false;
@@ -200,10 +318,10 @@ function closeWindow() {
 
 function scheduleIdleClose() {
   if (!alive(st.win) || st.idleTimer) return;
-  st.idleTimer = setTimeout(() => {
+  st.idleTimer = setTimeout(guard('ventana', () => {
     st.idleTimer = null;
     if (!wanted()) closeWindow();
-  }, IDLE_CLOSE_MS);
+  }), IDLE_CLOSE_MS);
 }
 
 // Rectangulo fisico del ayudante -> DIP (Electron hace la cuenta con la escala de cada monitor).
@@ -237,6 +355,29 @@ function screenArea() {
   }
 }
 
+// La pagina se entera de si la ventana se ve: escondida no corre temporizadores ni redibuja el reloj de la sesion
+function setShown(on) {
+  if (st.shown === on) return;
+  st.shown = on;
+  deliver({ kind: 'shown', shown: on });
+}
+
+// Con monitores de distinta escala, Electron a veces deja la ventana con otro tamano la primera vez que se la mueve a
+// otro monitor: se compara con lo pedido y, si no coincide, se pide de nuevo (hasta dos veces).
+function applyBounds(win, bounds) {
+  win.setBounds(bounds);
+  for (let i = 0; i < 2; i++) {
+    let got;
+    try {
+      got = win.getBounds();
+    } catch {
+      return;
+    }
+    if (geometry.nearRect(got, bounds)) return; // un pixel de diferencia es el redondeo de la escala, no el problema
+    win.setBounds(bounds);
+  }
+}
+
 function setInteractive(on) {
   if (st.interactive === on || !alive(st.win)) return;
   st.interactive = on;
@@ -246,20 +387,31 @@ function setInteractive(on) {
 // Corazon del modulo: con el estado de los juegos, los ajustes y los modos decide si la ventana existe, donde
 // va y si se ve. Se llama con cada linea del ayudante (unas 4 por segundo como mucho) y con cada cambio.
 function evaluate() {
+  try {
+    evaluateNow();
+  } catch (err) {
+    report('evaluate', err);
+  }
+}
+
+function evaluateNow() {
   if (st.quitting) return;
   if (st.devHold) {
     ensureWindow();
     emitStatus();
     return;
   }
+  // Los atajos globales siguen al juego: solo estan armados mientras esta adelante (o el overlay en un modo interactivo)
+  armShortcut();
   if (st.panel && checkPanelGame()) return;
   if (!wanted()) {
     st.mode = null;
     if (alive(st.win) && st.shown) {
       st.win.hide();
-      st.shown = false;
+      setShown(false);
     }
     setInteractive(false);
+    syncPerf(); // sin overlay no se mide nada
     scheduleIdleClose();
     emitStatus();
     return;
@@ -274,17 +426,17 @@ function evaluate() {
   if (d.show && bounds) {
     if (!geometry.sameRect(bounds, st.bounds)) {
       st.bounds = bounds;
-      st.win.setBounds(bounds);
+      applyBounds(st.win, bounds);
     }
     if (!st.shown) {
       st.win.showInactive();
       st.win.setAlwaysOnTop(true, 'screen-saver');
       st.win.moveTop();
-      st.shown = true;
+      setShown(true);
     }
   } else if (st.shown) {
     st.win.hide();
-    st.shown = false;
+    setShown(false);
   }
   setInteractive((st.editing || Boolean(st.panel)) && st.shown);
   if (modeChanged) sendLayout();
@@ -295,7 +447,8 @@ function evaluate() {
 // ---------- Widget de rendimiento (3.1) ----------
 // Muestras cada 2 s del juego que se sigue (RAM, CPU, ping del servidor y tiempo de sesion), solo mientras el
 // overlay y el widget estan activados y hay un juego abierto. El ayudante es barato (overlay/perf.js).
-const perfWanted = () => supported() && !st.quitting && st.cfg.enabled && st.cfg.widgets.perf?.enabled !== false && st.games.size > 0;
+// Oculto con el atajo no hace falta medir (ni abrir el ayudante de PowerShell): al mostrarlo de nuevo vuelve en 2 s.
+const perfWanted = () => supported() && !st.quitting && st.cfg.enabled && !st.userHidden && st.cfg.widgets.perf?.enabled !== false && st.games.size > 0;
 
 function serverAddress(id) {
   try {
@@ -425,29 +578,62 @@ function needsTracker() {
 
 function startTracker(g) {
   if (g.track || !needsTracker()) return;
+  clearTimeout(g.retryTimer);
+  g.retryTimer = null;
   g.track = tracker.track({
     pid: g.pid,
-    onUpdate: (info) => {
+    onUpdate: guard('seguimiento', (info) => {
       if (st.games.get(g.id) !== g) return;
+      g.trackLines = (g.trackLines || 0) + 1;
+      g.trackTries = 0; // si anduvo, una caida de mas adelante vuelve a tener sus tres intentos
       g.info = info;
       evaluate();
-    },
-    onEnd: () => {
+    }),
+    onEnd: guard('seguimiento', ({ clean } = {}) => {
       if (st.games.get(g.id) !== g) return;
       g.track = null;
       g.info = { found: false };
+      // Termino sin su ultima linea (no abrio, PowerShell bloqueado, un antivirus lo cerro): se vuelve a intentar
+      if (!clean) retryTracker(g);
       evaluate();
-    },
+    }),
   });
+  if (!g.track) console.warn('[overlay] no se pudo abrir el ayudante que sigue la ventana del juego');
+}
+
+function retryTracker(g) {
+  if (!needsTracker()) return;
+  const tries = g.trackTries || 0;
+  if (tries >= TRACKER_RETRY_MS.length) {
+    console.warn('[overlay] el ayudante que sigue la ventana del juego se cae siempre: sin overlay en esta partida');
+    return;
+  }
+  g.trackTries = tries + 1;
+  clearTimeout(g.retryTimer);
+  g.retryTimer = setTimeout(guard('seguimiento', () => {
+    g.retryTimer = null;
+    if (st.games.get(g.id) !== g || g.track) return;
+    startTracker(g);
+    evaluate();
+  }), TRACKER_RETRY_MS[tries]);
+  g.retryTimer.unref?.();
+}
+
+function stopTracker(g) {
+  clearTimeout(g.retryTimer);
+  g.retryTimer = null;
+  g.track?.stop();
+  g.track = null;
+  g.info = { found: false };
 }
 
 function syncTrackers() {
   for (const g of st.games.values()) {
     if (needsTracker()) startTracker(g);
-    else if (g.track) {
-      g.track.stop();
-      g.track = null;
-      g.info = { found: false };
+    else if (g.track || g.retryTimer) {
+      stopTracker(g);
+      g.trackLines = 0;
+      g.trackTries = 0;
     }
   }
 }
@@ -455,24 +641,30 @@ function syncTrackers() {
 function startGame(id, pid, startedAt) {
   const prev = st.games.get(id);
   if (prev?.pid === pid) return;
-  prev?.track?.stop();
+  if (prev) stopTracker(prev);
   prev?.counters?.stop();
-  const g = { id, pid, startedAt: startedAt || Date.now(), info: { found: false }, track: null, counters: null };
+  const g = { id, pid, startedAt: startedAt || Date.now(), info: { found: false }, track: null, counters: null, trackLines: 0, trackTries: 0, retryTimer: null };
   st.games.set(id, g);
+  retryPage();
   startTracker(g);
   startCounters(g);
   armShortcut();
   evaluate();
 }
 
-function stopGame(id) {
-  const g = st.games.get(id);
-  if (!g) return;
-  g.track?.stop();
-  g.counters?.stop();
-  st.games.delete(id);
+// Lo que se preparo antes de lanzar (onBeforeLaunch) se tira aunque la partida no haya llegado a abrirse (fallo al lanzar)
+function dropPlay(id) {
   clearTimeout(st.plays.get(id)?.langTimer);
   st.plays.delete(id);
+}
+
+function stopGame(id) {
+  const g = st.games.get(id);
+  if (!g) return dropPlay(id);
+  stopTracker(g);
+  g.counters?.stop();
+  st.games.delete(id);
+  dropPlay(id);
   // Sin datos, la pagina esconde los contadores
   if (!st.games.size) deliver({ kind: 'counters', deaths: null, mined: null, session: null, multiplayer: false });
   if (!st.games.size) {
@@ -503,20 +695,29 @@ function registerShortcut(accel) {
   }
   let ok = false;
   try {
-    ok = Boolean(require('electron').globalShortcut.register(accel, onShortcut));
+    ok = Boolean(require('electron').globalShortcut.register(accel, guard('atajo', onShortcut)));
   } catch {
     ok = false; // atajo invalido
   }
-  st.shortcut = { accel: ok ? accel : null, ok };
+  st.shortcut = { accel: ok ? accel : null, ok, tried: accel, at: Date.now() };
   return ok;
 }
 
+// Los atajos globales le sacan la combinacion a quien este adelante: por eso solo estan armados mientras hay un juego y
+// ese juego (o el overlay, en el modo edicion o con un panel) esta adelante. En otra aplicacion no se le roba la tecla.
+const shortcutsLive = () => playing() && (st.editing || Boolean(st.panel) || geometry.gameInFront(st.games.values(), st.winHwnd));
+
+// Un atajo que otra aplicacion tiene tomado no se vuelve a probar en cada linea del ayudante, sino cada tanto
+const retryDue = (entry, want) => !(entry.ok === false && entry.tried === want && Date.now() - entry.at < SHORTCUT_RETRY_MS);
+
 function armShortcut() {
-  const want = st.cfg.enabled && st.games.size > 0 && st.cfg.shortcut;
-  if (want && st.shortcut.accel !== st.cfg.shortcut) registerShortcut(st.cfg.shortcut);
-  else if (!want) {
+  const want = shortcutsLive() ? st.cfg.shortcut : '';
+  if (want) {
+    if (st.shortcut.accel !== want && retryDue(st.shortcut, want)) registerShortcut(want);
+  } else {
     unregisterShortcut();
-    st.shortcut.ok = true;
+    // Con el juego atras se conserva si se pudo o no tomar (la tarjeta de Ajustes lo avisa); sin juego no hay nada que avisar
+    if (!playing() || !st.cfg.shortcut) st.shortcut.ok = true;
   }
   armPanelShortcuts();
 }
@@ -537,22 +738,24 @@ function takePanelKey(id, accel) {
   dropPanelKey(id);
   let ok = false;
   try {
-    ok = Boolean(require('electron').globalShortcut.register(accel, () => onPanelShortcut(id)));
+    ok = Boolean(require('electron').globalShortcut.register(accel, guard('atajo', () => onPanelShortcut(id))));
   } catch {
     ok = false;
   }
-  st.panelKeys[id] = { accel: ok ? accel : null, ok };
+  st.panelKeys[id] = { accel: ok ? accel : null, ok, tried: accel, at: Date.now() };
   return ok;
 }
 
 function armPanelShortcuts() {
-  const on = st.cfg.enabled && st.games.size > 0;
+  const live = shortcutsLive();
   for (const id of config.PANELS) {
-    const want = on ? st.cfg.panelShortcuts[id] : '';
-    if (want && st.panelKeys[id].accel !== want) takePanelKey(id, want);
-    else if (!want) {
+    const want = live ? st.cfg.panelShortcuts[id] : '';
+    const key = st.panelKeys[id];
+    if (want) {
+      if (key.accel !== want && retryDue(key, want)) takePanelKey(id, want);
+    } else {
       dropPanelKey(id);
-      st.panelKeys[id].ok = true;
+      if (!playing() || !st.cfg.panelShortcuts[id]) st.panelKeys[id].ok = true;
     }
   }
 }
@@ -562,14 +765,56 @@ function onPanelShortcut(id) {
   else openPanel(id);
 }
 
-// Prueba un atajo de panel: si se puede registrar, se guarda (y queda registrado solo si hay un juego abierto).
+// Los atajos de Venus que no son del overlay (silenciar el Voice Chat, capturas y musica), para no pisarlos. Los lee de los
+// ajustes de cada modulo con su misma normalizacion; lo que no se pueda leer no cuenta.
+async function venusShortcuts() {
+  const list = [];
+  let s = null;
+  try {
+    s = await require('../core/settings').get();
+  } catch {
+    return list;
+  }
+  const add = (id, accel) => {
+    if (typeof accel === 'string' && accel.trim()) list.push({ id, accel: accel.trim() });
+  };
+  add('voice', s?.voice?.muteShortcut);
+  try {
+    for (const accel of Object.values(require('./capture/logic').normalizeSettings(s?.capture).shortcuts || {})) add('capture', accel);
+  } catch {
+    /* sin capturas */
+  }
+  try {
+    const np = require('./nowplaying/config');
+    const cfg = np.normalizeConfig(s?.nowplaying);
+    if (cfg.shortcuts?.enabled) for (const action of np.SHORTCUT_ACTIONS) add('music', cfg.shortcuts[action]);
+  } catch {
+    /* sin musica */
+  }
+  return list;
+}
+
+// Que le pasa a un atajo nuevo: null si esta bien, o { code, who? } (codigos en el encabezado). self = cual se esta cambiando
+// ('shortcut' o el id de un panel), para no compararlo consigo mismo.
+async function shortcutProblem(value, self) {
+  if (!config.validAccelerator(value)) return { code: 'invalid' };
+  const issue = config.shortcutIssue(value);
+  if (issue) return { code: issue };
+  const own = [{ key: 'shortcut', accel: st.cfg.shortcut }, ...config.PANELS.map((p) => ({ key: p, accel: st.cfg.panelShortcuts[p] }))].filter((o) => o.key !== self).map((o) => ({ id: 'overlay', accel: o.accel }));
+  const hit = config.findConflict(value, [...own, ...(await venusShortcuts())]);
+  return hit ? { code: 'venus', who: hit.id } : null;
+}
+
+// Prueba un atajo de panel: si se puede registrar, se guarda (y queda registrado solo si hay un juego adelante).
 async function setPanelShortcut(id, accel) {
   if (!config.PANELS.includes(id)) return { ok: false, shortcut: '', code: 'invalid' };
-  const value = typeof accel === 'string' ? accel.trim() : '';
   const current = st.cfg.panelShortcuts[id];
-  if (value && !config.validAccelerator(value)) return { ok: false, shortcut: current, code: 'invalid' };
-  const others = [st.cfg.shortcut, ...config.PANELS.filter((p) => p !== id).map((p) => st.cfg.panelShortcuts[p])];
-  if (value && others.includes(value)) return { ok: false, shortcut: current, code: 'taken' };
+  if (accel !== undefined && accel !== null && typeof accel !== 'string') return { ok: false, shortcut: current, code: 'invalid' };
+  const value = typeof accel === 'string' ? accel.trim() : '';
+  if (value) {
+    const problem = await shortcutProblem(value, id);
+    if (problem) return { ok: false, shortcut: current, ...problem };
+  }
   if (value && value !== st.panelKeys[id].accel) {
     const old = st.panelKeys[id].accel;
     if (!takePanelKey(id, value)) {
@@ -592,18 +837,21 @@ function onShortcut() {
   evaluate();
 }
 
-// Prueba un atajo nuevo: si se puede registrar, se guarda (y queda registrado solo si hay un juego abierto).
+// Prueba un atajo nuevo: si se puede registrar, se guarda (y queda registrado solo si hay un juego adelante).
 async function setShortcut(accel) {
+  const current = st.cfg.shortcut;
+  if (accel !== undefined && accel !== null && typeof accel !== 'string') return { ok: false, shortcut: current, code: 'invalid' };
   const value = typeof accel === 'string' ? accel.trim() : '';
-  if (value && !config.validAccelerator(value)) return { ok: false, shortcut: st.cfg.shortcut, code: 'invalid' };
   if (value) {
+    const problem = await shortcutProblem(value, 'shortcut');
+    if (problem) return { ok: false, shortcut: current, ...problem };
     const old = st.shortcut.accel;
     unregisterShortcut();
     const ok = registerShortcut(value);
     if (!ok) {
       if (old) registerShortcut(old);
       else st.shortcut = { accel: null, ok: true };
-      return { ok: false, shortcut: st.cfg.shortcut, code: 'taken' };
+      return { ok: false, shortcut: current, code: 'taken' };
     }
   }
   await require('../core/settings').set({ overlay: { shortcut: value } });
@@ -614,7 +862,27 @@ async function setShortcut(accel) {
 }
 
 // ---------- Modo edicion y prueba ----------
+// Lo que manda la pagina en el modo edicion (posiciones, tamano, opacidad) se junta unos milisegundos y se guarda de una
+// vez (si no, mantener una flecha apretada escribe el archivo de ajustes 30 veces por segundo y cada escritura vuelve a
+// mandar el layout a la pagina). Lo de un mismo widget se va sumando.
+function queueMove(patch) {
+  for (const [id, part] of Object.entries(patch)) st.moves.set(id, { ...st.moves.get(id), ...part });
+  clearTimeout(st.moveTimer);
+  st.moveTimer = setTimeout(guard('posiciones', flushMoves), MOVE_FLUSH_MS);
+  st.moveTimer.unref?.();
+}
+
+function flushMoves() {
+  clearTimeout(st.moveTimer);
+  st.moveTimer = null;
+  if (!st.moves.size) return Promise.resolve();
+  const patch = Object.fromEntries(st.moves);
+  st.moves.clear();
+  return require('../core/settings').set({ overlay: { widgets: patch } }).catch((err) => console.warn('[overlay] guardar posicion', err?.message || err));
+}
+
 function startEdit() {
+  retryPage();
   if (st.panel) closePanel({ refocus: false });
   // Se pide desde Ajustes, con el launcher adelante: se minimiza para que el juego quede a la vista y el overlay
   // pueda tomar el foco (Escape y las flechas andan sin hacer clic antes).
@@ -622,7 +890,7 @@ function startEdit() {
   if (!st.editing && target() && alive(main) && main.isVisible() && !main.isMinimized()) main.minimize();
   st.editing = true;
   clearTimeout(st.editTimer);
-  st.editTimer = setTimeout(stopEdit, EDIT_MAX_MS);
+  st.editTimer = setTimeout(guard('edicion', stopEdit), EDIT_MAX_MS);
   syncTrackers();
   evaluate();
   sendLayout();
@@ -634,6 +902,7 @@ function stopEdit() {
   st.editing = false;
   clearTimeout(st.editTimer);
   st.editTimer = null;
+  flushMoves();
   setInteractive(false);
   syncTrackers();
   evaluate();
@@ -642,13 +911,14 @@ function stopEdit() {
 }
 
 function startTest(list) {
+  retryPage();
   st.testUntil = Date.now() + TEST_MS;
   clearTimeout(st.testTimer);
-  st.testTimer = setTimeout(() => {
+  st.testTimer = setTimeout(guard('prueba', () => {
     restoreAfterTest();
     syncTrackers();
     evaluate();
-  }, TEST_MS + 50);
+  }), TEST_MS + 50);
   syncTrackers();
   evaluate();
   for (const raw of Array.isArray(list) ? list.slice(0, 12) : []) {
@@ -686,7 +956,7 @@ function clearPanelTimers() {
 
 function touchPanel() {
   clearTimeout(st.panelTimer);
-  st.panelTimer = setTimeout(() => closePanel(), PANEL_MAX_MS);
+  st.panelTimer = setTimeout(guard('panel', () => closePanel()), PANEL_MAX_MS);
   st.panelTimer.unref?.();
 }
 
@@ -726,23 +996,25 @@ function openPanel(id) {
   const game = st.games.get(st.panelGame);
   const front = () => game?.info?.foreground === st.winHwnd;
   st.panelFocusTimers = [
-    setTimeout(() => {
+    setTimeout(guard('panel', () => {
       if (st.panel && !front()) game?.track?.front(st.winHwnd);
-    }, PANEL_FOCUS_CHECK_MS),
-    setTimeout(() => {
+    }), PANEL_FOCUS_CHECK_MS),
+    setTimeout(guard('panel', () => {
       if (!st.panel || front()) return;
       closePanel();
       notice('pn_noFocus');
-    }, PANEL_FOCUS_GIVEUP_MS),
+    }), PANEL_FOCUS_GIVEUP_MS),
   ];
   return true;
 }
 
 // De vuelta al juego: la ventana que Windows elige sola al soltar el foco puede ser cualquier otra
 function returnToGame(g) {
-  const ask = () => {
-    if (!st.panel && st.games.get(g.id) === g && g.info?.hwnd && g.info.foreground !== g.info.hwnd) g.track?.front(g.info.hwnd);
-  };
+  // No si en el medio se abrio otro panel o el modo edicion: ahi el foco lo tiene que tener el overlay
+  const ask = guard('panel', () => {
+    if (!st.panel && !st.editing && st.games.get(g.id) === g && g.info?.hwnd && g.info.foreground !== g.info.hwnd) g.track?.front(g.info.hwnd);
+  });
+  st.panelFocusTimers.forEach(clearTimeout);
   st.panelFocusTimers = [setTimeout(ask, RETURN_DELAY_MS), setTimeout(ask, RETURN_RETRY_MS)];
 }
 
@@ -782,18 +1054,30 @@ async function recipeSession() {
   if (!id) throw Object.assign(new Error('noGame'), { code: 'noGame' });
   const play = st.plays.get(id);
   if (play) {
+    if (play.recipes && play.partialAt && Date.now() - play.partialAt > PARTIAL_RECHECK_MS) {
+      play.recipes = null; // faltaban mods por leer: ahora ya deberian estar en la cache
+      play.partialAt = 0;
+    }
     if (!play.recipes) {
       const lang = play.lang || (await gamelang.readLanguage(play.dir));
-      play.recipes = recipes.open({ rootId: play.rootId, instanceDir: play.dir, lang, assetIndex: play.assetIndex, mods: true });
-      play.recipes.catch(() => {
-        play.recipes = null;
-      });
+      // Con cientos de mods la primera lectura es larga: no se espera para siempre (lo leido queda en la cache y la
+      // proxima vez sale enseguida). Si fallo o vencio, se vuelve a pedir en el siguiente intento.
+      const pending = withTimeout(recipes.open({ rootId: play.rootId, instanceDir: play.dir, lang, assetIndex: play.assetIndex, mods: true }), RECIPES_MS, 'timeout');
+      play.recipes = pending;
+      pending.then(
+        (session) => {
+          if (play.recipes === pending && session?.info?.modsPending > 0) play.partialAt = Date.now();
+        },
+        () => {
+          if (play.recipes === pending) play.recipes = null;
+        },
+      );
     }
     return play.recipes;
   }
   // Partida sin chequeos previos: la version sale de la instancia
   const inst = await require('../core/instances').get(id);
-  return recipes.open({ rootId: inst.mcVersion, instanceDir: inst.dir, lang: await gamelang.readLanguage(inst.dir), mods: true });
+  return withTimeout(recipes.open({ rootId: inst.mcVersion, instanceDir: inst.dir, lang: await gamelang.readLanguage(inst.dir), mods: true }), RECIPES_MS, 'timeout');
 }
 
 const wikiAllowed = async () => (await require('../core/settings').get()).privacy?.wiki === true;
@@ -818,13 +1102,11 @@ function assistantFlush() {
 async function assistantOpen() {
   const assistant = require('./assistant');
   const agent = require('./assistant/agent');
-  const status = await assistant.status({});
-  let online = true;
-  try {
-    online = require('electron').net.isOnline();
-  } catch {
-    online = true;
-  }
+  // Sin conexion o con la IA apagada no hace falta preguntarle a la nube (podria tardar): se sabe de entrada. Y si el estado
+  // no llega en unos segundos, el panel dice que no esta disponible en vez de quedarse en blanco.
+  const enabled = (await require('../core/settings').get()).ai?.enabled !== false;
+  const online = netOnline();
+  const status = enabled && online ? await withTimeout(assistant.status({}), ASSISTANT_STATUS_MS, 'timeout').catch(() => null) : { enabled };
   if (!st.assistant.conv) st.assistant.conv = panels.pickConversation(await agent.conversations().catch(() => []));
   let conv = null;
   if (st.assistant.conv) {
@@ -839,6 +1121,7 @@ async function assistantOpen() {
 
 async function assistantSend(body) {
   const assistant = require('./assistant');
+  if (!netOnline()) throw coded('errOffline', 'offline');
   if (!st.assistant.conv) {
     st.assistant.awaiting = true;
     st.assistant.buffer = [];
@@ -993,12 +1276,16 @@ function push(ev) {
 
 // Cuando la pagina avisa que esta lista: layout, lo ultimo de voz, musica y grabacion, y lo que esperaba.
 function onPageReady() {
+  clearTimeout(st.readyTimer);
+  st.pageFails = 0;
+  st.pageFailed = false;
   st.winReady = true;
   sendLayout(true);
   const replay = [st.cache.voice, st.cache.music, st.cache.recording ? { kind: 'capture', type: 'recording-start', at: st.cache.recording.at } : null];
   for (const ev of replay) if (ev) st.win.webContents.send('overlay:event', ev);
   const queued = st.queue.splice(0);
   for (const ev of queued) st.win.webContents.send('overlay:event', ev);
+  st.win.webContents.send('overlay:event', { kind: 'shown', shown: st.shown });
   if (st.panel) toPanel({ type: 'open', id: st.panel, key: panelKey() });
 }
 
@@ -1008,12 +1295,16 @@ function onPageMessage(event, msg) {
   if (msg.type === 'done') return stopEdit();
   if (msg.type === 'panelClose') return closePanel();
   if (!st.editing) return;
-  const settings = require('../core/settings');
   if (msg.type === 'move') {
     const patch = config.positionPatch(msg.id, msg.pos);
-    if (patch) settings.set({ overlay: { widgets: patch } }).catch((err) => console.warn('[overlay] guardar posicion', err?.message || err));
+    if (patch) queueMove(patch);
+  } else if (msg.type === 'tweak') {
+    const patch = config.tweakPatch(msg.id, msg.patch);
+    if (patch) queueMove(patch);
   } else if (msg.type === 'reset') {
-    settings.set({ overlay: { widgets: config.resetPatch() } }).catch((err) => console.warn('[overlay] restablecer', err?.message || err));
+    st.moves.clear();
+    clearTimeout(st.moveTimer);
+    require('../core/settings').set({ overlay: { widgets: config.resetPatch() } }).catch((err) => console.warn('[overlay] restablecer', err?.message || err));
   }
 }
 
@@ -1095,15 +1386,15 @@ function register({ app, handle, send, getWindow, onQuit }) {
   }
   settings
     .get()
-    .then((s) => {
+    .then(guard('ajustes', (s) => {
       applySettings(s);
       syncTrackers();
       armShortcut();
       evaluate();
-    })
+    }))
     .catch(() => {});
 
-  settings.onChange((s, patch) => {
+  settings.onChange(guard('ajustes', (s, patch) => {
     if (!patch || !(patch.overlay || patch.language || patch.a11y)) return;
     const before = JSON.stringify(st.cfg);
     applySettings(s, patch);
@@ -1112,18 +1403,18 @@ function register({ app, handle, send, getWindow, onQuit }) {
     armShortcut();
     sendLayout();
     evaluate();
-  });
+  }));
 
-  game.events.on('state', (id, s) => {
+  game.events.on('state', guard('juego', (id, s) => {
     if (!s || s.quiet) return; // partidas de prueba: sin overlay
     if (s.state === 'running' && Number.isInteger(s.pid)) startGame(id, s.pid, s.startedAt);
     else if (s.state !== 'running' && s.state !== 'preparing') stopGame(id);
-  });
+  }));
 
-  ipcMain.on('overlay:page', onPageMessage);
+  ipcMain.on('overlay:page', guard('pagina', onPageMessage));
   ipcMain.handle('overlay:panel', onPanelRequest);
   game.addBeforeLaunch(onBeforeLaunch);
-  game.events.on('log', onGameLog);
+  game.events.on('log', guard('registro', onGameLog));
 
   // Si se cierra la ventana principal, el overlay no puede dejar el launcher abierto.
   app.on('browser-window-created', (e, w) => {
@@ -1134,6 +1425,21 @@ function register({ app, handle, send, getWindow, onQuit }) {
       });
     });
   });
+
+  // Cambia la escala o las pantallas (se enchufa un monitor, se cambia la escala de Windows): el rectangulo del juego se
+  // vuelve a poner aunque el ayudante no haya notado ningun cambio
+  Promise.resolve(app.whenReady?.())
+    .then(() => {
+      const { screen } = require('electron');
+      const events = ['display-metrics-changed', 'display-added', 'display-removed'];
+      const refresh = guard('pantallas', () => {
+        st.bounds = null;
+        evaluate();
+      });
+      for (const name of events) screen.on(name, refresh);
+      st.screenOff = () => events.forEach((name) => screen.removeListener(name, refresh));
+    })
+    .catch(() => {});
 
   watchServers();
   watchTasks();
@@ -1181,10 +1487,13 @@ function register({ app, handle, send, getWindow, onQuit }) {
     require('./overlay/dev').register({
       handle,
       win: () => st.win,
-      hold: () => {
+      // size: '1366x768' (por defecto 1280x720): el tamano del "juego" de las capturas
+      hold: (size) => {
         st.devHold = true;
         evaluate();
-        st.win?.setBounds?.({ x: 0, y: 0, width: 1280, height: 720 });
+        const m = /^(\d{3,4})x(\d{3,4})$/.exec(String(size || ''));
+        st.win?.setBounds?.({ x: 0, y: 0, width: m ? Number(m[1]) : 1280, height: m ? Number(m[2]) : 720 });
+        deliver({ kind: 'shown', shown: true }); // oculta, pero la pagina se comporta como si se viera
       },
       panel: (id) => {
         st.panel = id;
@@ -1211,9 +1520,14 @@ function register({ app, handle, send, getWindow, onQuit }) {
     st.quitting = true;
     clearTimeout(st.testTimer);
     clearTimeout(st.editTimer);
+    clearTimeout(st.readyTimer);
+    clearTimeout(st.idleTimer);
     clearPanelTimers();
+    st.screenOff?.();
+    st.screenOff = null;
+    flushMoves();
     for (const g of st.games.values()) {
-      g.track?.stop();
+      stopTracker(g);
       g.counters?.stop();
     }
     st.perfSampler?.stop();
@@ -1225,3 +1539,5 @@ function register({ app, handle, send, getWindow, onQuit }) {
 }
 
 module.exports = { register, push, status };
+// Solo para las pruebas (overlay/test/harness.js): el estado interno, para ver lo que no sale por ningun canal
+if (process.env.VENUS_OVERLAY_TEST === '1') module.exports.__state = st;

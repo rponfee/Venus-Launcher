@@ -29,8 +29,12 @@ function toId(value) {
   return n;
 }
 
+// configured: se puede intentar buscar (un estado que no se pudo comprobar NO apaga el catálogo).
+// state: 'on' | 'off' | 'unknown' del catálogo central. source: 'central' | 'build' | null.
+// signedIn: hay sesión de Venus guardada (solo hace falta con source 'central').
 async function status() {
-  return { configured: await cf.hasKey(), classIds: cf.CLASS_IDS, maxResults: cf.MAX_WINDOW };
+  const s = await cf.status();
+  return { configured: s.ready, state: s.state, source: s.source, signedIn: s.signedIn, classIds: cf.CLASS_IDS, maxResults: cf.MAX_WINDOW };
 }
 
 function list(value, max = 500) {

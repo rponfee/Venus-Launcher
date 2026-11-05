@@ -1,4 +1,4 @@
-// Textos del proceso principal del estudio de clips: errores de montaje y timelapse, OBS y subir clips.
+// Textos del proceso principal del estudio de clips: errores de montaje, timelapse y subir clips.
 module.exports = {
   errInstance: 'No se encontró la instancia.',
   errJob: 'El video que se estaba armando ya no está. Empezá de nuevo.',
@@ -12,13 +12,6 @@ module.exports = {
   errTrash: 'No se pudo mandar a la papelera.',
   timelapseFull: 'Timelapse: se llegó al tope de espacio y dejó de guardar. Generá el video o borrá imágenes.',
   timelapseNoDisk: 'Timelapse: queda poco lugar en el disco y dejó de guardar.',
-
-  errObsRefused: 'No se pudo conectar. Revisá que OBS esté abierto y con el servidor WebSocket prendido, y la dirección y el puerto.',
-  errObsTimeout: 'OBS no contestó a tiempo.',
-  errObsAuth: 'OBS rechazó la contraseña.',
-  errObsNeedPassword: 'OBS pide una contraseña.',
-  errObsVersion: 'Esta versión de obs-websocket no es compatible: hace falta la 5 o más nueva (OBS 28 en adelante).',
-  errObsHost: 'Solo se puede conectar a esta PC o a la red local.',
 
   errUploadSession: 'Venció el acceso a tu cuenta. Volvé a conectarla.',
   errUploadQuota: 'Se llegó al límite de subidas por ahora. Probá más tarde.',

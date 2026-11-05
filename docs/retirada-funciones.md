@@ -34,7 +34,6 @@ Esta comprobación no equivale a un recorrido visual en Electron, OBS real, Mine
 
 ## Referencias conservadas
 
-- [Extensiones: guía histórica](extensiones.md) y [contratos y aislamiento](implementacion/extensiones.md).
-- [Visor de semillas: cobertura y límites históricos](implementacion/semillas.md).
+- Extensiones y visor de semillas: la guía, los contratos y los informes se borraron en la 4.6 junto con el código (ver `docs/wip/retiros-46.md`).
 - [Clanes y comunidades: contratos anteriores](implementacion/clanes-comunidades.md); Comunidades sigue en desarrollo en su frente propio.
 - [Clips y OBS](implementacion/clips.md): contrato actual sin el evento `obs:streamer`; los resultados anteriores de ese automatismo se identifican como antecedentes.

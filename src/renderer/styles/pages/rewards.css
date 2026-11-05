@@ -105,7 +105,7 @@ html.ax-hc .rw-amount { background: none; color: var(--cream); }
 .rw-shop-view { display: flex; flex-direction: column; min-width: 0; }
 .rw-shop-view .section-title { margin-top: var(--sp-6); }
 .rw-look { display: flex; align-items: center; gap: var(--sp-4); min-width: 0; flex-wrap: wrap; }
-.rw-look .rw-pv-avatar { width: 64px; height: 64px; }
+.rw-look .fr-prev { margin: 10px; }
 .rw-look-main { flex: 1; min-width: 200px; display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
 .rw-look-label { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .rw-look-side { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
@@ -122,7 +122,7 @@ html.ax-hc .rw-amount { background: none; color: var(--cream); }
 .rw-item.is-equipped { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-line); }
 .rw-item.is-owned { border-color: var(--accent-line); }
 .rw-item-preview {
-  height: 96px; display: grid; place-items: center; padding: var(--sp-3); overflow: hidden;
+  width: 100%; height: 96px; display: grid; place-items: center; padding: var(--sp-3); overflow: hidden;
   background: radial-gradient(160px 90px at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%), var(--well-bg);
   border-bottom: 1px solid var(--border);
 }
@@ -133,14 +133,7 @@ html.ax-hc .rw-amount { background: none; color: var(--cream); }
 .rw-item-actions { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-top: auto; }
 .rw-item-miss { font-size: var(--fs-xs); color: var(--muted); }
 
-/* Respaldo de las vistas previas (sin profile-style.js) */
-.rw-pv-avatar { position: relative; width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
-.rw-avatar { width: 100%; height: 100%; border-radius: inherit; image-rendering: pixelated; background: var(--surface-3); display: block; }
-.rw-frame::after { content: ''; position: absolute; inset: -5px; border-radius: 15px; pointer-events: none; }
-.rw-frame-pixel::after { border: 3px dashed var(--accent-hi); border-radius: 4px; }
-.rw-frame-neon::after { border: 2px solid var(--info); box-shadow: 0 0 10px var(--info), inset 0 0 6px var(--info); }
-.rw-frame-gold::after { border: 3px solid var(--accent-hi); box-shadow: 0 0 0 1px var(--accent-deep), 0 0 12px var(--accent-glow); }
-.rw-frame-venus::after { border: 3px solid transparent; background: linear-gradient(135deg, var(--accent-hi), var(--accent-deep), var(--cream)) border-box; -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; box-shadow: 0 0 14px var(--accent-glow); }
+/* Respaldo del nombre (sin profile-style.js). Los marcos los dibuja social/frames.js (styles/features/frames.css) */
 .rw-name-wrap { display: inline-flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; max-width: 100%; }
 .rw-name { font-weight: 800; font-size: 18px; color: var(--cream); line-height: 1.2; overflow-wrap: anywhere; }
 .rw-size-sm .rw-name { font-size: var(--fs-md); }
@@ -225,3 +218,29 @@ html.ax-hc .rw-fx-shimmer, html.ax-hc .rw-fx-rainbow, html.ax-hc .rw-fx-fire, ht
 .rw-chip-ticket { display: block; width: 40px; flex-shrink: 0; }
 .rw-chip .rw-chip-ticket .va-ticket { width: 40px; }
 .rw-balance > .va-ticket { align-self: center; }
+
+/* ---------- Marcos (4.6): buscador, categorias y vista previa ---------- */
+.rw-frames { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.rw-frames-bar { display: flex; align-items: center; gap: var(--sp-2) var(--sp-3); flex-wrap: wrap; }
+.rw-frames-find { flex: 1 1 220px; max-width: 340px; }
+.rw-frames-bar .select { width: auto; min-width: 150px; }
+.rw-frames-count { margin-left: auto; font-size: var(--fs-sm); color: var(--muted); }
+.rw-frame-chips { gap: var(--sp-1); }
+.rw-frames-grid { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
+.rw-cat-title { display: flex; align-items: center; gap: var(--sp-2); margin: 0 0 var(--sp-3) 2px; font-size: var(--fs-lg); font-weight: 700; color: var(--cream); }
+.rw-cat-count { padding: 1px 7px; border-radius: var(--radius-full); border: 1px solid var(--border); background: var(--well-bg); font: 700 var(--fs-xs) var(--font); color: var(--muted); }
+.rw-item.is-frame .rw-item-preview { height: 132px; }
+.rw-pv-btn { border: 0; border-bottom: 1px solid var(--border); font: inherit; color: inherit; cursor: zoom-in; }
+.rw-pv-btn:hover { background: radial-gradient(160px 90px at 50% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%), var(--well-bg); }
+.rw-pv-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.rw-item .fr-rarity { align-self: flex-start; }
+
+/* Vista previa grande */
+.rw-pv-modal { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.rw-stages { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+.rw-stage { flex: 1 1 300px; display: flex; align-items: flex-end; justify-content: center; gap: var(--sp-5); padding: var(--sp-5) var(--sp-4) var(--sp-3); border-radius: var(--radius-l); border: 1px solid var(--border-2); }
+.rw-stage.dark { background: #1b130e; color: #bba78f; }
+.rw-stage.light { background: #f3ede4; color: #6b5a48; }
+.rw-stage-cell { display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 14px 10px; }
+.rw-stage-size { font-size: var(--fs-xs); font-weight: 600; }
+.rw-pv-meta { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }

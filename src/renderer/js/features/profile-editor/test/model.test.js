@@ -32,11 +32,11 @@ test('normaliza el perfil camelCase de profile_public', () => {
     pronouns: 'él',
     theme: { from: '#F29A2E', to: '#3b1450', angle: 200 },
     nameStyle: { font: 'pixel', effect: 'rainbow', color: '#FFC562', glow: 40 },
-    banner: { kind: 'preset', preset: 'nebula' },
+    banner: { kind: 'image', url: media('banner-a1.webp') },
     favoriteServers: [{ address: 'MC.Hypixel.net', name: 'Hypixel' }, { address: 'bad address' }],
     publicStats: { hours: 12.5, sessions: 40, topVersion: '1.21.1', topLoader: 'fabric', since: '2025-01-02', updatedAt: '2026-10-01T00:00:00Z' },
     featured: [{ url: media('featured-a.webp'), title: 'Mi castillo' }, { url: 'https://evil.example.com/x.png' }],
-    equipped: { frame: 'frame_neon', title: 'title_legend', bogus: 'x' },
+    equipped: { frame: 'frame_flame', title: 'title_legend', bogus: 'x' },
     premium: true,
     createdAt: '2025-01-01T00:00:00Z',
   });
@@ -46,12 +46,12 @@ test('normaliza el perfil camelCase de profile_public', () => {
   assert.deepEqual(p.badges, ['founder', 'early']);
   assert.deepEqual(p.theme, { from: '#f29a2e', to: '#3b1450', angle: 200 });
   assert.deepEqual(p.nameStyle, { font: 'pixel', effect: 'rainbow', color: '#ffc562', glow: 40, caps: false, italic: false, outline: false });
-  assert.deepEqual(p.banner, { kind: 'preset', preset: 'nebula' });
+  assert.deepEqual(p.banner, { kind: 'image', url: media('banner-a1.webp') });
   assert.equal(p.legacyBanner, null);
   assert.deepEqual(p.favoriteServers, [{ address: 'mc.hypixel.net', name: 'Hypixel' }]);
   assert.equal(p.publicStats.hours, 12.5);
   assert.equal(p.featured.length, 1);
-  assert.deepEqual(p.equipped, { frame: 'frame_neon', title: 'title_legend' });
+  assert.deepEqual(p.equipped, { frame: 'frame_flame', title: 'title_legend' });
   assert.equal(p.premium, true);
   assert.equal(p.hasStyle, true);
 });
@@ -115,7 +115,7 @@ test('blob: y data: solo se aceptan en la vista previa', () => {
 });
 
 test('normalizar dos veces da lo mismo y mergeProfiles junta lo de social con lo de profile_public', () => {
-  const once = M.normalizeProfile({ id: UID, displayName: 'R', nameStyle: { font: 'mono' }, banner: { kind: 'preset', preset: 'end' }, mc_uuid: 'x' });
+  const once = M.normalizeProfile({ id: UID, displayName: 'R', nameStyle: { font: 'mono' }, banner: { kind: 'klipy', url: 'https://static.klipy.com/ii/a/b.webp', slug: 'gato' }, mc_uuid: 'x' });
   assert.deepEqual(M.normalizeProfile(once), once);
   const merged = M.normalizeProfile(M.mergeProfiles({ id: UID, display_name: 'Viejo', mc_uuid: '069a79f444e94726a5befca90e38aaf5', banner: 'gold' }, { id: UID, displayName: 'Nuevo', nameStyle: { effect: 'glow' } }));
   assert.equal(merged.displayName, 'Nuevo');
@@ -128,8 +128,12 @@ test('efecto, marco, titulo y estilo de insignia que se dibujan', () => {
   assert.equal(M.effectiveEffect({ nameStyle: { effect: 'gradient' }, equipped: { nameEffect: 'effect_fire' } }), 'gradient');
   assert.equal(M.effectiveEffect({ nameStyle: { effect: 'none' }, equipped: { nameEffect: 'effect_fire' } }), 'fire');
   assert.equal(M.effectiveEffect({}), 'none');
-  assert.equal(M.frameOf({ equipped: { frame: 'frame_gold' } }), 'gold');
+  assert.equal(M.frameOf({ equipped: { frame: 'frame_flame' } }), 'flame');
+  assert.equal(M.frameOf({ equipped: { frame: 'pass_frame_3' } }), 'pass3', 'los marcos del Pase se dibujan');
+  assert.equal(M.frameOf({ equipped: { frame: 'frame_gold' } }), null, 'los marcos anteriores a la 4.6 ya no se dibujan');
   assert.equal(M.frameOf({ equipped: { frame: 'frame_nope' } }), null);
+  assert.equal(M.titleStyle('pass_s1_title'), 'season1');
+  assert.equal(M.effectFromItem('pass_s1_effect'), 'season1');
   assert.equal(M.titleOf({ equipped: { title: 'title_redstoner' } }), 'redstoner');
   assert.equal(M.badgeStyleOf({ premium: true, equipped: {} }), 'gold');
   assert.equal(M.badgeStyleOf({ premium: false, equipped: { badgeStyle: 'badge_ice' } }), 'ice');
@@ -160,17 +164,22 @@ test('color legible y brillo', () => {
   assert.equal(M.fadeSurface(null), '#1b130e');
 });
 
-test('los 8 banners prediseñados tienen CSS y capas para el lienzo', () => {
-  for (const id of M.BANNER_PRESETS) {
-    const css = M.presetCss(id);
-    assert.ok(css.length > 50, id);
-    assert.match(css, /linear-gradient\(/, id);
-    assert.ok(!/undefined|NaN/.test(css), id);
-    assert.ok(Array.isArray(M.presetLayers(id)) && M.presetLayers(id).length >= 3, id);
+test('4.6: ya no hay banners prediseñados ni GIF propios, y los perfiles viejos pasan al color clasico', () => {
+  assert.equal(M.BANNER_PRESETS, undefined);
+  assert.equal(M.presetCss, undefined);
+  assert.equal(M.presetLayers, undefined);
+  for (const id of ['stars', 'sunset', 'nebula', 'forest', 'ocean', 'nether', 'end', 'aurora', 'cherry', 'desert', 'snow', 'deepdark', 'lush', 'mesa', 'mushroom', 'void']) {
+    assert.deepEqual(M.normalizeProfile({ banner: { kind: 'preset', preset: id } }).banner, { kind: 'none' }, id);
+    assert.deepEqual(M.normalizeProfile({ banner_style: { kind: 'preset', preset: id } }).banner, { kind: 'none' }, id);
   }
-  assert.equal(M.presetCss('nope'), '');
-  // Estable: la misma semilla da siempre lo mismo
-  assert.equal(M.presetCss('stars'), M.presetCss('stars'));
+  // Un banner animado (el GIF propio de Premium) tambien queda en el color clasico, aunque la direccion sea de la carpeta del usuario
+  assert.deepEqual(M.normalizeProfile({ banner: { kind: 'animated', url: media('banner-1.gif') } }).banner, { kind: 'none' });
+  assert.deepEqual(M.normalizeProfile({ banner: { kind: 'animated', url: media('banner-1.webp') } }, { allowLocalMedia: true }).banner, { kind: 'none' });
+  // Una imagen que apunta a un .gif o .apng (por una escritura vieja o torcida) tampoco se dibuja
+  assert.deepEqual(M.normalizeProfile({ banner: { kind: 'image', url: media('banner-1.gif') } }).banner, { kind: 'none' });
+  assert.deepEqual(M.normalizeProfile({ banner: { kind: 'image', url: media('banner-1.apng') } }).banner, { kind: 'none' });
+  assert.deepEqual(M.normalizeProfile({ banner: { kind: 'image', url: 'data:image/gif;base64,R0lGODlh' } }, { allowLocalMedia: true }).banner, { kind: 'none' });
+  assert.deepEqual(M.normalizeProfile({ banner: { kind: 'image', url: media('banner-1.png') } }).banner, { kind: 'image', url: media('banner-1.png') });
 });
 
 test('extremos del degradado lineal como en CSS', () => {
@@ -181,7 +190,7 @@ test('extremos del degradado lineal como en CSS', () => {
 });
 
 // ---------- validar ----------
-const ctx = { userId: UID, premium: false, owned: new Set(['frame_neon', 'effect_fire']) };
+const ctx = { userId: UID, premium: false, owned: new Set(['frame_flame', 'effect_fire']) };
 
 test('valida pronombres y descripcion como el servidor', () => {
   assert.equal(M.validateField('pronouns', 'ella/elle', ctx), null);
@@ -211,16 +220,30 @@ test('valida el fade y el estilo del nombre', () => {
   assert.equal(M.validateField('nameStyle', { effect: 'rainbow' }, { ...ctx, premium: true }), null);
 });
 
-test('valida el banner (solo archivos propios y el animado con premium)', () => {
-  assert.equal(M.validateField('banner', { kind: 'preset', preset: 'aurora' }, ctx), null);
-  assert.equal(M.validateField('banner', { kind: 'preset', preset: 'venus' }, ctx), 'bad_banner');
+test('valida el banner (solo imagen quieta propia o GIF de KLIPY; sin diseños ni GIF propios, ni con Premium)', () => {
   assert.equal(M.validateField('banner', { kind: 'none' }, ctx), null);
   assert.equal(M.validateField('banner', { kind: 'image', url: media('banner-1.webp') }, ctx), null);
+  assert.equal(M.validateField('banner', { kind: 'image', url: media('banner-1.jpg') }, ctx), null);
+  assert.equal(M.validateField('banner', { kind: 'image', url: media('banner-1.png') }, ctx), null);
+  assert.equal(M.validateField('banner', { kind: 'image', url: media('banner.webp') }, ctx), null);
   assert.equal(M.validateField('banner', { kind: 'image', url: media('banner-1.webp', OTHER) }, ctx), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'image', url: media('banner-1.webp', OTHER) }, { ...ctx, userId: null }), null, 'sin userId alcanza con que sea de la carpeta de alguien');
   assert.equal(M.validateField('banner', { kind: 'image', url: media('a b.webp') }, ctx), 'bad_banner');
-  assert.equal(M.validateField('banner', { kind: 'animated', url: media('banner-1.gif') }, ctx), 'premium_required:banner');
-  assert.equal(M.validateField('banner', { kind: 'animated', url: media('banner-1.gif') }, { ...ctx, premium: true }), null);
+  // Por la ruta: ni .gif ni .apng, y el nombre tiene que ser de banner (no de una captura destacada)
+  assert.equal(M.validateField('banner', { kind: 'image', url: media('banner-1.gif') }, ctx), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'image', url: media('banner-1.GIF') }, ctx), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'image', url: media('banner-1.apng') }, ctx), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'image', url: media('featured-1.webp') }, ctx), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'image', url: media('banner-1.webp.gif') }, ctx), 'bad_banner');
+  assert.equal(M.isBannerImageUrl(media('banner-k2x9.webp'), UID), true);
+  assert.equal(M.isBannerImageUrl(media('banner-k2x9.webp'), OTHER), false);
+  // Los tipos que ya no existen: ni con Premium
+  assert.equal(M.validateField('banner', { kind: 'preset', preset: 'aurora' }, ctx), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'preset', preset: 'aurora' }, { ...ctx, premium: true }), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'animated', url: media('banner-1.gif') }, { ...ctx, premium: true }), 'bad_banner');
+  assert.equal(M.validateField('banner', { kind: 'animated', url: media('banner-1.webp') }, { ...ctx, premium: true }), 'bad_banner');
   assert.equal(M.validateField('banner', { preset: 'stars' }, ctx), 'bad_banner');
+  assert.deepEqual(M.validatePatch({ banner: { kind: 'animated', url: media('banner-1.gif') } }, { ...ctx, premium: true }), { ok: false, code: 'bad_banner', field: 'banner' });
 });
 
 test('valida servidores favoritos, estadisticas y destacadas', () => {
@@ -241,11 +264,11 @@ test('valida servidores favoritos, estadisticas y destacadas', () => {
 });
 
 test('valida lo equipado (comprado o premium)', () => {
-  assert.equal(M.validateField('equipped', { frame: 'frame_neon', title: null }, ctx), null);
-  assert.equal(M.validateField('equipped', { frame: 'frame_gold' }, ctx), 'not_owned:frame_gold');
+  assert.equal(M.validateField('equipped', { frame: 'frame_flame', title: null }, ctx), null);
+  assert.equal(M.validateField('equipped', { frame: 'frame_storm' }, ctx), 'not_owned:frame_storm');
   assert.equal(M.validateField('equipped', { frame: 'title_legend' }, { ...ctx, owned: new Set(['title_legend']) }), 'not_owned:title_legend');
-  assert.equal(M.validateField('equipped', { frame: 'frame_venus' }, ctx), 'not_owned:frame_venus');
-  assert.equal(M.validateField('equipped', { frame: 'frame_venus', badgeStyle: 'badge_gold', title: 'title_supporter' }, { ...ctx, premium: true }), null);
+  assert.equal(M.validateField('equipped', { frame: 'frame_wings' }, ctx), 'not_owned:frame_wings');
+  assert.equal(M.validateField('equipped', { frame: 'frame_wings', badgeStyle: 'badge_gold', title: 'title_supporter' }, { ...ctx, premium: true }), null);
   assert.equal(M.validateField('equipped', { hat: 'x' }, ctx), 'bad_equipped');
   assert.equal(M.validateField('equipped', [], ctx), 'bad_equipped');
 });
@@ -259,14 +282,14 @@ test('validatePatch rechaza campos desconocidos y devuelve el primero que falla'
 
 // ---------- patch ----------
 test('buildPatch manda solo lo que cambio, en forma canonica', () => {
-  const base = M.customOf(M.normalizeProfile({ pronouns: 'él', bio: 'Hola', nameStyle: { font: 'pixel', glow: 20 }, banner: { kind: 'preset', preset: 'stars' }, theme: { from: '#111111', to: '#222222', angle: 90 } }));
+  const base = M.customOf(M.normalizeProfile({ pronouns: 'él', bio: 'Hola', nameStyle: { font: 'pixel', glow: 20 }, banner: { kind: 'klipy', url: 'https://static.klipy.com/ii/a/b.webp' }, theme: { from: '#111111', to: '#222222', angle: 90 } }));
   assert.deepEqual(M.buildPatch(base, { ...base }), {});
   const draft = { ...base, pronouns: '  él ', bio: 'Hola de nuevo', nameStyle: { font: 'pixel', effect: 'none', color: null, glow: 20 } };
   assert.deepEqual(M.buildPatch(base, draft), { bio: 'Hola de nuevo' });
   const d2 = { ...base, theme: { from: '#111111', to: '#222222', angle: 90.2 }, banner: { kind: 'none' }, nameStyle: { font: 'default', glow: 0 } };
   assert.deepEqual(M.buildPatch(base, d2), { banner: { kind: 'none' }, nameStyle: {} });
-  const d3 = { ...base, publicStats: { hours: 1, sessions: 2, topVersion: '' }, featured: [{ url: media('f.webp'), title: ' ' }], equipped: { frame: 'frame_neon', title: '' } };
-  assert.deepEqual(M.buildPatch(base, d3), { publicStats: { hours: 1, sessions: 2 }, featured: [{ url: media('f.webp') }], equipped: { frame: 'frame_neon' } });
+  const d3 = { ...base, publicStats: { hours: 1, sessions: 2, topVersion: '' }, featured: [{ url: media('f.webp'), title: ' ' }], equipped: { frame: 'frame_flame', title: '' } };
+  assert.deepEqual(M.buildPatch(base, d3), { publicStats: { hours: 1, sessions: 2 }, featured: [{ url: media('f.webp') }], equipped: { frame: 'frame_flame' } });
 });
 
 test('buildPatch ignora updatedAt de las estadisticas guardadas', () => {
@@ -328,8 +351,7 @@ test('3.0: tipografias, efectos, banners y marcos nuevos', () => {
   assert.equal(M.validateField('nameStyle', { caps: 'si' }, {}), 'bad_nameStyle');
   assert.equal(M.validateField('nameStyle', { effect: 'galaxy' }, { premium: false }), 'premium_required:nameStyle');
   assert.equal(M.validateField('nameStyle', { effect: 'galaxy' }, { premium: true }), null);
-  for (const id of M.BANNER_PRESETS) assert.ok(M.presetCss(id), id);
-  assert.equal(M.frameStyle('frame_diamond'), 'diamond');
+  assert.equal(M.frameStyle('frame_prism'), 'prism');
   assert.equal(M.titleStyle('title_vip'), 'vip');
   assert.equal(M.gradientCss({ theme: { from: '#111111', via: '#222222', to: '#333333', angle: 90 } }), 'linear-gradient(90deg, #111111, #222222, #333333)');
   const ids = M.SHOP_CATALOG.map((i) => i.id);
@@ -369,7 +391,7 @@ test('3.0: estilo de la tarjeta, vitrina y rango', () => {
   // Desde la 3.1 el estilo normalizado trae ademas tema, burbuja, entrada, cancion y libro (en sus valores por defecto)
   assert.deepEqual(M.normalizeProfile({ card_style: { pattern: 'x', accent: 'rojo' } }).cardStyle, {
     pattern: 'none',
-    avatar: 'square',
+    avatar: 'round',
     layout: 'classic',
     accent: null,
     theme: { id: 'none', particles: false },
@@ -400,4 +422,97 @@ test('3.0: respuesta de KLIPY en su orden, sin lo que no es un GIF', () => {
   assert.equal(res.items[0].still, 'https://static.klipy.com/b.jpg');
   assert.equal(res.hasNext, true);
   assert.deepEqual(M.parseGifs(null), { items: [], hasNext: false });
+});
+
+test('4.6: el avatar es siempre redondo y la forma de la cabeza ya no se elige ni se manda', () => {
+  assert.deepEqual(M.AVATAR_SHAPES, ['round']);
+  // Lo que traiga el perfil (cuadrada, hexagonal, nada) se dibuja redondo
+  for (const avatar of ['square', 'hex', 'round', undefined, 'otra', null, 7]) assert.equal(M.normalizeProfile({ card_style: { avatar } }).cardStyle.avatar, 'round', String(avatar));
+  assert.equal(M.normalizeProfile({}).cardStyle.avatar, 'round');
+  // El servidor solo acepta 'round' (o que no venga): lo mismo que valida el editor
+  assert.equal(M.validateField('cardStyle', { avatar: 'round' }, {}), null);
+  assert.equal(M.validateField('cardStyle', { avatar: 'square' }, {}), 'bad_cardStyle');
+  assert.equal(M.validateField('cardStyle', { avatar: 'hex' }, {}), 'bad_cardStyle');
+  assert.equal(M.validateField('cardStyle', {}, {}), null);
+  // No se manda: el estilo canonico no lleva avatar, asi que cambiar de version o de cuenta no hace un patch de mas
+  const base = M.customOf(M.normalizeProfile({ card_style: { avatar: 'hex', pattern: 'dots' } }));
+  assert.equal('avatar' in base.cardStyle, false);
+  assert.deepEqual(base.cardStyle, { pattern: 'dots' });
+  assert.deepEqual(M.buildPatch(base, { ...base, cardStyle: { ...base.cardStyle, avatar: 'round' } }), {});
+  assert.deepEqual(M.canonical({ cardStyle: { avatar: 'round', layout: 'center' } }).cardStyle, { layout: 'center' });
+});
+
+// Archivos de ejemplo armados a mano (los primeros bytes de cada formato)
+const ascii = (t) => [...t].map((c) => c.charCodeAt(0));
+const u32be = (n) => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
+const u32le = (n) => [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255];
+const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const pngChunk = (type, data = []) => [...u32be(data.length), ...ascii(type), ...data, 0, 0, 0, 0];
+const webpChunk = (type, data = []) => [...ascii(type), ...u32le(data.length), ...data, ...(data.length % 2 ? [0] : [])];
+const riff = (chunks) => {
+  const body = [...ascii('WEBP'), ...chunks];
+  return new Uint8Array([...ascii('RIFF'), ...u32le(body.length), ...body]);
+};
+
+test('4.6: mira el contenido de la imagen y rechaza GIF, APNG y WebP animado (no solo la extension)', () => {
+  const png = new Uint8Array([...PNG_SIG, ...pngChunk('IHDR', new Array(13).fill(0)), ...pngChunk('IDAT', [1, 2, 3]), ...pngChunk('IEND')]);
+  const apng = new Uint8Array([...PNG_SIG, ...pngChunk('IHDR', new Array(13).fill(0)), ...pngChunk('acTL', [0, 0, 0, 2, 0, 0, 0, 0]), ...pngChunk('IDAT', [1, 2, 3]), ...pngChunk('IEND')]);
+  // acTL despues de otros chunks chicos (sRGB, pHYs, texto) sigue siendo animado
+  const apng2 = new Uint8Array([...PNG_SIG, ...pngChunk('IHDR', new Array(13).fill(0)), ...pngChunk('sRGB', [0]), ...pngChunk('tEXt', ascii('Software\0x')), ...pngChunk('acTL', [0, 0, 0, 3, 0, 0, 0, 1]), ...pngChunk('IDAT', [9])]);
+  // Un acTL escondido despues de los datos no cuenta: la imagen que se ve es un PNG comun
+  const pngLate = new Uint8Array([...PNG_SIG, ...pngChunk('IHDR', new Array(13).fill(0)), ...pngChunk('IDAT', [1]), ...pngChunk('acTL', [0, 0, 0, 2, 0, 0, 0, 0])]);
+  const gif89 = new Uint8Array([...ascii('GIF89a'), 1, 0, 1, 0, 0, 0, 0, 0x3b]);
+  const gif87 = new Uint8Array([...ascii('GIF87a'), 1, 0, 1, 0, 0, 0, 0, 0x3b]);
+  const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 16, ...ascii('JFIF'), 0, 1, 1, 0, 0, 1, 0, 1, 0, 0]);
+  const webpStill = riff([...webpChunk('VP8L', [0x2f, 0, 0, 0, 0, 0, 0, 0, 0, 0])]);
+  const webpStillExt = riff([...webpChunk('VP8X', [0x10, 0, 0, 0, 1, 0, 0, 1, 0, 0]), ...webpChunk('VP8L', [0x2f, 0, 0, 0, 0, 0])]);
+  const webpAnim = riff([...webpChunk('VP8X', [0x12, 0, 0, 0, 1, 0, 0, 1, 0, 0]), ...webpChunk('ANIM', [0, 0, 0, 0, 0, 0]), ...webpChunk('ANMF', new Array(16).fill(0))]);
+  // Sin la marca del VP8X pero con un chunk ANIM (archivo torcido): igual se rechaza
+  const webpAnimNoFlag = riff([...webpChunk('VP8X', [0x00, 0, 0, 0, 1, 0, 0, 1, 0, 0]), ...webpChunk('ANIM', [0, 0, 0, 0, 0, 0])]);
+
+  assert.deepEqual(M.inspectImage(png), { type: 'png', animated: false });
+  assert.deepEqual(M.inspectImage(apng), { type: 'png', animated: true });
+  assert.deepEqual(M.inspectImage(apng2), { type: 'png', animated: true });
+  assert.deepEqual(M.inspectImage(pngLate), { type: 'png', animated: false });
+  assert.deepEqual(M.inspectImage(jpeg), { type: 'jpeg', animated: false });
+  assert.deepEqual(M.inspectImage(webpStill), { type: 'webp', animated: false });
+  assert.deepEqual(M.inspectImage(webpStillExt), { type: 'webp', animated: false });
+  assert.deepEqual(M.inspectImage(webpAnim), { type: 'webp', animated: true });
+  assert.deepEqual(M.inspectImage(webpAnimNoFlag), { type: 'webp', animated: true });
+  assert.equal(M.inspectImage(gif89).type, 'gif');
+  assert.equal(M.inspectImage(gif87).type, 'gif');
+  assert.deepEqual(M.inspectImage(new Uint8Array(0)), { type: null, animated: false });
+  assert.deepEqual(M.inspectImage(null), { type: null, animated: false });
+  assert.deepEqual(M.inspectImage(new Uint8Array(ascii('<svg xmlns="http://www.w3.org/2000/svg"/>'))), { type: null, animated: false });
+  // Aceptado para banner: PNG, JPG y WebP quietos. Rechazado: GIF (aunque tenga un solo cuadro), APNG, WebP animado y lo que no es una imagen
+  assert.equal(M.bannerSourceError(png), null);
+  assert.equal(M.bannerSourceError(jpeg), null);
+  assert.equal(M.bannerSourceError(webpStill), null);
+  assert.equal(M.bannerSourceError(webpStillExt), null);
+  assert.equal(M.bannerSourceError(pngLate), null);
+  assert.equal(M.bannerSourceError(gif89), 'animated');
+  assert.equal(M.bannerSourceError(gif87), 'animated');
+  assert.equal(M.bannerSourceError(apng), 'animated');
+  assert.equal(M.bannerSourceError(apng2), 'animated');
+  assert.equal(M.bannerSourceError(webpAnim), 'animated');
+  assert.equal(M.bannerSourceError(webpAnimNoFlag), 'animated');
+  assert.equal(M.bannerSourceError(new Uint8Array(ascii('<svg xmlns="http://www.w3.org/2000/svg"/>'))), 'type');
+  assert.equal(M.bannerSourceError(new Uint8Array([1, 2, 3])), 'type');
+  assert.equal(M.bannerSourceError(null), 'type');
+  // Un ArrayBuffer tambien sirve; un archivo truncado no rompe nada
+  assert.equal(M.bannerSourceError(gif89.buffer), 'animated');
+  assert.equal(M.bannerSourceError(new Uint8Array([...PNG_SIG, 0, 0, 0, 13, ...ascii('IHDR')])), null);
+  assert.equal(M.bannerSourceError(new Uint8Array([...PNG_SIG, 0xff, 0xff, 0xff, 0xff, ...ascii('acTL')])), 'animated');
+  assert.equal(M.bannerSourceError(riff([...ascii('VP8X'), 0xff, 0xff, 0xff, 0x7f])), null);
+});
+
+test('4.6: los archivos de banner que se suben son webp, jpg o png (sin gif)', () => {
+  assert.match(M.mediaFileName('banner', 'webp', 1700000000000, 0.5), /^banner-[a-z0-9]+\.webp$/);
+  assert.match(M.mediaFileName('banner', 'jpg'), /\.jpg$/);
+  assert.match(M.mediaFileName('banner', 'png'), /\.png$/);
+  // Un gif (o cualquier otra cosa) ya no es un nombre posible: cae en webp
+  assert.match(M.mediaFileName('banner', 'gif'), /\.webp$/);
+  assert.match(M.mediaFileName('featured', 'gif'), /\.webp$/);
+  // Y el nombre que genera el cliente es de los que acepta isBannerImageUrl
+  for (const ext of ['webp', 'jpg', 'png']) assert.equal(M.isBannerImageUrl(media(M.mediaFileName('banner', ext)), UID), true, ext);
 });

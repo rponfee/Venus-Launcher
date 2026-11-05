@@ -45,9 +45,6 @@ export default {
   resetMenu: "重置",
   done: "完成",
   menuSaveFailed: "无法保存菜单",
-  compete: "竞技",
   clans: "战队",
   communities: "社区",
-  seeds: "种子查看器",
-  extensions: "扩展",
 };

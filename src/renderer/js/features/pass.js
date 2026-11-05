@@ -1,14 +1,16 @@
-// Venus Pass (3.1): el estado del pase que comparten la página y el menú, los minutos jugados que se reportan al
+// Venus Pass (4.6): el estado del pase que comparten la página y el menú, los minutos jugados que se reportan al
 // servidor (1 XP por minuto, hasta 120 por día: pass_playtime), el aviso al subir de nivel y el punto en el menú
-// cuando hay premios para reclamar. Reglas y RPC: supabase/migrations/0026_venus_pass.sql · guía: docs/venus-pass.md.
-//   startup(), getPass() -> { data, error, at }, onPass(fn) -> off, loadPass({ force? }), claim(level, track),
+// cuando hay premios para reclamar. El pase solo se gana jugando: no se compra (nada de pagos acá).
+// Reglas y RPC: supabase/migrations/0041_venus_pass_tiempo.sql · guía: docs/wip/pase-46.md.
+//   startup(), getPass() -> { data, error, at }, onPass(fn) -> off, loadPass({ force? }), claim(level),
 //   claimAll(), reportPlaytime(minutes), passBackend() -> { rpc }
-import { toast, fail } from '../ui.js';
+import { toast } from '../ui.js';
 import { store, api } from '../store.js';
 import { t, loadNs, has } from '../i18n.js';
 import { setNavBadge } from '../app.js';
 import { backend } from '../pages/rewards/backend.js';
 import { normalizeMe, levelsGained, playtimeBatches, seasonState } from '../pages/pass/logic.js';
+import { TRACK } from '../pages/pass/plan.js';
 import { loadSummary } from './rewards.js';
 
 const P = (key, vars) => t(`pass.${key}`, vars);
@@ -17,7 +19,6 @@ const REPORT_EVERY_MIN = 5; // cada cuántos minutos de juego se avisa al servid
 
 const state = { data: null, error: null, at: 0, user: null };
 const listeners = new Set();
-let backendPromise = null;
 let fakePass = null;
 let loading = null;
 
@@ -48,7 +49,7 @@ export async function passBackend() {
       const scenario = await api.invoke('rewards:fakeMode').catch(() => null);
       fakePass = createFakePass(typeof scenario === 'string' ? scenario : 'demo');
     }
-    return { fake: true, signedIn: b.signedIn, userId: b.userId, onAuth: b.onAuth, rpc: (name, args) => fakePass.rpc(name, args), grant: (tier) => fakePass.grant(tier) };
+    return { fake: true, signedIn: b.signedIn, userId: b.userId, onAuth: b.onAuth, rpc: (name, args) => fakePass.rpc(name, args) };
   }
   return { fake: false, signedIn: b.signedIn, userId: b.userId, onAuth: b.onAuth, rpc: (name, args) => b.rpc(name, args) };
 }
@@ -90,9 +91,9 @@ export async function loadPass({ force = false } = {}) {
   return loading;
 }
 
-export async function claim(level, track) {
+export async function claim(level) {
   const b = await passBackend();
-  const res = await b.rpc('pass_claim', { p_level: level, p_track: track });
+  const res = await b.rpc('pass_claim', { p_level: level, p_track: TRACK });
   await Promise.all([loadPass({ force: true }), loadSummary({ force: true }).catch(() => {})]);
   return res;
 }
@@ -175,13 +176,6 @@ export async function startup() {
     console.warn('[pass] textos', err?.message || err);
   }
   watchGames();
-  // Pago acreditado: el pase (o la edición mejor) ya está en la cuenta.
-  api.on('billing:changed', (info) => {
-    if (info?.kind === 'pass' || String(info?.plan || '').startsWith('pass_')) loadPass({ force: true }).catch(() => {});
-  });
-  // Al reclamar logros o misiones cambian los puntos, y los puntos son XP.
-  window.addEventListener('venus:achievement', () => setTimeout(() => loadPass({ force: true }).catch(() => {}), 4000));
-  window.addEventListener('venus:mission', () => setTimeout(() => loadPass({ force: true }).catch(() => {}), 4000));
   const b = await passBackend().catch(() => null);
   if (!b) return;
   b.onAuth?.(() => loadPass({ force: true }).catch(() => {}));

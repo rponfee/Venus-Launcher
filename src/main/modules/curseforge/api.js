@@ -39,8 +39,21 @@ const cloud = require('./cloud').createCloudClient({
   t,
 });
 function setRefreshRequester(fn) { requestRefresh = fn; }
+
+// Estado para la interfaz y para otros módulos:
+//   state   'on' (el catálogo de Venus tiene la clave), 'off' (no la tiene) o 'unknown' (no se pudo preguntar)
+//   source  'central' | 'build' (clave compilada) | null
+//   ready   se puede intentar buscar. Un 'unknown' NO es "no configurado": el servidor contesta con precisión
+//           cuando se le pide algo, así que una consulta de estado caída no apaga el catálogo.
+//   signedIn  hay sesión de Venus guardada (solo hace falta con el catálogo central)
+async function status() {
+  const compiled = Boolean(await getKey());
+  const state = await cloud.state({ force: true });
+  const source = state === 'on' ? 'central' : compiled ? 'build' : state === 'unknown' ? 'central' : null;
+  return { state, source, ready: Boolean(source), signedIn: await cloud.signedIn() };
+}
 async function hasKey() {
-  return await cloud.configured({ force: true }) || Boolean(await getKey());
+  return (await status()).ready;
 }
 
 function cfError(message, extra = {}) {
@@ -55,11 +68,36 @@ function userAgent() {
   }
 }
 
-// La configuración central tiene prioridad. Sin ella se conserva la clave de builds anteriores.
-async function request(pathname, { method = 'GET', body, retries = 2, notFound, signal } = {}) {
-  const central = await cloud.configured();
-  const apiKey = central ? null : await getKey();
-  if (!central && !apiKey) throw cfError(t('curseforge.errNoKey'), { code: 'nokey' });
+// Qué significa un 401/403 directo de CurseForge (mismo criterio que supabase/functions/curseforge/handler.ts):
+// 'badkey' la clave falta o no sirve, 'blocked' lo cortó el borde antes de su aplicación, 'denied' el recurso
+// (descarga o archivo) no se puede pedir. Solo se mira el texto, nunca se muestra.
+function rejectionKind(text, contentType, pathname) {
+  if (/api[\s_-]*key[^.\n]{0,40}(?:missing|invalid|not valid|wrong|expired)|invalid[\s_-]*api[\s_-]*key/i.test(text)) return 'badkey';
+  if (/html/i.test(contentType || '') || /^\s*<(?:!doctype|html|head|body)/i.test(text)) return 'blocked';
+  return /\/download-url$|\/files\/\d+(?:\/changelog)?$/.test(String(pathname).split('?')[0]) ? 'denied' : 'badkey';
+}
+
+// La configuración central tiene prioridad. Sin ella se conserva la clave de builds anteriores. Si el catálogo
+// central responde con un error de clave, bloqueo, red o servidor y este build trae una clave propia, se repite
+// el pedido con esa clave en vez de dejar a la persona sin CurseForge.
+const FALLBACK_CODES = new Set(['nokey', 'badkey', 'blocked', 'network', 'server', 'ratelimit']);
+async function request(pathname, opts = {}) {
+  const compiled = await getKey();
+  const state = await cloud.state();
+  const central = state === 'on' || (state === 'unknown' && !compiled);
+  if (!central && !compiled) throw cfError(t('curseforge.errNoKey'), { code: 'nokey' });
+  if (!central) return send(pathname, opts, compiled);
+  if (!compiled) return send(pathname, opts, null);
+  try {
+    return await send(pathname, opts, null);
+  } catch (err) {
+    if (opts.signal?.aborted || !FALLBACK_CODES.has(err?.code)) throw err;
+  }
+  return send(pathname, opts, compiled);
+}
+
+// apiKey null = por el catálogo de Venus (con la sesión de la persona); con valor = clave compilada en este build.
+async function send(pathname, { method = 'GET', body, retries = 2, notFound, signal } = {}, apiKey = null) {
   let lastErr = null;
   for (let attempt = 0; attempt <= retries; attempt++) {
     let res;
@@ -100,9 +138,16 @@ async function request(pathname, { method = 'GET', body, retries = 2, notFound, 
       }
     }
     if (res.status === 401 || res.status === 403) {
-      const detail = !apiKey ? await res.clone().json().catch(() => null) : null;
+      // Por el catálogo de Venus el servidor ya clasificó el rechazo; con clave propia se lee lo mínimo de la respuesta.
+      let why = null;
+      if (!apiKey) why = (await res.clone().json().catch(() => null))?.error?.code;
+      else why = rejectionKind(await res.text().catch(() => ''), res.headers.get('content-type'), pathname);
       await res.body?.cancel().catch(() => {});
-      if (detail?.error?.code === 'forbidden') throw cfError(t('curseforge.errAccessDenied'), { status: res.status, code: 'forbidden' });
+      if (why === 'forbidden') throw cfError(t('curseforge.errAccessDenied'), { status: res.status, code: 'forbidden' });
+      // El servidor ya distingue qué pasó con CurseForge (ver supabase/functions/curseforge): clave rechazada,
+      // pedido cortado antes de llegar a su aplicación, o un archivo que el autor no deja pedir.
+      if (why === 'blocked') throw cfError(t('curseforge.errBlocked'), { status: res.status, code: 'blocked' });
+      if (why === 'denied') throw cfError(t('curseforge.errDenied'), { status: res.status, code: 'denied' });
       throw cfError(t('curseforge.errBadKey'), { status: res.status, code: 'badkey' });
     }
     if (res.status === 404) {
@@ -381,7 +426,8 @@ async function getDownloadUrl(modId, fileId) {
     const res = await request(`/v1/mods/${encodeURIComponent(modId)}/files/${encodeURIComponent(fileId)}/download-url`);
     return typeof res?.data === 'string' && /^https:\/\//i.test(res.data) ? res.data : null;
   } catch (err) {
-    if (err.code === 'notfound' || err.status === 403) return null;
+    // 403 sin más (clave propia) o 'denied' (catálogo de Venus): el autor no permite descargarlo desde otras apps.
+    if (err.code === 'notfound' || err.code === 'denied' || (err.status === 403 && err.code === 'badkey')) return null;
     throw err;
   }
 }
@@ -418,7 +464,9 @@ module.exports = {
   MAX_WINDOW,
   getKey,
   setRefreshRequester,
+  status,
   hasKey,
+  rejectionKind,
   request,
   search,
   getModRaw,

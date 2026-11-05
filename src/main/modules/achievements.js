@@ -1,6 +1,6 @@
 'use strict';
-// Logros de Venus: cuentas de esta PC que no salen de las estadisticas (mods, shaders y resource packs de todas las
-// instancias). Los logros en si van directo de la interfaz a Supabase (features/achievements.js, 0023_venus3.sql).
+// Logros de Venus: cuentas de esta PC que no salen de las sesiones del launcher (mods, shaders y resource packs de todas
+// las instancias). Los logros en si van directo de la interfaz a Supabase (features/achievements.js, 0023_venus3.sql).
 // Canal: achievements:localCounts() -> { mods, shaders, resourcepacks }
 const fsp = require('fs/promises');
 const path = require('path');

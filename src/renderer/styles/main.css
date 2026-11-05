@@ -949,3 +949,12 @@ html[data-ui-sidebar='icons'] .account-chip { width: 100%; padding: 4px; justify
 html[data-ui-sidebar='icons'] .account-chip > .ellipsis { display: none; }
 /* Pixelify Sans dibuja mal la ligadura fi (se lee An) */
 body { font-variant-ligatures: none; }
+
+/* ---------- Avatar de perfil: siempre circular (4.6), no se elige ----------
+   headImg() de social/profile-ui.js le pone .sc-head a la cabeza de todo perfil de Venus (tarjeta, editor, listas de amigos,
+   Mensajes, comunidades, tarjetas de chat) y voice/ lo dibuja con .vc-avatar; el resto son las cabezas de amigos de otras
+   pantallas (inicio, compartir, clips, jugar en red, multijugador, mini barra, reseñas de servidores y la cuenta de Venus en
+   Ajustes). Quedan cuadradas las cabezas que no son de un perfil de Venus: la cuenta de Minecraft de la barra y de Ajustes,
+   los jugadores de un servidor, las skins y el mapa del mundo. !important porque cada pantalla pone su radio. */
+.sc-head, .vc-avatar, .hm-av-img, .np-friend-av img, .np-invite-av, .shr-avatar, .shr-invite-avatar, .cl-avatar, .nc-mini-fav-img, .cs-gl-av, .mpa-avatar, .srv-item .avatar, .cfg-v-avatar { border-radius: 50% !important; }
+.vc-ring { border-radius: 50% !important; }

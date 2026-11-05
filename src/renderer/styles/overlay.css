@@ -54,12 +54,34 @@ body.ovl-page .ovl-root.ovl-editing .ovl-stage {
   background: rgba(12, 7, 5, 0.32);
 }
 
-.ovl-cell {
+/* Las 9 posiciones son celdas de una grilla de 3x3: la fila o la columna crece con lo que tiene adentro y empuja a la de
+   al lado, asi un Voice Chat largo no tapa a los mensajes del medio. Las del medio quedan en el centro del area mientras
+   haya lugar. Si todo junto no entra, widgets.js achica la grilla (zoom). */
+.ovl-grid {
   position: absolute;
+  inset: var(--ovl-my) var(--ovl-mx);
+  display: grid;
+  grid-template-columns: minmax(auto, 1fr) auto minmax(auto, 1fr);
+  grid-template-rows: minmax(auto, 1fr) auto minmax(auto, 1fr);
+  gap: 8px 12px;
+  pointer-events: none;
+}
+/* Sin min-width ni min-height en 0: el minimo de cada fila y columna es lo que ocupa su contenido (es lo que las hace crecer) */
+.ovl-cell {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+.ovl-cell-tl { grid-area: 1 / 1; justify-self: start; align-self: start; align-items: flex-start; }
+.ovl-cell-tc { grid-area: 1 / 2; justify-self: center; align-self: start; align-items: center; }
+.ovl-cell-tr { grid-area: 1 / 3; justify-self: end; align-self: start; align-items: flex-end; }
+.ovl-cell-ml { grid-area: 2 / 1; justify-self: start; align-self: center; align-items: flex-start; }
+.ovl-cell-mc { grid-area: 2 / 2; justify-self: center; align-self: center; align-items: center; }
+.ovl-cell-mr { grid-area: 2 / 3; justify-self: end; align-self: center; align-items: flex-end; }
+.ovl-cell-bl { grid-area: 3 / 1; justify-self: start; align-self: end; align-items: flex-start; justify-content: flex-end; }
+.ovl-cell-bc { grid-area: 3 / 2; justify-self: center; align-self: end; align-items: center; justify-content: flex-end; }
+.ovl-cell-br { grid-area: 3 / 3; justify-self: end; align-self: end; align-items: flex-end; justify-content: flex-end; }
+/* Posiciones de las marcas de la grilla del modo edicion (las celdas de arriba van por la grilla, no por aca) */
 .ovl-at-tl { top: var(--ovl-my); left: var(--ovl-mx); align-items: flex-start; }
 .ovl-at-tc { top: var(--ovl-my); left: 50%; transform: translateX(-50%); align-items: center; }
 .ovl-at-tr { top: var(--ovl-my); right: var(--ovl-mx); align-items: flex-end; }
@@ -108,6 +130,20 @@ body.ovl-page .ovl-root.ovl-editing .ovl-stage {
 }
 .ovl-w[hidden] {
   display: none;
+}
+/* Vista previa de Ajustes: el widget apagado es un fantasma (se sabe donde esta) y el elegido lleva un borde */
+.ovl-w.ovl-ghost {
+  opacity: 0.38;
+}
+.ovl-w.ovl-ghost .ovl-in {
+  outline: 2px dashed var(--ovl-line);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+.ovl-w.ovl-selected .ovl-in {
+  outline: 2px solid var(--ovl-accent);
+  outline-offset: 3px;
+  border-radius: 12px;
 }
 .ovl-in {
   --ovl-bg: rgba(18, 11, 8, 0.9);
@@ -190,10 +226,10 @@ body.ovl-page .ovl-root.ovl-editing .ovl-stage {
   flex-direction: column;
   gap: 6px;
 }
-.ovl-at-tr .ovl-list, .ovl-at-mr .ovl-list, .ovl-at-br .ovl-list,
-.ovl-at-tr .ovl-in, .ovl-at-mr .ovl-in, .ovl-at-br .ovl-in { align-items: flex-end; }
-.ovl-at-tc .ovl-list, .ovl-at-mc .ovl-list, .ovl-at-bc .ovl-list,
-.ovl-at-tc .ovl-in, .ovl-at-mc .ovl-in, .ovl-at-bc .ovl-in { align-items: center; }
+.ovl-cell-tr .ovl-list, .ovl-cell-mr .ovl-list, .ovl-cell-br .ovl-list,
+.ovl-cell-tr .ovl-in, .ovl-cell-mr .ovl-in, .ovl-cell-br .ovl-in { align-items: flex-end; }
+.ovl-cell-tc .ovl-list, .ovl-cell-mc .ovl-list, .ovl-cell-bc .ovl-list,
+.ovl-cell-tc .ovl-in, .ovl-cell-mc .ovl-in, .ovl-cell-bc .ovl-in { align-items: center; }
 .ovl-in, .ovl-list { align-items: flex-start; }
 .ovl-w-voice .ovl-in { align-items: stretch !important; }
 .ovl-sub,

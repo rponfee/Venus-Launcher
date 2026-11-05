@@ -17,7 +17,7 @@
 .pf-gb { display: flex; flex-direction: column; gap: var(--sp-2); }
 .pf-gb-list { display: flex; flex-direction: column; gap: var(--sp-2); }
 .pf-gb-item { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-2); border-radius: var(--radius); background: rgba(12, 7, 5, 0.45); border: 1px solid var(--border-2); min-width: 0; }
-.pf-gb-item .sc-head { width: 28px; height: 28px; border-radius: var(--radius-s); flex-shrink: 0; }
+.pf-gb-item .sc-head { width: 28px; height: 28px; flex-shrink: 0; }
 .pf-gb-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .pf-gb-head { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
 .pf-gb-name { font-weight: 700; font-size: var(--fs-sm); min-width: 0; }
@@ -55,7 +55,7 @@ body.reduce-motion .pf-song.playing .pf-song-title svg { animation: none; }
 .pf-gift-items { max-height: 320px; overflow-y: auto; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
 .pf-gift-items .pfe-radio { align-items: center; text-align: center; min-height: 92px; }
 .pf-gift-price { font-size: var(--fs-xs); color: var(--accent-hi); }
-.pf-gift-head .sc-head { width: 36px; height: 36px; border-radius: var(--radius-s); }
+.pf-gift-head .sc-head { width: 36px; height: 36px; }
 
 /* Denunciar */
 .pf-report-reasons { grid-template-columns: repeat(2, minmax(0, 1fr)); }

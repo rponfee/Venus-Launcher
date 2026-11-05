@@ -47,12 +47,13 @@ test('si PowerShell no se puede abrir, no rompe el lanzamiento', () => {
   assert.equal(r, null);
 });
 
-test('ajustes: paquete, ventana y capas ajenas vienen prendidos, la insignia apagada, y se cambian por separado', () => {
-  assert.deepEqual(ingame.prefs({}), { pack: true, window: true, badge: false, capes: true });
-  assert.deepEqual(ingame.prefs({ ingame: { pack: false } }), { pack: false, window: true, badge: false, capes: true });
-  assert.deepEqual(ingame.prefs({ ingame: { window: false } }), { pack: true, window: false, badge: false, capes: true });
-  assert.deepEqual(ingame.prefs(null), { pack: true, window: true, badge: false, capes: true });
-  assert.deepEqual(ingame.prefs({ ingame: { badge: true } }), { pack: true, window: true, badge: true, capes: true });
-  assert.deepEqual(ingame.prefs({ ingame: { badge: 'si' } }), { pack: true, window: true, badge: false, capes: true });
-  assert.deepEqual(ingame.prefs({ ingame: { capes: false } }), { pack: true, window: true, badge: false, capes: false });
+test('ajustes: paquete y ventana vienen prendidos, la insignia apagada, y se cambian por separado', () => {
+  assert.deepEqual(ingame.prefs({}), { pack: true, window: true, badge: false });
+  assert.deepEqual(ingame.prefs({ ingame: { pack: false } }), { pack: false, window: true, badge: false });
+  assert.deepEqual(ingame.prefs({ ingame: { window: false } }), { pack: true, window: false, badge: false });
+  assert.deepEqual(ingame.prefs(null), { pack: true, window: true, badge: false });
+  assert.deepEqual(ingame.prefs({ ingame: { badge: true } }), { pack: true, window: true, badge: true });
+  assert.deepEqual(ingame.prefs({ ingame: { badge: 'si' } }), { pack: true, window: true, badge: false });
+  // El ajuste capes de la 4.5 quedo en el settings.json de algunos y ya no significa nada
+  assert.deepEqual(ingame.prefs({ ingame: { capes: false } }), { pack: true, window: true, badge: false });
 });

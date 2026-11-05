@@ -1,0 +1,166 @@
+/* Marcos de perfil (4.6): dibujos SVG originales de social/frames.js. Prefijo: .fr-
+   El marco es un <svg> de 125 % de la cabeza puesto encima (el avatar es el circulo de radio 40 de un dibujo de 100).
+   Colores literales a proposito: son cosmeticos y se ven igual para todos, con cualquier tema del launcher.
+   Las animaciones mueven solo `transform` y `opacity` (baratas), se apagan con "reducir movimiento" y con el modo liviano,
+   y se pausan mientras el marco esta fuera de pantalla (frames.js pone .off). El dibujo quieto ya es el marco completo. */
+
+/* ---------- Caja ---------- */
+.pf-frame { position: relative; }
+.pf-frame > .sc-dot { z-index: 2; }
+.fr-art { position: absolute; inset: -12.5%; z-index: 1; pointer-events: none; contain: layout style; }
+.fr-art > .fr { display: block; width: 100%; height: 100%; overflow: visible; }
+/* Cabeza redonda con marco para vistas previas (tienda, premios del Pase) */
+.fr-prev { position: relative; display: inline-block; flex-shrink: 0; }
+.fr-prev > img, .fr-prev > .sc-head { display: block; width: 100%; height: 100%; border-radius: 50%; image-rendering: pixelated; background: var(--surface-3); }
+
+/* ---------- Movimientos (se usan por clase dentro del SVG; --t es la duracion y --d el desfase) ---------- */
+.fr .spin, .fr .sway { transform-box: view-box; transform-origin: 50px 50px; }
+.fr .tw, .fr .bob, .fr .fall, .fr .rise, .fr .drift, .fr .flk, .fr .burst, .fr .coin, .fr .beat, .fr .eq, .fr .cspin, .fr .glitchbar { transform-box: fill-box; transform-origin: 50% 50%; }
+.fr .breathe, .fr .ripple { transform-box: view-box; transform-origin: 50px 50px; }
+
+.fr .spin { animation: fr-rot var(--t, 12s) linear var(--d, 0s) infinite; }
+.fr .spin.rev { animation-direction: reverse; }
+.fr .cspin { animation: fr-rot var(--t, 12s) linear var(--d, 0s) infinite reverse; }
+@keyframes fr-rot { to { transform: rotate(360deg); } }
+
+.fr .sway { animation: fr-sway var(--t, 7s) ease-in-out var(--d, 0s) infinite alternate; }
+@keyframes fr-sway { from { transform: rotate(calc(var(--ang, 2.5) * -1deg)); } to { transform: rotate(calc(var(--ang, 2.5) * 1deg)); } }
+
+.fr .tw { animation: fr-tw var(--t, 2.6s) ease-in-out var(--d, 0s) infinite; }
+@keyframes fr-tw { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: var(--lo, 0.25); transform: scale(var(--sc, 0.55)); } }
+
+.fr .pulse { animation: fr-pulse var(--t, 3s) ease-in-out var(--d, 0s) infinite; }
+@keyframes fr-pulse { 0%, 100% { opacity: 1; } 50% { opacity: var(--lo, 0.55); } }
+
+.fr .breathe { animation: fr-breathe var(--t, 4s) ease-in-out var(--d, 0s) infinite; }
+@keyframes fr-breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.72; transform: scale(1.035); } }
+
+.fr .bob { animation: fr-bob var(--t, 2.6s) ease-in-out var(--d, 0s) infinite; }
+@keyframes fr-bob { 0%, 100% { transform: translateY(-1.1px); } 50% { transform: translateY(1.1px); } }
+
+.fr .fall { animation: fr-fall var(--t, 5.5s) ease-in var(--d, 0s) infinite; }
+@keyframes fr-fall { 0% { opacity: 0; transform: translate(0, -2px) rotate(0); } 18% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx, 3px), var(--dy, 9px)) rotate(var(--rot, 150deg)); } }
+
+.fr .rise { animation: fr-rise var(--t, 3s) ease-out var(--d, 0s) infinite; }
+@keyframes fr-rise { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx, 1.5px), -9px); } }
+
+.fr .drift { animation: fr-drift var(--t, 8s) ease-in-out var(--d, 0s) infinite; }
+@keyframes fr-drift { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(2px, -2px); } 50% { transform: translate(-1.5px, -3px); } 75% { transform: translate(-2.5px, 1px); } }
+
+.fr .ripple { animation: fr-ripple var(--t, 3.2s) ease-out var(--d, 0s) infinite; }
+@keyframes fr-ripple { 0% { opacity: 0.9; transform: scale(0.97); } 100% { opacity: 0; transform: scale(1.14); } }
+
+.fr .dash { animation: fr-dash var(--t, 3s) linear var(--d, 0s) infinite; }
+@keyframes fr-dash { to { stroke-dashoffset: var(--len, -16); } }
+
+.fr .blink { animation: fr-blink var(--t, 1.6s) step-end var(--d, 0s) infinite; }
+@keyframes fr-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.1; } }
+
+/* ---------- Movimientos de un solo estilo ---------- */
+.fr .flk { transform-origin: 50% 100%; animation: fr-flk var(--t, 1.2s) ease-in-out var(--d, 0s) infinite alternate; }
+@keyframes fr-flk { 0% { transform: scale(1, 1) skewX(0deg); } 50% { transform: scale(0.9, 1.1) skewX(3deg); } 100% { transform: scale(1.06, 0.92) skewX(-3deg); } }
+
+.fr .flash { animation: fr-flash var(--t, 3.6s) linear var(--d, 0s) infinite; }
+@keyframes fr-flash { 0%, 52% { opacity: 0; } 54% { opacity: 1; } 58% { opacity: 0.2; } 62% { opacity: 1; } 78%, 100% { opacity: 0; } }
+
+.fr .burst { animation: fr-burst var(--t, 3.2s) ease-out var(--d, 0s) infinite; }
+@keyframes fr-burst { 0% { opacity: 0; transform: scale(0.15); } 14% { opacity: 1; } 55% { opacity: 1; transform: scale(1.1); } 85%, 100% { opacity: 0; transform: scale(1.22); } }
+
+.fr .coin { animation: fr-coin var(--t, 2.4s) ease-in-out var(--d, 0s) infinite; }
+@keyframes fr-coin { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.12); } }
+
+.fr .beat { animation: fr-beat var(--t, 1.8s) ease-in-out var(--d, 0s) infinite; }
+@keyframes fr-beat { 0%, 60%, 100% { transform: scale(1); } 12% { transform: scale(1.25); } 28% { transform: scale(1.02); } 42% { transform: scale(1.14); } }
+
+.fr .eq { transform-origin: 50% 100%; animation: fr-eq var(--t, 1.2s) ease-in-out var(--d, 0s) infinite alternate; }
+@keyframes fr-eq { from { transform: scaleY(0.32); } to { transform: scaleY(1); } }
+
+.fr .chase { animation: fr-chase var(--t, 1.2s) ease-in-out var(--d, 0s) infinite; }
+@keyframes fr-chase { 0%, 100% { opacity: 1; } 55% { opacity: 0.22; } }
+
+.fr .bulb { animation: fr-bulb var(--t, 1.8s) ease-in-out var(--d, 0s) infinite; }
+@keyframes fr-bulb { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.fr .glitch { animation: fr-glitch var(--t, 3.4s) steps(1, end) var(--d, 0s) infinite; }
+@keyframes fr-glitch {
+  0%, 100% { transform: translate(0, 0); } 9% { transform: translate(-1.4px, 0); } 11% { transform: translate(1.6px, 0); } 13% { transform: translate(0, 0); }
+  52% { transform: translate(1.8px, -0.4px); } 54% { transform: translate(-1.6px, 0.4px); } 57% { transform: translate(0, 0); }
+}
+.fr .glitchbar { animation: fr-glitchbar var(--t, 3.1s) steps(1, end) var(--d, 0s) infinite; }
+@keyframes fr-glitchbar { 0%, 68% { opacity: 0; } 70% { opacity: 1; transform: translateX(-2px); } 74% { opacity: 0.4; transform: translateX(2px); } 78%, 100% { opacity: 0; } }
+
+.fr .flap { transform-box: view-box; transform-origin: 50px 50px; --ang: 2.2; animation: fr-sway var(--t, 4s) ease-in-out var(--d, 0s) infinite alternate; }
+
+/* ---------- Un bloque por estilo: afina los movimientos que usa ---------- */
+/* Cosmicos */
+.fr-nebula { --lo: 0.2; --sc: 0.5; }
+.fr-comet { --lo: 0.3; }
+.fr-rings { --lo: 0.4; }
+.fr-eclipse { --lo: 0.1; --sc: 0.7; }
+.fr-constellation { --lo: 0.15; --sc: 0.45; }
+/* Naturaleza */
+.fr-leaves { --ang: 2.2; }
+.fr-vines { --ang: 1.6; --lo: 0.6; --sc: 0.85; }
+.fr-blossom { --dx: 4px; --dy: 10px; --rot: 200deg; }
+.fr-dandelion { --lo: 0.5; }
+.fr-firefly { --lo: 0.35; }
+/* Elementos */
+.fr-tide { --lo: 0.5; }
+.fr-gale { --lo: 0.2; }
+.fr-frost { --lo: 0.3; --sc: 0.6; }
+.fr-flame { --dx: 2px; }
+.fr-storm { --len: -11; }
+/* Gemas */
+.fr-ruby { --lo: 0.2; --sc: 0.5; }
+.fr-sapphire { --lo: 0.3; --sc: 0.5; }
+.fr-prism { --lo: 0.3; }
+.fr-opal { --lo: 0.5; }
+/* Retro y pixel */
+.fr-bits { --lo: 0.1; }
+.fr-coins { --lo: 0.1; }
+.fr-arcade { --lo: 0.2; }
+.fr-glitch { --lo: 0.2; }
+/* Neon y tecnologia */
+.fr-equalizer { --lo: 0.4; }
+.fr-radar { --lo: 0.1; }
+.fr-synth { --lo: 0.65; --sc: 0.6; }
+.fr-circuit { --len: -16; }
+.fr-hologram { --lo: 0.7; }
+/* Estacionales */
+.fr-cupid { --lo: 0.3; }
+.fr-spooky { --lo: 0.3; }
+.fr-garland { --lo: 0.3; }
+.fr-fireworks { --lo: 0.3; }
+/* Fantasia */
+.fr-runes { --lo: 0.55; }
+.fr-dragon { --dx: 3px; }
+.fr-phoenix { --ang: 2.8; --dx: 2.5px; }
+.fr-wings { --ang: 2.4; --lo: 0.3; }
+/* Venus Pass */
+.fr-pass1 { --lo: 0.4; }
+.fr-pass2 { --lo: 0.4; }
+.fr-pass3 { --lo: 0.35; }
+.fr-pass4 { --lo: 0.3; }
+.fr-pass5 { --lo: 0.3; }
+.fr-pass6 { --lo: 0.3; }
+.fr-pass7 { --lo: 0.3; }
+.fr-pass8 { --lo: 0.25; --sc: 0.5; }
+
+/* ---------- Pausa, movimiento reducido y modo liviano ---------- */
+.fr-art.off .fr, .fr-art.off .fr * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .fr, .fr * { animation: none !important; }
+}
+body.reduce-motion .fr, body.reduce-motion .fr *,
+html[data-ui-lite] .fr, html[data-ui-lite] .fr * { animation: none !important; }
+
+/* ---------- Rareza (punto de color y etiqueta): los mismos colores en la tienda, el editor y el Pase ---------- */
+.fr-rar, .fr-rarity { --rar: #9aa3b2; }
+.fr-rar.r-common, .fr-rarity.r-common { --rar: #9aa3b2; }
+.fr-rar.r-rare, .fr-rarity.r-rare { --rar: #4aa3ff; }
+.fr-rar.r-epic, .fr-rarity.r-epic { --rar: #b05cff; }
+.fr-rar.r-legendary, .fr-rarity.r-legendary { --rar: #ffb300; }
+.fr-rar.r-mythic, .fr-rarity.r-mythic { --rar: #ff4f8b; }
+.fr-rar { width: 8px; height: 8px; border-radius: 50%; background: var(--rar); box-shadow: 0 0 0 2px color-mix(in srgb, var(--rar) 28%, transparent); flex-shrink: 0; }
+.fr-rarity { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.02em; color: var(--rar); }
+.fr-rarity::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--rar); }

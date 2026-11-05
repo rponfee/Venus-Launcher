@@ -93,3 +93,31 @@ export function sizeOf(rect, area) {
   if (!area?.width || !area?.height) return { w: 0, h: 0 };
   return { w: clamp01(rect.width / area.width), h: clamp01(rect.height / area.height) };
 }
+
+// Posiciones que la pagina acaba de mandar y todavia no volvieron en un layout. Se conservan un momento: si no, el layout
+// que llega por un guardado anterior pisa una flecha apretada hace un instante y el widget salta para atras.
+// moves: Map id -> { pos: { anchor, x?, y? }, at } (se limpia solo lo vencido).
+export function mergeLocalMoves(widgets, moves, now, ttl = 1200) {
+  const out = widgets || {};
+  for (const [id, m] of moves) {
+    if (!(now - m.at <= ttl)) moves.delete(id);
+    else if (out[id]) Object.assign(out[id], m.pos);
+  }
+  return out;
+}
+
+// Cuanto achicar todo lo anclado para que entre en el area de juego: content es lo que ocupa (en pixeles, sin achicar) y
+// area lo que hay. 1 = entra; nunca menos de min (si no, no se lee nada). Sin medidas validas, 1.
+export function fitFactor(content, area, min = 0.55) {
+  const ratio = (need, have) => (need > 0 && have > 0 && need > have ? have / need : 1);
+  const f = Math.min(ratio(content?.height, area?.height), ratio(content?.width, area?.width));
+  return Math.max(min, Math.round(f * 100) / 100);
+}
+
+// Un paso de teclado sobre un valor con rango (tamano u opacidad): 1,0 + 0,1 = 1,1; no se pasa de min ni de max y queda en
+// multiplos de step (nada de 1,0999999).
+export function stepValue(value, delta, min, max, step = 0.05) {
+  const v = Number.isFinite(Number(value)) ? Number(value) : min;
+  const snapped = Number((Math.round((v + delta) / step) * step).toFixed(4));
+  return Math.min(max, Math.max(min, snapped));
+}

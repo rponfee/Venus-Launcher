@@ -34,7 +34,12 @@ export function roomView(container, { onTab } = {}) {
   const codeText = h('span', { class: 'vc-code-text' });
   // El nombre accesible es el codigo; el title dice que hace el boton
   const codeBtn = h('button', { class: 'vc-code', type: 'button', title: t('voice.copyCode') }, icon('hash'), codeText, icon('copy'));
-  codeBtn.addEventListener('click', () => voice.room && copyText(voice.room.code, t('voice.codeCopied')));
+  codeBtn.addEventListener('click', () => {
+    const room = voice.room;
+    if (!room) return;
+    if (room.emergency && room.backupCode) copyText(room.backupCode, t('voice.backupCodeCopied'));
+    else copyText(room.code, t('voice.codeCopied'));
+  });
   const countEl = h('span', { class: 'vc-head-count' });
   const badgesEl = h('span', { class: 'vc-head-badges' });
   const inviteBtn = h('button', { class: 'btn sm vc-invite-btn', type: 'button', title: t('voice.invite'), 'aria-label': t('voice.invite') }, icon('userPlus'), h('span', { class: 'vc-btn-label' }, t('voice.invite')));
@@ -116,16 +121,28 @@ export function roomView(container, { onTab } = {}) {
     const n = room.members.length;
     countEl.textContent = t('voice.membersOf', { count: n, max: room.maxMembers });
     const reconnecting = room.status !== 'connected';
-    statusEl.className = `pill ${reconnecting ? 'warn' : 'good'}`;
-    mount(statusEl, h('span', { class: ['status-dot', reconnecting ? 'starting' : 'online'], 'aria-hidden': 'true' }), t(reconnecting ? 'voice.statusReconnecting' : 'voice.statusConnected'));
+    codeBtn.title = t(room.emergency && room.backupCode ? 'voice.copyBackupCode' : 'voice.copyCode');
+    // Servidor caido: la llamada sigue y la coordinacion pasa al respaldo. Una sala de emergencia siempre va por ahi.
+    const onBackup = room.backup && !room.emergency;
+    if (onBackup) {
+      const state = room.backupState === 'on' ? 'on' : room.canBackup === false ? 'none' : 'connecting';
+      statusEl.className = `pill ${state === 'on' ? 'accent' : 'warn'}`;
+      statusEl.title = t(state === 'none' ? 'voice.backupPillNoKeyHint' : 'voice.backupPillHint');
+      mount(statusEl, icon(state === 'on' ? 'shield' : 'cloud'), t({ on: 'voice.statusBackup', none: 'voice.statusNoBackup', connecting: 'voice.statusBackupConnecting' }[state]));
+    } else {
+      statusEl.className = `pill ${reconnecting ? 'warn' : 'good'}`;
+      statusEl.removeAttribute('title');
+      mount(statusEl, h('span', { class: ['status-dot', reconnecting ? 'starting' : 'online'], 'aria-hidden': 'true' }), t(reconnecting ? 'voice.statusReconnecting' : 'voice.statusConnected'));
+    }
     // Con alguien de la sala se corta o se esta reconectando (la recuperacion es automatica: esto solo avisa)
     const unstable = room.members.some((m) => !m.self && (m.quality === 'bad' || ['reconnecting', 'failed'].includes(m.connection)));
     mount(
       badgesEl,
       unstable ? h('span', { class: 'badge warn', title: t('voice.netBadHint') }, icon('alert'), t('voice.netBadBadge')) : null,
+      room.emergency ? h('span', { class: 'badge warn', title: t('voice.emergencyBadgeHint') }, icon('shield'), t('voice.emergencyBadge')) : null,
       room.locked ? h('span', { class: 'badge warn' }, icon('lock'), t('voice.lockedBadge')) : null,
       room.hasPassword ? h('span', { class: 'badge' }, icon('key'), t('voice.passwordBadge')) : null,
-      room.isPrivate ? h('span', { class: 'badge' }, icon('eyeOff'), t('voice.privateBadge')) : h('span', { class: 'badge accent' }, icon('users'), t('voice.friendsBadge')),
+      room.emergency ? null : room.isPrivate ? h('span', { class: 'badge' }, icon('eyeOff'), t('voice.privateBadge')) : h('span', { class: 'badge accent' }, icon('users'), t('voice.friendsBadge')),
       room.demo ? h('span', { class: 'badge' }, t('voice.demoBadge')) : null,
     );
     hostBtn.classList.toggle('hidden', !room.isOwner);
@@ -215,7 +232,7 @@ export function roomView(container, { onTab } = {}) {
     const pingBucket = m.ping === null ? 'n' : m.ping < 90 ? 'g' : m.ping < 200 ? 'w' : 'b';
     // Las barras muestran lo peor entre el ping y la calidad medida (perdida de paquetes, jitter)
     const bucket = m.quality === 'bad' ? 'b' : m.quality === 'fair' && pingBucket !== 'b' ? 'w' : pingBucket;
-    const key = [m.name, m.avatar, m.isOwner, m.muted, m.deafened, m.ptt, m.sharing, m.connection, bucket, m.quality, m.quality === 'bad' ? m.lossPct : '', m.relay, m.localMute, m.volume].join('|');
+    const key = [m.name, m.avatar, m.isOwner, m.muted, m.deafened, m.ptt, m.sharing, m.connection, bucket, m.quality, m.quality === 'bad' ? m.lossPct : '', m.relay, m.localMute, m.volume, m.unverified, voice.hasTurn].join('|');
     if (key === tile.key) return;
     tile.key = key;
     if (m.avatar !== tile.avatar) {
@@ -238,6 +255,7 @@ export function roomView(container, { onTab } = {}) {
       m.ptt ? h('span', { class: 'vc-flag ptt', title: t('voice.flagPtt') }, t('voice.pttShort')) : null,
       m.localMute ? flag('volumeX', t('voice.flagLocalMuted'), 'warn') : null,
       m.sharing ? flag('screenShare', t('voice.flagSharing'), 'accent') : null,
+      m.unverified && !m.self ? h('span', { class: 'vc-flag unverified', role: 'img', title: t('voice.unverifiedHint'), 'aria-label': `${t('voice.unverifiedFlag')}. ${t('voice.unverifiedHint')}` }, icon('shield'), t('voice.unverifiedFlag')) : null,
       !m.self && m.volume !== 1 && !m.localMute ? h('span', { class: 'vc-flag vol', title: t('voice.volume') }, `${Math.round(m.volume * 100)}%`) : null,
     );
     // Calidad de la conexion directa
@@ -251,7 +269,7 @@ export function roomView(container, { onTab } = {}) {
       if (m.quality === 'bad') connLabel = m.lossPct ? t('voice.connLoss', { status: connLabel, loss: m.lossPct }) : t('voice.connUnstable', { status: connLabel });
     } else if (m.connection === 'failed') {
       connCls += ' q-fail';
-      connLabel = t('voice.connFailed');
+      connLabel = t(voice.hasTurn ? 'voice.connFailedRelay' : 'voice.connFailedNoRelay');
     } else {
       connCls += ' q-wait';
       connLabel = t(m.connection === 'connecting' ? 'voice.connConnecting' : 'voice.connReconnecting');
@@ -368,7 +386,7 @@ export function roomView(container, { onTab } = {}) {
       h('div', { class: 'vc-pop-field' }, h('div', { class: 'vc-pop-label' }, t('voice.volume'), val), range, h('div', { class: 'vc-pop-scale' }, h('span', {}, '0%'), h('span', {}, '100%'), h('span', {}, '200%'))),
       h('label', { class: 'vc-pop-toggle' }, h('span', { class: 'vc-pop-toggle-text' }, t('voice.localMute'), h('span', { class: 'vc-pop-sub' }, t('voice.localMuteHint'))), switchEl(m.localMute, (v) => voice.setLocalMute(m.userId, v), t('voice.localMute'))),
     ];
-    if (room.isOwner) {
+    if (room.isOwner && !m.unverified) {
       items.push(
         h('div', { class: 'vc-pop-sep', role: 'separator' }),
         h('div', { class: 'vc-pop-section' }, icon('crown'), t('voice.hostActions')),
@@ -548,6 +566,23 @@ export function roomView(container, { onTab } = {}) {
     };
     draw();
     const inviteText = t('voice.inviteText', { name: room.name, code: room.code });
+    const backupBox = room.backupCode
+      ? h(
+          'div',
+          { class: 'vc-invite-code-box vc-backup-box' },
+          h('div', { class: 'vc-invite-code-main' }, h('div', { class: 'label' }, t('voice.backupCodeLabel')), h('div', { class: 'vc-backup-code priv' }, room.backupCode)),
+          h('div', { class: 'vc-invite-code-actions' }, h('button', { class: 'btn sm', type: 'button', onclick: () => copyText(room.backupCode, t('voice.backupCodeCopied')) }, icon('copy'), t('voice.copyBackupCode'))),
+        )
+      : null;
+    if (room.emergency) {
+      const em = modal({
+        title: t('voice.inviteTitle'),
+        size: 'vc-invite-modal',
+        body: h('div', { class: 'stack' }, backupBox, h('div', { class: 'vc-inline-hint' }, icon('shield'), h('span', {}, t('voice.emergencyInviteHint'))), h('div', { class: 'vc-inline-hint' }, icon('key'), h('span', {}, t('voice.backupCodeHint')))),
+        footer: [h('button', { class: 'btn ghost', onclick: () => em.close() }, t('voice.close'))],
+      });
+      return;
+    }
     const m = modal({
       title: t('voice.inviteTitle'),
       size: 'vc-invite-modal',
@@ -561,6 +596,7 @@ export function roomView(container, { onTab } = {}) {
           h('div', { class: 'vc-invite-code-actions' }, h('button', { class: 'btn sm', type: 'button', onclick: () => copyText(room.code, t('voice.codeCopied')) }, icon('copy'), t('voice.copyCode')), h('button', { class: 'btn sm', type: 'button', onclick: () => copyText(inviteText, t('voice.inviteCopied')) }, icon('share'), t('voice.copyInvite'))),
         ),
         room.hasPassword ? h('div', { class: 'vc-inline-hint' }, icon('key'), h('span', {}, t('voice.invitePasswordHint'))) : null,
+        backupBox,
         h('div', { class: 'label vc-invite-label' }, t('voice.inviteFriends')),
         box,
       ),

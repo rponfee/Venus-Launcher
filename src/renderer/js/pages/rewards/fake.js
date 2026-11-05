@@ -4,16 +4,14 @@
 // 'unavailable' (el servicio no responde). Nunca se carga en el uso normal del launcher.
 import { RewardsError } from './backend.js';
 import { dailyPoints, dailyStreak, utcDay } from './logic.js';
+import { FRAME_CATALOG } from '../../social/frames.js';
 
 const DAY = 24 * 3600 * 1000;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// El catálogo de 0021_puntos.sql
+// El catálogo: los marcos son los de social/frames.js (0040_marcos_originales.sql; los del Pase llevan source 'pass'); lo demás, de 0021
 const SHOP = [
-  ['frame_pixel', 'frame', 500, false, 10, { style: 'pixel' }],
-  ['frame_neon', 'frame', 800, false, 20, { style: 'neon' }],
-  ['frame_gold', 'frame', 1500, false, 30, { style: 'gold' }],
-  ['frame_venus', 'frame', 0, true, 40, { style: 'venus' }],
+  ...FRAME_CATALOG.map((f) => [f.id, 'frame', f.price, f.premiumOnly, f.sort, { style: f.style }, f.source]),
   ['effect_shimmer', 'name_effect', 1200, false, 50, { effect: 'shimmer' }],
   ['effect_rainbow', 'name_effect', 2000, false, 60, { effect: 'rainbow' }],
   ['effect_fire', 'name_effect', 2500, false, 70, { effect: 'fire' }],
@@ -25,13 +23,7 @@ const SHOP = [
   ['title_redstoner', 'title', 600, false, 130, { title: 'redstoner' }],
   ['title_legend', 'title', 3000, false, 140, { title: 'legend' }],
   ['title_supporter', 'title', 0, true, 150, { title: 'supporter' }],
-  // 0034_capas.sql
-  ['cape_dawn', 'cape', 1000, false, 400, { cape: 'dawn' }],
-  ['cape_nebula', 'cape', 1500, false, 401, { cape: 'nebula' }],
-  ['cape_aurora', 'cape', 1500, false, 402, { cape: 'aurora' }],
-  ['cape_magma', 'cape', 2500, false, 403, { cape: 'magma' }],
-  ['cape_orbit', 'cape', 0, true, 404, { cape: 'orbit' }],
-].map(([id, kind, price, premium_only, sort, data]) => ({ id, kind, price, premium_only, sort, data }));
+].map(([id, kind, price, premium_only, sort, data, source = 'shop']) => ({ id, kind, price, premium_only, sort, data, source }));
 
 const ACHIEVEMENTS = [
   ['first_launch', 50, 'client'], ['playtime_10h', 100, 'client'], ['playtime_100h', 400, 'client'], ['instances_5', 50, 'client'],
@@ -49,7 +41,7 @@ function seed(state, now) {
   const add = (delta, reason, ref, ago) => ledger.push({ delta, reason, ref, at: new Date(now - ago).toISOString() });
   const unlocked = new Map();
   if (!fresh) {
-    add(1000, 'admin', 'beta-tester', 40 * DAY);
+    add(3000, 'admin', 'beta-tester', 40 * DAY);
     for (const [id, ago] of [['first_launch', 30], ['instances_5', 21], ['first_friend', 18], ['playtime_10h', 12], ['first_screenshot', 9], ['first_referral', 6]]) {
       const a = ACHIEVEMENTS.find((x) => x.id === id);
       unlocked.set(id, now - ago * DAY);
@@ -57,8 +49,11 @@ function seed(state, now) {
     }
     add(500, 'referral', 'aaaaaaaa-0000-4000-8000-000000000001', 6 * DAY + 3600e3);
     add(500, 'referral', 'aaaaaaaa-0000-4000-8000-000000000002', 2 * DAY);
-    add(-800, 'shop', 'frame_neon', 5 * DAY);
+    add(-500, 'shop', 'frame_nebula', 5 * DAY);
+    add(-400, 'shop', 'frame_leaves', 4.5 * DAY);
     add(-300, 'shop', 'title_explorer', 4 * DAY);
+    // Reintegro de un marco anterior a la 4.6 (0040): el historial lo muestra como "Reintegro"
+    add(1500, 'shop', 'refund:frame_gold', 3 * DAY);
     // Racha de 4 días que termina ayer (demo: el de hoy está para reclamar) u hoy (premium)
     for (let d = premium ? 3 : 4; d >= 1; d--) {
       const day = utcDay(now - d * DAY);
@@ -78,9 +73,8 @@ function seed(state, now) {
     mult,
     ledger,
     unlocked,
-    items: new Set(fresh ? [] : ['frame_neon', 'title_explorer']),
-    equipped: fresh ? {} : premium ? { frame: 'frame_venus', title: 'title_supporter', badgeStyle: 'badge_gold' } : { frame: 'frame_neon', title: 'title_explorer' },
-    cape: premium ? 'cape_orbit' : null,
+    items: new Set(fresh ? [] : ['frame_nebula', 'frame_leaves', 'title_explorer']),
+    equipped: fresh ? {} : premium ? { frame: 'frame_wings', title: 'title_supporter', badgeStyle: 'badge_gold' } : { frame: 'frame_nebula', title: 'title_explorer' },
     referralCode: fresh ? null : 'VP-7K2QXM',
     referredBy: state === 'demo' ? { username: 'TomiCraft', rewarded: false } : null,
     canClaimReferral: fresh,
@@ -117,10 +111,10 @@ export function createFakeBackend(state = 'demo') {
   const rpcs = {
     points_me: me,
     achievements_me: () => ({
-      unlocked: Object.fromEntries(['playtime_1', 'playtime_5', 'playtime_10h', 'sessions_5', 'first_launch', 'streak_3', 'blocks_100', 'blocks_1000', 'diamond_1', 'diamond_10', 'mobs_10', 'mobs_100', 'dragon_1', 'first_friend', 'night_owl', 'instances_1', 'instances_3'].map((id) => [id, '2026-10-30T12:00:00Z'])),
-      rarity: { playtime_1: 92, playtime_25: 41, diamond_50: 12, dragon_1: 4, dragon_5: 0.8 },
+      unlocked: Object.fromEntries(['playtime_1', 'playtime_5', 'playtime_10h', 'sessions_5', 'first_launch', 'streak_3', 'days_5', 'mods_1', 'mods_10', 'mods_50', 'shaders_1', 'packs_1', 'first_friend', 'night_owl', 'instances_1', 'instances_3', 'earned_100', 'earned_500'].map((id) => [id, '2026-10-30T12:00:00Z'])),
+      rarity: { playtime_1: 92, playtime_25: 41, mods_50: 12, streak_3: 38, night_owl: 4, earned_500: 0.8 },
       totalUsers: 1200,
-      metrics: { friends: 3, messages: 42, memberDays: 12, pointsEarned: 860, missions: 4, items: 2, achievements: 17, dailies: 9 },
+      metrics: { friends: 3, messages: 42, memberDays: 12, pointsEarned: 860, pointsSpent: 1100, reviews: 0, missions: 4, items: 2, achievements: 18, dailies: 9 },
       clientToday: 0,
       clientCap: 40,
     }),
@@ -137,25 +131,6 @@ export function createFakeBackend(state = 'demo') {
     },
     mission_claim: () => ({ points: 25, bonus: 0, balance: balance() }),
     venus_is_premium: () => s.premium,
-    cape_mine() {
-      if (!s.cape) return null;
-      const it = SHOP.find((x) => x.id === s.cape);
-      return { item: it.id, cape: it.data.cape, active: s.items.has(it.id) || (it.premium_only && s.premium) };
-    },
-    cape_equip({ p_item: id } = {}) {
-      if (id === null || id === undefined) {
-        s.cape = null;
-        return { ok: true, item: null };
-      }
-      const it = SHOP.find((x) => x.id === id && x.kind === 'cape');
-      if (!it) fail('bad_item');
-      if (!s.items.has(id)) {
-        if (!it.premium_only) fail('not_owned', id);
-        if (!s.premium) fail('premium_required');
-      }
-      s.cape = id;
-      return { ok: true, item: id };
-    },
     points_daily_claim() {
       const today = utcDay(Date.now());
       if (s.ledger.some((r) => r.reason === 'daily' && r.ref === today)) return { points: 0, already: true, balance: balance() };

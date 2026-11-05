@@ -1,4 +1,4 @@
-// Punto de entrada para `node --test "src/renderer/js/features/datatools/test/"` (como pages/tools/test/index.js).
+// Punto de entrada para `node --test "src/renderer/js/features/datatools/test/"` (como features/playcare/test/index.js).
 import { readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';

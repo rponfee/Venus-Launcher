@@ -1,7 +1,5 @@
 package com.venuslauncher.badge;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -13,18 +11,13 @@ import net.minecraft.util.Identifier;
 
 /**
  * Insignia de Venus en Fabric y Quilt: el planeta de Venus Launcher (un carácter de la fuente venusbadge:badge) antes del
- * nombre de los jugadores que la activaron en el launcher, sobre la cabeza y en la lista de jugadores (Tab). También da la
- * textura de las capas de Venus y los FPS que lee el launcher.
+ * nombre de los jugadores que la activaron en el launcher, sobre la cabeza y en la lista de jugadores (Tab). También da los FPS
+ * que lee el launcher.
  * El resto de la lógica, común a todos los loaders, está en {@link BadgeCore}.
  */
 public final class VenusBadge implements ClientModInitializer {
 	// tryParse se llama igual en 1.20.1 y 1.21.1 (Identifier.of todavía no existe en 1.20.1).
 	private static final Style ICON_STYLE = Style.EMPTY.withFont(Identifier.tryParse(BadgeCore.MOD_ID + ":badge")).withColor(0xFFFFFF);
-	private static final Map<String, Identifier> CAPES = new HashMap<>();
-
-	static {
-		for (String id : Capes.IDS) CAPES.put(id, Identifier.tryParse(BadgeCore.MOD_ID + ":" + Capes.texturePath(id)));
-	}
 
 	@Override
 	public void onInitializeClient() {
@@ -47,12 +40,6 @@ public final class VenusBadge implements ClientModInitializer {
 
 	private static boolean hasIcon(Text text) {
 		return !text.getSiblings().isEmpty() && ICON_STYLE.getFont().equals(text.getSiblings().get(0).getStyle().getFont());
-	}
-
-	/** La textura de la capa de Venus del jugador, o null si no tiene (o todavía no se sabe). Sale de la memoria: va en cada cuadro. */
-	public static Identifier capeTexture(UUID id, boolean own) {
-		String cape = BadgeCore.cape(id, own);
-		return cape == null ? null : CAPES.get(cape);
 	}
 
 	// Corre en el hilo de PerfReporter: solo lee campos del cliente.

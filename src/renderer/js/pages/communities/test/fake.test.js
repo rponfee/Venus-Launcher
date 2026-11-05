@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createFakeGroups } from '../../../features/clans/fake.js';
+import { createFakeGroups } from '../../../features/communities/fake.js';
 const backend=(scenario='demo')=>createFakeGroups(scenario,{signedIn:()=>true,userId:()=> 'fake-me',onAuth:()=>()=>{}});
 test('CRUD configurado es atómico: categorías, cuatro tipos, reordenar y borrar sin perder otros canales', async () => {
   const b=backend(),c=await b.rpc('community_create',{p_name:'Pruebas locales',p_description:'',p_public:true});
@@ -39,6 +39,6 @@ test('miembro no administra, no publica anuncios ni ve canales privados', async 
   assert.equal(c.myRole,'member');assert.ok(c.channels.every(ch=>!ch.isPrivate));
   await assert.rejects(b.rpc('community_send',{p_channel:'a-1',p_body:'hola'}),{code:'forbidden'});
   await assert.rejects(b.rpc('community_channel_create',{p_community:'m-1',p_kind:'text',p_name:'nuevo'}),{code:'forbidden'});
-  await assert.rejects(b.rpc('community_messages_page',{p_channel:'s-1'}),{code:'not_found'});
+  await assert.rejects(b.rpc('community_messages_page',{p_channel:'s-1'}),{code:'forbidden'});
   assert.equal((await b.rpc('community_send',{p_channel:'t-1',p_body:'Hola'})).body,'Hola');
 });

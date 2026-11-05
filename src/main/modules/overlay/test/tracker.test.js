@@ -68,3 +68,37 @@ test('stop() cierra el ayudante sin avisar el fin', () => {
   assert.equal(spawnFn.calls[0].child.killed, true);
   assert.equal(ends, 0);
 });
+
+test('despues de stop() ya no llega ninguna linea que habia quedado en el buffer', () => {
+  const spawnFn = fakeSpawn();
+  const updates = [];
+  const h = track({ pid: 77, platform: 'win32', spawnFn, onUpdate: (i) => updates.push(i) });
+  const { child } = spawnFn.calls[0];
+  child.stdout.emit('data', '{"ok":0}\n');
+  h.stop();
+  child.stdout.emit('data', '{"ok":1,"hwnd":5,"fgw":5,"x":0,"y":0,"w":800,"h":600,"min":0,"vis":1,"full":0,"dpi":96}\n');
+  assert.equal(updates.length, 1, 'la linea que llego despues de stop() no cuenta');
+});
+
+test('fin: con su ultima linea es normal; sin ella (error, cierre inesperado) se avisa distinto para que el modulo lo reabra', async () => {
+  const run = (fn) => {
+    const spawnFn = fakeSpawn();
+    const ends = [];
+    const h = track({ pid: 77, platform: 'win32', spawnFn, onUpdate: () => {}, onEnd: (e) => ends.push(e) });
+    fn(spawnFn.calls[0].child, h);
+    return ends;
+  };
+  assert.deepEqual(run((c) => { c.stdout.emit('data', '{"ok":0}\n{"end":1}\n'); c.emit('close', 0); }), [{ clean: true, lines: 1 }]);
+  assert.deepEqual(run((c) => c.emit('error', new Error('ENOENT'))), [{ clean: false, lines: 0 }]);
+  assert.deepEqual(run((c) => { c.stdout.emit('data', '{"ok":0}\n'); c.emit('close', 1); }), [{ clean: false, lines: 1 }]);
+  // 'exit' puede llegar antes que la ultima linea: no se toma por una caida
+  const spawnFn = fakeSpawn();
+  const ends = [];
+  track({ pid: 77, platform: 'win32', spawnFn, onEnd: (e) => ends.push(e) });
+  const { child } = spawnFn.calls[0];
+  child.emit('exit', 0);
+  child.stdout.emit('data', '{"end":1}\n');
+  assert.deepEqual(ends, [{ clean: true, lines: 0 }]);
+  await new Promise((r) => setTimeout(r, 350));
+  assert.equal(ends.length, 1);
+});

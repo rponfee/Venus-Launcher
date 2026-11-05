@@ -10,7 +10,6 @@ export default {
   errStart: "Fernsteuerung konnte nicht aktiviert werden",
   errAction: "Das hat nicht funktioniert",
   qrAlt: "QR-Code zum Öffnen der Fernsteuerung auf deinem Handy",
-  qrHidden: "Im Streamer-Modus bleibt der QR-Code verborgen: Kopiere den Link oder deaktiviere den Modus kurz.",
   stepQr: "Scanne den QR-Code mit der Handykamera.",
   stepCode: "Oder öffne diese Adresse im Handybrowser und gib den Code ein:",
   copyLink: "Link mit Code kopieren",

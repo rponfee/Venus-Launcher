@@ -34,7 +34,7 @@ test('borrar raíz durante carga no revive respuestas y bloquea formulario', asy
   await flush();
   assert.equal(ui.input.disabled,true);assert.equal(ui.send.disabled,true);
   assert.equal(ui.nodes.filter(n=>n.dataset.id==='late'&&n.isConnected).length,0);
-  assert.equal(ui.nodes.find(n=>n.hasClass('cm-chat-heading')&&n.isConnected).children[0].children[0],'clans.cmTopicDeleted');
+  assert.equal(ui.nodes.find(n=>n.hasClass('cm-chat-heading')&&n.isConnected).children[0].children[0],'communities.cmTopicDeleted');
   ui.chat.destroy();
 });
 test('thread_deleted al consultar deshabilita responder aunque Realtime esté activo', async () => {
@@ -46,7 +46,7 @@ test('thread_deleted al consultar deshabilita responder aunque Realtime esté ac
   ui.chat.destroy();
 });
 test('anuncios y publicación staff no permiten enviar desde Enter a un miembro', async () => {
-  const ui=setup({topic:null,channel:{...ch,kind:'announcement',postingRole:'staff'}});
+  const ui=setup({topic:null,channel:{...ch,kind:'announcement',postingRole:'staff',canPost:false}});
   await flush();
   ui.input.value='hola';await ui.input.fire('keydown',{key:'Enter'});
   assert.equal(ui.calls.filter(call=>call.name==='community_send').length,0);

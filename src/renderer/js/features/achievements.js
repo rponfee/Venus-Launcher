@@ -1,5 +1,6 @@
 // Logros de Venus (3.0): comprueba con los datos de esta PC cuales se cumplieron, los reclama de a varios y pide al
 // servidor que compruebe los suyos. No hay tope de cantidad: el catalogo esta en pages/achievements/catalog.js.
+// Desde la 4.6 son solo de Venus: no se leen las estadisticas de los mundos ni los logros de Minecraft.
 //   startup()                 lo llama app.js: revisa un rato despues de abrir, al cerrar el juego y cada 30 minutos
 //   checkAchievements({ force? }) -> revisa ahora (la pagina de Logros lo usa al abrirse)
 //   loadAchievements({ force? }) -> estado compartido; getAchievements(); onAchievements(fn) -> off
@@ -39,16 +40,16 @@ export function onAchievements(fn) {
   return () => listeners.delete(fn);
 }
 
-// Medidas locales: cada fuente es opcional (la pagina dibuja lo que haya)
+// Medidas locales: cada fuente es opcional (la pagina dibuja lo que haya). Solo datos del launcher: sesiones que mide
+// el propio launcher, archivos de las instancias y la galeria de capturas. Nada de las estadisticas de los mundos.
 async function collectMetrics() {
-  const [report, ingame, local, media] = await Promise.all([
+  const [report, local, media] = await Promise.all([
     api.invoke('stats:report').catch(() => null),
-    api.invoke('stats:ingame', {}).catch(() => null),
     api.invoke('achievements:localCounts').catch(() => null),
     api.invoke('worlds:media', {}).catch(() => null),
   ]);
   const counts = { ...(local || {}), screenshots: media?.counts?.screenshots, clips: media?.counts?.clips };
-  const metrics = metricsFrom({ report, ingame, local: counts, instances: store.instances?.length ?? null, localServers: store.servers?.length ?? null });
+  const metrics = metricsFrom({ report, local: counts, instances: store.instances?.length ?? null, localServers: store.servers?.length ?? null });
   state.metrics = metrics;
   return metrics;
 }

@@ -112,6 +112,24 @@
   line-height: 1.5;
   max-width: 68ch;
 }
+.ovp-keys-help {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+}
+.ovp-keys-help svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-top: 2px;
+}
+.ovp-w-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px dashed var(--border);
+}
 .ovp-tip {
   display: flex;
   gap: var(--sp-2);

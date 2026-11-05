@@ -1,4 +1,4 @@
-// Main process texts for the clip studio: montage and timelapse errors, OBS and clip uploads.
+// Main process texts for the clip studio: montage and timelapse errors and clip uploads.
 module.exports = {
   errInstance: 'The instance was not found.',
   errJob: 'The video being made is gone. Start again.',
@@ -12,13 +12,6 @@ module.exports = {
   errTrash: 'Could not move it to the trash.',
   timelapseFull: 'Timelapse: it reached the space limit and stopped saving. Generate the video or delete images.',
   timelapseNoDisk: 'Timelapse: the disk is almost full, so it stopped saving.',
-
-  errObsRefused: 'Could not connect. Check that OBS is open with its WebSocket server on, and the address and port.',
-  errObsTimeout: "OBS didn't answer in time.",
-  errObsAuth: 'OBS rejected the password.',
-  errObsNeedPassword: 'OBS is asking for a password.',
-  errObsVersion: "This version of obs-websocket isn't compatible: it needs version 5 or newer (OBS 28 and up).",
-  errObsHost: 'It can only connect to this PC or the local network.',
 
   errUploadSession: 'Access to your account expired. Connect it again.',
   errUploadQuota: 'The upload limit was reached for now. Try again later.',

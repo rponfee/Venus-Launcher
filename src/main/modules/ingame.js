@@ -3,8 +3,8 @@
 // texto del menu y frases) y, con el juego abierto, pone el icono y el titulo de Venus en la ventana.
 // Ajustes (settings.ingame): pack (paquete de recursos) y window (icono y titulo), los dos prendidos por defecto, y
 // badge (insignia de Venus junto al nombre, ver ingame/badge.js e ingame/badgemod.js), apagada hasta que el jugador
-// la activa: instala el mod "Venus Badge" en las instancias compatibles y anota la cuenta de Minecraft. capes (ver las
-// capas de Venus de otros jugadores, prendido por defecto) va a la configuracion del mod.
+// la activa: instala el mod "Venus Badge" en las instancias compatibles y anota la cuenta de Minecraft.
+// (La 4.6 retiro las capas de Venus: el ajuste capes ya no existe y el mod 1.3.0 no las dibuja. Ver docs/wip/capas-retiro-46.md.)
 // Las partidas de prueba (busqueda del culpable de un crash) no se tocan.
 const fs = require('fs');
 const path = require('path');
@@ -16,12 +16,12 @@ const windowBrand = require('./ingame/window');
 const badgeMod = require('./ingame/badgemod');
 const { createBadgeClient } = require('./ingame/badge');
 
-const DEFAULTS = { pack: true, window: true, badge: false, capes: true };
+const DEFAULTS = { pack: true, window: true, badge: false };
 const SESSION_KEY = 'ui:sb.venus-auth';
 
 function prefs(settings) {
   const s = settings?.ingame && typeof settings.ingame === 'object' ? settings.ingame : {};
-  return { pack: s.pack !== false && DEFAULTS.pack, window: s.window !== false && DEFAULTS.window, badge: s.badge === true, capes: s.capes !== false && DEFAULTS.capes };
+  return { pack: s.pack !== false && DEFAULTS.pack, window: s.window !== false && DEFAULTS.window, badge: s.badge === true };
 }
 
 function splashes() {
@@ -161,7 +161,6 @@ function register({ app, handle, send, onQuit }) {
         mcVersion: instance.mcVersion,
         enabled: badge,
         server: cfg.configured ? { url: cfg.url, anonKey: cfg.anonKey } : null,
-        showCapes: prefs(settings).capes,
       });
     } catch (err) {
       console.warn('[ingame] mod de la insignia', err);

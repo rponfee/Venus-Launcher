@@ -34,7 +34,6 @@ const NAV = [
   { id: 'servers', icon: 'server' },
   { id: 'voice', icon: 'mic' },
   { id: 'messages', icon: 'message' },
-  { id: 'compete', icon: 'trophy' },
   { id: 'communities', icon: 'users' },
   { group: 'tools' },
   { id: 'updates', icon: 'download' },
@@ -67,7 +66,6 @@ const PAGES = {
   server: () => import('./pages/server.js'),
   voice: () => import('./pages/voice.js'),
   messages: () => import('./pages/messages.js'),
-  compete: () => import('./pages/compete.js'),
   communities: () => import('./pages/communities.js'),
   settings: () => import('./pages/settings.js'),
   updates: () => import('./pages/updates.js'),
@@ -114,7 +112,7 @@ const STARTUP = [
   () => import('./features/pass.js'), // Venus Pass: XP por jugar, subida de nivel y punto en el menú
   () => import('./features/decor.js'), // partículas, sonidos, cursores y pantalla de inicio
   () => import('./features/navcustom.js'), // menú lateral a gusto, packs de íconos y modo mini
-  () => import('./features/tools.js'), // caja de herramientas, descansos, resumen al cerrar y aviso de versión nueva
+  () => import('./features/playcare.js'), // descansos, resumen al cerrar, aviso de versión nueva y descargas programadas
   () => import('./social/gifts.js').then((m) => ({ startup: m.startGiftWatch })), // aviso cuando un amigo te regala puntos o un cosmético
   // Venus 3.2 a 3.4
   () => import('./features/instancelook.js'), // fondo, color y música por instancia, y links venus://
@@ -122,11 +120,10 @@ const STARTUP = [
   () => import('./features/overlaytools.js'), // recetas, wiki, contadores y asistente en el overlay
   () => import('./features/serverremote.js'), // control remoto y avisos por Discord del servidor local
   () => import('./features/socialplus.js'), // stickers, traducción de mensajes, soundboard y efectos de voz
-  () => import('./features/compete.js'), // rankings entre amigos, desafíos y calendario de eventos
-  () => import('./features/clipstudio.js'), // montaje, timelapse, subir clips, OBS y galería pública
-  () => import('./features/capes.js'), // capas de Venus en el juego
+  () => import('./features/clipstudio.js'), // montaje, timelapse, subir clips y galería pública
   () => import('./features/achievements.js'), // logros de Venus: revisa los cumplidos cada tanto (no hay tope de cantidad)
   () => import('./features/missions.js'), // misiones diarias y semanales: cuenta el progreso
+  () => import('./features/profilemusic.js'), // música de perfil (Openverse): tarjeta de Ajustes > Privacidad con su interruptor
 ];
 
 let cleanup = null;

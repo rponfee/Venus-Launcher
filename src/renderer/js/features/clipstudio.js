@@ -1,5 +1,5 @@
-// Estudio de clips: montaje, timelapse, subir clips, OBS y galeria publica. Lo que corre con el launcher abierto aunque no se
-// abra la pagina de Clips: tarjetas de Ajustes (OBS, timelapse y cuentas para subir).
+// Estudio de clips: montaje, timelapse, subir clips y galeria publica. Lo que corre con el launcher abierto aunque no se
+// abra la pagina de Clips: tarjetas de Ajustes (timelapse y cuentas para subir).
 // Las ventanas estan en features/clipstudio/ y la galeria en pages/clips/gallery.js. Guia: docs/implementacion/clips.md.
 //   startup()
 import { h, icon, ensureCss, mount, fail, ok, confirmDialog, setBusy } from '../ui.js';
@@ -8,7 +8,6 @@ import { t, loadNs } from '../i18n.js';
 import { navigate } from '../app.js';
 import { registerSettingsCard } from '../settings-cards.js';
 import './clipstudio/icons.js';
-import { obsPanel } from './clipstudio/obs-panel.js';
 
 const C = (key, vars) => t(`clipstudio.${key}`, vars);
 let started = false;
@@ -106,6 +105,5 @@ export function startup() {
     });
   slot(() => timelapseCard());
   slot((ctx) => uploadCard(ctx));
-  slot(() => obsPanel());
 
 }

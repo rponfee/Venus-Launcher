@@ -1,11 +1,12 @@
-// "Compartir mi perfil": la tarjeta del perfil dibujada en un <canvas> de 1200 x 630 (banner, fade, cabeza con
+// "Compartir mi perfil": la tarjeta del perfil dibujada en un <canvas> de 1200 x 630 (banner, fade, cabeza redonda con
 // el marco, nombre con su estilo, titulo, insignia, descripcion, estadisticas publicadas y servidores favoritos).
-// Usa las mismas descripciones de banners y colores que la tarjeta en pantalla (model.js), asi la imagen coincide.
+// Usa los mismos colores que la tarjeta en pantalla (model.js), asi la imagen coincide. Desde la 4.6 el avatar es siempre un circulo.
 import { t, locale } from '../../i18n.js';
 import { LOADERS } from '../../ui.js';
 import { parseBanner } from '../../social/cosmetics.js';
 import { FONT_STACKS, titleLabel } from '../../social/profile-style.js';
-import { presetLayers, linearPoints, effectiveEffect, frameOf, titleOf, badgeStyleOf, readableColor, fadeSurface, DEFAULT_NAME_COLOR } from './model.js';
+import { linearPoints, effectiveEffect, frameOf, titleOf, badgeStyleOf, readableColor, fadeSurface, DEFAULT_NAME_COLOR } from './model.js';
+import { FRAME_SCALE } from '../../social/frames.js';
 
 export const SHARE_SIZE = { width: 1200, height: 630 };
 const BANNER_H = 214;
@@ -54,47 +55,6 @@ function wrapLines(g, text, maxW, maxLines) {
   return lines.map((l) => fitText(g, l, maxW));
 }
 
-// Capas de un banner prediseñado (lin, rad, poly, dots) en el rectangulo pedido
-function drawLayers(g, layers, x, y, w, h) {
-  g.save();
-  g.beginPath();
-  g.rect(x, y, w, h);
-  g.clip();
-  for (const l of layers) {
-    if (l.t === 'lin') {
-      const [x0, y0, x1, y1] = linearPoints(l.a, w, h);
-      const grad = g.createLinearGradient(x + x0, y + y0, x + x1, y + y1);
-      l.s.forEach(([c, p]) => grad.addColorStop(p, c));
-      g.fillStyle = grad;
-      g.fillRect(x, y, w, h);
-    } else if (l.t === 'rad') {
-      g.save();
-      g.translate(x + l.x * w, y + l.y * h);
-      g.scale(l.rx * w, l.ry * h);
-      const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1);
-      l.s.forEach(([c, p]) => grad.addColorStop(p, c));
-      g.fillStyle = grad;
-      g.fillRect(-1 / l.rx, -1 / l.ry, 2 / l.rx, 2 / l.ry);
-      g.restore();
-    } else if (l.t === 'poly') {
-      g.beginPath();
-      l.p.forEach(([px, py], i) => (i ? g.lineTo(x + px * w, y + py * h) : g.moveTo(x + px * w, y + py * h)));
-      g.closePath();
-      g.fillStyle = l.c;
-      g.fill();
-    } else if (l.t === 'dots') {
-      const k = h / 112;
-      for (const d of l.d) {
-        g.beginPath();
-        g.arc(x + d.x * w, y + d.y * h, Math.max(0.6, d.r * k), 0, Math.PI * 2);
-        g.fillStyle = d.c;
-        g.fill();
-      }
-    }
-  }
-  g.restore();
-}
-
 function drawCover(g, img, x, y, w, h) {
   const k = Math.max(w / img.naturalWidth, h / img.naturalHeight);
   const sw = w / k;
@@ -103,12 +63,8 @@ function drawCover(g, img, x, y, w, h) {
 }
 
 function drawBanner(g, n, images, w) {
-  if ((n.banner.kind === 'image' || n.banner.kind === 'animated' || n.banner.kind === 'klipy') && images.banner) {
+  if ((n.banner.kind === 'image' || n.banner.kind === 'klipy') && images.banner) {
     drawCover(g, images.banner, 0, 0, w, BANNER_H);
-    return;
-  }
-  if (n.banner.kind === 'preset' && presetLayers(n.banner.preset)) {
-    drawLayers(g, presetLayers(n.banner.preset), 0, 0, w, BANNER_H);
     return;
   }
   const { colors } = parseBanner(n.legacyBanner || 'venus');
@@ -119,51 +75,6 @@ function drawBanner(g, n, images, w) {
   g.fillStyle = grad;
   g.fillRect(0, 0, w, BANNER_H);
 }
-
-const FRAME_PAINT = {
-  pixel: (g, x, y, s) => {
-    const n = Math.round(s / 12);
-    const c = s / n;
-    for (let k = 0; k < n; k++) {
-      g.fillStyle = k % 2 ? '#f29a2e' : '#ffe6b0';
-      g.fillRect(x + k * c, y, c, 12);
-      g.fillRect(x + k * c, y + s - 12, c, 12);
-      g.fillRect(x, y + k * c, 12, c);
-      g.fillRect(x + s - 12, y + k * c, 12, c);
-    }
-  },
-  neon: (g, x, y, s) => {
-    const grad = g.createLinearGradient(x, y, x + s, y + s);
-    grad.addColorStop(0, '#7df9ff');
-    grad.addColorStop(0.5, '#b06bff');
-    grad.addColorStop(1, '#ff4fd8');
-    g.save();
-    g.shadowColor = 'rgba(125,249,255,0.7)';
-    g.shadowBlur = 24;
-    roundRect(g, x, y, s, s, 30);
-    g.fillStyle = grad;
-    g.fill();
-    g.restore();
-  },
-  gold: (g, x, y, s) => {
-    const grad = g.createLinearGradient(x, y, x + s, y + s);
-    [['#fff1a8', 0], ['#f0b429', 0.3], ['#8a5a12', 0.55], ['#ffd27a', 0.78], ['#b07a1c', 1]].forEach(([c, p]) => grad.addColorStop(p, c));
-    roundRect(g, x, y, s, s, 30);
-    g.fillStyle = grad;
-    g.fill();
-  },
-  venus: (g, x, y, s) => {
-    const grad = g.createConicGradient ? g.createConicGradient(0, x + s / 2, y + s / 2) : g.createLinearGradient(x, y, x + s, y + s);
-    ['#ffc562', '#f29a2e', '#c2457a', '#7e5bd6', '#5aa7f0', '#ffc562'].forEach((c, i, a) => grad.addColorStop(i / (a.length - 1), c));
-    g.save();
-    g.shadowColor = 'rgba(242,154,46,0.6)';
-    g.shadowBlur = 22;
-    roundRect(g, x, y, s, s, 30);
-    g.fillStyle = grad;
-    g.fill();
-    g.restore();
-  },
-};
 
 // Relleno del nombre segun el efecto (el mismo criterio que la hoja de estilos, sin animacion)
 function nameFill(g, n, fx, x, y, w, size) {
@@ -226,7 +137,8 @@ function nf(n, max = 0) {
 }
 
 /**
- * Dibuja la tarjeta. n: perfil normalizado. images: { head, banner, logo } (imagenes ya cargadas o null).
+ * Dibuja la tarjeta. n: perfil normalizado. images: { head, banner, logo, frame } (imagenes ya cargadas o null; frame es el
+ * marco quieto de social/frames.js, que se dibuja de 125 % de la cabeza).
  */
 export function drawShareCard(canvas, n, { images = {}, palette = {} } = {}) {
   const { width: W, height: H } = SHARE_SIZE;
@@ -263,15 +175,12 @@ export function drawShareCard(canvas, n, { images = {}, palette = {} } = {}) {
   const HS = 150;
   const hx = 64;
   const hy = BANNER_H - 92;
-  const frame = frameOf(n);
-  if (frame && FRAME_PAINT[frame]) FRAME_PAINT[frame](g, hx - 10, hy - 10, HS + 20);
-  else {
-    roundRect(g, hx - 8, hy - 8, HS + 16, HS + 16, 30);
-    g.fillStyle = n.theme ? '#1d1410' : pal.surface2;
-    g.fill();
-  }
+  // Anillo de fondo (como el de la tarjeta); el marco va encima de la cabeza
+  roundRect(g, hx - 8, hy - 8, HS + 16, HS + 16, (HS + 16) / 2);
+  g.fillStyle = n.theme ? '#1d1410' : pal.surface2;
+  g.fill();
   g.save();
-  roundRect(g, hx, hy, HS, HS, frame === 'pixel' ? 4 : 22);
+  roundRect(g, hx, hy, HS, HS, HS / 2);
   g.clip();
   g.fillStyle = '#2c2017';
   g.fillRect(hx, hy, HS, HS);
@@ -281,6 +190,10 @@ export function drawShareCard(canvas, n, { images = {}, palette = {} } = {}) {
     g.imageSmoothingEnabled = true;
   } else if (images.logo) g.drawImage(images.logo, hx + 24, hy + 24, HS - 48, HS - 48);
   g.restore();
+  if (images.frame && frameOf(n)) {
+    const fs = HS * FRAME_SCALE;
+    g.drawImage(images.frame, hx - (fs - HS) / 2, hy - (fs - HS) / 2, fs, fs);
+  }
 
   // Insignia Premium / estilo de insignia, a la derecha de la cabeza
   let cx = hx + HS + 28;

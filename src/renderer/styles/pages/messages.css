@@ -166,7 +166,7 @@
 
 .msg-older { display: flex; justify-content: center; padding: var(--sp-2) 0 2px; }
 .msg-start { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-5) 0 var(--sp-2); text-align: center; }
-.msg-start .sc-head { border-radius: var(--radius); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.msg-start .sc-head { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
 .msg-start-title { font-family: var(--pixel); font-size: var(--fs-xl); color: var(--cream); line-height: 1.2; }
 .msg-start-text { font-size: var(--fs-sm); color: var(--muted); max-width: 52ch; }
 
@@ -183,7 +183,7 @@
 .msg-row.first { margin-top: var(--sp-3); }
 .msg-row.mine { flex-direction: row-reverse; }
 .msg-gutter { width: 28px; flex-shrink: 0; }
-.msg-gutter .sc-head { width: 28px; height: 28px; border-radius: var(--radius-s); }
+.msg-gutter .sc-head { width: 28px; height: 28px; }
 .msg-col { display: flex; flex-direction: column; min-width: 0; max-width: min(76%, 580px); }
 .mine .msg-col { align-items: flex-end; }
 .theirs .msg-col { align-items: flex-start; }
@@ -313,7 +313,7 @@
 .msg-wave { font-size: 16px; line-height: 1; }
 .msg-chat-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2); padding: var(--sp-7); text-align: center; }
 .msg-chat-empty > .empty { padding: 0; }
-.msg-empty-head { border-radius: var(--radius); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); margin-bottom: var(--sp-2); }
+.msg-empty-head { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); margin-bottom: var(--sp-2); }
 .msg-empty-icon { width: 56px; height: 56px; border-radius: var(--radius-l); display: grid; place-items: center; margin-bottom: var(--sp-2); background: var(--surface-3); border: 1px solid var(--border-2); color: var(--accent-hi); }
 .msg-empty-icon svg { width: 26px; height: 26px; }
 .msg-empty-title { font-weight: 700; font-size: var(--fs-lg); line-height: 1.3; color: var(--text); text-wrap: balance; }
@@ -488,8 +488,9 @@
    Componentes sociales (.sc-) - tambien en modales
    ============================================================ */
 .sc-headwrap { position: relative; display: inline-block; flex-shrink: 0; }
-.sc-head { display: block; border-radius: var(--radius-s); background: var(--surface-3); image-rendering: pixelated; object-fit: cover; }
-.sc-headwrap .sc-dot { position: absolute; right: -3px; bottom: -3px; }
+.sc-head { display: block; border-radius: 50%; background: var(--surface-3); image-rendering: pixelated; object-fit: cover; }
+/* Con el avatar redondo, el punto de presencia va sobre el borde del circulo (a las cuatro y media) */
+.sc-headwrap .sc-dot { position: absolute; right: -1px; bottom: -1px; }
 
 /* Punto de presencia: ademas del color cambia la forma (ausente = luna, no molestar = barra, desconectado = aro) */
 .sc-dot { --c: var(--faint); position: relative; display: inline-block; width: 13px; height: 13px; flex-shrink: 0; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2.5px var(--ring, var(--surface-2)); }
@@ -522,8 +523,8 @@
 .sc-card-banner { position: relative; height: 92px; }
 .sc-card-body { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); padding: 0 var(--sp-4) var(--sp-4); }
 .sc-card-head { margin-top: -40px; }
-.sc-card-head .sc-head { border-radius: var(--radius-l); box-shadow: 0 0 0 4px var(--surface); }
-.sc-card-head .sc-dot { right: -4px; bottom: -4px; width: 20px; height: 20px; box-shadow: 0 0 0 4px var(--surface); }
+.sc-card-head .sc-head { box-shadow: 0 0 0 4px var(--surface); }
+.sc-card-head .sc-dot { right: 1px; bottom: 1px; width: 20px; height: 20px; box-shadow: 0 0 0 4px var(--surface); }
 .sc-card-head .sc-dot.busy::after { height: 3px; top: calc(50% - 1.5px); }
 .sc-card-head .sc-dot.offline, .sc-card-head .sc-dot.invisible { box-shadow: 0 0 0 4px var(--surface), inset 0 0 0 4px var(--faint); }
 .sc-card-names { min-width: 0; max-width: 100%; }

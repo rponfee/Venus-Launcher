@@ -89,6 +89,7 @@
   color: var(--cream); padding-left: calc(var(--sp-3) + 0.32em);
 }
 .vc-code-input::placeholder { font-family: var(--pixel); font-size: 26px; letter-spacing: 0.32em; color: var(--faint); opacity: 1; }
+.vc-code-input.long { font-family: var(--mono); font-size: var(--fs-sm); letter-spacing: 0.04em; padding-left: var(--sp-3); }
 .vc-preview { flex: 1; min-height: 80px; display: flex; flex-direction: column; justify-content: center; gap: var(--sp-2); min-width: 0; }
 .vc-preview-hint {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-3); padding: var(--sp-4); text-align: center;
@@ -698,6 +699,25 @@ body.reduce-motion .vc-entry-tag, body.reduce-motion .vc-tile.vc-entry::after { 
   .vc-cta-ring.r2, .vc-wave.w2, .vc-wave.w3 { display: none; }
   .vc-live-dot, .vc-tab-live, .vc-conn.q-wait i, .vc-keybtn.recording, .vc-recording, .vc-spin svg { animation: none; }
 }
+/* ---------- Respaldo (4.6): servidor caido, salas guardadas y sala de emergencia ---------- */
+.vc-head .pill.accent { background: var(--accent-wash); color: var(--accent-hi); border-color: color-mix(in srgb, var(--accent-hi) 30%, transparent); }
+.vc-flag.unverified { gap: var(--sp-1); padding: 0 var(--sp-2); background: var(--warn-wash); color: var(--warn-text); }
+.vc-backup-box { flex-direction: column; align-items: stretch; }
+.vc-backup-code { font-family: var(--mono); font-size: var(--fs-md); letter-spacing: 0.05em; line-height: 1.5; color: var(--cream); word-break: break-all; user-select: text; }
+.vc-down { margin-bottom: var(--sp-4); }
+.vc-saved-hint { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
+.vc-emergency { margin-top: var(--sp-5); padding: 0; }
+.vc-emergency > summary { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); cursor: pointer; list-style: none; flex-wrap: wrap; border-radius: var(--radius); }
+.vc-emergency > summary::-webkit-details-marker { display: none; }
+.vc-emergency > summary:focus-visible { outline: 2px solid var(--focus-ring-color); outline-offset: 2px; }
+.vc-emergency > summary svg { width: 18px; height: 18px; color: var(--accent-hi); flex-shrink: 0; }
+.vc-em-title { font-weight: 700; }
+.vc-em-sub { flex: 1 1 240px; min-width: 0; color: var(--muted); font-size: var(--fs-sm); }
+.vc-em-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-4); padding: 0 var(--sp-4) var(--sp-4); }
+.vc-em-col { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.vc-backup-input { font-family: var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
+@media (max-width: 760px) { .vc-em-body { grid-template-columns: minmax(0, 1fr); } }
+
 body.reduce-motion .vc-cta-ring, body.reduce-motion .vc-wave { animation: none; transform: scale(0.86); opacity: 0.45; }
 body.reduce-motion .vc-cta-ring.r2, body.reduce-motion .vc-wave.w2, body.reduce-motion .vc-wave.w3 { display: none; }
 body.reduce-motion .vc-live-dot, body.reduce-motion .vc-tab-live, body.reduce-motion .vc-conn.q-wait i,

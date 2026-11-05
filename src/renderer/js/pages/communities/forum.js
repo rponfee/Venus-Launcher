@@ -1,12 +1,12 @@
 // Foro: temas paginados y respuestas reales. Cada hilo reutiliza el chat con las RPC específicas de foro.
 import { h, icon, mount, modal, emptyState, skeleton, fail, fmtAgo } from '../../ui.js';
 import { t } from '../../i18n.js';
-import { errText } from '../../features/clans/backend.js';
-import { validateMessage } from '../../features/clans/logic.js';
+import { errText } from '../../features/communities/backend.js';
+import { validateMessage } from '../../features/communities/logic.js';
 import { chatView } from './chat.js';
 import { canPostIn, waitSeconds, afterPost, validateTopicTitle, TOPIC_PAGE_SIZE, mergeMessages, channelIcon, personName, mergeChannelState } from './logic.js';
 
-const C = (key, vars) => t('clans.' + key, vars);
+const C = (key, vars) => t('communities.' + key, vars);
 export function forumView(host, { b, community, channel, people, onPerson }) {
   let topics = [], hasMore = false, loading = false, destroyed = false, live = false, request = 0;
   let thread = null, composer = null, denied = false;

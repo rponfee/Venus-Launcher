@@ -4,6 +4,8 @@ import { t } from '../i18n.js';
 import { navigate } from '../app.js';
 import { voice, normalizeCode, MAX_MEMBERS } from '../voice.js';
 import { personAvatar, errorBox, segmented, passwordField, fieldError, fieldId, joinWithPassword, maxOptions, openRoomEditor } from './ui-common.js';
+import { parseBackupCode } from './rescue.js';
+import { serverDownNotice, savedRoomsSection, emergencyCard } from './ui-backup.js';
 
 const REFRESH_MS = 20000;
 
@@ -17,6 +19,9 @@ export function lobbyView(container, { initialCode } = {}) {
   const recentBox = h('div', { class: 'vc-rooms' });
   const recentSection = h('div', { class: 'vc-section', hidden: true }, sectionTitle(t('voice.recentRooms')), recentBox);
   const setupBox = h('div', { class: 'vc-setup-box' });
+  const saved = savedRoomsSection(() => saved.refresh({ all: down }));
+  const emergency = emergencyCard();
+  let down = false; // el servidor no respondio la ultima vez
   const refreshBtn = h('button', { class: 'icon-btn sm', title: t('voice.refresh'), 'aria-label': t('voice.refresh') }, icon('refresh'));
   refreshBtn.addEventListener('click', () => load(false));
 
@@ -27,9 +32,11 @@ export function lobbyView(container, { initialCode } = {}) {
       { class: 'vc-lobby' },
       setupBox,
       h('div', { class: 'vc-lobby-top' }, create.el, join.el),
+      saved.el,
       h('div', { class: 'vc-section' }, sectionTitle(t('voice.friendsRooms'), refreshBtn), friendsBox),
       h('div', { class: 'vc-section' }, sectionTitle(t('voice.myRooms')), mineBox),
       recentSection,
+      emergency.el,
     ),
   );
 
@@ -41,14 +48,25 @@ export function lobbyView(container, { initialCode } = {}) {
     try {
       const data = await voice.listRooms();
       if (disposed) return;
+      down = false;
       mount(setupBox);
+      saved.refresh({ all: false });
       drawFriends(data);
       drawList(mineBox, data.mine, 'mine');
       drawList(recentBox, data.recent, 'recent');
       recentSection.hidden = !data.recent.length;
     } catch (err) {
       if (disposed) return;
-      if (err?.code === 'not_installed') {
+      if (err?.code === 'server_down') {
+        // Sin servidor: las salas guardadas y la de emergencia siguen sirviendo
+        down = true;
+        mount(setupBox, serverDownNotice());
+        saved.refresh({ all: true });
+        emergency.open(true);
+        mount(friendsBox, emptyLine('cloud', t('voice.unavailableShort')));
+        mount(mineBox);
+        recentSection.hidden = true;
+      } else if (err?.code === 'not_installed') {
         mount(setupBox, errorBox(err, () => load(false)));
         mount(friendsBox, emptyLine('clock', t('voice.unavailableShort')));
         mount(mineBox, emptyLine('clock', t('voice.unavailableShort')));
@@ -84,6 +102,7 @@ export function lobbyView(container, { initialCode } = {}) {
     mount(box, rooms.map((r) => roomItem(r, kind, () => load(false))));
   }
 
+  saved.refresh({ all: false });
   load(false);
   const timer = setInterval(() => {
     if (document.visibilityState === 'visible') load(true);
@@ -278,7 +297,7 @@ function createCard() {
 
 function joinCard(initialCode) {
   const ids = { code: fieldId('vc-join-code'), hint: fieldId('vc-join-hint'), pw: fieldId('vc-join-pw') };
-  const input = h('input', { class: 'input vc-code-input', id: ids.code, maxlength: 7, placeholder: 'ABC234', autocomplete: 'off', spellcheck: 'false', 'aria-describedby': ids.hint });
+  const input = h('input', { class: 'input vc-code-input', id: ids.code, maxlength: 90, placeholder: 'ABC234', autocomplete: 'off', spellcheck: 'false', 'aria-describedby': ids.hint });
   const preview = h('div', { class: 'vc-preview', id: ids.hint, 'aria-live': 'polite' });
   const pw = passwordField({ placeholder: t('voice.password'), label: t('voice.password'), id: ids.pw });
   const pwBox = h('div', { class: 'field', hidden: true }, h('label', { for: ids.pw }, t('voice.password')), pw.el);
@@ -287,9 +306,12 @@ function joinCard(initialCode) {
   let token = 0;
   let disposed = false;
 
+  // 6 letras y numeros; o un codigo de respaldo entero (30 o mas), que se deja pasar completo
   const sanitize = () => {
-    const raw = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    const all = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const raw = parseBackupCode(all) ? all : all.slice(0, 6);
     if (raw !== input.value) input.value = raw;
+    input.classList.toggle('long', raw.length > 6);
     return raw;
   };
 
@@ -343,6 +365,14 @@ function joinCard(initialCode) {
     info = null;
     token++;
     setReady(false);
+    if (parseBackupCode(code)) {
+      // Codigo de respaldo: no hay nada que buscar en el servidor; se entra directo
+      pwBox.hidden = true;
+      btn.disabled = false;
+      setReady(true);
+      mount(preview, h('div', { class: 'vc-preview-line' }, icon('shield'), h('span', {}, t('voice.backupCodeLabel'))));
+      return;
+    }
     const valid = Boolean(normalizeCode(code));
     btn.disabled = !valid;
     if (!valid) {
@@ -354,7 +384,8 @@ function joinCard(initialCode) {
   };
 
   const submit = async () => {
-    const code = normalizeCode(sanitize());
+    const raw = sanitize();
+    const code = parseBackupCode(raw) ? raw : normalizeCode(raw);
     if (!code || btn.classList.contains('loading')) return;
     const done = setBusy(btn);
     try {

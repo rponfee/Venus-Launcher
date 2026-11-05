@@ -173,12 +173,12 @@ Las reglas visuales completas (tokens, componentes, layout y checklist antes de 
 | 0028 | Preferencias sincronizadas por cuenta, lista de campos admitidos y marcas por clave | [Datos](implementacion/datos.md) |
 | 0029 | Reseñas, votos y denuncias de servidores destacados | [Servidores](implementacion/servidores.md) |
 | 0030 | Stickers propios y bucket público `stickers` | [Mensajes y voz](implementacion/mensajes-voz.md) |
-| 0031 | Rankings, desafíos y calendario; conserva el motivo contable `challenge` | [Competir](implementacion/competir.md) |
+| 0031 | Rankings, desafíos y calendario; conserva el motivo contable `challenge` | Competir (retirada en la 4.6) |
 | 0032 | Galería, me gusta y moderación sobre clips compartidos | [Clips](implementacion/clips.md) |
 | 0033 | Clanes, permiso `clan_prefs.share_playtime`, comunidades y canales | [Clanes y comunidades](implementacion/clanes-comunidades.md) |
 | 0034 | `cape_equip`, `cape_mine`, `badge_capes` y cosméticos de capa | [Capas](implementacion/capas.md) |
 | 0035 | Suscripciones push, bandeja móvil y persistencia de `media-share` | [App para celular](implementacion/app-celular.md) |
-| 0036 | Catálogo moderado, paquetes privados y lista de bloqueadas | [Extensiones](implementacion/extensiones.md) |
+| 0036 | Catálogo moderado, paquetes privados y lista de bloqueadas | Extensiones (retiradas en la 4.6) |
 
 Los contratos de las tablas enlazadas incluyen permisos, errores y cuotas. La prueba conjunta de las migraciones y la verificación real de Realtime siguen pendientes. Reemplazar `social_send_signal` debe conservar la persistencia de `media-share` incorporada en 0035; reemplazar `points_ledger_reason_check` debe conservar `challenge`. No agregar `net` a los esquemas expuestos de la API.
 
@@ -489,9 +489,9 @@ Todos se llaman con `api.invoke(canal, ...args)`; los eventos se escuchan con `a
 | `overlay:*`, `recipes:*`, `mapviewer:markers*` / `markerSave` / `markerDelete` | Paneles, recetas y marcadores; `overlay:assistantEvent` y evento `overlay:route` | [Overlay](implementacion/overlay.md) |
 | `serverremote:*`, `serverdiscord:*` | Control HTTP LAN y avisos opcionales por webhook | [Servidores](implementacion/servidores.md) |
 | Traducción y soundboard | Consentimiento, caché cifrada, importación y reproducción; efectos en la cadena de audio de voz | [Mensajes y voz](implementacion/mensajes-voz.md) |
-| `compete:collect`, `compete:commit`, `compete:reset` | Lectura local, confirmación de reportes aceptados y punto de partida | [Competir](implementacion/competir.md) |
+| `compete:collect`, `compete:commit`, `compete:reset` | Lectura local, confirmación de reportes aceptados y punto de partida | Competir (retirada en la 4.6) |
 | `clipstudio:*`, `clipupload:*`, `obs:*` | Trabajos de vídeo, conexión/cancelación OAuth y OBS | [Clips](implementacion/clips.md) |
-| `extensions:*` (retirados) | No se registran: el módulo principal está excluido del cargador | [Antecedente de Extensiones](implementacion/extensiones.md) |
+| `extensions:*` (retirados) | No se registran: el módulo principal está excluido del cargador | Extensiones (retiradas en la 4.6) |
 
 Comunidades, reseñas, galería y capas consumen RPC desde la interfaz; no crear un IPC paralelo para duplicar esas llamadas. Los tokens OAuth, la contraseña de OBS y el webhook de Discord no regresan al renderer.
 

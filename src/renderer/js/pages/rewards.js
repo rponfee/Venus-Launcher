@@ -1,21 +1,21 @@
 // Venus Points (#/rewards[/<shop, invite, history o premium>]): saldo, premio diario con racha,
 // tienda de cosméticos, invitaciones con código (y la verificación de la cuenta de Minecraft que las paga),
 // historial y Venus Premium. Reglas y RPC: supabase/migrations/0021_puntos.sql · guía: docs/venus-points.md.
-import { h, icon, mount, skeleton, emptyState, sectionTitle, setBusy, toast, ok, fail, confirmDialog, copyText, fmtDate, fmtAgo, fmtDuration, fmtTime, avatarImg } from '../ui.js';
+import { h, icon, mount, modal, skeleton, emptyState, sectionTitle, setBusy, toast, ok, fail, confirmDialog, copyText, fmtDate, fmtAgo, fmtDuration, fmtTime, avatarImg, selectEl } from '../ui.js';
 import { store, api } from '../store.js';
 import { t, has, locale } from '../i18n.js';
 import { navigate, openAccounts } from '../app.js';
 import { social } from '../social.js';
 import { backend } from './rewards/backend.js';
 import {
-  CAPE_SLOT, DOWNLOAD_URL, REFERRAL_POINTS, REFERRAL_DAYS, dailyInfo, equipPatch, formatDelta,
+  DOWNLOAD_URL, REFERRAL_POINTS, REFERRAL_DAYS, dailyInfo, equipPatch, formatDelta,
   formatPoints, historyEntry, normalizeReferralCode, shopView, utcDay,
 } from './rewards/logic.js';
 import { loadSummary, onSummary, getSummary, claimAchievement, sweepServerAchievements, achievementName, itemName } from '../features/rewards.js';
 import { perksPanel } from '../features/premium.js';
-import { capeArt, capesNotice } from '../features/capes.js';
-import { knownCapes } from '../features/capes/logic.js';
 import { pointsTicket } from '../features/cosmic-art.js';
+import { FRAME_CATEGORIES, FRAME_RARITIES, FRAME_PRICE_FILTERS, frameItem, frameSections, framePreview } from '../social/frames.js';
+import { registerItems } from '../features/profile-editor/model.js';
 
 const R = (key, vars) => t(`rewards.${key}`, vars);
 const TABS = [
@@ -28,7 +28,7 @@ const pts = (n) => formatPoints(n, locale());
 const cls = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
 const errText = (err) => (err?.code && has(`rewards.err_${err.code}`) ? R(`err_${err.code}`) : R('err_server'));
 
-// Estilos de perfil del agente D (social/profile-style.js); si todavía no existe, la tienda usa sus vistas propias.
+// Estilos de perfil (social/profile-style.js): el nombre con su estilo y el título. Los marcos los dibuja social/frames.js.
 let profileStylePromise = null;
 function profileStyle() {
   profileStylePromise ||= import('../social/profile-style.js')
@@ -56,8 +56,8 @@ function waysView() {
 }
 
 export default {
-  ns: ['rewards', 'premium', 'capes'],
-  css: ['pages/rewards', 'features/premium', 'features/capes', 'features/cosmic-art'],
+  ns: ['rewards', 'premium'],
+  css: ['pages/rewards', 'features/premium', 'features/frames', 'features/cosmic-art'],
   async render(root, params) {
     const b = await backend();
     if (!root.isConnected) return;
@@ -87,7 +87,7 @@ export default {
     }
 
     // ---------- Estado ----------
-    const st = { tab: TABS.some((x) => x.id === params[0]) ? params[0] : 'shop', items: null, itemsError: null, profile: null, cape: null, ps: null, stats: null, code: null, codeLoading: false };
+    const st = { tab: TABS.some((x) => x.id === params[0]) ? params[0] : 'shop', items: null, itemsError: null, profile: null, ps: null, stats: null, code: null, codeLoading: false, fq: { query: '', category: 'all', rarity: 'all', price: 'all' } };
     let viewCleanups = [];
     const refreshBtn = h('button', { type: 'button', class: 'icon-btn', title: t('common.refresh'), 'aria-label': t('common.refresh'), onclick: () => reload(refreshBtn) }, icon('refresh'));
     const hero = h('div', { class: 'rw-hero' });
@@ -206,28 +206,16 @@ export default {
       const fallbackName = st.profile?.displayName || st.profile?.username || acc?.name || 'Steve';
       return { ...(st.profile || {}), displayName: fallbackName, nameStyle: st.profile?.nameStyle || {}, equipped: st.profile?.equipped || {} };
     }
-    const myAvatar = () => {
+    // Tu cabeza (la cuenta de Minecraft elegida) para probar los marcos; siempre redonda (.sc-head)
+    const myAvatar = (size = 64) => {
       const acc = store.selectedAccount();
-      return avatarImg(acc?.type === 'msa' ? acc.uuid : acc?.name || 'MHF_Steve', 64, 'rw-avatar');
+      return avatarImg(acc?.type === 'msa' ? acc.uuid : acc?.name || 'MHF_Steve', size > 64 ? 128 : 64, 'sc-head');
     };
     const mcName = () => store.selectedAccount()?.name || 'Steve';
     const itemById = (id) => (st.items || []).find((it) => it.id === id) || null;
 
-    function frameEl(profile, frameId) {
-      const el = h('div', { class: 'rw-pv-avatar' }, myAvatar());
-      const item = frameId ? itemById(frameId) : null;
-      if (!item) return el;
-      if (st.ps?.applyFrame) {
-        try {
-          st.ps.applyFrame(el, { ...profile, equipped: { ...(profile.equipped || {}), frame: frameId } });
-          return el;
-        } catch (err) {
-          console.warn('[rewards] marco', err);
-        }
-      }
-      el.classList.add('rw-frame', `rw-frame-${cls(item.data?.style)}`);
-      return el;
-    }
+    // Cabeza circular con el marco puesto (frameId null: la cabeza sola)
+    const frameEl = (frameId, size = 64) => framePreview(frameId, myAvatar(size), size);
 
     function nameEl(profile, { size = 'md', title = false } = {}) {
       if (st.ps?.styledName) {
@@ -256,10 +244,9 @@ export default {
 
     function preview(item) {
       const profile = me();
-      if (item.kind === 'frame') return frameEl(profile, item.id);
+      if (item.kind === 'frame') return frameEl(item.id, 72);
       if (item.kind === 'name_effect') return nameEl({ ...profile, nameStyle: { ...profile.nameStyle, effect: item.data?.effect }, equipped: { ...profile.equipped, nameEffect: item.id } }, { size: 'md' });
       if (item.kind === 'badge_style') return badgePlate(item.data?.style);
-      if (item.kind === 'cape') return capeArt(item);
       return nameEl({ ...profile, equipped: { ...profile.equipped, title: item.id } }, { size: 'sm', title: true });
     }
 
@@ -267,50 +254,40 @@ export default {
       const d = data();
       const name = itemName(v.item.id);
       const yes = await confirmDialog(R('buyTitle', { name }), R('buyText', { price: pts(v.price), left: pts((Number(d?.balance) || 0) - v.price) }), { okText: R('buyOk') });
-      if (!yes || !alive) return;
+      if (!yes || !alive) return false;
       const release = setBusy(btn);
+      let done = false;
       try {
         await b.rpc('shop_buy', { p_item: v.item.id });
         ok(R('bought', { name }), R('boughtText'));
+        done = true;
       } catch (err) {
         fail(R('buyFailed'), errText(err));
       } finally {
         release();
         await loadSummary({ force: true });
       }
-    }
-
-    // Las capas no van en profiles.equipped: tienen su propia RPC (0034_capas.sql).
-    async function equipCape(v, itemId, btn) {
-      const release = setBusy(btn);
-      try {
-        const res = await b.rpc('cape_equip', { p_item: itemId });
-        st.cape = res?.item ?? null;
-        ok(itemId ? R('equipped', { name: itemName(itemId) }) : R('unequipped', { name: itemName(v.item.id) }));
-        if (alive && st.tab === 'shop') paintPanel();
-      } catch (err) {
-        fail(R('equipFailed'), errText(err));
-      } finally {
-        release();
-      }
+      return done;
     }
 
     async function equip(v, itemId, btn) {
-      if (v.slot === CAPE_SLOT) return equipCape(v, itemId, btn);
       const d = data();
       const patch = equipPatch(st.profile?.equipped || {}, v.slot, itemId, { items: st.items, owned: d?.items, premium: d?.premium });
       const release = setBusy(btn);
+      let done = false;
       try {
         const res = await b.rpc('profile_customize', { p_patch: { equipped: patch } });
         const equipped = res?.equipped && typeof res.equipped === 'object' ? res.equipped : Object.fromEntries(Object.entries(patch).filter(([, x]) => x));
         st.profile = { ...(st.profile || {}), equipped };
         ok(itemId ? R('equipped', { name: itemName(itemId) }) : R('unequipped', { name: itemName(v.item.id) }));
         if (alive && st.tab === 'shop') paintPanel();
+        done = true;
       } catch (err) {
         fail(R('equipFailed'), errText(err));
       } finally {
         release();
       }
+      return done;
     }
 
     function itemAction(v) {
@@ -323,17 +300,103 @@ export default {
       return h('button', { type: 'button', class: 'btn sm', 'aria-label': R('buyAria', { name, price: pts(v.price) }), onclick: (e) => buy(v, e.currentTarget) }, R('buy'));
     }
 
+    // Una tarjeta de la tienda (los marcos llevan rareza y una vista previa que se abre grande)
+    function itemCard(v) {
+      const fr = v.item.kind === 'frame' ? frameItem(v.item.id) : null;
+      const name = itemName(v.item.id);
+      const pv = preview(v.item);
+      return h(
+        'article',
+        { class: ['rw-item', `is-${v.state}`, fr && 'is-frame'] },
+        fr
+          ? h('button', { type: 'button', class: 'rw-item-preview rw-pv-btn', 'aria-label': R('framesPreview', { name }), title: R('framesPreview', { name }), onclick: () => openFramePreview(v) }, pv)
+          : h('div', { class: 'rw-item-preview' }, pv),
+        h(
+          'div',
+          { class: 'rw-item-body' },
+          h('h4', { class: 'rw-item-name' }, name),
+          fr ? h('span', { class: ['fr-rarity', `r-${fr.rarity}`] }, R(`rarity_${fr.rarity}`)) : null,
+          h('div', { class: 'rw-item-price' }, v.premiumOnly ? h('span', { class: 'badge accent' }, icon('crown'), R('premiumIncluded')) : [icon('vpoint'), h('span', { class: 'num' }, pts(v.price))]),
+          h('div', { class: 'rw-item-actions' }, itemAction(v)),
+        ),
+      );
+    }
+
+    // Vista previa grande de un marco: tu cabeza a 128, 64 y 32 px sobre fondo oscuro y claro, y comprar o equipar desde ahí
+    function openFramePreview(v) {
+      const id = v.item.id;
+      const fr = frameItem(id);
+      const name = itemName(id);
+      const stage = (cls) => h('div', { class: ['rw-stage', cls] }, [128, 64, 32].map((size) => h('div', { class: 'rw-stage-cell' }, frameEl(id, size), h('span', { class: 'rw-stage-size' }, `${size} px`))));
+      let dlg = null;
+      const run = (fn) => async (e) => {
+        if (await fn(e.currentTarget)) dlg?.close();
+      };
+      let primary;
+      if (v.state === 'equipped') primary = h('button', { type: 'button', class: 'btn ghost', onclick: run((btn) => equip(v, null, btn)) }, R('unequip'));
+      else if (v.state === 'owned') primary = h('button', { type: 'button', class: 'btn primary', onclick: run((btn) => equip(v, id, btn)) }, icon('check'), R('equip'));
+      else if (v.state === 'premium') primary = h('button', { type: 'button', class: 'btn', onclick: () => (dlg?.close(), show('premium', true)) }, icon('crown'), R('seePremium'));
+      else if (v.state === 'short') primary = h('button', { type: 'button', class: 'btn', disabled: true }, R('buy'));
+      else primary = h('button', { type: 'button', class: 'btn primary', onclick: run((btn) => buy(v, btn)) }, icon('vpoint'), R('buyFor', { price: pts(v.price) }));
+      dlg = modal({
+        title: name,
+        subtitle: fr ? R(`frames_cat_${fr.category}`) : null,
+        icon: 'sparkles',
+        body: h(
+          'div',
+          { class: 'rw-pv-modal' },
+          h('div', { class: 'rw-stages' }, stage('dark'), stage('light')),
+          h('div', { class: 'rw-pv-meta' }, fr ? h('span', { class: ['fr-rarity', `r-${fr.rarity}`] }, R(`rarity_${fr.rarity}`)) : null, v.premiumOnly ? h('span', { class: 'badge accent' }, icon('crown'), R('premiumIncluded')) : h('span', { class: 'rw-item-price' }, icon('vpoint'), h('span', { class: 'num' }, pts(v.price))), v.state === 'short' ? h('span', { class: 'rw-item-miss' }, R('shopMissing', { points: pts(v.missing) })) : null),
+          h('p', { class: 'rw-hint small' }, icon('info'), R('framesPreviewHint')),
+        ),
+        footer: [h('span', { class: 'spacer' }), h('button', { type: 'button', class: 'btn ghost', onclick: () => dlg?.close() }, t('common.close')), primary],
+      });
+    }
+
+    // Marcos: buscador, categorías, rareza y precio. La barra se arma una vez: escribir no le saca el foco al campo.
+    function framesBlock(views) {
+      const q = st.fq;
+      const grid = h('div', { class: 'rw-frames-grid' });
+      const count = h('span', { class: 'rw-frames-count', 'aria-live': 'polite' });
+      const chips = h('div', { class: 'chips rw-frame-chips', role: 'group', 'aria-label': R('frames_filter') });
+      const draw = () => {
+        const sections = frameSections(views, { ...q, nameOf: (id) => itemName(id) });
+        const total = sections.reduce((n, sec) => n + sec.items.length, 0);
+        count.textContent = R('framesCount', { count: total });
+        mount(
+          grid,
+          total
+            ? sections.map((sec) => h('section', { class: 'rw-frame-cat', 'aria-label': R(`frames_cat_${sec.category}`) }, h('h3', { class: 'rw-cat-title' }, R(`frames_cat_${sec.category}`), h('span', { class: 'rw-cat-count' }, sec.items.length)), h('div', { class: 'rw-shop' }, sec.items.map(itemCard))))
+            : emptyState('search', R('framesNone'), R('framesNoneText')),
+        );
+      };
+      const drawChips = () =>
+        mount(
+          chips,
+          ['all', ...FRAME_CATEGORIES].map((c) => h('button', { type: 'button', class: ['chip', q.category === c && 'active'], 'aria-pressed': String(q.category === c), onclick: () => ((q.category = c), drawChips(), draw()) }, R(`frames_cat_${c}`))),
+        );
+      const search = h('input', { class: 'input rw-frames-search', type: 'search', value: q.query, placeholder: R('frames_search'), 'aria-label': R('frames_search'), spellcheck: 'false', maxlength: 40 });
+      search.addEventListener('input', () => ((q.query = search.value), draw()));
+      const rarity = selectEl([{ value: 'all', label: R('rarity_all') }, ...FRAME_RARITIES.filter((r) => r !== 'mythic').map((r) => ({ value: r, label: R(`rarity_${r}`) }))], q.rarity, (v) => ((q.rarity = v), draw()));
+      rarity.setAttribute('aria-label', R('frames_rarity'));
+      const price = selectEl(FRAME_PRICE_FILTERS.map((p) => ({ value: p, label: R(`price_${p}`) })), q.price, (v) => ((q.price = v), draw()));
+      price.setAttribute('aria-label', R('frames_price'));
+      drawChips();
+      draw();
+      return h('div', { class: 'rw-frames' }, h('div', { class: 'rw-frames-bar' }, h('div', { class: 'input-icon rw-frames-find' }, icon('search'), search), rarity, price, count), chips, grid);
+    }
+
     function shopPanel(d) {
       if (st.itemsError) {
         return h('div', { class: 'notice bad', role: 'alert' }, icon('alert'), h('div', { class: 'spacer' }, R(st.itemsError === 'network' ? 'shopNetwork' : 'shopUnavailable')), h('button', { type: 'button', class: 'btn sm', onclick: () => loadShop().then(paintPanel) }, icon('refresh'), t('common.retry')));
       }
       if (!st.items) return skeleton('grid', { items: 6, min: 200 });
       const profile = me();
-      const groups = shopView(st.items, { owned: d.items, premium: d.premium, balance: d.balance, equipped: { ...profile.equipped, cape: st.cape } });
+      const groups = shopView(st.items, { owned: d.items, premium: d.premium, balance: d.balance, equipped: profile.equipped });
       const look = h(
         'section',
         { class: 'card rw-look', 'aria-labelledby': 'rw-look-title' },
-        frameEl(profile, profile.equipped.frame),
+        frameEl(profile.equipped.frame, 64),
         h('div', { class: 'rw-look-main' }, h('div', { class: 'rw-look-label', id: 'rw-look-title' }, R('lookTitle')), nameEl(profile, { size: 'lg', title: true }), badgePlate(currentBadgeStyle(d))),
         h('div', { class: 'rw-look-side' }, h('span', { class: 'rw-look-points' }, icon('vpoint'), h('span', { class: 'num' }, pts(d.balance))), h('span', { class: 'rw-look-hint' }, R('lookHint'))),
       );
@@ -344,25 +407,7 @@ export default {
         look,
         groups.map((g) => [
           sectionTitle(R(`kind_${g.kind}`)),
-          g.kind === 'cape' ? capesNotice(d, { onVerify: () => show('invite', true) }) : null,
-          h(
-            'div',
-            { class: 'rw-shop' },
-            g.items.map((v) =>
-              h(
-                'article',
-                { class: ['rw-item', `is-${v.state}`] },
-                h('div', { class: 'rw-item-preview' }, preview(v.item)),
-                h(
-                  'div',
-                  { class: 'rw-item-body' },
-                  h('h4', { class: 'rw-item-name' }, itemName(v.item.id)),
-                  h('div', { class: 'rw-item-price' }, v.premiumOnly ? h('span', { class: 'badge accent' }, icon('crown'), R('premiumIncluded')) : [icon('vpoint'), h('span', { class: 'num' }, pts(v.price))]),
-                  h('div', { class: 'rw-item-actions' }, itemAction(v)),
-                ),
-              ),
-            ),
-          ),
+          g.kind === 'frame' ? framesBlock(g.items) : h('div', { class: 'rw-shop' }, g.items.map(itemCard)),
         ]),
       );
     }
@@ -523,7 +568,7 @@ export default {
         return Number.isFinite(day) ? R('hist_daily', { date: fmtDate(day, { day: 'numeric', month: 'long', timeZone: 'UTC' }) }) : R('hist_dailyPlain');
       }
       if (r.reason === 'achievement') return R('hist_achievement', { name: achievementName(r.ref) });
-      if (r.reason === 'shop') return R('hist_shop', { name: itemName(r.ref) });
+      if (r.reason === 'shop') return r.refund ? R('hist_shopRefund', { name: itemName(r.ref.slice('refund:'.length)) }) : R('hist_shop', { name: itemName(r.ref) });
       if (r.reason === 'mission') return R(String(r.ref).endsWith(':bonus') ? 'hist_missionBonus' : 'hist_mission');
       return R(`hist_${r.reason}`);
     }
@@ -587,7 +632,8 @@ export default {
     async function loadShop() {
       st.itemsError = null;
       try {
-        st.items = knownCapes(await b.shopItems());
+        st.items = await b.shopItems();
+        registerItems(st.items); // para dibujar tambien lo del Venus Pass (pass_*)
       } catch (err) {
         st.items = null;
         st.itemsError = err?.code === 'network' ? 'network' : 'unavailable';
@@ -632,18 +678,15 @@ export default {
     }
 
     async function loadExtras() {
-      const [profile, ps, stats, cape] = await Promise.all([
+      const [profile, ps, stats] = await Promise.all([
         b.rpc('profile_public', { p_user: userAtRender }).catch((err) => {
           console.warn('[rewards] perfil', err?.code || err);
           return null;
         }),
         profileStyle(),
         api.invoke('stats:summary').catch(() => null),
-        // Sin la migración 0034 no hay capas en la tienda y esto falla: no cambia nada más
-        b.rpc('cape_mine').catch(() => null),
       ]);
       st.profile = profile && typeof profile === 'object' ? profile : null;
-      st.cape = cape?.item || null;
       st.ps = ps;
       st.stats = stats;
     }

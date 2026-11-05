@@ -10,6 +10,7 @@ import { lobbyView } from '../voice/ui-lobby.js';
 import { roomView } from '../voice/ui-room.js';
 import { audioView } from '../voice/ui-audio.js';
 import { gameView } from '../voice/ui-game.js';
+import { emergencyCard } from '../voice/ui-backup.js';
 
 registerIcons(VC_ICONS);
 
@@ -109,7 +110,11 @@ export default {
       viewCleanup = null;
       mode = tab === 'rooms' ? roomsMode() : tab;
       body.dataset.view = mode;
-      if (mode === 'config' || mode === 'signin') cloudCta(body, mode);
+      if (mode === 'config' || mode === 'signin') {
+        cloudCta(body, mode);
+        // Las salas de emergencia no necesitan cuenta ni servidor
+        body.append(emergencyCard({ open: false }).el);
+      }
       else if (mode === 'room') viewCleanup = roomView(body, { onTab: select });
       else if (mode === 'lobby') {
         viewCleanup = lobbyView(body, { initialCode: joinCode });

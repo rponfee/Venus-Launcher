@@ -9,7 +9,7 @@ import { navigate } from '../../app.js';
 import { discordButton } from '../../community.js';
 import { sectionHead, card, toggleRow, note, iconList, arrowFocus, extLink, embedPanel } from './shared.js';
 import { NET_KEYS } from '../../features/netprefs.js';
-import { normalizeBreaks, EVERY_OPTIONS, LIMIT_OPTIONS } from '../tools/breaks.js';
+import { normalizeBreaks, EVERY_OPTIONS, LIMIT_OPTIONS } from '../../features/playcare/breaks-logic.js';
 
 const AFTER_LAUNCH = [
   ['keep', 'monitor'],
@@ -176,7 +176,7 @@ export function renderGeneral(body, ctx) {
   readBadge();
 
   mount(body, sectionHead('general', 'sliders'));
-  // Secciones de la 3.1 (features/tools): descansos, resumen al cerrar y aviso de version nueva
+  // Secciones de la 3.1 (features/playcare): descansos, resumen al cerrar y aviso de version nueva
   const care = careCard(ctx);
 
   body.append(
@@ -229,7 +229,7 @@ export function renderGeneral(body, ctx) {
 // Descansos y tope de horas (settings.play.breaks), resumen al cerrar el juego (settings.play.sessionRecap) y aviso
 // de version nueva de Minecraft (settings.news.newVersions; consulta solo con la conexion "news" de Privacidad).
 function careCard(ctx) {
-  ensureCss('pages/tools'); // estilos .cfg-care-* (viven con la caja de herramientas)
+  ensureCss('features/playcare'); // estilos .cfg-care-*
   const breaks = () => normalizeBreaks(store.settings?.play?.breaks);
   const saveBreaks = (patch) => saveSettings({ play: { breaks: { ...breaks(), ...patch } } });
   const sel = (label, options, get, put) => {
@@ -241,7 +241,7 @@ function careCard(ctx) {
   const every = sel(t('settings.breaksEvery'), EVERY_OPTIONS.map((m) => [m, t('settings.breaksEveryOpt', { count: m })]), () => breaks().everyMin, (v) => saveBreaks({ everyMin: v }));
   const limit = sel(t('settings.breaksLimit'), LIMIT_OPTIONS.map((m) => [m, m ? t('settings.breaksLimitOpt', { count: m / 60 }) : t('settings.breaksLimitNone')]), () => breaks().dailyLimitMin, (v) => saveBreaks({ dailyLimitMin: v }));
   const today = h('span', { class: 'small muted' });
-  import('../../features/tools/breaks.js')
+  import('../../features/playcare/breaks.js')
     .then((m) => {
       if (ctx.alive()) today.textContent = t('settings.breaksToday', { minutes: m.todayMinutesPlayed() });
     })

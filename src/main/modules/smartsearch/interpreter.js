@@ -54,6 +54,24 @@ function maskSpan(state, f) {
   state.text = state.text.slice(0, f.start) + ' '.repeat(f.end - f.start) + state.text.slice(f.end);
 }
 
+// ¿El tipo que sigue a `before` esta negado? Una negacion alcanza hasta dos palabras mas adelante, pero no pasa
+// por encima de otro tipo: en "sin shaders, solo mods" la negacion es de los shaders, no de los mods.
+let negationRe = null;
+function isNegated(before) {
+  if (!L.NEGATION_SRC) return L.NEGATION.test(before);
+  negationRe = negationRe || new RegExp(`(?:^|\\s)(?:${L.NEGATION_SRC})(?=\\s|$)`, 'g');
+  negationRe.lastIndex = 0;
+  let m;
+  while ((m = negationRe.exec(before))) {
+    const tail = before.slice(m.index + m[0].length).trim().split(' ').filter(Boolean);
+    // "no" suelto solo niega lo que tiene al lado ("no shaders"); "que no explote con shaders" pide shaders
+    const reach = m[0].trim() === 'no' ? 1 : 2;
+    if (tail.length <= reach && !tail.some((w) => typeOfWord(w))) return true;
+    if (m[0].length === 0) negationRe.lastIndex++;
+  }
+  return false;
+}
+
 const stem = (w) => (w.length > 4 && w.endsWith('s') ? w.slice(0, -1) : w);
 const PHRASES = Object.keys(L.WORDS).filter((k) => k.includes(' '));
 
@@ -80,6 +98,35 @@ function guessLang(tokens, fallback = 'es') {
   return best[1] > 0 ? best[0] : fallback;
 }
 
+// ---------- "Como X" ----------
+
+const similarCache = new Map();
+function similarRegex(project) {
+  let re = similarCache.get(project.id);
+  if (!re) {
+    const markers = L.SIMILAR.markers.join('|');
+    const article = '(?:(?:el|la|los|las|the|a|an|un|una|o|os|mod|mods|shader|shaders|plugin|plugins|juego|game|server|servidor|pack|proyecto|project) )*';
+    re = new RegExp(`(?<![a-z0-9])(?:${markers}) ${article}(?:${project.p.join('|')})(?![a-z0-9])`, 'g');
+    similarCache.set(project.id, re);
+  }
+  re.lastIndex = 0;
+  return re;
+}
+
+// Busca "<marca> <proyecto conocido>" y tapa lo encontrado. Devuelve [{ project, start, end }].
+function findSimilar(state) {
+  const hits = [];
+  if (!L.SIMILAR) return hits;
+  for (const project of L.SIMILAR.projects) {
+    const m = similarRegex(project).exec(state.text);
+    if (!m) continue;
+    const span = { start: m.index, end: m.index + m[0].length, text: m[0].trim() };
+    hits.push({ project, start: span.start, end: span.end });
+    maskSpan(state, span);
+  }
+  return hits;
+}
+
 // ---------- Interpretacion ----------
 
 function typeOfWord(word) {
@@ -92,7 +139,11 @@ function typeOfWord(word) {
  * ctx: { releases: Set<string>, uiLang }
  */
 function interpret(query, ctx = {}) {
-  const normalized = normalize(query);
+  // Antes de normalizar se resuelven los signos que significan algo ("1.18-1.20", "1.20.x", "1.19+"); despues se
+  // corrigen los errores de escritura frecuentes y se reemplazan los apodos de version ("nether update" = 1.16).
+  let normalized = normalize(L.versions ? L.versions.prepare(query) : query);
+  if (L.fixTypos) normalized = L.fixTypos(normalized);
+  if (L.versions) normalized = L.versions.aliases(normalized);
   const state = { text: ` ${normalized} `, orig: ` ${normalized} ` };
   const out = {
     normalized,
@@ -111,9 +162,23 @@ function interpret(query, ctx = {}) {
     mode: null,
     themes: [],
     related: [],
+    similar: [],
     terms: [],
     flags: { lowEnd: false, highEnd: false },
   };
+
+  // Rangos ("1.18 a 1.20", "1.19 o superior", "hasta la 1.16"): se elige una version concreta dentro del rango
+  const span = L.versions ? L.versions.range(state.text) : null;
+  if (span) {
+    const value = L.versions.pick(span, { releases: ctx.releases, latest: ctx.latestRelease, patches: L.MODDED_PATCH });
+    if (value) {
+      out.version = { value, raw: span.text.trim(), mapped: true, range: { kind: span.kind, min: span.min, max: span.max } };
+      maskSpan(state, span);
+    }
+  }
+
+  // "Como X" ("como sodium", "alternativa a optifine"): antes que los cargadores, porque el nombre puede ser el de uno
+  const similarHits = findSimilar(state);
 
   // Versiones ("1.20.1", "1.8", "26.1")
   VERSION_RE.lastIndex = 0;
@@ -139,11 +204,21 @@ function interpret(query, ctx = {}) {
     if (type && n > 0) out.counts[type] = Math.min(MAX_PER_TYPE, n);
   }
 
+  // Lo mismo con letras: "cinco mods", "five shaders", "dez texturas"
+  if (L.NUMBER_WORDS) {
+    const wordRe = new RegExp(`(?<![a-z0-9])(${Object.keys(L.NUMBER_WORDS).join('|')}) (?:mejores |buenos |best |good |top |melhores )?([a-z]+(?: ?packs?)?)`, 'g');
+    let wm;
+    while ((wm = wordRe.exec(state.text))) {
+      const type = typeOfWord(wm[2]);
+      if (type && !out.counts[type]) out.counts[type] = Math.min(MAX_PER_TYPE, L.NUMBER_WORDS[wm[1]]);
+    }
+  }
+
   // Tipos de contenido (con negaciones: "sin shaders")
   for (const [type, alts] of L.TYPE_PATTERNS) {
     for (const f of take(state, alts)) {
       const before = state.orig.slice(Math.max(0, f.start - 28), f.start);
-      if (L.NEGATION.test(before)) {
+      if (isNegated(before)) {
         if (!out.excluded.includes(type)) out.excluded.push(type);
       } else if (!out.types.includes(type)) out.types.push(type);
     }
@@ -182,13 +257,27 @@ function interpret(query, ctx = {}) {
   const specific = [];
   for (const phrase of PHRASES) for (const f of take(state, [phrase.replace(/ /g, ' ?')])) specific.push(L.WORDS[phrase] || L.WORDS[f.text]);
 
+  // Lo que aporta cada proyecto de referencia: sus temas, su nombre como termino de busqueda y sus banderas
+  for (const hit of similarHits) {
+    out.similar.push(hit.project.id);
+    specific.push(hit.project.name.toLowerCase());
+    if (hit.project.flags?.lowEnd) out.flags.lowEnd = true;
+    if (hit.project.flags?.highEnd) out.flags.highEnd = true;
+    if (hit.project.mode && (!out.mode || out.mode === 'multiplayer' || out.mode === 'any')) out.mode = hit.project.mode;
+    for (const id of hit.project.themes || []) {
+      if (!out.themes.some((th) => th.id === id) && L.THEMES.some((th) => th.id === id)) out.themes.push({ id, weight: L.THEMES.find((th) => th.id === id).weight ?? 1, pos: hit.start, minor: false, matches: [hit.project.name], via: 'similar' });
+    }
+  }
+
   // Temas (pueden compartir palabras entre si)
   const themeSpans = [];
   for (const theme of L.THEMES) {
     const found = take(state, theme.p, false);
     if (!found.length) continue;
     themeSpans.push(...found);
-    out.themes.push({ id: theme.id, weight: theme.weight ?? 1, pos: found[0].start, minor: false, matches: found.map((f) => f.text) });
+    const already = out.themes.find((th) => th.id === theme.id);
+    if (already) already.matches.push(...found.map((f) => f.text));
+    else out.themes.push({ id: theme.id, weight: theme.weight ?? 1, pos: found[0].start, minor: false, matches: found.map((f) => f.text) });
     if (theme.flags?.lowEnd) out.flags.lowEnd = true;
     if (theme.flags?.highEnd) out.flags.highEnd = true;
     // Palabras concretas dentro del tema ("dinosaurios" -> dinosaurs) se buscan tal cual
@@ -491,7 +580,7 @@ function keywordsFor(plan) {
 
 // Interpreta y resuelve en un paso.
 function plan(query, ctx = {}) {
-  const interp = interpret(query, { releases: ctx.releases, uiLang: ctx.uiLang });
+  const interp = interpret(query, { releases: ctx.releases, uiLang: ctx.uiLang, latestRelease: ctx.latestRelease });
   return resolvePlan(query, interp, ctx);
 }
 

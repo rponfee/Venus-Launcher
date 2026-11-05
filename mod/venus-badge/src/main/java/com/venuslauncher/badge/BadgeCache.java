@@ -11,8 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
 
 /**
- * Quién tiene la insignia de Venus y con qué estilo, sin Minecraft de por medio (se prueba con JUnit). La capa de cada
- * jugador usa otra instancia, con otro {@link Fetcher} y las mismas reglas.
+ * Quién tiene la insignia de Venus y con qué estilo, sin Minecraft de por medio (se prueba con JUnit).
  *
  * <p>Los mixins preguntan {@link #style} en cada cuadro: la respuesta sale siempre de la memoria y, si el
  * jugador no está o venció, queda anotado para la próxima consulta. El hilo del mod llama a {@link #tick} y
@@ -21,7 +20,7 @@ import java.util.function.LongSupplier;
  * tanto no se dibuja ninguna insignia nueva: nunca bloquea el juego.
  */
 public final class BadgeCache {
-	/** Pregunta al servidor cuáles de estos jugadores tienen la insignia: UUID → estilo ("default", "gold"...), o UUID → capa. */
+	/** Pregunta al servidor cuáles de estos jugadores tienen la insignia: UUID → estilo ("default", "gold"...). */
 	@FunctionalInterface
 	public interface Fetcher {
 		Map<UUID, String> fetch(List<UUID> batch) throws IOException;
@@ -59,7 +58,7 @@ public final class BadgeCache {
 		return id != null && id.version() == 4;
 	}
 
-	/** El estilo de la insignia del jugador (o su capa), o null si no la tiene (o todavía no se sabe). */
+	/** El estilo de la insignia del jugador, o null si no la tiene (o todavía no se sabe). */
 	public String style(UUID id) {
 		if (!eligible(id)) return null;
 		Entry e = known.get(id);

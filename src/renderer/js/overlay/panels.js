@@ -9,6 +9,7 @@ import { RecipesPanel } from './panel-recipes.js';
 import { AssistantPanel } from './panel-assistant.js';
 
 const TABS = ['recipes', 'assistant'];
+const ASK_MAX_MS = 120000; // el proceso principal ya corta la lectura de recetas a los 90 s: esto es el ultimo recurso
 const TAB_ICON = { recipes: 'grid', assistant: 'wand' };
 
 export class OverlayPanels {
@@ -30,12 +31,18 @@ export class OverlayPanels {
     document.addEventListener('keydown', this.onKey, true);
   }
 
-  // Pedido al proceso principal: nunca lanza, devuelve { ok, data } o { ok: false, code, error }
+  // Pedido al proceso principal: nunca lanza ni espera para siempre, devuelve { ok, data } o { ok: false, code, error }
   ask = async (req) => {
+    let timer;
+    const limit = new Promise((resolve) => {
+      timer = setTimeout(() => resolve({ ok: false, code: 'timeout' }), ASK_MAX_MS);
+    });
     try {
-      return (await this.bridge?.panel(req)) || { ok: false, code: 'error' };
+      return (await Promise.race([this.bridge?.panel(req), limit])) || { ok: false, code: 'error' };
     } catch (err) {
       return { ok: false, code: 'error', error: err?.message || String(err) };
+    } finally {
+      clearTimeout(timer);
     }
   };
 

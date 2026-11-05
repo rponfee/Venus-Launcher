@@ -114,3 +114,12 @@ test('grupo de cada aviso para el filtro de Ajustes', () => {
   assert.equal(alertGroup('capture'), 'launcher');
   assert.equal(alertGroup('info'), 'launcher');
 });
+
+test('voz: con mas de 16 en la sala, quien habla y uno mismo no se cortan', () => {
+  const members = Array.from({ length: 20 }, (_, i) => ({ id: 'm' + i, name: 'P' + i, speaking: i === 18, self: i === 17 }));
+  const out = validate({ kind: 'voice', room: { name: 'Sala', code: 'X' }, self: {}, members });
+  assert.equal(out.members.length, 16);
+  assert.ok(out.members.some((m) => m.id === 'm18' && m.speaking === true));
+  assert.ok(out.members.some((m) => m.id === 'm17' && m.self === true));
+  assert.deepEqual(out.members.slice(0, 3).map((m) => m.id), ['m0', 'm1', 'm2'], 'el resto sigue el orden de la sala');
+});

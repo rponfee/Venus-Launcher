@@ -3,11 +3,12 @@
 //                      mensajes entrantes, invitaciones y solicitudes de amistad y el color de acento. Idempotente.
 //                      Solo empuja mientras el overlay esta activo (overlay:state). Las capturas y la musica las
 //                      avisan capture.js y nowplaying.js desde el proceso principal (respetan sus propios ajustes).
-//   overlayPanel()  -> Element con .destroy(): tarjeta de Ajustes (activar, cada widget, vista previa en vivo con
-//                      arrastre, "Editar posiciones en el juego", atajo y "Probar overlay").
-// Canales: overlay:push/status/edit/test/reset/setShortcut/accent y eventos overlay:state y overlay:config
+//   overlayPanel()  -> Element con .destroy(): tarjeta de Ajustes (activar, estado, cada widget con su vista previa en vivo:
+//                      se arrastra, se elige, se apaga, se achica; "Restablecer" por widget y de todos; "Editar posiciones
+//                      en el juego", atajos que no pisan a Minecraft ni a las capturas y "Probar overlay").
+// Canales: overlay:push/status/edit/test/reset/setShortcut/setPanelShortcut/accent y eventos overlay:state y overlay:config
 // (src/main/modules/overlay.js). La pagina del overlay y la vista previa comparten js/overlay/widgets.js.
-import { h, icon, mount, ok, fail, ensureCss, loading, switchEl, setBusy, reducedMotion, avatarUrl } from '../ui.js';
+import { h, icon, mount, ok, fail, ensureCss, loading, switchEl, setBusy, reducedMotion, avatarUrl, confirmDialog } from '../ui.js';
 import { store, api } from '../store.js';
 import { t, loadNs } from '../i18n.js';
 import { OverlayView, WIDGETS } from '../overlay/widgets.js';
@@ -25,6 +26,24 @@ let readyPromise = null;
 let panelSeq = 0;
 
 const isMissing = (err) => /No handler registered/i.test(err?.message || '');
+
+// Por que no se pudo guardar un atajo, en palabras (codigos de overlay:setShortcut y overlay:setPanelShortcut)
+function shortcutError(r) {
+  switch (r?.code) {
+    case 'invalid':
+      return t('overlay.shortcutInvalid');
+    case 'minecraft':
+      return t('overlay.shortcutMinecraft');
+    case 'system':
+      return t('overlay.shortcutSystem');
+    case 'altgr':
+      return t('overlay.shortcutAltgr');
+    case 'venus':
+      return t('overlay.shortcutVenus', { who: t(`overlay.shortcutWho_${['voice', 'capture', 'music', 'overlay'].includes(r.who) ? r.who : 'overlay'}`) });
+    default:
+      return t('overlay.shortcutTaken');
+  }
+}
 
 function prepare() {
   ensureCss('overlay');
@@ -262,7 +281,9 @@ async function build(root, offs, isDisposed) {
     saving = saving
       .then(() => store.setSettings({ overlay: patch }))
       .catch((err) => {
-        if (!isDisposed()) fail(t('overlay.saveFailed'), err);
+        if (isDisposed()) return;
+        fail(t('overlay.saveFailed'), err);
+        resync();
       });
     return saving;
   };
@@ -284,6 +305,19 @@ async function build(root, offs, isDisposed) {
   const pill = h('span', { class: 'pill' });
   const statusText = h('span', { class: 'ovp-status-text' });
   const editBtn = h('button', { type: 'button', class: 'btn tonal sm', 'data-overlay-action': 'edit' }, icon('maximize'), h('span', {}, t('overlay.editInGame')));
+  // Si guardar falla, lo que se ve en la tarjeta no es lo que quedo: se vuelve a leer del proceso principal
+  const resync = async () => {
+    try {
+      const fresh = await api.invoke('overlay:status');
+      if (isDisposed() || !fresh?.config) return;
+      status = { ...status, ...fresh };
+      cfg = deepClone(fresh.config);
+      refreshPreview();
+      syncAll();
+    } catch {
+      /* sin el proceso principal no hay nada que releer */
+    }
+  };
   const testBtn = h('button', { type: 'button', class: 'btn sm', 'data-overlay-action': 'test', title: t('overlay.testHint') }, icon('sparkles'), t('overlay.test'));
   const statusRow = h('div', { class: 'ovp-status' }, h('div', { class: 'ovp-status-main', role: 'status', 'aria-live': 'polite' }, pill, statusText), h('div', { class: 'ovp-actions' }, editBtn, testBtn));
   const fsNotice = h('div', { class: 'notice ovp-fs', hidden: true }, icon('alert'), h('div', {}, t('overlay.fullscreenNow')));
@@ -316,14 +350,26 @@ async function build(root, offs, isDisposed) {
   function drawStatus() {
     let kind = '';
     let text;
+    let pillText = null;
     if (!status.supported) text = t('overlay.statusUnsupported');
     else if (status.editing) {
       kind = 'info';
       text = t('overlay.statusEditing');
     } else if (!status.enabled) text = t('overlay.statusOff');
-    else if (!status.running) text = t('overlay.statusWaiting');
-    else if (!status.found) text = t('overlay.statusSearching');
-    else if (status.hidden) {
+    else if (status.pageFailed) {
+      kind = 'bad';
+      pillText = t('overlay.pillError');
+      text = t('overlay.statusPageFailed');
+    } else if (!status.running) text = t('overlay.statusWaiting');
+    else if (status.tracker === 'failed') {
+      kind = 'bad';
+      pillText = t('overlay.pillError');
+      text = t('overlay.statusTrackerFailed');
+    } else if (!status.found) {
+      kind = 'warn';
+      pillText = t('overlay.pillSearching');
+      text = t('overlay.statusSearching');
+    } else if (status.hidden) {
       kind = 'warn';
       text = t('overlay.statusHidden', { shortcut: accelParts(status.shortcut).join('+') });
     } else if (status.minimized) text = t('overlay.statusMinimized');
@@ -333,13 +379,19 @@ async function build(root, offs, isDisposed) {
       text = t('overlay.statusActive');
     }
     pill.className = `pill ${kind}`.trim();
-    pill.textContent = kind === 'good' ? t('overlay.pillOn') : kind === 'info' ? t('overlay.pillEditing') : status.enabled ? t('overlay.pillReady') : t('overlay.pillOff');
+    pill.textContent = pillText || (kind === 'good' ? t('overlay.pillOn') : kind === 'info' ? t('overlay.pillEditing') : status.enabled ? t('overlay.pillReady') : t('overlay.pillOff'));
     statusText.textContent = text;
     editBtn.querySelector('span').textContent = status.editing ? t('overlay.editStop') : t('overlay.editInGame');
     editBtn.classList.toggle('active', Boolean(status.editing));
     editBtn.setAttribute('aria-pressed', String(Boolean(status.editing)));
     fsNotice.hidden = !(status.running && status.fullscreen);
     shortcutWarn.hidden = status.shortcutOk !== false;
+    shortcutRisk.hidden = !status.shortcutIssue;
+    if (status.shortcutIssue) shortcutRisk.querySelector('span').textContent = shortcutError({ code: status.shortcutIssue });
+    panelRows.forEach((r) => {
+      r.warn(status.panelShortcutsOk?.[r.id] === false);
+      r.risk(status.panelShortcutIssues?.[r.id] ? shortcutError({ code: status.panelShortcutIssues[r.id] }) : '');
+    });
   }
 
   // ---------- Vista previa ----------
@@ -359,6 +411,13 @@ async function build(root, offs, isDisposed) {
       save({ widgets: { [id]: pos } });
       blocks[id]?.sync();
     },
+    // Teclas sobre un widget de la vista previa: + y -, [ y ], Supr
+    onTweak: (id, patch) => {
+      save({ widgets: { [id]: patch } });
+      blocks[id]?.sync();
+    },
+    // Tocar un widget en la vista previa abre sus opciones
+    onSelect: (id) => blocks[id]?.reveal(),
   });
   offs.push(() => view.destroy());
   function refreshPreview() {
@@ -377,7 +436,7 @@ async function build(root, offs, isDisposed) {
     ro.observe(previewBox);
     offs.push(() => ro.disconnect());
   }
-  const resetBtn = h('button', { type: 'button', class: 'btn ghost sm', 'data-overlay-action': 'reset' }, icon('undo'), t('overlay.resetPositions'));
+  const resetBtn = h('button', { type: 'button', class: 'btn ghost sm', 'data-overlay-action': 'reset', title: t('overlay.resetPositionsHint') }, icon('undo'), t('overlay.resetPositions'));
   resetBtn.addEventListener('click', async () => {
     const done = setBusy(resetBtn);
     try {
@@ -397,12 +456,15 @@ async function build(root, offs, isDisposed) {
     h('div', { class: 'ovp-sec-head' }, h('div', { class: 'ovp-sec-title' }, t('overlay.previewTitle')), resetBtn),
     previewBox,
     h('p', { class: 'ovp-help' }, t('overlay.previewHint')),
+    h('p', { class: 'ovp-help ovp-keys-help' }, icon('keyboard'), h('span', {}, t('overlay.previewKeys'))),
   );
 
   // ---------- Atajo ----------
   const keys = h('span', { class: 'ovp-keys' });
   const shortcutMsg = h('div', { class: 'ovp-help', id: `${uid}-sc-help`, role: 'status', 'aria-live': 'polite' }, t('overlay.shortcutHint'));
   const shortcutWarn = h('div', { class: 'field-error', hidden: true }, icon('alert'), h('span', {}, t('overlay.shortcutTakenNow')));
+  // Un atajo que ya estaba guardado y le saca teclas a Minecraft o a Windows (de antes de estos controles): se avisa
+  const shortcutRisk = h('div', { class: 'field-error', hidden: true }, icon('alert'), h('span', {}));
   const changeBtn = h('button', { type: 'button', class: 'btn sm', 'data-overlay-action': 'shortcut', 'aria-describedby': `${uid}-sc-help` }, icon('keyboard'), h('span', {}, t('overlay.shortcutChange')));
   const removeBtn = h('button', { type: 'button', class: 'btn ghost sm', 'data-overlay-action': 'shortcut-remove' }, icon('x'), t('overlay.shortcutRemove'));
   let capturing = false;
@@ -424,7 +486,7 @@ async function build(root, offs, isDisposed) {
         shortcutMsg.textContent = r.shortcut ? t('overlay.shortcutSaved', { shortcut: accelParts(r.shortcut).join('+') }) : t('overlay.shortcutRemoved');
         status = { ...status, shortcut: r.shortcut, shortcutOk: true };
         drawStatus();
-      } else shortcutMsg.textContent = r?.code === 'invalid' ? t('overlay.shortcutInvalid') : t('overlay.shortcutTaken');
+      } else shortcutMsg.textContent = shortcutError(r);
     } catch (err) {
       fail(t('overlay.saveFailed'), err);
     }
@@ -471,6 +533,7 @@ async function build(root, offs, isDisposed) {
     h('div', { class: 'ovp-keys-row' }, keys, changeBtn, removeBtn),
     shortcutMsg,
     shortcutWarn,
+    shortcutRisk,
     h('div', { class: 'ovp-sec-title ovp-mt' }, t('overlay.panelsTitle')),
     h('p', { class: 'ovp-help' }, t('overlay.panelsHint')),
     panelRows.map((r) => r.el),
@@ -481,10 +544,33 @@ async function build(root, offs, isDisposed) {
   // ---------- Widgets ----------
   const blocks = {};
   const list = h('div', { class: 'ovp-widgets' });
+  // Lo de fabrica de cada widget sale del proceso principal (status.defaults); apagar o prender no se toca al restablecer
+  const factory = (id) => {
+    const d = deepClone(status.defaults?.widgets?.[id] || {});
+    delete d.enabled;
+    return d;
+  };
   for (const id of WIDGETS) {
-    blocks[id] = widgetBlock(id, { uid, cfg: () => cfg, save, preview: () => refreshPreview() });
+    blocks[id] = widgetBlock(id, {
+      uid,
+      cfg: () => cfg,
+      save,
+      preview: () => refreshPreview(),
+      factory,
+      onOpen: (open) => view.select(open ? id : null),
+      onReveal: () => {
+        for (const other of WIDGETS) if (other !== id) blocks[other].close();
+      },
+    });
     list.append(blocks[id].el);
   }
+  const resetAllBtn = h('button', { type: 'button', class: 'btn ghost sm', 'data-overlay-action': 'reset-all', title: t('overlay.resetAllHint') }, icon('undo'), t('overlay.resetAll'));
+  resetAllBtn.addEventListener('click', async () => {
+    if (!(await confirmDialog(t('overlay.resetAllTitle'), t('overlay.resetAllText'), { okText: t('overlay.resetAllOk'), danger: true }))) return;
+    await save({ widgets: Object.fromEntries(WIDGETS.map((id) => [id, factory(id)])) });
+    syncAll();
+    ok(t('overlay.resetAllDone'));
+  });
 
   function syncAll() {
     enable.querySelector('input').checked = cfg.enabled;
@@ -500,7 +586,7 @@ async function build(root, offs, isDisposed) {
     statusRow,
     fsNotice,
     h('div', { class: 'ovp-grid' }, previewCol, shortcutCol),
-    h('div', { class: 'ovp-sec-title ovp-mt' }, t('overlay.widgetsTitle')),
+    h('div', { class: 'ovp-sec-head ovp-mt' }, h('div', { class: 'ovp-sec-title' }, t('overlay.widgetsTitle')), resetAllBtn),
     list,
     tip,
   );
@@ -553,7 +639,7 @@ function panelShortcutRow(id, { uid, get, put }) {
       if (r?.ok) {
         put(r.shortcut);
         msg.textContent = r.shortcut ? t('overlay.shortcutSaved', { shortcut: accelParts(r.shortcut).join('+') }) : t('overlay.shortcutRemoved');
-      } else msg.textContent = r?.code === 'invalid' ? t('overlay.shortcutInvalid') : t('overlay.shortcutTaken');
+      } else msg.textContent = shortcutError(r);
     } catch (err) {
       fail(t('overlay.saveFailed'), err);
     }
@@ -591,12 +677,26 @@ function panelShortcutRow(id, { uid, get, put }) {
   });
   change.addEventListener('blur', () => capturing && stop());
   remove.addEventListener('click', () => apply(''));
+  // El juego no pudo tomar el atajo (lo tiene otra aplicacion): se avisa aparte del mensaje de la ultima vez que se cambio
+  const warnLine = h('div', { class: 'field-error', hidden: true }, icon('alert'), h('span', {}, t('overlay.panelShortcutTakenNow', { name })));
+  const riskLine = h('div', { class: 'field-error', hidden: true }, icon('alert'), h('span', {}));
   sync();
-  return { el: h('div', { class: 'ovp-panel-key' }, h('div', { class: 'ovp-keys-row' }, h('span', { class: 'ovp-panel-name' }, name), keys, change, remove), msg), sync };
+  return {
+    id,
+    el: h('div', { class: 'ovp-panel-key' }, h('div', { class: 'ovp-keys-row' }, h('span', { class: 'ovp-panel-name' }, name), keys, change, remove), msg, warnLine, riskLine),
+    sync,
+    warn: (on) => {
+      warnLine.hidden = !on;
+    },
+    risk: (text) => {
+      riskLine.hidden = !text;
+      riskLine.querySelector('span').textContent = text;
+    },
+  };
 }
 
 // Un widget: encabezado con interruptor y, al abrirlo, posicion, tamano, opacidad, tema y lo propio de cada uno.
-function widgetBlock(id, { uid, cfg, save, preview }) {
+function widgetBlock(id, { uid, cfg, save, preview, factory, onOpen, onReveal }) {
   const w = () => cfg().widgets[id];
   const set = (patch) => save({ widgets: { [id]: patch } });
   const name = t(`overlay.w_${id}`);
@@ -609,11 +709,21 @@ function widgetBlock(id, { uid, cfg, save, preview }) {
   const expand = h('button', { type: 'button', class: 'icon-btn sm ovp-expand', 'aria-expanded': 'false', 'aria-controls': bodyId, title: t('overlay.customize', { name }), 'aria-label': t('overlay.customize', { name }) }, icon('chevronDown'));
   const body = h('div', { class: 'ovp-w-body', id: bodyId, hidden: true });
   const el = h('div', { class: 'ovp-w', dataset: { widget: id } }, h('div', { class: 'ovp-w-head' }, h('span', { class: 'ovp-w-icon' }, icon(WIDGET_ICON[id])), h('div', { class: 'ovp-w-text' }, h('div', { class: 'ovp-w-name' }, name), summary), sw, expand), body);
-  expand.addEventListener('click', () => {
-    const open = body.hidden;
+  const setOpen = (open) => {
     body.hidden = !open;
     expand.setAttribute('aria-expanded', String(open));
     el.classList.toggle('open', open);
+  };
+  expand.addEventListener('click', () => {
+    const open = body.hidden;
+    setOpen(open);
+    onOpen?.(open);
+  });
+  // Restablecer este widget: posicion, tamano, opacidad, tema y opciones; si esta prendido o apagado no se toca
+  const resetBtn = h('button', { type: 'button', class: 'btn ghost sm', 'data-overlay-action': `reset-${id}`, title: t('overlay.resetWidgetHint') }, icon('undo'), t('overlay.resetWidget'));
+  resetBtn.addEventListener('click', async () => {
+    await save({ widgets: { [id]: factory(id) } });
+    sync();
   });
 
   // Posicion: grilla de 3x3 (radiogroup con flechas). Si quedo en una posicion libre, ninguna celda marcada.
@@ -701,13 +811,15 @@ function widgetBlock(id, { uid, cfg, save, preview }) {
     id === 'perf' ? h('p', { class: 'ovp-tip', title: t('overlay.perfNoFps') }, icon('info'), h('span', {}, t('overlay.perfNoFps'))) : null,
     id === 'counters' ? h('p', { class: 'ovp-tip' }, icon('info'), h('span', {}, t('overlay.countersHint'))) : null,
     id === 'counters' ? h('p', { class: 'ovp-tip' }, icon('info'), h('span', {}, t('overlay.countersHintMp'))) : null,
+    h('div', { class: 'ovp-w-foot' }, resetBtn),
   );
 
   function sync() {
     const c = w();
     sw.querySelector('input').checked = c.enabled;
     el.classList.toggle('disabled', !c.enabled);
-    summary.textContent = c.enabled ? (c.anchor === 'free' ? t('overlay.anchor_free') : t(`overlay.anchor_${c.anchor}`)) : t('overlay.widgetOff');
+    const where = c.anchor === 'free' ? t('overlay.anchor_free') : t(`overlay.anchor_${c.anchor}`);
+    summary.textContent = c.enabled ? t('overlay.widgetSummary', { position: where, scale: Math.round(c.scale * 100), opacity: Math.round(c.opacity * 100) }) : t('overlay.widgetOff');
     for (const b of cells) {
       const on = b.dataset.anchor === c.anchor;
       b.setAttribute('aria-checked', String(on));
@@ -717,5 +829,15 @@ function widgetBlock(id, { uid, cfg, save, preview }) {
     freeNote.textContent = c.anchor === 'free' ? t('overlay.positionFree') : '';
     [scale, opacity, theme, ...extras, ...toggles].forEach((x) => x.sync());
   }
-  return { el, sync };
+  return {
+    el,
+    sync,
+    close: () => setOpen(false),
+    // Se toco el widget en la vista previa: se abren sus opciones (y se cierran las de los demas) y se lo trae a la vista
+    reveal: () => {
+      onReveal?.();
+      setOpen(true);
+      el.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    },
+  };
 }

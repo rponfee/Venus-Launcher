@@ -1,5 +1,6 @@
 // Dedicated support inbox: permission is checked again on every direct page visit.
 import { h, icon, mount, loading } from '../ui.js';
+import { api } from '../store.js';
 import { cloud } from '../cloud.js';
 import { navigate } from '../app.js';
 import { S, supportCall, ticketDesk } from '../features/support.js';
@@ -15,6 +16,8 @@ export default {
     mount(root, header, loading(S('staffChecking')));
     await cloud.ready();
     if (!root.isConnected) return;
+    // Solo en capturas de desarrollo (VENUS_DEVSHOT + VENUS_SUPPORT_FAKE=staff): cola de ejemplo.
+    const fake = await api.invoke('support:fakeMode').catch(() => null);
     const owner = cloud.user?.id || null;
     let alive = true;
     let desk = null;
@@ -33,7 +36,7 @@ export default {
     });
     let authorized = false;
     let unavailable = false;
-    if (owner) {
+    if (owner || fake) {
       try {
         authorized = (await supportCall('staffState'))?.isStaff === true;
       } catch {

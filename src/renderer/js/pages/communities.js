@@ -1,15 +1,16 @@
 // Comunidades (#/communities[/explore] · #/communities/<id>[/<canal>] abre una): las tuyas, el buscador de públicas y la pantalla
-// con canales fijos de texto y voz (pages/communities/view.js). Reglas y RPC: 0033_clanes_comunidades.sql · guía: docs/implementacion/clanes-comunidades.md.
+// con sus canales de texto, anuncios, foros y voz (pages/communities/view.js). Reglas y RPC: 0033_clanes_comunidades.sql y 0038_comunidades.sql ·
+// guía: docs/wip/comunidades-46.md.
 import { h, icon, mount, emptyState, skeleton, setBusy, ok, debounce } from '../ui.js';
 import { t } from '../i18n.js';
 import { navigate } from '../app.js';
-import { groupsBackend, errText } from '../features/clans/backend.js';
-import { COMMUNITY_LIMITS, normalizeCode } from '../features/clans/logic.js';
+import { groupsBackend, errText } from '../features/communities/backend.js';
+import { COMMUNITY_LIMITS, normalizeCode } from '../features/communities/logic.js';
 import { openCommunityForm } from './communities/forms.js';
 import { communityView } from './communities/view.js';
 import { communityColor, iconGlyph, safeCommunityIcon, safeBanner } from './communities/logic.js';
 
-const C = (key, vars) => t(`clans.${key}`, vars);
+const C = (key, vars) => t(`communities.${key}`, vars);
 const TABS = [{ id: 'mine', icon: 'users' }, { id: 'explore', icon: 'compass' }];
 
 function head() {
@@ -106,8 +107,8 @@ function exploreView(host, { b }) {
 const VIEWS = { mine: mineView, explore: exploreView };
 
 export default {
-  ns: ['clans'],
-  css: ['pages/clans', 'pages/messages'],
+  ns: ['communities'],
+  css: ['pages/communities', 'pages/messages'],
   async render(root, params = []) {
     const b = await groupsBackend();
     if (!root.isConnected) return null;

@@ -47,33 +47,6 @@ const EXTRA = [
   'time_since_rest',
 ];
 const BOSSES = ['minecraft:ender_dragon', 'minecraft:wither', 'minecraft:elder_guardian', 'minecraft:warden'];
-// Conteos puntuales para los logros de Venus (pages/achievements/catalog.js): medida -> [tipo, ids sin 'minecraft:']
-const ORES = (name) => [name, `deepslate_${name}`];
-const LOGS = ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'pale_oak'].map((w) => `${w}_log`);
-const PICKS = {
-  minedCoal: ['mined', ORES('coal_ore')],
-  minedIron: ['mined', ORES('iron_ore')],
-  minedGold: ['mined', [...ORES('gold_ore'), 'nether_gold_ore']],
-  minedRedstone: ['mined', ORES('redstone_ore')],
-  minedLapis: ['mined', ORES('lapis_ore')],
-  minedDiamond: ['mined', ORES('diamond_ore')],
-  minedEmerald: ['mined', ORES('emerald_ore')],
-  minedDebris: ['mined', ['ancient_debris']],
-  minedQuartz: ['mined', ['nether_quartz_ore']],
-  minedLogs: ['mined', LOGS],
-  killedZombie: ['killed', ['zombie', 'husk', 'drowned', 'zombie_villager']],
-  killedSkeleton: ['killed', ['skeleton', 'stray', 'bogged']],
-  killedCreeper: ['killed', ['creeper']],
-  killedSpider: ['killed', ['spider', 'cave_spider']],
-  killedEnderman: ['killed', ['enderman']],
-  killedBlaze: ['killed', ['blaze']],
-  killedWitch: ['killed', ['witch']],
-  killedDragon: ['killed', ['ender_dragon']],
-  killedWither: ['killed', ['wither']],
-  killedElder: ['killed', ['elder_guardian']],
-  killedWarden: ['killed', ['warden']],
-};
-
 // Estadisticas de 1.12 o anterior: "stat.walkOneCm", "stat.mineBlock.minecraft.stone", "stat.killEntity.Zombie"...
 const LEGACY_CUSTOM = {
   playOneMinute: 'play_time',
@@ -391,7 +364,6 @@ function summarize(norm, names, { single = false } = {}) {
     extras,
     bosses: BOSSES.filter((id) => norm.killed[id] > 0).map((id) => ({ id, name: names.of('killed', id), count: norm.killed[id] })),
     totems: norm.used['minecraft:totem_of_undying'] || 0,
-    picks: Object.fromEntries(Object.entries(PICKS).map(([key, [kind, ids]]) => [key, ids.reduce((sum, id) => sum + (norm[kind][`minecraft:${id}`] || 0), 0)])),
     kinds: { mined: Object.keys(norm.mined).length, killed: Object.keys(norm.killed).length, crafted: Object.keys(norm.crafted).length },
     top: { mined: top('mined'), killed: top('killed'), killedBy: top('killedBy'), crafted: top('crafted'), used: top('used'), broken: top('broken'), pickedUp: top('pickedUp') },
   };

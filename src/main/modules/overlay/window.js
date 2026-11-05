@@ -50,7 +50,9 @@ function createOverlayWindow() {
   // La pagina no pide permisos (ni microfono, ni pantalla, ni notificaciones).
   win.webContents.session.setPermissionRequestHandler((wc, permission, cb) => cb(false));
   win.webContents.session.setPermissionCheckHandler(() => false);
-  win.loadFile(path.join(__dirname, '..', '..', '..', 'renderer', 'overlay.html'));
+  // loadFile devuelve una promesa que se rechaza si se cierra la ventana mientras carga (o si falta el archivo): sin catch,
+  // eso seria un error sin atender en el proceso principal. Los fallos de carga los ve overlay.js con did-fail-load.
+  win.loadFile(path.join(__dirname, '..', '..', '..', 'renderer', 'overlay.html')).catch(() => {});
   return win;
 }
 

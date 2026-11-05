@@ -1,22 +1,37 @@
-// Cancion del perfil (3.1): el archivo elegido se decodifica en la PC (AudioContext.decodeAudioData), se recortan
-// 30 s desde el punto elegido y se vuelven a codificar con MediaRecorder (audio/webm;codecs=opus, ~96 kbps) en un
-// blob de hasta 1 MB que se sube al bucket publico profile-audio (<uid>/song.webm). El original nunca sale de la PC.
-// Los errores llevan err.code: 'type', 'too_big', 'decode', 'unsupported', 'cancelled', 'denied', 'unavailable',
-// 'network', 'session' (MediaError de media.js).
-import { LIMITS, AUDIO_FILE, audioSourceError, audioUrlWithVersion } from './model.js';
-import { MediaError, storageError, requireSession } from './media.js';
+// Ayudas de audio en la PC: decodificar un archivo (AudioContext.decodeAudioData), recortar un tramo y volver a codificarlo
+// con MediaRecorder (audio/webm;codecs=opus, ~96 kbps). Hasta la 3.1 servian para subir la cancion del perfil; desde la 4.6 la
+// cancion se elige de Openverse (features/profile-editor/music.js) y no se sube nada. Esto queda SOLO porque el soundboard de
+// la voz (voice/ui-board.js) lo usa para recortar los sonidos propios: no tiene que ver con los perfiles.
+// Los errores llevan err.code: 'type', 'too_big', 'decode', 'unsupported', 'cancelled' (MediaError de media.js).
+import { MediaError } from './media.js';
 
-const BUCKET = 'profile-audio';
 const MIME = 'audio/webm;codecs=opus';
 const BITRATE = 96_000;
+const SECONDS = 30; // largo por defecto del recorte
+const SOURCE_BYTES = 20 * 1024 * 1024; // archivo de origen de hasta 20 MB
+const BLOB_BYTES = 1024 * 1024; // lo recodificado de hasta 1 MB
+const TYPES = ['audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/webm', 'audio/aac'];
+const EXTS = ['mp3', 'ogg', 'oga', 'wav', 'm4a', 'webm', 'aac'];
+
+// Archivo de audio aceptable (por tipo o extension) y de hasta 20 MB. Devuelve null o un codigo de error.
+function sourceError(file) {
+  if (!file || typeof file !== 'object') return 'type';
+  const name = String(file.name || '').toLowerCase();
+  const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+  const type = String(file.type || '').toLowerCase().split(';')[0];
+  if (!(TYPES.includes(type) || (!type && EXTS.includes(ext)) || (type.startsWith('audio/') && EXTS.includes(ext)))) return 'type';
+  if (!(file.size > 0)) return 'decode';
+  if (file.size > SOURCE_BYTES) return 'too_big';
+  return null;
+}
 
 export function audioSupported() {
   return typeof AudioContext === 'function' && typeof MediaRecorder === 'function' && Boolean(MediaRecorder.isTypeSupported?.(MIME));
 }
 
-// Archivo elegido -> AudioBuffer completo (para elegir el punto de inicio sin volver a leerlo)
+// Archivo elegido -> AudioBuffer completo
 export async function decodeAudio(file) {
-  const code = audioSourceError(file);
+  const code = sourceError(file);
   if (code) throw new MediaError(code);
   const bytes = await file.arrayBuffer();
   const ctx = new AudioContext();
@@ -32,7 +47,7 @@ export async function decodeAudio(file) {
 }
 
 // Recorte: desde start (segundos) hasta 30 s o el final; como mucho dos canales
-export function clipBuffer(buffer, start = 0, seconds = LIMITS.songSeconds) {
+export function clipBuffer(buffer, start = 0, seconds = SECONDS) {
   const sr = buffer.sampleRate;
   const from = Math.max(0, Math.min(buffer.duration, Number(start) || 0));
   const len = Math.max(1, Math.min(Math.round(seconds * sr), Math.round((buffer.duration - from) * sr)));
@@ -80,7 +95,7 @@ export function encodeWebm(buffer, { onProgress, signal } = {}) {
       finish();
       const blob = new Blob(chunks, { type: 'audio/webm' });
       if (!blob.size) return reject(new MediaError('decode'));
-      if (blob.size > LIMITS.songBytes) return reject(new MediaError('too_big'));
+      if (blob.size > BLOB_BYTES) return reject(new MediaError('too_big'));
       resolve(blob);
     };
     const t0 = performance.now();
@@ -104,28 +119,4 @@ export function encodeWebm(buffer, { onProgress, signal } = {}) {
     rec.start(1000);
     src.start();
   });
-}
-
-// Todo junto: archivo -> blob webm de 30 s desde start
-export async function prepareSong(file, { start = 0, onProgress, signal } = {}) {
-  const buffer = await decodeAudio(file);
-  return { blob: await encodeWebm(clipBuffer(buffer, start), { onProgress, signal }), duration: buffer.duration };
-}
-
-// ---------- Bucket profile-audio ----------
-export async function uploadSong(blob) {
-  const { client, uid } = requireSession();
-  if (!blob || blob.size > LIMITS.songBytes) throw new MediaError('too_big');
-  const path = `${uid}/${AUDIO_FILE}`;
-  const { error } = await client.storage.from(BUCKET).upload(path, blob, { contentType: 'audio/webm', cacheControl: '3600', upsert: true });
-  if (error) throw storageError(error);
-  const { data } = client.storage.from(BUCKET).getPublicUrl(path);
-  if (!data?.publicUrl) throw new MediaError('unavailable');
-  return audioUrlWithVersion(data.publicUrl);
-}
-
-export async function removeSong() {
-  const { client, uid } = requireSession();
-  const { error } = await client.storage.from(BUCKET).remove([`${uid}/${AUDIO_FILE}`]);
-  if (error) throw storageError(error);
 }

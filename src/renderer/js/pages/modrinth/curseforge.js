@@ -3,6 +3,7 @@
 // (#/modrinth/curseforge/<id>) con descripcion, galeria y archivos.
 import { h, icon, mount, emptyState, skeleton, fmtNumber, fmtAgo, fmtDate, fmtBytes, selectEl } from '../../ui.js';
 import { store, api } from '../../store.js';
+import { cloud } from '../../cloud.js';
 import { navigate } from '../../app.js';
 import { t } from '../../i18n.js';
 import { typeLabelOne, typeIcon, loaderName, loaderChip, versionSummary, projectIcon, fmtInt, channelPill, cfInstalledIn, extLink, keepFocus } from './shared.js';
@@ -11,18 +12,42 @@ import { openLightbox } from './lightbox.js';
 import { backLink, detailSkeleton, detailError, detailTabs, galleryGrid, asideCard, linkRow, heroStats, factRow } from './detail.js';
 import { openInstallDialog } from '../../features/install.js';
 
-// CurseForge no disponible en esta version (sin API key en core/app-config.js). onBack: volver a Modrinth.
-export function cfUnavailableCard({ onBack } = {}) {
+// Qué impide usar CurseForge ahora (null = nada, se puede buscar):
+//   'off'    el servidor de Venus no tiene la clave cargada (o este build no trae CurseForge)
+//   'signin' el catálogo se consulta con la cuenta de Venus y no hay sesión
+//   'error'  no se pudo ni preguntar el estado (el proceso principal no contestó)
+// Un estado que "no se pudo comprobar" NO cuenta como 'off': ahí el catálogo se intenta igual y el servidor
+// contesta con el motivo exacto.
+export function cfGate(status) {
+  if (status?.error && !status.unavailable && !status.configured) return 'error';
+  if (!status?.configured) return 'off';
+  if (status.source !== 'build' && !status.signedIn && !cloud.isSignedIn()) return 'signin';
+  return null;
+}
+
+// Tarjeta de CurseForge no disponible. kind: ver cfGate. onBack: volver a Modrinth. onRetry: volver a comprobar.
+export function cfUnavailableCard({ kind = 'off', onBack, onRetry, message } = {}) {
+  const copy = {
+    off: [t('modrinth.cfOffTitle'), t('curseforge.offText')],
+    signin: [t('curseforge.signInTitle'), t('curseforge.signInText')],
+    error: [t('curseforge.errorTitle'), message || t('curseforge.errorText')],
+  }[kind] || [t('modrinth.cfOffTitle'), t('curseforge.offText')];
   return h(
     'div',
-    { class: 'card mx-cf-setup' },
-    h('div', { class: 'mx-cf-art', 'aria-hidden': 'true' }, icon('flame')),
+    { class: 'card mx-cf-setup', role: 'status' },
+    h('div', { class: 'mx-cf-art', 'aria-hidden': 'true' }, icon(kind === 'signin' ? 'logIn' : 'flame')),
     h(
       'div',
       { class: 'mx-cf-main' },
-      h('h2', { class: 'mx-cf-title' }, t('modrinth.cfOffTitle')),
-      h('p', { class: 'mx-cf-text' }, t('modrinth.cfOffText')),
-      onBack ? h('div', { class: 'mx-cf-actions' }, h('button', { type: 'button', class: 'btn modrinth soft', onclick: onBack }, icon('package'), t('modrinth.cfOffBack'))) : null,
+      h('h2', { class: 'mx-cf-title' }, copy[0]),
+      h('p', { class: 'mx-cf-text' }, copy[1]),
+      h(
+        'div',
+        { class: 'mx-cf-actions' },
+        kind === 'signin' ? h('button', { type: 'button', class: 'btn primary', onclick: () => navigate('settings/cloud/venus') }, icon('logIn'), t('curseforge.signIn')) : null,
+        onRetry ? h('button', { type: 'button', class: 'btn', onclick: onRetry }, icon('refresh'), t('curseforge.checkAgain')) : null,
+        onBack ? h('button', { type: 'button', class: 'btn modrinth soft', onclick: onBack }, icon('package'), t('modrinth.cfOffBack')) : null,
+      ),
     ),
   );
 }
@@ -42,18 +67,22 @@ export function renderCurseForgeDetail(root, id) {
     try {
       status = await api.invoke('curseforge:status');
     } catch (err) {
-      status = { configured: false, unavailable: /no handler/i.test(err?.message || '') };
+      status = { configured: false, unavailable: /no handler/i.test(err?.message || ''), error: err?.message };
     }
     if (!alive) return;
-    if (!status.configured) {
-      mount(container, cfUnavailableCard({ onBack: () => navigate('modrinth') }));
+    const gate = cfGate(status);
+    if (gate) {
+      mount(container, cfUnavailableCard({ kind: gate, message: status.error, onRetry: load, onBack: () => navigate('modrinth') }));
       return;
     }
     let project;
     try {
       project = await api.invoke('curseforge:project', Number(id));
     } catch (err) {
-      if (alive) mount(container, detailError(err, load));
+      // Sin sesión o sin clave en el servidor: la misma tarjeta que el catálogo, no un error mudo.
+      if (alive && err?.code === 'noSession') mount(container, cfUnavailableCard({ kind: 'signin', onRetry: load, onBack: () => navigate('modrinth') }));
+      else if (alive && err?.code === 'nokey') mount(container, cfUnavailableCard({ kind: 'off', onRetry: load, onBack: () => navigate('modrinth') }));
+      else if (alive) mount(container, detailError(err, load));
       return;
     }
     if (alive) build(project);
@@ -163,6 +192,7 @@ export function renderCurseForgeDetail(root, id) {
   }
 
   load();
+  offs.push(cloud.on('auth', () => alive && load()));
   return () => {
     alive = false;
     offs.forEach((off) => off());
