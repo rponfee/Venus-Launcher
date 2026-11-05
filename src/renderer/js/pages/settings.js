@@ -88,7 +88,6 @@ const ALIASES = {
   temas: 'appearance',
   notify: 'privacy',
   avisos: 'privacy',
-  streamer: 'privacy',
   stream: 'privacy',
   premium: 'plan',
 };

@@ -221,3 +221,7 @@ html.ax-hc .rw-fx-shimmer, html.ax-hc .rw-fx-rainbow, html.ax-hc .rw-fx-fire, ht
 @media (max-width: 1180px) {
   .rw-invite-view { grid-template-columns: minmax(0, 1fr); }
 }
+
+.rw-chip-ticket { display: block; width: 40px; flex-shrink: 0; }
+.rw-chip .rw-chip-ticket .va-ticket { width: 40px; }
+.rw-balance > .va-ticket { align-self: center; }

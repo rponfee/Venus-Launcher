@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { harness, flush } from '../../../features/clans/test/renderer-harness.js';
 import * as logic from '../logic.js';
+import { COMMUNITY_LIMITS, safeColor } from '../../../features/clans/logic.js';
 
 function viewHarness() {
   const ui = harness(), chats = [];
@@ -12,7 +13,7 @@ function viewHarness() {
     throw new Error(name);
   } };
   const { communityView } = ui.load(new URL('../view.js', import.meta.url), {
-    ...logic, chatView: (host, { channel }) => {
+    ...logic, COMMUNITY_LIMITS, safeColor, chatView: (host, { channel }) => {
       const item = { channel, stopped: false, updates: 0, destroy() { this.stopped = true; }, setCommunity() { this.updates++; } };
       chats.push(item); ui.deps.mount(host, ui.deps.h('chat')); return item;
     },
@@ -59,4 +60,18 @@ test('si desaparece la comunidad se cierra el chat; un error de red no lo destru
     assert.equal(ui.chats[0].stopped, true);
     assert.equal(ui.root.children.at(-1).tag, 'empty');
   } finally { ui.close(); }
+});
+
+test('al perder staff un canal privado abierto se cierra aunque llegue en una respuesta vieja', async () => {
+  const ui=viewHarness();
+  try {
+    await flush();
+    ui.set({id:'c',name:'Comunidad',myRole:'owner',channels:[{id:'a',kind:'text',name:'privado',isPrivate:true}]});
+    await ui.refresh();
+    ui.set({id:'c',name:'Comunidad',myRole:'member',channels:[{id:'a',kind:'text',name:'privado',isPrivate:true},{id:'public',kind:'announcement',name:'noticias'}]});
+    await ui.refresh();
+    assert.equal(ui.chats[0].stopped,true);
+    assert.equal(ui.chats.at(-1).channel.id,'public');
+    assert.equal(ui.nodes.filter(n=>n.hasClass('cm-add-channel')&&n.isConnected).length,0);
+  } finally {ui.close();}
 });

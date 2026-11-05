@@ -1,7 +1,7 @@
 // Clanes y comunidades: lógica pura compartida, sin DOM (docs/implementacion/clanes-comunidades.md). La validación es para avisar antes
 // de mandar: el que decide siempre es el servidor (0033_clanes_comunidades.sql).
 export const CLAN_LIMITS = { nameMin: 3, nameMax: 30, tagMin: 2, tagMax: 5, description: 300, members: 50 };
-export const COMMUNITY_LIMITS = { nameMin: 3, nameMax: 40, description: 500, members: 500, channels: 20, owned: 3, channelName: 30, message: 2000 };
+export const COMMUNITY_LIMITS = { nameMin: 3, nameMax: 40, description: 500, members: 500, channels: 50, owned: 3, channelName: 30, message: 2000 };
 export const EMBLEMS = ['shield', 'swords', 'crown', 'flame', 'skull', 'star', 'pickaxe', 'mountain', 'moon', 'zap', 'heart', 'trophy'];
 export const COLORS = ['#7c5cff', '#e5484d', '#f5a524', '#30a46c', '#0ea5e9', '#e93d82', '#94a3b8', '#14b8a6'];
 export const REPORT_REASONS = ['spam', 'abuse', 'nsfw', 'other'];

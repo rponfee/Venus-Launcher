@@ -1,5 +1,7 @@
 # Visor de semillas: algoritmo, cobertura y límites
 
+> **Función retirada del launcher el 4 de noviembre de 2026.** Ya no se registra la ruta ni su entrada de menú. Se conserva este informe con la cobertura, pruebas y límites del generador histórico; el mapa normal de mundos y los campos Semilla al crear mundos/servidores siguen disponibles. [Estado actual](../retirada-funciones.md).
+
 > **Rama 4.5.0, sin publicar.** Consolidación documental del 3 de noviembre de 2026, reconciliada con el WIP congelado. Los informes de cada frente se conservan como antecedentes; las pruebas posteriores están atribuidas al final o en el estado de integración. Contratos y límites del código local; producción continúa hasta 0027 según la integración principal. Los resultados previos pertenecen a sus informes y no equivalen a pruebas externas repetidas ni a un despliegue. Ver [estado de integración](../estado-4.5.0.md).
 
 Página `#/seeds[/<semilla>]`, menú Herramientas. Muestra los biomas y las estructuras de un mundo antes de crearlo. Se calcula todo en la PC, sin red.

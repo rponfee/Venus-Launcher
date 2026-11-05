@@ -1,9 +1,9 @@
 // Estudio de clips: montaje, timelapse, subir clips, OBS y galeria publica. Lo que corre con el launcher abierto aunque no se
-// abra la pagina de Clips: las tarjetas de Ajustes (OBS, timelapse y cuentas para subir) y el aviso de que OBS cambio el modo
-// streamer. Las ventanas estan en features/clipstudio/ y la galeria en pages/clips/gallery.js. Guia: docs/implementacion/clips.md.
+// abra la pagina de Clips: tarjetas de Ajustes (OBS, timelapse y cuentas para subir).
+// Las ventanas estan en features/clipstudio/ y la galeria en pages/clips/gallery.js. Guia: docs/implementacion/clips.md.
 //   startup()
 import { h, icon, ensureCss, mount, fail, ok, confirmDialog, setBusy } from '../ui.js';
-import { store, api } from '../store.js';
+import { api } from '../store.js';
 import { t, loadNs } from '../i18n.js';
 import { navigate } from '../app.js';
 import { registerSettingsCard } from '../settings-cards.js';
@@ -107,8 +107,5 @@ export function startup() {
   slot(() => timelapseCard());
   slot((ctx) => uploadCard(ctx));
   slot(() => obsPanel());
-  // El proceso principal cambio el modo streamer por lo que hace OBS: hay que releer los ajustes para que la interfaz lo pinte
-  api.on('obs:streamer', () => {
-    store.refreshSettings().catch(() => {});
-  });
+
 }

@@ -52,8 +52,7 @@ function defaults() {
     storage: { autoDedupe: false }, // modules/storage.js: unificar duplicados al abrir
     // Conexiones que el launcher haría por su cuenta: apagadas hasta que el usuario las active (aviso al terminar la
     // bienvenida y Ajustes > Privacidad). decided = ya respondió el aviso. Ver README > Privacy policy.
-    // streamer = modo streamer (modules/streamer.js): esconde codigos, direcciones, nombres de amigos y mensajes.
-    privacy: { decided: false, autoUpdates: false, news: false, featuredServers: false, playerHeads: false, streamer: false },
+    privacy: { decided: false, autoUpdates: false, news: false, featuredServers: false, playerHeads: false },
   };
 }
 

@@ -14,6 +14,10 @@ Puntos que se ganan con el premio diario, los logros y las invitaciones, y se ga
 | Textos | `i18n/{es,en}/rewards.js` y `premium.js` (interfaz); `src/main/i18n/{es,en}/rewards.js` (errores de la verificación) |
 | Pruebas | `node --test "src/main/modules/rewards/test/"` |
 
+## Tickets ilustrados
+
+El saldo y los premios de puntos del Venus Pass se muestran sobre un ticket de estilo Venus, con una miniatura en el acceso lateral. Las cantidades siguen viniendo de la cuenta y se dibujan como texto; el arte no cambia las reglas ni el valor de los puntos. [Assets y prompts](arte-venus.md).
+
 ## Logros y misiones de la 3.0
 
 - **Catálogo**: `src/renderer/js/pages/achievements/catalog.js`. No hay tope: se agrega una escalera o un paso, se corre `node scripts/gen-achievements-sql.js supabase/migrations/00NN_logros.sql`, se aplica la migración y se suman los textos `fam_<familia>` y `famDesc_<familia>` en `i18n/<idioma>/achievements.js`. Los ids nunca cambian y los 18 de la 2.x se conservan con sus puntos.

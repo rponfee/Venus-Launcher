@@ -22,6 +22,7 @@ export class GroupError extends Error {
 /** Mensaje para el usuario de un error del servidor; lo técnico queda en la consola. */
 export function errText(err) {
   const code = err?.code || classifyGroupError(err);
+  if (code === 'too_many_channels') return t('clans.cmChannelsFull');
   return has(`clans.err_${code}`) ? t(`clans.err_${code}`) : t('clans.err_server');
 }
 
@@ -33,7 +34,14 @@ function toGroupError(err, where) {
     warned = true; // sin servicio o sin la migración: una vez por sesión alcanza
     console.warn(`[clans] ${where}:`, err?.code || '', err?.message || err);
   }
-  return new GroupError(code, err?.message);
+  const result = new GroupError(code, err?.message);
+  if (code === 'slowmode') {
+    try {
+      const details = typeof err?.details === 'string' ? JSON.parse(err.details) : err?.details;
+      if (typeof details?.nextPostAt === 'string' && Number.isFinite(Date.parse(details.nextPostAt))) result.nextPostAt = details.nextPostAt;
+    } catch { /* detalles opcionales: nunca mostrar la respuesta técnica */ }
+  }
+  return result;
 }
 
 function realBackend(b) {

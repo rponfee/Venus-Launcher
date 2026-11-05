@@ -351,6 +351,7 @@ export default {
   aboutDev: "Geliştirme",
   aboutCopy: "Bilgiyi kopyala",
   aboutCopied: "Bilgi kopyalandı",
+  link_website: "Resmî web sitesi",
   link_modrinth: "Modrinth",
   link_optifine: "OptiFine'ı destekle",
   link_eula: "Minecraft EULA",

@@ -154,7 +154,7 @@ export default {
   accountConnected: "Bağlı",
   accountNotConnected: "Bağlı değil",
   obsTitle: "OBS entegrasyonu",
-  obsSubtitle: "Oyuna göre sahneleri değiştirir ve yayın sırasında yayıncı modunu açar.",
+  obsSubtitle: "Oyun açılırken ve kapanırken sahneyi değiştirir.",
   obsEnable: "OBS’ye bağlan",
   obsEnableSub: "WebSocket sunucusu açık olan OBS 28 veya üzeri gerekir (Araçlar → WebSocket Sunucusu Ayarları). OBS kapalıysa sessizce yeniden bağlanmayı dener.",
   obsHost: "Adres",

@@ -164,7 +164,7 @@ export default {
 
   // OBS
   obsTitle: 'Integración con OBS',
-  obsSubtitle: 'Cambia de escena con el juego y prende el modo streamer mientras transmitís.',
+  obsSubtitle: "Cambia de escena al abrir y cerrar el juego.",
   obsEnable: 'Conectarse a OBS',
   obsEnableSub: 'Necesita OBS 28 o más nuevo, con el servidor WebSocket prendido (Herramientas → Ajustes del servidor WebSocket). Si OBS está cerrado, reintenta sin avisar nada.',
   obsHost: 'Dirección',

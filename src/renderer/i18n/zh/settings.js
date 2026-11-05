@@ -348,6 +348,7 @@ export default {
   aboutDev: "开发版",
   aboutCopy: "复制信息",
   aboutCopied: "信息已复制",
+  link_website: "官方网站",
   link_modrinth: "Modrinth",
   link_optifine: "支持 OptiFine",
   link_eula: "Minecraft EULA",

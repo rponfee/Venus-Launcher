@@ -1,5 +1,7 @@
 # Extensiones: contratos, instalación y aislamiento
 
+> **Función retirada del launcher el 4 de noviembre de 2026.** No se carga el módulo principal ni su startup de interfaz; no hay rutas, tarjetas, protocolo ni IPC de extensiones. Este informe conserva contratos, tablas y límites históricos, sin borrar paquetes ni datos del usuario. [Estado actual](../retirada-funciones.md).
+
 > **Rama 4.5.0, sin publicar.** Consolidación documental del 3 de noviembre de 2026, reconciliada con el WIP congelado. Los informes de cada frente se conservan como antecedentes; las pruebas posteriores están atribuidas al final o en el estado de integración. Contratos y límites del código local; producción continúa hasta 0027 según la integración principal. Los resultados previos pertenecen a sus informes y no equivalen a pruebas externas repetidas ni a un despliegue. Ver [estado de integración](../estado-4.5.0.md).
 
 Guía para quien escribe extensiones: [../extensiones.md](../extensiones.md), con un ejemplo en [../extensiones-ejemplo/](../extensiones-ejemplo/). Este documento explica cómo se usa y cómo funciona por dentro.

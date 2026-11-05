@@ -351,6 +351,7 @@ export default {
   aboutDev: "Desenvolvimento",
   aboutCopy: "Copiar informações",
   aboutCopied: "Informações copiadas",
+  link_website: "Site oficial",
   link_modrinth: "Modrinth",
   link_optifine: "Apoiar o OptiFine",
   link_eula: "EULA do Minecraft",

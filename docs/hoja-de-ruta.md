@@ -1,5 +1,7 @@
 # Hoja de ruta: de la 3.0.10 en adelante
 
+> **Alcance actualizado:** Clanes, modo streamer, Extensiones y visor de semillas se retiraron del launcher. Sus implementaciones e informes anteriores se conservan como antecedentes; [detalle y datos preservados](retirada-funciones.md).
+
 Lo que viene después de la 3.0.10, decidido el 3 de noviembre de 2026. Son 73 funciones, originalmente repartidas en cuatro grupos; los grupos históricos 3.2–3.4 se reúnen ahora en la rama 4.5.0. Su implementación no implica publicación ni validación externa completa. Quedaron afuera a propósito: tipografía propia (`.ttf`), CSS propio, generación con IA de skins y de imágenes (tienen costo por uso), servidores 24/7 pagos y modpacks con ingresos para creadores.
 
 Estado: ☐ pendiente · ☑ implementada. En el grupo histórico 3.1 indica entrega publicada; en los grupos 3.2–3.4 indica implementación en la rama 4.5.0, todavía sin publicar.
@@ -110,12 +112,12 @@ Pase de temporada, aparte de la tienda de cosméticos: se compra con Mercado Pag
 | # | Función | Estado |
 |---|---|---|
 | 31 | Capas de Venus visibles en el juego | ☑ Implementada · 4.5.0 sin publicar |
-| 50 | Visor de semillas | ☑ Implementada · 4.5.0 sin publicar |
-| 61 | Clanes | ☑ Implementada · 4.5.0 sin publicar |
+| 50 | Visor de semillas | Retirada del launcher por decisión del dueño |
+| 61 | Clanes | Retirada del launcher por decisión del dueño; Comunidades se mantiene |
 | 62 | Comunidades estilo Discord | ☑ Implementada · 4.5.0 sin publicar |
 | 68 | Galería pública de clips | ☑ Implementada · 4.5.0 sin publicar |
 | 77 | App para celular | ☑ Implementada · 4.5.0 sin publicar |
-| 78 | Extensiones de la comunidad | ☑ Implementada · 4.5.0 sin publicar |
+| 78 | Extensiones de la comunidad | Retirada del launcher por decisión del dueño |
 
 ## Aparte, propuestas como tareas propias
 

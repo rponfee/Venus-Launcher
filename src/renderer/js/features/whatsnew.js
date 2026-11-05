@@ -40,9 +40,7 @@ const SLIDES = [
   { id: 'v45play', art: 'overlay', icon: 'gamepad', go: () => navigate('settings/ingame') },
   { id: 'v45social', art: 'profiles', icon: 'users', go: () => navigate('communities') },
   { id: 'v45clips', art: 'clips', icon: 'camera', go: () => navigate('clips') },
-  { id: 'v45worlds', art: 'badge', icon: 'globe', go: () => navigate('seeds') },
-  { id: 'v45connected', art: 'themes', icon: 'puzzle', go: () => navigate('extensions') },
-  { id: CHANGES_SLIDE, art: 'intro', icon: 'info', go: () => navigate('settings/privacy') },
+  { id: CHANGES_SLIDE, art: 'intro', icon: 'info', bullets: [3], go: () => navigate('settings/privacy') },
 ];
 
 // "2.0.0", "2.0.0-beta.1" o "v2.1" -> [2, 0, 0]
@@ -153,7 +151,7 @@ export async function openWhatsNew({ start = 0, only = null } = {}) {
           Promise.resolve(s.go()).catch((err) => console.warn('[whatsnew]', err?.message || err));
         } }, t(`whatsnew.${s.id}_cta`), icon('arrowRight'))
       : null;
-    const bullets = [1, 2, 3, 4].map((k) => `whatsnew.${s.id}_b${k}`).filter((k) => has(k));
+    const bullets = (s.bullets || [1, 2, 3, 4]).map((k) => `whatsnew.${s.id}_b${k}`).filter((k) => has(k));
     return h(
       'section',
       { class: ['wn-slide', dir && !reducedMotion() && `wn-enter-${dir}`], role: 'group', 'aria-roledescription': t('whatsnew.slideRole'), 'aria-label': t('whatsnew.slideLabel', { n: index + 1, total, title: t(`whatsnew.${s.id}_title`) }) },

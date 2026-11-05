@@ -10,7 +10,7 @@ const ARCHIVE = path.resolve(process.argv[2] || path.join(__dirname, '..', 'dist
 const MAX_FILE = 2 * 1024 * 1024;
 const MAX_TOTAL = 150 * 1024 * 1024;
 const APPROVED = new Map([
-  // ['ruta/dentro/del/asar', 'motivo'],
+  ['src/renderer/assets/venus/points-ticket.png', 'Ticket de Venus generado con transparencia; original de 2,05 MiB, sin descarga externa.'],
 ]);
 const FORBIDDEN = [
   [/\.mp4$/i, 'los fondos animados se bajan a demanda (modules/wallpapers.js)'],

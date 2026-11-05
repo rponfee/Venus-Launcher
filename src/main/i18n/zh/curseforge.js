@@ -2,7 +2,8 @@
 module.exports = {
   errNoKey: "CurseForge 配置目前不可用。",
   errSignIn: "请登录 Venus 账号以使用 CurseForge。",
-  errBadKey: "CurseForge 目前不可用。请稍后再试。",
+  errBadKey: "CurseForge 拒绝了为目录配置的密钥，需要管理员检查。",
+  errAccessDenied: "你的账户没有使用 CurseForge 目录的权限。",
   errNetwork: "无法连接到 CurseForge。请检查你的网络连接。",
   errTimeout: "CurseForge 响应时间过长。请稍后再试。",
   errRateLimit: "CurseForge 收到的请求过多。请稍等片刻后再试。",

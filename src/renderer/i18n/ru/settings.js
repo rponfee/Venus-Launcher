@@ -357,6 +357,7 @@ export default {
   aboutDev: "Разработка",
   aboutCopy: "Скопировать сведения",
   aboutCopied: "Сведения скопированы",
+  link_website: "Официальный сайт",
   link_modrinth: "Modrinth",
   link_optifine: "Поддержать OptiFine",
   link_eula: "EULA Minecraft",

@@ -11,10 +11,10 @@ Documentación permanente de los doce frentes. Conserva sus tablas de archivos, 
 | [Mensajes y voz: stickers, traducción, soundboard y efectos](mensajes-voz.md) | Contratos, uso, datos y límites |
 | [Competir: rankings, desafíos y eventos](competir.md) | Contratos, uso, datos y límites |
 | [Capas de Venus y FPS del mod](capas.md) | Contratos, uso, datos y límites |
-| [Extensiones: contratos, instalación y aislamiento](extensiones.md) | Contratos, uso, datos y límites |
+| [Extensiones: contratos, instalación y aislamiento](extensiones.md) | Referencia histórica de la función retirada; contratos y límites preservados |
 | [Estudio de clips: montaje, timelapse, subida, OBS y galería](clips.md) | Contratos, uso, datos y límites |
-| [Clanes y comunidades](clanes-comunidades.md) | Contratos, uso, datos y límites |
-| [Visor de semillas: algoritmo, cobertura y límites](semillas.md) | Contratos, uso, datos y límites |
+| [Clanes y comunidades](clanes-comunidades.md) | Comunidades permanece; Clanes se retiró del launcher. Se conservan los contratos anteriores |
+| [Visor de semillas: algoritmo, cobertura y límites](semillas.md) | Referencia histórica de la función retirada; cobertura y límites preservados |
 | [App para celular: PWA, mensajes, clips y avisos](app-celular.md) | Contratos, uso, datos y límites |
 
 Los doce borradores de funciones y el informe SQL se reconciliaron con estas referencias el 3 de noviembre de 2026. Después de revisar los cambios se retiró `docs/wip/`, con un respaldo temporal indicado en el estado de integración. Las guías de usuario y los comentarios de fuentes apuntan a estas rutas permanentes.

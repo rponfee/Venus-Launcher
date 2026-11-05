@@ -2,7 +2,8 @@
 module.exports = {
   errNoKey: "Konfiguracja CurseForge jest obecnie niedostępna.",
   errSignIn: "Zaloguj się na konto Venus, aby korzystać z CurseForge.",
-  errBadKey: "CurseForge jest teraz niedostępny. Spróbuj później.",
+  errBadKey: "CurseForge odrzucił klucz skonfigurowany dla katalogu. Administrator musi go sprawdzić.",
+  errAccessDenied: "Twoje konto nie ma uprawnień do korzystania z katalogu CurseForge.",
   errNetwork: "Nie udało się połączyć z CurseForge. Sprawdź połączenie z internetem.",
   errTimeout: "CurseForge odpowiadał zbyt długo. Spróbuj ponownie za jakiś czas.",
   errRateLimit: "CurseForge otrzymał zbyt wiele żądań. Poczekaj chwilę i spróbuj ponownie.",

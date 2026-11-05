@@ -1,5 +1,7 @@
 # Escribir una extensión de Venus Launcher
 
+> **Referencia histórica de una función retirada del launcher.** Ya no hay menú, carga automática, tarjetas, catálogo ni administración de extensiones. Se conservan este contrato, los ejemplos y los datos existentes; estas instrucciones no describen una función disponible. [Alcance de la retirada](retirada-funciones.md).
+
 Una extensión es una página web chica que corre adentro del launcher, en un marco aislado. Puede mostrar lo que quiera dentro de su rectángulo y pedirle al launcher unas pocas cosas por un puente de mensajes. No tiene internet, no tiene Node y no ve nada del launcher que el puente no le dé.
 
 Hay un ejemplo completo en [`extensiones-ejemplo/`](extensiones-ejemplo/): una extensión de notas que usa todos los permisos y una tarjeta en Inicio.

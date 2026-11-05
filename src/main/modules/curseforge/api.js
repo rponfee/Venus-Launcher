@@ -100,7 +100,9 @@ async function request(pathname, { method = 'GET', body, retries = 2, notFound, 
       }
     }
     if (res.status === 401 || res.status === 403) {
+      const detail = !apiKey ? await res.clone().json().catch(() => null) : null;
       await res.body?.cancel().catch(() => {});
+      if (detail?.error?.code === 'forbidden') throw cfError(t('curseforge.errAccessDenied'), { status: res.status, code: 'forbidden' });
       throw cfError(t('curseforge.errBadKey'), { status: res.status, code: 'badkey' });
     }
     if (res.status === 404) {

@@ -280,13 +280,8 @@ export default {
     const headEl = h('div', { class: 'hm-head' });
     const layoutEl = h('div', { class: 'hm-layout' });
     const foot = h('div', { class: 'hm-foot' }, h('button', { class: 'btn ghost sm', onclick: () => setEditing(true) }, icon('sliders'), t('home.customize')));
-    const extras = h('div', { class: 'hm-extras' });
-    const hm = h('div', { class: 'hm' }, headEl, heroEl, layoutEl, extras, foot);
+    const hm = h('div', { class: 'hm' }, headEl, heroEl, layoutEl, foot);
     mount(root, hm);
-    let cleanExtras = () => {};
-    import('../features/extensions.js').then((mod) => {
-      if (alive) cleanExtras = mod.mountHomeCards(extras);
-    }).catch((err) => console.warn('[home] extensiones:', err));
 
     // Bloques disponibles (con datos) y ocultos por el usuario. "Continuar" y "Tu actividad" arrancan con un
     // esqueleto (asi el resto no salta cuando llegan los datos) y se ocultan solos si no hay nada que mostrar.
@@ -1997,7 +1992,6 @@ export default {
 
     return () => {
       alive = false;
-      cleanExtras();
       timers.forEach(clearInterval);
       clearTimeout(friendsTimer);
       clearTimeout(afterGameTimer);

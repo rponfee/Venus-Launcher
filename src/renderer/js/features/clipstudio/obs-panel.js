@@ -10,7 +10,7 @@ const STATE_CLASS = { connected: 'good', connecting: '', waiting: 'warn', authFa
 
 const obsSettings = () => {
   const o = store.settings?.obs || {};
-  return { enabled: o.enabled === true, host: o.host || '127.0.0.1', port: o.port || 4455, sceneOnOpen: o.sceneOnOpen || '', sceneOnClose: o.sceneOnClose || '', streamerWhileLive: o.streamerWhileLive !== false };
+  return { enabled: o.enabled === true, host: o.host || '127.0.0.1', port: o.port || 4455, sceneOnOpen: o.sceneOnOpen || '', sceneOnClose: o.sceneOnClose || '' };
 };
 
 export function obsPanel() {
@@ -127,7 +127,6 @@ export function obsPanel() {
       result,
       h('h3', { class: 'cs-subtitle' }, C('obsRules')),
       h('div', { class: 'cs-obs-grid two' }, sceneSelect('sceneOnOpen', C('obsSceneOpen')), sceneSelect('sceneOnClose', C('obsSceneClose'))),
-      h('div', { class: 'toggle-row' }, h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, C('obsStreamerRule')), h('div', { class: 'tr-sub' }, C('obsStreamerRuleSub'))), switchEl(c.streamerWhileLive, (v) => save({ streamerWhileLive: v }), C('obsStreamerRule'))),
     );
   }
 

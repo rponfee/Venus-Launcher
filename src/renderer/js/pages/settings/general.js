@@ -8,7 +8,6 @@ import { social } from '../../social.js';
 import { navigate } from '../../app.js';
 import { discordButton } from '../../community.js';
 import { sectionHead, card, toggleRow, note, iconList, arrowFocus, extLink, embedPanel } from './shared.js';
-import { isStreamer, setStreamer } from '../../features/streamer.js';
 import { NET_KEYS } from '../../features/netprefs.js';
 import { normalizeBreaks, EVERY_OPTIONS, LIMIT_OPTIONS } from '../tools/breaks.js';
 
@@ -382,19 +381,6 @@ export function renderPrivacy(body, ctx) {
       toggleRow({ title: t(`common.net_${key}Title`), sub: t(`common.net_${key}Text`), checked: store.settings?.privacy?.[key] === true, onChange: setNet(key) })),
   );
 
-  // Modo streamer (features/streamer.js): difumina códigos, direcciones, nombres de amigos y mensajes
-  const streamer = card(
-    { title: t('settings.streamerTitle'), iconName: 'eyeOff', sub: t('settings.streamerSub'), anchor: 'streamer' },
-    toggleRow({ title: t('settings.streamerToggle'), sub: t('settings.streamerToggleSub'), checked: isStreamer(), onChange: (v) => setStreamer(v) }),
-    iconList([
-      ['hash', t('settings.streamerCodes'), t('settings.streamerCodesSub')],
-      ['server', t('settings.streamerAddresses'), t('settings.streamerAddressesSub')],
-      ['users', t('settings.streamerFriends'), t('settings.streamerFriendsSub')],
-      ['gamepad', t('settings.streamerGame'), t('settings.streamerGameSub')],
-    ]),
-    h('p', { class: 'cfg-text small muted' }, t('settings.streamerNote')),
-  );
-
   // Discord Rich Presence (panel del módulo discord): qué se muestra en tu perfil de Discord
   const discordHost = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'discord' } });
   // Avisos de amigos y servidores favoritos (features/notify.js)
@@ -405,7 +391,6 @@ export function renderPrivacy(body, ctx) {
     sectionHead('privacy', 'shieldCheck'),
     optional,
     h('p', { class: 'cfg-text small muted' }, t('common.net_integrationsNote')),
-    streamer,
     card(
       { title: t('settings.privActivityTitle'), iconName: 'activity', anchor: 'activity' },
       toggleRow({ title: t('settings.privShareActivity'), sub: t('settings.privShareActivitySub'), checked: shareActivityPref(), onChange: setShare }),
@@ -442,6 +427,7 @@ const CREDITS = [
 ];
 
 const LINKS = [
+  ['website', 'https://venuslauncher.fun/', 'globe'],
   ['modrinth', 'https://modrinth.com', 'package'],
   ['optifine', 'https://optifine.net/donate', 'heart'],
   ['eula', 'https://aka.ms/MinecraftEULA', 'fileText'],

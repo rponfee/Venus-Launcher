@@ -11,9 +11,18 @@
 
 /* Nivel */
 .ps-hero { display: grid; grid-template-columns: auto 1fr auto; gap: var(--sp-5); align-items: center; }
-.ps-level { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 112px; height: 112px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--accent) 45%, transparent), var(--card-bg-flat)); border: 2px solid var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent); }
-.ps-level-label { font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-.ps-level-num { font-family: var(--font-display, inherit); font-size: 40px; font-weight: 700; line-height: 1; color: var(--accent-hi); }
+.ps-emblem { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ps-customize { font-size: var(--fs-xs); }
+.ps-appearance { display: grid; grid-template-columns: 190px 1fr; gap: var(--sp-4); align-items: start; }
+.ps-appearance-preview { display: flex; justify-content: center; position: sticky; top: 0; }
+.ps-appearance-fields { display: flex; flex-direction: column; gap: var(--sp-3); }
+.ps-planet-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
+.ps-planet-option { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 12px; padding: 8px; background: var(--card-bg-flat); color: var(--text); font: inherit; cursor: pointer; }
+.ps-planet-option[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-wash); }
+.ps-planet-option img { width: 48px; height: 48px; object-fit: contain; }
+.ps-appearance-color { width: 100%; min-height: 38px; border: 1px solid var(--border); border-radius: 8px; padding: 3px; background: var(--well-bg); cursor: pointer; }
+.ps-col-level .va-level { flex-shrink: 0; }
+@media (max-width: 700px) { .ps-appearance { grid-template-columns: 1fr; } .ps-appearance-preview { position: static; } }
 .ps-progress-wrap { min-width: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
 .ps-progress-head { display: flex; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
 .ps-progress { height: 12px; border-radius: 999px; background: var(--card-bg-flat); border: 1px solid var(--border); overflow: hidden; }
@@ -47,12 +56,12 @@
 
 /* Pista de niveles */
 .ps-track-wrap { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-2); min-width: 0; }
-.ps-legend { display: grid; grid-template-rows: 44px 150px 150px; gap: var(--sp-2); align-items: center; }
+.ps-legend { display: grid; grid-template-rows: 84px 150px 150px; gap: var(--sp-2); align-items: center; }
 .ps-legend-row { display: inline-flex; align-items: center; gap: 6px; writing-mode: vertical-rl; transform: rotate(180deg); font-size: var(--fs-sm); font-weight: 600; color: var(--muted); justify-content: center; }
 .ps-legend-row.is-premium { color: #ffd27a; }
 .ps-legend-row svg { width: 14px; height: 14px; transform: rotate(90deg); }
 .ps-track { display: flex; gap: var(--sp-2); overflow-x: auto; padding: 4px 4px var(--sp-3); scroll-snap-type: x proximity; min-width: 0; }
-.ps-col { display: grid; grid-template-rows: 44px 150px 150px; gap: var(--sp-2); flex: 0 0 150px; scroll-snap-align: center; }
+.ps-col { display: grid; grid-template-rows: 84px 150px 150px; gap: var(--sp-2); flex: 0 0 150px; scroll-snap-align: center; }
 .ps-col-level { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 10px; background: var(--card-bg-flat); border: 1px solid var(--border); color: var(--muted); font-weight: 700; }
 .ps-col.is-reached .ps-col-level { color: var(--text); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
 .ps-col.is-current .ps-col-level { background: color-mix(in srgb, var(--accent) 22%, var(--card-bg-flat)); border-color: var(--accent); color: var(--accent-hi); }
@@ -87,3 +96,5 @@
   .ps-hero-actions { grid-column: 1 / -1; flex-direction: row; }
 }
 html[data-ui-lite] .ps-progress > i, body.reduce-motion .ps-progress > i { transition: none; }
+
+.ps-appearance-dialog .modal-sub { white-space: normal; overflow: visible; text-overflow: clip; }

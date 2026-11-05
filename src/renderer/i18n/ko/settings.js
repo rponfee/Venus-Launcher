@@ -348,6 +348,7 @@ export default {
   aboutDev: "개발",
   aboutCopy: "정보 복사",
   aboutCopied: "정보를 복사했어요",
+  link_website: "공식 웹사이트",
   link_modrinth: "Modrinth",
   link_optifine: "OptiFine 후원",
   link_eula: "Minecraft EULA",

@@ -348,6 +348,7 @@ export default {
   aboutDev: "開発版",
   aboutCopy: "情報をコピー",
   aboutCopied: "情報をコピーしました",
+  link_website: "公式サイト",
   link_modrinth: "Modrinth",
   link_optifine: "OptiFineを応援する",
   link_eula: "Minecraft EULA",

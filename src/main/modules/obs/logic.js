@@ -1,6 +1,6 @@
 'use strict';
 // Reglas de la integracion con OBS, sin Electron (se prueban con node:test): ajustes, host permitido, espera entre
-// reintentos, que escena poner y cuando prender o apagar el modo streamer.
+// reintentos y qué escena poner al abrir o cerrar el juego.
 const DEFAULT_PORT = 4455;
 const BACKOFF = { first: 3000, max: 5 * 60000 };
 
@@ -18,7 +18,7 @@ function isLocalHost(raw) {
 
 const cleanScene = (v) => (typeof v === 'string' ? v.trim().slice(0, 256) : '');
 
-// settings.obs completo. Apagado por defecto. streamerOwned: el modo streamer lo prendio esta integracion.
+// settings.obs completo. Apagado por defecto; los ajustes antiguos de streamer se ignoran.
 function normalizeSettings(raw) {
   const s = raw && typeof raw === 'object' ? raw : {};
   const port = Math.round(Number(s.port));
@@ -28,8 +28,6 @@ function normalizeSettings(raw) {
     port: Number.isInteger(port) && port >= 1 && port <= 65535 ? port : DEFAULT_PORT,
     sceneOnOpen: cleanScene(s.sceneOnOpen),
     sceneOnClose: cleanScene(s.sceneOnClose),
-    streamerWhileLive: s.streamerWhileLive !== false,
-    streamerOwned: s.streamerOwned === true,
   };
 }
 
@@ -39,19 +37,6 @@ function backoff(attempt) {
   return Math.min(BACKOFF.max, BACKOFF.first * 2 ** Math.min(n, 12));
 }
 
-/**
- * Modo streamer segun lo que hace OBS. s = { active (transmite o graba, con la regla prendida), wasActive (asi estaba
- * en el paso anterior), on (esta prendido), owned (lo prendio esta integracion) }.
- * Devuelve { set: true | false | null, owned }: set null = no tocar. Solo se prende al empezar a transmitir. Nunca apaga
- * lo que prendio el usuario, y si el usuario lo apaga durante la transmision, queda apagado.
- */
-function streamerStep({ active, wasActive, on, owned }) {
-  if (active && !wasActive) return on ? { set: null, owned } : { set: true, owned: true };
-  if (active) return { set: null, owned: on ? owned : false };
-  if (owned) return { set: on ? false : null, owned: false };
-  return { set: null, owned: false };
-}
-
 // Escena a poner cuando se abre o se cierra el juego (solo si hay otro juego abierto, la de cerrar no se pone)
 function sceneFor(event, cfg, { othersRunning = false } = {}) {
   if (event === 'open') return cfg.sceneOnOpen || null;
@@ -59,4 +44,4 @@ function sceneFor(event, cfg, { othersRunning = false } = {}) {
   return null;
 }
 
-module.exports = { DEFAULT_PORT, BACKOFF, isLocalHost, normalizeSettings, backoff, streamerStep, sceneFor };
+module.exports = { DEFAULT_PORT, BACKOFF, isLocalHost, normalizeSettings, backoff, sceneFor };

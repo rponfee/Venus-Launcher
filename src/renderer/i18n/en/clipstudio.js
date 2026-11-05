@@ -164,7 +164,7 @@ export default {
 
   // OBS
   obsTitle: 'OBS integration',
-  obsSubtitle: 'Switches scenes with the game and turns on streamer mode while you stream.',
+  obsSubtitle: "Switches scenes when the game starts and closes.",
   obsEnable: 'Connect to OBS',
   obsEnableSub: "Needs OBS 28 or newer, with the WebSocket server turned on (Tools → WebSocket Server Settings). If OBS is closed, it keeps retrying without saying anything.",
   obsHost: 'Address',

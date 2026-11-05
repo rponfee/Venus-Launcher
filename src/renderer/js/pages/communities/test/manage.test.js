@@ -1,0 +1,83 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { uiHarness, deferred, flush } from './ui-harness.js';
+const community = {id:'c',name:'Prueba',myRole:'owner',channels:[],categories:[{id:'cat',name:'Proyectos',position:0}]};
+const control = (ui,key) => {
+  const label=ui.nodes.findLast(n=>n.tag==='label'&&n.children.includes('clans.'+key));
+  return ui.nodes.find(n=>n.id===label?.for);
+};
+
+test('crear canal manda configuración completa atómica y bloquea doble envío', async () => {
+  const ui=uiHarness(), pending=deferred(), calls=[];let refreshed=0;
+  const b={rpc:(name,args)=>{calls.push({name,args});return pending.promise;}};
+  const {openChannelForm}=ui.load('manage.js',{},['openChannelForm']);
+  openChannelForm(b,community,{categoryId:'cat',reload:()=>{refreshed++;}});
+  control(ui,'channelName').value='noticias';
+  control(ui,'cmChannelType').value='announcement';
+  await control(ui,'cmChannelType').fire('change');
+  control(ui,'cmTopic').value='Novedades';
+  const save=ui.find('cm-editor-save');
+  save.fire('click');save.fire('click');
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].name,'community_channel_create_configured');
+  assert.equal(calls[0].args.p_patch.postingRole,'staff');
+  assert.equal(calls[0].args.p_patch.categoryId,'cat');
+  assert.equal(save.disabled,true);
+  pending.resolve({id:'new'});await flush();
+  assert.equal(refreshed,1);
+});
+test('validación y fallo de backend no anuncian guardado ni cierran formulario', async () => {
+  const ui=uiHarness();let calls=0,refresh=0;
+  const {openChannelForm}=ui.load('manage.js',{},['openChannelForm']);
+  openChannelForm({rpc:async()=>{calls++;throw {code:'unavailable'};}},community,{reload:()=>refresh++});
+  await ui.find('cm-editor-save').fire('click');
+  assert.equal(calls,0);
+  control(ui,'channelName').value='general';
+  await ui.find('cm-editor-save').fire('click');
+  assert.equal(calls,1);assert.equal(refresh,0);
+  assert.equal(ui.dialogs[0].el.isConnected,true);
+  assert.equal(ui.find('cm-editor-save').disabled,false);
+  assert.equal(ui.nodes.findLast(n=>n.role==='alert').textContent,'unavailable');
+});
+test('editar mantiene tipo inmutable y voz no guarda slowmode ni publicación staff', async () => {
+  const ui=uiHarness(),calls=[];
+  const {openChannelForm}=ui.load('manage.js',{},['openChannelForm']);
+  openChannelForm({rpc:async(name,args)=>calls.push({name,args})},community,{channel:{id:'v',kind:'voice',name:'charla',icon:'headphones',postingRole:'staff',slowmodeSeconds:40}});
+  assert.equal(control(ui,'cmChannelType').disabled,true);
+  await ui.find('cm-editor-save').fire('click');
+  assert.equal(calls[0].name,'community_channel_configure');
+  assert.equal(calls[0].args.p_patch.slowmodeSeconds,0);
+  assert.equal(calls[0].args.p_patch.postingRole,'members');
+  assert.equal('kind' in calls[0].args.p_patch,false);
+});
+test('eliminar requiere confirmación y el menú mueve con el orden completo', async () => {
+  const ui=uiHarness(),calls=[];let confirmations=0;
+  const b={rpc:async(name,args)=>{calls.push({name,args});}};
+  const module=ui.load('manage.js',{confirmDialog:async()=>{confirmations++;return false;}},['deleteChannel','deleteCategory','channelMenuItems']);
+  const c={...community,channels:[{id:'one',name:'Uno',kind:'text',position:0,categoryId:null},{id:'other',kind:'text',position:1,categoryId:'cat'},{id:'two',kind:'text',position:2,categoryId:null}]};
+  await module.deleteChannel(b,c,c.channels[0],()=>{});
+  await module.deleteCategory(b,c,c.categories[0],()=>{});
+  assert.equal(confirmations,2);assert.equal(calls.length,0);
+  const items=module.channelMenuItems(b,c,c.channels[2],()=>{});
+  await items.find(it=>it.label==='clans.moveUp').run();
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])),{name:'community_channels_reorder',args:{p_community:'c',p_ids:['two','other','one']}});
+  assert.deepEqual(Array.from(module.channelMenuItems(b,{...c,myRole:'member'},c.channels[0],()=>{})),[]);
+});
+test('categorías y personalización llaman sus RPC reales y validan tamaños', async () => {
+  const ui=uiHarness(),calls=[];
+  const b={rpc:async(name,args)=>{calls.push({name,args});}};
+  const {openCategoryForm,openAppearanceForm}=ui.load('manage.js',{},['openCategoryForm','openAppearanceForm']);
+  openCategoryForm(b,community);
+  control(ui,'cmCategoryName').value='Eventos';
+  await ui.byText('formSave').fire('click');
+  assert.equal(calls[0].name,'community_category_save');
+  assert.equal(calls[0].args.p_name,'Eventos');
+  openAppearanceForm(b,community);
+  control(ui,'cmWelcome').value='Hola a todos';
+  control(ui,'cmRules').value='Respeto';
+  control(ui,'cmBanner').value='ocean';
+  await ui.byText('formSave').fire('click');
+  assert.equal(calls[1].name,'community_customize');
+  assert.equal(calls[1].args.p_patch.banner,'ocean');
+  assert.equal(calls[1].args.p_patch.rules,'Respeto');
+});

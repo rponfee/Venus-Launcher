@@ -1,3 +1,4 @@
+import { cleanLine, cleanText } from '../../features/clans/logic.js';
 // Comunidades: lógica pura de canales y mensajes, sin DOM. Los permisos son para mostrar u ocultar botones: el servidor los
 // vuelve a comprobar en cada RPC (0033_clanes_comunidades.sql).
 export const PAGE_SIZE = 50;
@@ -21,10 +22,10 @@ export function channelsByKind(channels) {
   return { text: list.filter((c) => c.kind === 'text'), voice: list.filter((c) => c.kind === 'voice'), all: list };
 }
 
-/** El canal que corresponde abrir: el pedido si sigue existiendo y es de texto, si no el primero de texto. */
+/** El canal que corresponde abrir: el pedido si sigue existiendo y admite mensajes o temas, si no el primero disponible. */
 export function pickChannel(channels, wanted) {
-  const { text } = channelsByKind(channels);
-  return text.find((c) => c.id === wanted) || text[0] || null;
+  const list = channelsByKind(channels).all.filter((ch) => ['text', 'announcement', 'forum'].includes(ch.kind));
+  return list.find((c) => c.id === wanted) || list[0] || null;
 }
 
 /** Orden nuevo de todos los canales al mover uno; null si no se puede mover para ese lado. */
@@ -57,6 +58,8 @@ export function messageFromRow(row, { people, isBlocked } = {}) {
   return {
     id: row.id,
     channelId: row.channel_id,
+    parentId: row.parent_id || null,
+    title: hidden || row.deleted ? null : row.title || null,
     communityId: row.community_id,
     authorId: row.author,
     at: row.created_at,
@@ -94,4 +97,94 @@ export const isMuted = (until, now = Date.now()) => !!until && Date.parse(until)
 export function voiceSummary(people, max = 8) {
   const list = Array.isArray(people) ? people.filter(Boolean) : [];
   return { count: list.length, full: list.length >= max, shown: list.slice(0, 4), extra: Math.max(0, list.length - 4) };
+}
+
+export const CHANNEL_KINDS = ['text', 'voice', 'announcement', 'forum'];
+export const COMMUNITY_ICONS = ['users', 'gamepad', 'star', 'heart', 'shield', 'flame', 'mountain', 'moon', 'zap', 'book', 'message-circle', 'headphones', 'megaphone', 'hash'];
+export const COMMUNITY_BANNERS = ['none', 'aurora', 'sunset', 'forest', 'ocean', 'stars'];
+export const COMMUNITY_THEMES = ['default', 'cozy', 'compact'];
+export const CATEGORY_LIMIT = 20;
+export const TOPIC_PAGE_SIZE = 30;
+export const safeCommunityIcon = (value, fallback = 'users') => COMMUNITY_ICONS.includes(value) ? value : fallback;
+export const iconGlyph = (value) => ({ book: 'file', 'message-circle': 'message', megaphone: 'volume' }[value] || value);
+export const channelIcon = (ch) => iconGlyph(safeCommunityIcon(ch?.icon, { text: 'hash', voice: 'headphones', announcement: 'megaphone', forum: 'message-circle' }[ch?.kind] || 'hash'));
+export const safeBanner = (value) => COMMUNITY_BANNERS.includes(value) ? value : 'none';
+export const safeTheme = (value) => COMMUNITY_THEMES.includes(value) ? value : 'default';
+export const visibleChannels = (community) => (community?.channels || []).filter((ch) => !ch.isPrivate || isStaff(community?.myRole));
+/** Categorías vacías también se ven para poder agregar su primer canal. */
+export function categoryGroups(community) {
+  const categories = [...(community?.categories || [])].sort((a, b) => a.position - b.position);
+  const ids = new Set(categories.map((c) => c.id));
+  const channels = channelsByKind(visibleChannels(community)).all;
+  return [...categories.map((c) => ({ ...c, channels: channels.filter((ch) => ch.categoryId === c.id) })),
+    { id: null, name: '', channels: channels.filter((ch) => !ids.has(ch.categoryId)) }];
+}
+/** RPC recibe el orden global completo; las flechas mueven dentro de la categoría. */
+export function moveWithinCategory(channels, id, delta) {
+  const all = channelsByKind(channels).all;
+  const channel = all.find((ch) => ch.id === id);
+  if (!channel) return null;
+  const same = (ch) => (ch.categoryId || null) === (channel.categoryId || null);
+  const moved = moveChannel(all.filter(same).map((ch) => ch.id), id, delta);
+  if (!moved) return null;
+  let at = 0;
+  return all.map((ch) => same(ch) ? moved[at++] : ch.id);
+}
+export function canPostIn(community, channel) {
+  if (!community?.myRole || isMuted(community.mutedUntil) || !channel || channel.kind === 'voice' || channel.canPost === false) return false;
+  return !((channel.isPrivate || channel.kind === 'announcement' || channel.postingRole === 'staff') && !isStaff(community.myRole));
+}
+export function waitSeconds(community, channel, now = Date.now()) {
+  return isStaff(community?.myRole) ? 0 : Math.max(0, Math.ceil(((Date.parse(channel?.nextPostAt) || 0) - now) / 1000));
+}
+/** El reloj del servidor persiste al recargar; el envío actualiza la espera sin perder el borrador. */
+export function afterPost(community, channel, at = new Date().toISOString()) {
+  if (isStaff(community?.myRole) || !channel?.slowmodeSeconds) return channel;
+  const next = (Date.parse(at) || Date.now()) + channel.slowmodeSeconds * 1000;
+  return { ...channel, nextPostAt: new Date(Math.max(Date.parse(channel.nextPostAt) || 0, next)).toISOString() };
+}
+const checkedText = (value, min, max, error, line = false) => {
+  const clean = line ? cleanLine(value) : cleanText(value);
+  return clean === null || [...clean].length < min || [...clean].length > max
+    ? { ok: false, error } : { ok: true, value: clean };
+};
+export const validateCategoryName = (value) => checkedText(value, 1, 40, 'bad_category_name', true);
+export const validateTopicTitle = (value) => checkedText(value, 3, 120, 'bad_title', true);
+export function validateChannelSettings(value, categories = []) {
+  const name = checkedText(value.name, 1, 30, 'bad_channel_name', true);
+  const topic = checkedText(value.topic, 0, 500, 'bad_topic');
+  if (!name.ok) return name;
+  if (!topic.ok) return topic;
+  if (!CHANNEL_KINDS.includes(value.kind)) return { ok: false, error: 'bad_kind' };
+  if (!COMMUNITY_ICONS.includes(value.icon)) return { ok: false, error: 'bad_icon' };
+  if (value.categoryId && !categories.some((c) => c.id === value.categoryId)) return { ok: false, error: 'bad_category' };
+  const seconds = Number(value.slowmodeSeconds);
+  if (!Number.isInteger(seconds) || seconds < 0 || seconds > 21600) return { ok: false, error: 'bad_slowmode' };
+  if (!['members', 'staff'].includes(value.postingRole)) return { ok: false, error: 'bad_posting_role' };
+  return { ok: true, value: {
+    name: name.value, topic: topic.value, icon: value.icon, categoryId: value.categoryId || null,
+    slowmodeSeconds: value.kind === 'voice' ? 0 : seconds,
+    postingRole: value.kind === 'announcement' ? 'staff' : value.kind === 'voice' ? 'members' : value.postingRole,
+    isPrivate: value.isPrivate === true,
+  } };
+}
+export function validateAppearance(value) {
+  for (const [key, allowed] of [['theme', COMMUNITY_THEMES], ['icon', COMMUNITY_ICONS], ['banner', COMMUNITY_BANNERS]]) {
+    if (!allowed.includes(value[key])) return { ok: false, error: 'bad_' + key };
+  }
+  if (!/^#[0-9a-f]{6}$/i.test(value.color)) return { ok: false, error: 'bad_color' };
+  const welcome = checkedText(value.welcome, 0, 2000, 'bad_welcome');
+  const rules = checkedText(value.rules, 0, 4000, 'bad_rules');
+  if (!welcome.ok) return welcome;
+  if (!rules.ok) return rules;
+  return { ok: true, value: { theme: value.theme, color: value.color, icon: value.icon, banner: value.banner, welcome: welcome.value, rules: rules.value } };
+}
+
+export const communityColor = (value) => /^#[0-9a-f]{6}$/i.test(String(value || '')) ? value.toLowerCase() : '#f6b45a';
+
+/** Una respuesta antigua no acorta la espera; cambiar la configuración sí la sustituye. */
+export function mergeChannelState(current, next) {
+  if (!next) return current;
+  const keep = next.slowmodeSeconds > 0 && next.slowmodeSeconds === current.slowmodeSeconds && Date.parse(current.nextPostAt) > (Date.parse(next.nextPostAt) || 0);
+  return { ...next, nextPostAt: keep ? current.nextPostAt : next.nextPostAt };
 }

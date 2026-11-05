@@ -1,14 +1,16 @@
 // Comunidades: diálogos de crear y editar, canales (ordenar, renombrar, agregar y borrar), invitación y expulsados.
-import { h, icon, mount, modal, ok, fail, setBusy, skeleton, emptyState, confirmDialog, copyText, fmtAgo, promptDialog } from '../../ui.js';
+import { h, icon, mount, modal, ok, fail, setBusy, skeleton, emptyState, confirmDialog, copyText, fmtAgo } from '../../ui.js';
 import { t } from '../../i18n.js';
 import { errText } from '../../features/clans/backend.js';
-import { COMMUNITY_LIMITS, validateChannelName, validateCommunityName, validateDescription } from '../../features/clans/logic.js';
+import { COMMUNITY_LIMITS, validateCommunityName, validateDescription } from '../../features/clans/logic.js';
 import { headImg } from '../../social/profile-ui.js';
-import { channelsByKind, moveChannel, personName } from './logic.js';
+import { personName } from './logic.js';
+import { openChannelsManager } from './manage.js';
 
 const C = (key, vars) => t(`clans.${key}`, vars);
 
 export function openCommunityForm(b, { community = null, onSaved } = {}) {
+  let pending = false, closed = false;
   let isPublic = community ? community.isPublic !== false : true;
   const name = h('input', { class: 'input', id: 'cm-f-name', maxlength: String(COMMUNITY_LIMITS.nameMax), value: community?.name || '', autocomplete: 'off' });
   const description = h('textarea', { class: 'textarea', id: 'cm-f-desc', rows: '3', maxlength: String(COMMUNITY_LIMITS.description) }, community?.description || '');
@@ -35,9 +37,11 @@ export function openCommunityForm(b, { community = null, onSaved } = {}) {
       community ? null : h('p', { class: 'card-sub' }, C('communityCreateHint')),
       error),
     footer: [cancel, save],
+    onClose: () => { closed = true; },
   });
   cancel.addEventListener('click', () => m.close());
   save.addEventListener('click', async () => {
+    if (pending || closed) return;
     error.hidden = true;
     const checks = [validateCommunityName(name.value), validateDescription(description.value, COMMUNITY_LIMITS.description)];
     const bad = checks.find((x) => !x.ok);
@@ -46,6 +50,7 @@ export function openCommunityForm(b, { community = null, onSaved } = {}) {
       error.hidden = false;
       return;
     }
+    pending = true;
     const done = setBusy(save);
     try {
       const saved = community
@@ -53,75 +58,19 @@ export function openCommunityForm(b, { community = null, onSaved } = {}) {
         : await b.rpc('community_create', { p_name: checks[0].value, p_description: checks[1].value, p_public: isPublic });
       ok(community ? C('formSaved') : C('communityCreated', { name: saved?.name || '' }));
       m.close();
-      onSaved?.(saved);
+      Promise.resolve(onSaved?.(saved)).catch((err) => fail(C('actionError'), errText(err)));
     } catch (err) {
       error.textContent = errText(err);
       error.hidden = false;
     } finally {
+      pending = false;
       done();
     }
   });
 }
 
-/** Canales: mover, renombrar, borrar y agregar. reload() vuelve a pedir la comunidad y la devuelve. */
-export function openChannelsDialog(b, start, { reload }) {
-  let community = start;
-  const body = h('div', { class: 'stack' });
-  const error = h('div', { class: 'field-error', role: 'alert', hidden: true });
-  const showError = (err) => {
-    error.textContent = errText(err);
-    error.hidden = false;
-  };
-  const run = async (fn) => {
-    error.hidden = true;
-    try {
-      await fn();
-      community = (await reload()) || community;
-      draw();
-    } catch (err) {
-      showError(err);
-    }
-  };
-  function row(ch, ids) {
-    const up = moveChannel(ids, ch.id, -1);
-    const down = moveChannel(ids, ch.id, 1);
-    return h('li', { class: 'cl-row' },
-      icon(ch.kind === 'voice' ? 'volume' : 'hash'),
-      h('span', { class: 'cl-row-name ellipsis' }, ch.name),
-      h('button', { class: 'icon-btn sm', type: 'button', disabled: !up, title: C('moveUp'), 'aria-label': C('moveUp'), onclick: () => run(() => b.rpc('community_channels_reorder', { p_community: community.id, p_ids: up })) }, icon('chevronDown', 'cl-flip')),
-      h('button', { class: 'icon-btn sm', type: 'button', disabled: !down, title: C('moveDown'), 'aria-label': C('moveDown'), onclick: () => run(() => b.rpc('community_channels_reorder', { p_community: community.id, p_ids: down })) }, icon('chevronDown')),
-      h('button', { class: 'icon-btn sm', type: 'button', title: C('rename'), 'aria-label': C('rename'), onclick: async () => {
-        const name = await promptDialog(C('channelRename'), C('channelName'), { value: ch.name, okText: C('formSave') });
-        if (name === null) return;
-        const check = validateChannelName(name);
-        if (!check.ok) return showError({ code: check.error });
-        run(() => b.rpc('community_channel_rename', { p_channel: ch.id, p_name: check.value }));
-      } }, icon('edit')),
-      h('button', { class: 'icon-btn sm', type: 'button', title: C('delete'), 'aria-label': C('delete'), onclick: async () => {
-        if (await confirmDialog(C('channelDeleteTitle'), C(ch.kind === 'voice' ? 'channelDeleteVoice' : 'channelDeleteText', { name: ch.name }), { okText: C('delete'), danger: true })) run(() => b.rpc('community_channel_delete', { p_channel: ch.id }));
-      } }, icon('trash')));
-  }
-  function draw() {
-    const { all } = channelsByKind(community.channels);
-    const ids = all.map((c) => c.id);
-    const add = (kind) => async () => {
-      const name = await promptDialog(C(`channelAdd_${kind}`), C('channelName'), { okText: C('channelAdd') });
-      if (name === null) return;
-      const check = validateChannelName(name);
-      if (!check.ok) return showError({ code: check.error });
-      run(() => b.rpc('community_channel_create', { p_community: community.id, p_kind: kind, p_name: check.value }));
-    };
-    const full = all.length >= (community.maxChannels ?? COMMUNITY_LIMITS.channels);
-    mount(body,
-      h('p', { class: 'card-sub' }, C('channelsHint', { n: all.length, max: community.maxChannels ?? COMMUNITY_LIMITS.channels })),
-      h('ul', { class: 'cl-list' }, all.map((ch) => row(ch, ids))),
-      error,
-      h('div', { class: 'row wrap' },
-        h('button', { class: 'btn sm', type: 'button', disabled: full, onclick: add('text') }, icon('hash'), C('channelAdd_text')),
-        h('button', { class: 'btn sm', type: 'button', disabled: full, onclick: add('voice') }, icon('volume'), C('channelAdd_voice'))));
-  }
-  draw();
-  modal({ title: C('channelsTitle'), subtitle: community.name, icon: 'hash', body });
+export function openChannelsDialog(b, community, options) {
+  return openChannelsManager(b, community, options);
 }
 
 export function openInviteDialog(b, community, { reload }) {

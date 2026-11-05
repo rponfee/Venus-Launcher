@@ -150,3 +150,11 @@ test('HTTP 401 central pide sesión y sin ninguna clave indica indisponible', as
   await assert.rejects(empty.api.request('/v1/mods/12'), { code: 'nokey' });
   assert.equal(empty.calls.filter((c) => c.url.includes('/functions/')).length, 0);
 });
+
+test('403 distingue clave del catálogo rechazada de cuenta sin permiso', async () => {
+  for (const [remote, key, code] of [['badkey', 'curseforge.errBadKey', 'badkey'], ['forbidden', 'curseforge.errAccessDenied', 'forbidden']]) {
+    const r = apiSetup({ reply: () => json({ error: { code: remote }, detail: 'PRIVATE_BODY' }, 403) });
+    await assert.rejects(r.api.request('/v1/mods/search?gameId=432'), { code, message: key });
+    assert.equal(r.calls.filter(c => c.url.includes('/functions/')).length, 1);
+  }
+});

@@ -162,7 +162,7 @@ export default {
   accountConnected: "Підключено",
   accountNotConnected: "Не підключено",
   obsTitle: "Інтеграція з OBS",
-  obsSubtitle: "Перемикає сцени разом із грою та вмикає режим стримера під час трансляції.",
+  obsSubtitle: "Перемикає сцени під час запуску й закриття гри.",
   obsEnable: "Підключитися до OBS",
   obsEnableSub: "Потрібен OBS 28 або новіший із увімкненим сервером WebSocket (Інструменти → Налаштування сервера WebSocket). Якщо OBS закрито, спроби тихо повторюються.",
   obsHost: "Адреса",

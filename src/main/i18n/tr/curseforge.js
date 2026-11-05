@@ -2,7 +2,8 @@
 module.exports = {
   errNoKey: "CurseForge yapılandırması şu anda kullanılamıyor.",
   errSignIn: "CurseForge'u kullanmak için Venus hesabınızla giriş yapın.",
-  errBadKey: "CurseForge şu anda kullanılamıyor. Daha sonra tekrar dene.",
+  errBadKey: "CurseForge, katalog için yapılandırılmış anahtarı reddetti. Bir yöneticinin anahtarı kontrol etmesi gerekiyor.",
+  errAccessDenied: "Hesabının CurseForge kataloğunu kullanma izni yok.",
   errNetwork: "CurseForge'a bağlanılamadı. İnternet bağlantını kontrol et.",
   errTimeout: "CurseForge yanıt vermekte çok gecikti. Biraz sonra tekrar dene.",
   errRateLimit: "CurseForge çok fazla istek aldı. Biraz bekle ve tekrar dene.",

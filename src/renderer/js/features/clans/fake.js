@@ -1,3 +1,5 @@
+import { validateMessage } from './logic.js';
+import { validateAppearance, validateChannelSettings, validateCategoryName, validateTopicTitle, isStaff } from '../../pages/communities/logic.js';
 // Clanes y comunidades de ejemplo para capturas (VENUS_DEVSHOT + VENUS_REWARDS_FAKE, como Venus Points): misma forma que las
 // RPC de 0033, en memoria y sin red. 'new' no tiene clan ni comunidades y sí una invitación; 'unavailable' responde que no hay servicio.
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -58,7 +60,7 @@ export function createFakeGroups(scenario = 'demo', base) {
     return mineClan();
   };
 
-  const channel = (id, kind, name, position, people = []) => ({ id, kind, name, position, people });
+  const channel = (id, kind, name, position, people = []) => ({ id, kind, name, position, people, topic: '', icon: { text: 'hash', voice: 'headphones', announcement: 'megaphone', forum: 'message-circle' }[kind] || 'hash', categoryId: null, slowmodeSeconds: 0, postingRole: kind === 'announcement' ? 'staff' : 'members', isPrivate: false });
   const communities = new Map([
     ['m-1', { id: 'm-1', name: 'Mina Central', description: 'La comunidad para los que juegan en la Mina. Reglas simples: respeto y nada de spam.', isPublic: true, createdAt: iso(now - 60 * DAY), inviteCode: 'COM-K3M9PQ', myRole: 'owner',
       channels: [channel('t-1', 'text', 'general', 0), channel('t-2', 'text', 'servidores', 1), channel('t-3', 'text', 'capturas', 2), channel('v-1', 'voice', 'general', 3, [P.tomi, P.luna]), channel('v-2', 'voice', 'en partida', 4)],
@@ -67,6 +69,15 @@ export function createFakeGroups(scenario = 'demo', base) {
     ['m-2', { id: 'm-2', name: 'Técnicos de Redstone', description: 'Máquinas, granjas y dudas.', isPublic: true, createdAt: iso(now - 90 * DAY), inviteCode: 'COM-TTT222', myRole: 'member', channels: [channel('t-9', 'text', 'general', 0), channel('v-9', 'voice', 'taller', 1)], members: [{ ...P.pixel, role: 'owner', joinedAt: iso(now - 90 * DAY) }, { ...ME, role: 'member', joinedAt: iso(now - DAY) }], bans: [], extra: 58 }],
     ['m-3', { id: 'm-3', name: 'Constructores del Oeste', description: 'Mostrá lo que construiste.', isPublic: true, createdAt: iso(now - 30 * DAY), inviteCode: 'COM-WWW333', myRole: null, channels: [channel('t-7', 'text', 'general', 0)], members: [{ ...P.mora, role: 'owner', joinedAt: iso(now - 30 * DAY) }], bans: [], extra: 31 }],
   ]);
+  for (const c of communities.values()) Object.assign(c, { theme: 'default', color: '#f6b45a', icon: 'users', banner: 'none', welcome: '', rules: '', categories: [] });
+  const demo = communities.get('m-1');
+  Object.assign(demo, { color: '#c87939', icon: 'mountain', banner: 'sunset', welcome: 'Un lugar para construir y jugar juntos.', rules: 'Respetá a los demás.\nNo compartas datos personales.\nPublicá cada tema en su canal.',
+    categories: [{ id: 'cat-info', name: 'La comunidad', position: 0 }, { id: 'cat-play', name: 'Jugamos juntos', position: 1 }] });
+  demo.channels.unshift({ ...channel('a-1', 'announcement', 'novedades', -1), categoryId: 'cat-info', topic: 'Noticias y eventos de la comunidad.' });
+  demo.channels.push({ ...channel('f-1', 'forum', 'proyectos', 5), categoryId: 'cat-play', topic: 'Compartí una idea y conversá en su propio hilo.' });
+  demo.channels.push({ ...channel('s-1', 'text', 'equipo', 6), isPrivate: true, postingRole: 'staff', categoryId: 'cat-info' });
+  if (scenario === 'member') { demo.myRole = 'member'; demo.members[0].role = 'member'; demo.members[1].role = 'owner'; }
+  demo.channels.forEach((ch) => { ch.categoryId ||= ch.kind === 'voice' || ch.kind === 'forum' ? 'cat-play' : 'cat-info'; });
   if (empty) {
     for (const id of ['m-1', 'm-2']) communities.get(id).myRole = null;
     for (const id of ['m-1', 'm-2']) communities.get(id).members = communities.get(id).members.filter((m) => m.userId !== 'fake-me');
@@ -83,8 +94,14 @@ export function createFakeGroups(scenario = 'demo', base) {
     message('x-6', P.pixel, 12, '', { hidden: true }),
     message('x-7', P.luna, 3, '¿Alguien tiene un mapa del Nether?'),
   ]]]);
+  messages.set('a-1', [message('announcement-1', P.tomi, 90, 'Este sábado construimos la plaza central. ¡Sumate!', { channelId: 'a-1' })]);
+  messages.set('f-1', [
+    message('topic-1', P.luna, 60, 'Propongo una estación para conectar nuestras bases. ¿Qué materiales usamos?', { channelId: 'f-1', title: 'Una estación para todos', parentId: null, replyCount: 1 }),
+    message('reply-1', P.tomi, 50, 'Puedo preparar las vías y traer cobre.', { channelId: 'f-1', title: null, parentId: 'topic-1' }),
+    message('topic-2', P.pixel, 30, 'Acá podemos coordinar la construcción de la plaza.', { channelId: 'f-1', title: 'La plaza de la comunidad', parentId: null, replyCount: 0 }),
+  ]);
   const commOf = (id) => communities.get(id) || fail('not_found');
-  const commCard = (c) => ({ id: c.id, name: c.name, description: c.description, isPublic: c.isPublic, createdAt: c.createdAt, maxMembers: 500, maxChannels: 20, memberCount: c.members.length + c.extra, channelCount: c.channels.length, myRole: c.myRole });
+  const commCard = (c) => ({ id: c.id, name: c.name, description: c.description, isPublic: c.isPublic, createdAt: c.createdAt, maxMembers: 500, maxChannels: 50, theme: c.theme, color: c.color, icon: c.icon, banner: c.banner, memberCount: c.members.length + c.extra, channelCount: c.channels.length, myRole: c.myRole });
   const needComm = (id, ...roles) => {
     const c = commOf(id);
     if (!c.myRole) fail('not_member');
@@ -98,6 +115,44 @@ export function createFakeGroups(scenario = 'demo', base) {
     }
     return fail('not_found');
   };
+  const validateOrder = (items, ids) => {
+    if (!Array.isArray(ids) || ids.length !== items.length || new Set(ids).size !== ids.length || ids.some((id) => !items.some((item) => item.id === id))) fail('bad_order');
+  };
+  const lastPost = (ch) => (messages.get(ch.id) || []).filter((m) => m.authorId === 'fake-me').reduce((at, m) => Math.max(at, Date.parse(m.at) || 0), 0);
+  const channelJson = (c, ch) => ({
+    ...ch, canPost: ch.kind !== 'voice' && (isStaff(c.myRole) || (ch.postingRole !== 'staff' && ch.kind !== 'announcement')),
+    nextPostAt: !isStaff(c.myRole) && ch.slowmodeSeconds && lastPost(ch) ? iso(lastPost(ch) + ch.slowmodeSeconds * 1000) : null,
+  });
+  const readChannel = (id) => {
+    const { c, ch } = channelOf(id);
+    needComm(c.id);
+    if (ch.isPrivate && !isStaff(c.myRole)) fail('not_found');
+    return { c, ch };
+  };
+  const postChannel = (id) => {
+    const { c, ch } = readChannel(id);
+    if (!channelJson(c, ch).canPost) fail('forbidden');
+    const until = c.members.find((m) => m.userId === 'fake-me')?.mutedUntil;
+    if (until && Date.parse(until) > Date.now()) fail('community_muted');
+    const next = channelJson(c, ch).nextPostAt;
+    if (next && Date.parse(next) > Date.now()) throw Object.assign(new Error('slowmode'), { code: 'slowmode', nextPostAt: next });
+    return { c, ch };
+  };
+  const page = (items, before, limit) => items.filter((m) => !before || Date.parse(m.at) < Date.parse(before)).slice(-Math.min(100, Math.max(1, limit)));
+  const topicOf = (id) => {
+    const topic = [...messages.values()].flat().find((m) => m.id === id && !m.parentId && m.title !== undefined);
+    if (!topic) fail('not_found');
+    return topic;
+  };
+  const addMessage = (c, ch, body, extra = {}) => {
+    const check = validateMessage(body);
+    if (!check.ok) fail(check.error);
+    const m = { id: newId('x'), channelId: ch.id, communityId: c.id, authorId: 'fake-me', at: iso(Date.now()), body: check.value,
+      parentId: null, deleted: false, hidden: false, author: { ...ME, role: c.myRole }, ...extra };
+    messages.set(ch.id, [...(messages.get(ch.id) || []), m]);
+    return m;
+  };
+
   const reports = [
     { id: 'rep-1', kind: 'message', targetId: 'x-3', communityId: 'm-1', reason: 'abuse', text: 'Me insultó en el canal general.', status: 'open', snapshot: { body: 'Yo voy. <b>Esto no es HTML</b> y se ve tal cual.', channel: 'general', community: 'Mina Central' }, at: iso(now - 2 * HOUR), reporter: P.nacho, targetUser: P.luna },
     { id: 'rep-2', kind: 'community', targetId: 'm-3', communityId: 'm-3', reason: 'spam', text: null, status: 'open', snapshot: { name: 'Constructores del Oeste' }, at: iso(now - DAY), reporter: P.fer, targetUser: P.mora },
@@ -171,12 +226,12 @@ export function createFakeGroups(scenario = 'demo', base) {
     community_get: ({ p_community }) => {
       const c = commOf(p_community);
       if (!c.myRole) return { ...commCard(c), bannedHere: false };
-      return { ...commCard(c), inviteCode: c.myRole === 'member' ? null : c.inviteCode, mutedUntil: null, channels: c.channels };
+      return { ...commCard(c), inviteCode: c.myRole === 'member' ? null : c.inviteCode, mutedUntil: c.members.find((m) => m.userId === 'fake-me')?.mutedUntil || null, welcome: c.welcome, rules: c.rules, categories: c.categories, channels: c.channels.filter((ch) => !ch.isPrivate || isStaff(c.myRole)).map((ch) => channelJson(c, ch)) };
     },
     community_create: ({ p_name, p_description, p_public }) => {
       if ([...communities.values()].filter((c) => c.myRole === 'owner').length >= 3) fail('too_many_communities');
       const id = newId('m');
-      const c = { id, name: p_name, description: p_description, isPublic: p_public, createdAt: iso(Date.now()), inviteCode: 'COM-NEW234', myRole: 'owner', channels: [channel(newId('t'), 'text', 'general', 0), channel(newId('v'), 'voice', 'general', 1)], members: [{ ...ME, role: 'owner', joinedAt: iso(Date.now()) }], bans: [], extra: 0 };
+      const c = { id, name: p_name, description: p_description, isPublic: p_public, theme: 'default', color: '#f6b45a', icon: 'users', banner: 'none', welcome: '', rules: '', categories: [], createdAt: iso(Date.now()), inviteCode: 'COM-NEW234', myRole: 'owner', channels: [channel(newId('t'), 'text', 'general', 0), channel(newId('v'), 'voice', 'general', 1)], members: [{ ...ME, role: 'owner', joinedAt: iso(Date.now()) }], bans: [], extra: 0 };
       communities.set(id, c);
       return commCard(c);
     },
@@ -211,41 +266,122 @@ export function createFakeGroups(scenario = 'demo', base) {
     },
     community_unban: ({ p_community, p_user }) => { const c = needComm(p_community, 'owner', 'moderator'); c.bans = c.bans.filter((x) => x.userId !== p_user); return { ok: true }; },
     community_bans_list: ({ p_community }) => needComm(p_community, 'owner', 'moderator').bans,
-    community_channel_create: ({ p_community, p_kind, p_name }) => {
-      const c = needComm(p_community, 'owner', 'moderator');
-      if (c.channels.length >= 20) fail('too_many_channels');
-      const id = newId(p_kind === 'voice' ? 'v' : 't');
-      c.channels.push(channel(id, p_kind, p_name, c.channels.length));
-      return { id, kind: p_kind, name: p_name };
+    community_customize: ({ p_community, p_patch }) => {
+      const c = needComm(p_community, 'owner');
+      const check = validateAppearance({ ...c, ...p_patch });
+      if (!check.ok) fail(check.error);
+      Object.assign(c, check.value);
+      return rpcs.community_get({ p_community });
     },
-    community_channel_rename: ({ p_channel, p_name }) => { channelOf(p_channel).ch.name = p_name; return { ok: true }; },
-    community_channel_delete: ({ p_channel }) => {
-      const { c, ch } = channelOf(p_channel);
-      if (ch.kind === 'text' && c.channels.filter((x) => x.kind === 'text').length <= 1) fail('last_text_channel');
-      c.channels = c.channels.filter((x) => x !== ch);
+    community_category_save: ({ p_community, p_category = null, p_name }) => {
+      const c = needComm(p_community, 'owner', 'moderator');
+      const check = validateCategoryName(p_name);
+      if (!check.ok) fail(check.error);
+      const category = p_category ? c.categories.find((g) => g.id === p_category) : null;
+      if (p_category && !category) fail('bad_category');
+      if (!category && c.categories.length >= 20) fail('too_many_categories');
+      if (category) { category.name = check.value; return category; }
+      const next = { id: newId('category'), name: check.value, position: c.categories.length };
+      c.categories.push(next); return next;
+    },
+    community_category_delete: ({ p_category }) => {
+      const c = [...communities.values()].find((value) => value.categories.some((g) => g.id === p_category));
+      if (!c) fail('not_found');
+      needComm(c.id, 'owner', 'moderator');
+      c.categories = c.categories.filter((g) => g.id !== p_category);
+      c.channels.forEach((ch) => { if (ch.categoryId === p_category) ch.categoryId = null; });
       return { ok: true };
     },
-    community_channels_reorder: ({ p_community, p_ids }) => { const c = needComm(p_community, 'owner', 'moderator'); c.channels = p_ids.map((id, i) => ({ ...c.channels.find((x) => x.id === id), position: i })); return { ok: true }; },
+    community_category_reorder: ({ p_community, p_ids }) => {
+      const c = needComm(p_community, 'owner', 'moderator');
+      validateOrder(c.categories, p_ids);
+      c.categories.forEach((g) => { g.position = p_ids.indexOf(g.id); });
+      return { ok: true };
+    },
+    community_channel_create: (args) => rpcs.community_channel_create_configured({ ...args, p_patch: {} }),
+    community_channel_create_configured: ({ p_community, p_kind, p_name, p_patch = {} }) => {
+      const c = needComm(p_community, 'owner', 'moderator');
+      if (c.channels.length >= 50) fail('too_many_channels');
+      const baseChannel = channel(newId('channel'), p_kind, p_name, c.channels.length);
+      const check = validateChannelSettings({ ...baseChannel, ...p_patch, kind: p_kind, name: p_name }, c.categories);
+      if (!check.ok) fail(check.error);
+      Object.assign(baseChannel, check.value);
+      c.channels.push(baseChannel);
+      return channelJson(c, baseChannel);
+    },
+    community_channel_configure: ({ p_channel, p_patch }) => {
+      const { c, ch } = channelOf(p_channel);
+      needComm(c.id, 'owner', 'moderator');
+      const check = validateChannelSettings({ ...ch, ...p_patch, kind: ch.kind }, c.categories);
+      if (!check.ok) fail(check.error);
+      Object.assign(ch, check.value);
+      return channelJson(c, ch);
+    },
+    community_channel_rename: ({ p_channel, p_name }) => rpcs.community_channel_configure({ p_channel, p_patch: { name: p_name } }),
+    community_channel_delete: ({ p_channel }) => {
+      const { c, ch } = channelOf(p_channel);
+      needComm(c.id, 'owner', 'moderator');
+      c.channels = c.channels.filter((x) => x !== ch);
+      messages.delete(p_channel);
+      return { ok: true };
+    },
+    community_channels_reorder: ({ p_community, p_ids }) => {
+      const c = needComm(p_community, 'owner', 'moderator');
+      validateOrder(c.channels, p_ids);
+      c.channels.forEach((ch) => { ch.position = p_ids.indexOf(ch.id); });
+      return { ok: true };
+    },
     community_messages_page: ({ p_channel, p_before, p_limit = 50 }) => {
-      const { c } = channelOf(p_channel);
-      if (!c.myRole) fail('not_member');
-      const all = messages.get(p_channel) || [];
-      const list = p_before ? all.filter((m) => Date.parse(m.at) < Date.parse(p_before)) : all;
-      return list.slice(-p_limit);
+      const { ch } = readChannel(p_channel);
+      if (!['text', 'announcement'].includes(ch.kind)) fail('bad_kind');
+      return page(messages.get(p_channel) || [], p_before, p_limit);
     },
     community_send: ({ p_channel, p_body }) => {
-      const m = { ...message(newId('x'), ME, 0, p_body), channelId: p_channel };
-      messages.set(p_channel, [...(messages.get(p_channel) || []), m]);
-      return m;
+      const { c, ch } = postChannel(p_channel);
+      if (!['text', 'announcement'].includes(ch.kind)) fail('bad_kind');
+      return addMessage(c, ch, p_body);
+    },
+    community_forum_topics: ({ p_channel, p_before, p_limit = 30 }) => {
+      const { ch } = readChannel(p_channel);
+      if (ch.kind !== 'forum') fail('bad_kind');
+      return page((messages.get(p_channel) || []).filter((m) => !m.parentId), p_before, p_limit).reverse().map((m) => ({
+        ...m, replyCount: (messages.get(p_channel) || []).filter((r) => r.parentId === m.id && !r.deleted).length,
+      }));
+    },
+    community_forum_topic_create: ({ p_channel, p_title, p_body }) => {
+      const { c, ch } = postChannel(p_channel);
+      if (ch.kind !== 'forum') fail('bad_kind');
+      const title = validateTopicTitle(p_title);
+      if (!title.ok) fail(title.error);
+      return addMessage(c, ch, p_body, { title: title.value, parentId: null, replyCount: 0 });
+    },
+    community_forum_replies: ({ p_topic, p_before, p_limit = 50 }) => {
+      const topic = topicOf(p_topic);
+      readChannel(topic.channelId);
+      if (topic.deleted) fail('thread_deleted');
+      return page((messages.get(topic.channelId) || []).filter((m) => m.parentId === p_topic), p_before, p_limit);
+    },
+    community_forum_reply: ({ p_topic, p_body }) => {
+      const topic = topicOf(p_topic);
+      const { c, ch } = postChannel(topic.channelId);
+      if (topic.deleted) fail('thread_deleted');
+      return addMessage(c, ch, p_body, { parentId: p_topic, title: null });
     },
     community_message_delete: ({ p_id }) => {
-      for (const list of messages.values()) {
-        const m = list.find((x) => x.id === p_id);
-        if (m) Object.assign(m, { deleted: true, body: '' });
+      const msg = [...messages.values()].flat().find((m) => m.id === p_id);
+      if (!msg) fail('not_found');
+      const { c } = readChannel(msg.channelId);
+      if (msg.authorId !== 'fake-me' && !isStaff(c.myRole)) fail('forbidden');
+      for (const list of messages.values()) for (const m of list) {
+        if (m.id === p_id || m.parentId === p_id) Object.assign(m, { deleted: true, body: '', title: null });
       }
       return { ok: true };
     },
-    community_voice_room: () => ({ code: 'ABC234', roomId: 'r-1', name: 'Mina Central · general', max: 8 }),
+    community_voice_room: ({ p_channel }) => {
+      const { c, ch } = readChannel(p_channel);
+      if (ch.kind !== 'voice') fail('bad_kind');
+      return { code: 'ABC234', roomId: 'r-' + ch.id, name: c.name + ' · ' + ch.name, max: 8 };
+    },
     community_report: () => ({ ok: true }),
 
     admin_groups: ({ p_kind, p_query }) => (p_kind === 'clan'

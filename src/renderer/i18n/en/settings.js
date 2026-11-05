@@ -370,6 +370,7 @@ export default {
   aboutDev: 'Development',
   aboutCopy: 'Copy info',
   aboutCopied: 'Info copied',
+  link_website: "Official website",
   link_modrinth: 'Modrinth',
   link_optifine: 'Support OptiFine',
   link_eula: 'Minecraft EULA',

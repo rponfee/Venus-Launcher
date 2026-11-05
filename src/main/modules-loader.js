@@ -7,6 +7,8 @@ const fs = require('fs');
 const path = require('path');
 
 const DIR = path.join(__dirname, 'modules');
+// Funciones retiradas: no cargar código, protocolos, canales ni archivos de datos antiguos.
+const RETIRED = new Set(['extensions.js', 'streamer.js']);
 let loaded = null;
 
 function load() {
@@ -16,7 +18,7 @@ function load() {
   try {
     files = fs
       .readdirSync(DIR, { withFileTypes: true })
-      .filter((d) => d.isFile() && d.name.endsWith('.js'))
+      .filter((d) => d.isFile() && d.name.endsWith('.js') && !RETIRED.has(d.name))
       .map((d) => d.name)
       .sort();
   } catch {

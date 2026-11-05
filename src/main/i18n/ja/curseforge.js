@@ -2,7 +2,8 @@
 module.exports = {
   errNoKey: "現在、CurseForgeの設定を利用できません。",
   errSignIn: "CurseForgeを利用するには、Venusアカウントでログインしてください。",
-  errBadKey: "CurseForgeは現在利用できません。後でもう一度お試しください。",
+  errBadKey: "CurseForgeがカタログに設定されたキーを拒否しました。管理者による確認が必要です。",
+  errAccessDenied: "このアカウントにはCurseForgeカタログを利用する権限がありません。",
   errNetwork: "CurseForgeに接続できませんでした。インターネット接続を確認してください。",
   errTimeout: "CurseForgeの応答に時間がかかりすぎました。しばらくしてから、もう一度お試しください。",
   errRateLimit: "CurseForgeへのリクエストが多すぎます。少し待ってから、もう一度お試しください。",

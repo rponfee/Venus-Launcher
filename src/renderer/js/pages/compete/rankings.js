@@ -8,7 +8,6 @@ import { errText, reportNow, shareEnabled, shareSwitch, shareWhat, forgetShared 
 import { headImg, openProfile } from '../../social/profile-ui.js';
 import { METRICS, rankingView, shiftWeek, weekBounds, weekKey } from './logic.js';
 import { METRIC_ICONS, friendName, metricName, metricText } from './format.js';
-import { clanSharingCard } from '../../features/clans/sharing.js';
 
 const C = (key, vars) => t(`compete.${key}`, vars);
 const MAX_WEEKS_BACK = 12;
@@ -21,7 +20,6 @@ export function rankingsView(root, { b }) {
   let reportedAt = 0;
   let sharing = shareEnabled();
   const shareBox = h('div', { class: 'cp-share-slot' });
-  const clanSharing = clanSharingCard();
   const metricBar = h('div', { class: 'segmented cp-metrics', role: 'group', 'aria-label': C('metricLabel') });
   const prev = h('button', { type: 'button', class: 'icon-btn', title: C('weekPrev'), 'aria-label': C('weekPrev') }, icon('chevronLeft'));
   const next = h('button', { type: 'button', class: 'icon-btn', title: C('weekNext'), 'aria-label': C('weekNext') }, icon('chevronRight'));
@@ -142,7 +140,6 @@ export function rankingsView(root, { b }) {
   drawMetrics();
   mount(root,
     shareBox,
-    clanSharing,
     h('div', { class: 'cp-controls' }, metricBar, h('div', { class: 'cp-week' }, prev, weekLabel, next)),
     list,
     h('p', { class: 'cp-note' }, icon('info'), h('span', {}, C('rankNote'))));
@@ -152,5 +149,5 @@ export function rankingsView(root, { b }) {
   const off = store.on?.('settings', () => {
     if (root.isConnected && shareEnabled() !== sharing) afterShare();
   });
-  return () => { seq++; off?.(); clanSharing.destroy(); };
+  return () => { seq++; off?.(); };
 }

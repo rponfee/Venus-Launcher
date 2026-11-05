@@ -9,6 +9,7 @@
 //   loadSummary({ force? }), getSummary(), onSummary(fn) -> off: el resumen de points_me que comparten la página y el chip
 // Cada logro se pide una sola vez por cuenta: los reclamados se recuerdan en settings.rewards.claimed[<userId>] y
 // los de la PC que se cumplieron sin sesión (o sin servicio) esperan en settings.rewards.pending.
+import { pointsTicket } from './cosmic-art.js';
 import { h, icon, toast, ensureCss, registerIcons } from '../ui.js';
 import { store, api } from '../store.js';
 import { t, has, loadNs, locale, onLanguageChange } from '../i18n.js';
@@ -321,11 +322,11 @@ export async function startup() {
 
 // ---------- Chip de la barra lateral ----------
 export function pointsChip() {
-  ensureCss('pages/rewards');
+  Promise.all([ensureCss('pages/rewards'), ensureCss('features/cosmic-art')]);
   const value = h('span', { class: 'rw-chip-value num' });
   const label = h('span', { class: 'rw-chip-label' });
   const dot = h('span', { class: 'rw-chip-dot', hidden: true, 'aria-hidden': 'true' });
-  const el = h('button', { type: 'button', class: 'rw-chip', hidden: true, onclick: () => navigate('rewards') }, h('span', { class: 'rw-chip-icon', 'aria-hidden': 'true' }, icon('vpoint')), h('span', { class: 'rw-chip-main' }, value, label), dot);
+  const el = h('button', { type: 'button', class: 'rw-chip', hidden: true, onclick: () => navigate('rewards') }, h('span', { class: 'rw-chip-ticket', 'aria-hidden': 'true' }, pointsTicket('', { compact: true })), h('span', { class: 'rw-chip-main' }, value, label), dot);
   let ready = false;
 
   function paint() {

@@ -1,14 +1,17 @@
 // Comunidades: la pantalla de una comunidad. Canales fijos a la izquierda (de texto y de voz, con quién está en cada uno),
 // el chat del canal elegido en el medio y los miembros a la derecha. Los canales de voz abren una sala del Voice Chat de
 // siempre (community_voice_room la crea a pedido y la reutiliza) y navegan a #/voice.
-import { h, icon, mount, skeleton, emptyState, setBusy, ok, fail, confirmDialog } from '../../ui.js';
+import { h, icon, mount, skeleton, emptyState, setBusy, ok, fail, confirmDialog, modal } from '../../ui.js';
 import { t, loadNs } from '../../i18n.js';
 import { navigate } from '../../app.js';
 import { errText } from '../../features/clans/backend.js';
 import { openGroupReport } from '../../features/clans/report.js';
 import { headImg, openProfile, popMenu } from '../../social/profile-ui.js';
-import { canModerate, channelsByKind, isMuted, isStaff, MUTE_OPTIONS, personName, pickChannel, voiceSummary } from './logic.js';
+import { COMMUNITY_LIMITS } from '../../features/clans/logic.js';
+import { communityColor, canModerate, isMuted, isStaff, MUTE_OPTIONS, personName, pickChannel, voiceSummary, categoryGroups, visibleChannels, channelIcon, safeCommunityIcon, iconGlyph, safeBanner, safeTheme, CATEGORY_LIMIT } from './logic.js';
 import { chatView } from './chat.js';
+import { forumView } from './forum.js';
+import { openAppearanceForm, openChannelForm, openCategoryForm, channelMenuItems } from './manage.js';
 import { openBansDialog, openChannelsDialog, openCommunityForm, openInviteDialog } from './forms.js';
 
 const C = (key, vars) => t(`clans.${key}`, vars);
@@ -32,8 +35,8 @@ function previewFor(community, { b, onJoined }) {
       done();
     }
   });
-  return h('section', { class: 'card cl-card cm-preview' },
-    h('h2', { class: 'card-title' }, icon('users'), community.name),
+  return h('section', { class: 'card cl-card cm-preview', style: { '--cm-color': communityColor(community.color) }, dataset: { banner: safeBanner(community.banner) } },
+    h('h2', { class: 'card-title' }, icon(iconGlyph(safeCommunityIcon(community.icon))), community.name),
     community.description ? h('p', { class: 'cl-desc selectable' }, community.description) : null,
     h('div', { class: 'cl-chips' }, h('span', { class: 'badge' }, icon('users'), C('membersCount', { n: community.memberCount ?? 0, max: community.maxMembers ?? 500 }))),
     community.bannedHere ? h('p', { class: 'cl-note' }, icon('ban'), h('span', {}, C('err_banned_here'))) : null,
@@ -57,6 +60,7 @@ export function communityView(root, id, wantedChannel, { b }) {
   const back = h('button', { class: 'btn sm ghost cl-back', type: 'button', onclick: () => navigate('communities') }, icon('arrowLeft'), C('backToCommunities'));
 
   async function fetchCommunity() {
+    if (destroyed) return false;
     const current = ++request;
     try {
       const next = await b.rpc('community_get', { p_community: id });
@@ -109,17 +113,17 @@ export function communityView(root, id, wantedChannel, { b }) {
       mount(root, back, previewFor(community, { b, onJoined: start }));
       return community;
     }
-    const ch = pickChannel(community.channels, channelId);
+    const ch = pickChannel(visibleChannels(community), channelId);
     if (ch && (!chat || ch.id !== channelId)) openChannel(ch);
     else if (ch) {
       drawSide();
-      chat.setCommunity(community);
+      chat.setCommunity(community, ch);
     } else {
       closeChat();
       channelId = null;
       route();
       drawSide();
-      mount(chatHost, emptyState('hash', C('chatNoChannel'), ''));
+      emptyChannel();
     }
     return community;
   }
@@ -133,23 +137,26 @@ export function communityView(root, id, wantedChannel, { b }) {
   };
 
   function openChannel(ch) {
+    if (destroyed || !visibleChannels(community).some((c) => c.id === ch.id)) return;
     channelId = ch.id;
     route();
     closeChat();
-    chat = chatView(chatHost, { b, community, channel: ch, people, onPerson: () => {} });
+    chat = (ch.kind === 'forum' ? forumView : chatView)(chatHost, { b, community, channel: ch, people, onPerson: () => {} });
     drawSide();
   }
 
   async function enterVoice(ch, btn) {
+    if (btn.disabled || destroyed) return;
     const done = setBusy(btn);
     try {
       await loadNs('voice');
       const room = await b.rpc('community_voice_room', { p_channel: ch.id });
+      if (destroyed) return;
       if (!b.fake) {
         const { voice } = await import('../../voice.js');
         await voice.joinRoom(room.code);
       }
-      navigate('voice');
+      if (!destroyed) navigate('voice');
     } catch (err) {
       fail(C('voiceFailed'), err?.name === 'GroupError' ? errText(err) : err?.message || errText(err));
     } finally {
@@ -163,6 +170,7 @@ export function communityView(root, id, wantedChannel, { b }) {
       isStaff(role) ? { icon: 'userPlus', label: C('menuInvite'), run: () => openInviteDialog(b, community, { reload: refresh }) } : null,
       isStaff(role) ? { icon: 'hash', label: C('menuChannels'), run: () => openChannelsDialog(b, community, { reload: refresh }) } : null,
       isStaff(role) ? { icon: 'ban', label: C('menuBans'), run: () => openBansDialog(b, community) } : null,
+      role === 'owner' ? { icon: 'palette', label: C('cmCustomize'), run: () => openAppearanceForm(b, community, { reload: refresh }) } : null,
       role === 'owner' ? { icon: 'edit', label: C('menuEdit'), run: () => openCommunityForm(b, { community, onSaved: refresh }) } : null,
       role !== 'owner' ? { icon: 'alert', label: C('report'), run: () => openGroupReport({ kind: 'community', id, name: community.name }) } : null,
       role === 'owner' && total > 1 ? null : { icon: 'logout', label: C('leave'), danger: true, run: leave },
@@ -189,24 +197,60 @@ export function communityView(root, id, wantedChannel, { b }) {
     }
   }
 
-  function voiceRow(ch) {
+  function channelRow(ch) {
     const sum = voiceSummary(ch.people);
-    const btn = h('button', { class: 'cm-channel', type: 'button', title: C('voiceEnter', { name: ch.name }) }, icon('volume'), h('span', { class: 'ellipsis' }, ch.name),
-      sum.count ? h('span', { class: 'cm-channel-count' }, String(sum.count)) : null);
-    btn.addEventListener('click', () => enterVoice(ch, btn));
-    return h('li', {}, btn, sum.count ? h('ul', { class: 'cm-voice-people' }, sum.shown.map((p) => h('li', {}, headImg(p, 18, 'cl-head'), h('span', { class: 'ellipsis' }, personName(p) || C('someone')))), sum.extra ? h('li', { class: 'cl-muted small' }, C('voiceMore', { n: sum.extra })) : null) : null);
+    const staff = isStaff(community.myRole);
+    const openMenu = (anchor) => { if (!destroyed && isStaff(community.myRole)) popMenu(anchor, channelMenuItems(b, community, ch, refresh)); };
+    const menu = staff ? h('button', { class: 'icon-btn sm cm-channel-menu', type: 'button', title: C('cmChannelActions', { name: ch.name }), 'aria-label': C('cmChannelActions', { name: ch.name }), 'aria-haspopup': 'menu', onclick: (e) => openMenu(e.currentTarget) }, icon('more')) : null;
+    const button = h('button', { class: ['cm-channel', ch.id === channelId && 'active'], type: 'button',
+      title: C('cmKind_' + ch.kind) + (ch.topic ? ' · ' + ch.topic : ''), 'aria-current': ch.id === channelId ? 'true' : null },
+      icon(channelIcon(ch)), h('span', { class: 'ellipsis' }, ch.name),
+      ch.isPrivate ? h('span', { title: C('cmPrivate'), 'aria-label': C('cmPrivate') }, icon('lock')) : null,
+      ch.kind === 'voice' && sum.count ? h('span', { class: 'cm-channel-count' }, String(sum.count)) : null);
+    button.addEventListener('click', () => ch.kind === 'voice' ? enterVoice(ch, button) : openChannel(ch));
+    const row = h('li', {}, h('div', { class: 'cm-channel-row' }, button, menu),
+      ch.kind === 'voice' && sum.count ? h('ul', { class: 'cm-voice-people' }, sum.shown.map((p) => h('li', {}, headImg(p, 18, 'cl-head'), h('span', { class: 'ellipsis' }, personName(p) || C('someone')))), sum.extra ? h('li', { class: 'cl-muted small' }, C('voiceMore', { n: sum.extra })) : null) : null);
+    if (staff) {
+      row.addEventListener('contextmenu', (e) => { e.preventDefault(); openMenu(menu); });
+      button.addEventListener('keydown', (e) => { if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { e.preventDefault(); openMenu(menu); } });
+    }
+    return row;
+  }
+  function showAbout() {
+    modal({ title: community.name, icon: iconGlyph(safeCommunityIcon(community.icon)), body: h('div', { class: 'stack cm-about' },
+      community.description ? h('p', { class: 'cm-prose selectable' }, community.description) : null,
+      h('h4', {}, C('cmWelcome')), h('p', { class: 'cm-prose selectable' }, community.welcome || C('cmNoWelcome')),
+      h('h4', {}, C('cmRules')), h('p', { class: 'cm-prose selectable' }, community.rules || C('cmNoRules'))) });
+  }
+  function emptyChannel() {
+    mount(chatHost, emptyState('hash', C('chatNoChannel'), '',
+      isStaff(community.myRole) ? h('button', { class: 'btn primary', type: 'button', onclick: () => openChannelForm(b, community, { reload: refresh }) }, icon('plus'), C('cmChannelCreate')) : null));
   }
   function drawSide() {
-    const { text, voice } = channelsByKind(community.channels);
+    if (destroyed || !community?.myRole) return;
+    const staff = isStaff(community.myRole);
+    const full = (community.channels || []).length >= (community.maxChannels || COMMUNITY_LIMITS.channels);
+    const groups = categoryGroups(community);
+    side.setAttribute('style', '--cm-color:' + communityColor(community.color));
+    layout.dataset.theme = safeTheme(community.theme);
     mount(side,
+      h('div', { class: 'cm-community-cover', dataset: { banner: safeBanner(community.banner) } },
+        h('span', { class: 'cm-community-symbol', 'aria-hidden': 'true' }, icon(iconGlyph(safeCommunityIcon(community.icon))))),
       h('div', { class: 'cm-side-head' },
         h('strong', { class: 'cm-side-name ellipsis', title: community.name }, community.name),
         h('button', { class: 'icon-btn sm', type: 'button', title: C('communityMenu'), 'aria-label': C('communityMenu'), 'aria-haspopup': 'menu', onclick: (e) => headerMenu(e.currentTarget) }, icon('more'))),
-      h('div', { class: 'cm-side-scroll' },
-        h('h3', { class: 'cm-side-title' }, C('textChannels')),
-        h('ul', { class: 'cm-channels' }, text.map((ch) => h('li', {}, h('button', { class: ['cm-channel', ch.id === channelId && 'active'], type: 'button', 'aria-current': ch.id === channelId ? 'true' : null, onclick: () => openChannel(ch) }, icon('hash'), h('span', { class: 'ellipsis' }, ch.name))))),
-        h('h3', { class: 'cm-side-title' }, C('voiceChannels')),
-        voice.length ? h('ul', { class: 'cm-channels' }, voice.map(voiceRow)) : h('p', { class: 'cl-muted small cm-side-empty' }, C('voiceNone')),
+      community.welcome ? h('p', { class: 'cm-welcome-preview' }, community.welcome) : null,
+      h('button', { class: 'btn sm ghost cm-about-button', type: 'button', onclick: showAbout }, icon('info'), C('cmAbout')),
+      staff ? h('div', { class: 'cm-side-actions' },
+        h('button', { class: 'btn primary sm cm-add-channel', type: 'button', disabled: full, onclick: () => openChannelForm(b, community, { reload: refresh }) }, icon('plus'), C('cmChannelCreate')),
+        h('button', { class: 'icon-btn sm cm-add-category', type: 'button', disabled: (community.categories || []).length >= CATEGORY_LIMIT, title: C('cmCategoryCreate'), 'aria-label': C('cmCategoryCreate'), onclick: () => openCategoryForm(b, community, { reload: refresh }) }, icon('folder')),
+        h('button', { class: 'icon-btn sm', type: 'button', title: C('cmManageChannels'), 'aria-label': C('cmManageChannels'), onclick: () => openChannelsDialog(b, community, { reload: refresh }) }, icon('settings'))) : null,
+      community.myRole === 'owner' ? h('button', { class: 'btn sm ghost cm-customize', type: 'button', onclick: () => openAppearanceForm(b, community, { reload: refresh }) }, icon('palette'), C('cmCustomize')) : null,
+      h('div', { class: 'cm-side-scroll' }, groups.filter((g) => g.id || g.channels.length || staff).map((g) =>
+        h('section', { class: 'cm-category' },
+          h('div', { class: 'cm-category-head' }, h('h3', { class: 'cm-side-title ellipsis', title: g.name || C('cmUncategorized') }, g.name || C('cmUncategorized')),
+            staff ? h('button', { class: 'icon-btn sm', type: 'button', disabled: full, title: C('cmChannelCreate'), 'aria-label': C('cmChannelCreate'), onclick: () => openChannelForm(b, community, { categoryId: g.id, reload: refresh }) }, icon('plus')) : null),
+          h('ul', { class: 'cm-channels' }, g.channels.map(channelRow)))),
         h('p', { class: 'cl-muted small cm-side-empty' }, C('voiceHint'))));
   }
 
@@ -280,11 +324,11 @@ export function communityView(root, id, wantedChannel, { b }) {
     root.classList.add('cm-fill');
     mount(root, back, layout);
     drawMembers();
-    const ch = pickChannel(community.channels, channelId);
+    const ch = pickChannel(visibleChannels(community), channelId);
     if (ch) openChannel(ch);
     else {
       drawSide();
-      mount(chatHost, emptyState('hash', C('chatNoChannel'), ''));
+      emptyChannel();
     }
   }
   start();

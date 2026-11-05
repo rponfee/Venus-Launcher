@@ -7,6 +7,7 @@ import { groupsBackend, errText } from '../features/clans/backend.js';
 import { COMMUNITY_LIMITS, normalizeCode } from '../features/clans/logic.js';
 import { openCommunityForm } from './communities/forms.js';
 import { communityView } from './communities/view.js';
+import { communityColor, iconGlyph, safeCommunityIcon, safeBanner } from './communities/logic.js';
 
 const C = (key, vars) => t(`clans.${key}`, vars);
 const TABS = [{ id: 'mine', icon: 'users' }, { id: 'explore', icon: 'compass' }];
@@ -21,9 +22,9 @@ function problem(err, retry) {
 
 function communityCard(c) {
   const open = () => navigate(`communities/${encodeURIComponent(c.id)}`);
-  return h('article', { class: 'card cm-card' },
+  return h('article', { class: 'card cm-card', style: { '--cm-color': communityColor(c.color) }, dataset: { banner: safeBanner(c.banner) } },
     h('div', { class: 'cm-card-head' },
-      h('span', { class: 'cm-card-icon', 'aria-hidden': 'true' }, icon(c.isPublic ? 'globe' : 'lock')),
+      h('span', { class: 'cm-card-icon', 'aria-hidden': 'true' }, icon(iconGlyph(safeCommunityIcon(c.icon)))),
       h('button', { class: 'cl-link ellipsis', type: 'button', onclick: open }, c.name),
       c.myRole && c.myRole !== 'member' ? h('span', { class: 'badge accent' }, C(`role_${c.myRole}`)) : null),
     c.description ? h('p', { class: 'cm-card-desc' }, c.description) : null,
@@ -37,7 +38,9 @@ function mineView(host, { b }) {
   const code = h('input', { class: 'input mono', id: 'cm-code', placeholder: 'COM-XXXXXX', maxlength: '10', autocomplete: 'off', spellcheck: 'false' });
   const join = h('button', { class: 'btn', type: 'button' }, icon('logIn'), C('joinWithCode'));
   const codeError = h('div', { class: 'field-error', role: 'alert', hidden: true });
+  let joining = false;
   const tryJoin = async () => {
+    if (joining) return;
     codeError.hidden = true;
     const value = normalizeCode(code.value, 'COM');
     const show = (text) => {
@@ -45,14 +48,17 @@ function mineView(host, { b }) {
       codeError.hidden = false;
     };
     if (!value) return show(C('err_bad_code'));
+    joining = true;
     const done = setBusy(join);
     try {
       const c = await b.rpc('community_join_code', { p_code: value });
+      if (!list.isConnected) return;
       ok(C('communityJoined', { name: c?.name || '' }));
       navigate(`communities/${encodeURIComponent(c.id)}`);
     } catch (err) {
       show(err?.code === 'not_found' ? C('err_code_not_found') : errText(err));
     } finally {
+      joining = false;
       done();
     }
     return undefined;
@@ -68,10 +74,10 @@ function mineView(host, { b }) {
     mount(list, skeleton('grid', { items: 3, min: 260, lines: 3 }));
     try {
       const rows = await b.rpc('community_my');
-      if (!host.isConnected) return;
+      if (!list.isConnected) return;
       mount(list, rows?.length ? rows.map(communityCard) : emptyState('users', C('communitiesEmpty'), C('communitiesEmptyText'), h('button', { class: 'btn', type: 'button', onclick: () => navigate('communities/explore') }, icon('compass'), C('comTab_explore'))));
     } catch (err) {
-      if (host.isConnected) mount(list, problem(err, load));
+      if (list.isConnected) mount(list, problem(err, load));
     }
   }
   load();
@@ -86,10 +92,10 @@ function exploreView(host, { b }) {
     mount(list, skeleton('grid', { items: 3, min: 260, lines: 3 }));
     try {
       const rows = await b.rpc('community_search', { p_query: search.value.trim() });
-      if (my !== seq || !host.isConnected) return;
+      if (my !== seq || !list.isConnected) return;
       mount(list, rows?.length ? rows.map(communityCard) : emptyState('search', C('searchEmpty'), C('communitySearchEmpty')));
     } catch (err) {
-      if (my === seq && host.isConnected) mount(list, problem(err, load));
+      if (my === seq && list.isConnected) mount(list, problem(err, load));
     }
   }
   search.addEventListener('input', debounce(load, 300));

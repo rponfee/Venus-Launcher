@@ -148,7 +148,7 @@ export default {
   accountConnected: "接続済み",
   accountNotConnected: "未接続",
   obsTitle: "OBS連携",
-  obsSubtitle: "ゲームに合わせてシーンを切り替え、配信中は配信者モードを有効にします。",
+  obsSubtitle: "ゲームの起動時と終了時にシーンを切り替えます。",
   obsEnable: "OBSに接続",
   obsEnableSub: "WebSocketサーバーを有効にしたOBS 28以降が必要です（ツール → WebSocketサーバー設定）。OBSが起動していない間は、通知せず接続を再試行します。",
   obsHost: "アドレス",

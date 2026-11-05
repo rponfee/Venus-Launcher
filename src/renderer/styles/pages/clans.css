@@ -187,3 +187,63 @@
   .cm-layout { grid-template-columns: 200px minmax(0, 1fr); }
   .cm-members { display: none; }
 }
+
+/* Comunidades 0038: apariencia por presets, administración y foros. */
+.cm-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+.cm-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+.cm-check { display: flex; gap: var(--sp-2); align-items: center; font-size: var(--fs-sm); }
+.cm-color-input { height: 38px; padding: 3px; }
+.cm-appearance-preview, .cm-community-cover { background: var(--surface-2); border-bottom: 2px solid var(--cm-color, var(--accent)); }
+.cm-appearance-preview { display: flex; gap: var(--sp-3); align-items: center; min-height: 96px; padding: var(--sp-4); border-radius: var(--radius); color: #fff; text-shadow: 0 1px 5px #000; }
+.cm-appearance-preview svg { width: 32px; height: 32px; }
+.cm-community-cover { min-height: 72px; flex-shrink: 0; display: flex; align-items: flex-end; padding: var(--sp-3); border-radius: var(--radius) var(--radius) 0 0; }
+.cm-community-symbol { display: grid; place-items: center; width: 40px; height: 40px; background: var(--card-bg); color: var(--text); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 3px 10px #0003; }
+.cm-community-symbol svg { width: 23px; height: 23px; }
+.cm-card[data-banner]:not([data-banner="none"]), .cm-preview[data-banner]:not([data-banner="none"]) { border-top: 4px solid var(--cm-color, var(--accent)); }
+.cm-card-icon { color: var(--cm-color, var(--accent-hi)); }
+.cm-community-cover[data-banner="aurora"], .cm-appearance-preview[data-banner="aurora"] { background: linear-gradient(135deg, #16364b, #37596b 35%, #4d3877 70%, #242343); }
+.cm-community-cover[data-banner="sunset"], .cm-appearance-preview[data-banner="sunset"] { background: radial-gradient(ellipse at 65% 100%, #d68e5b, transparent 65%), linear-gradient(125deg, #542c55, #96533e); }
+.cm-community-cover[data-banner="forest"], .cm-appearance-preview[data-banner="forest"] { background: linear-gradient(145deg, #152e29 20%, #456244 50%, #233f35 50%, #132d27); }
+.cm-community-cover[data-banner="ocean"], .cm-appearance-preview[data-banner="ocean"] { background: linear-gradient(165deg, #347c87, #1d465a 55%, #153346 55%); }
+.cm-community-cover[data-banner="stars"], .cm-appearance-preview[data-banner="stars"] { background: radial-gradient(circle at 20% 20%, #eee 1px, transparent 2px), radial-gradient(circle at 70% 35%, #eee 1px, transparent 2px), radial-gradient(circle at 50% 70%, #e4c7fa 1px, transparent 2px), linear-gradient(120deg, #20223e, #443653); }
+.cm-side { overflow: hidden; }
+.cm-welcome-preview { font-size: var(--fs-xs); line-height: 1.5; color: var(--text-2); margin: var(--sp-2) var(--sp-3) 0; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; flex-shrink: 0; }
+.cm-about-button, .cm-customize { margin: var(--sp-1) var(--sp-2); flex-shrink: 0; justify-content: flex-start; }
+.cm-side-actions { display: flex; align-items: center; gap: 4px; padding: var(--sp-1) var(--sp-2); flex-shrink: 0; }
+.cm-add-channel { flex: 1; min-width: 0; }
+.cm-category-head { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.cm-category-head > :first-child { flex: 1; min-width: 0; }
+.cm-category-head .icon-btn { flex-shrink: 0; }
+.cm-channel-row { display: flex; align-items: center; gap: 2px; }
+.cm-channel-row .cm-channel { flex: 1; }
+.cm-channel-menu { flex-shrink: 0; opacity: .65; }
+.cm-channel-row:hover .cm-channel-menu, .cm-channel-row:focus-within .cm-channel-menu { opacity: 1; }
+.cm-manage-group { border: 1px solid var(--border); padding: var(--sp-2); border-radius: var(--radius-s); }
+.cm-manage-channel { display: flex; align-items: center; gap: var(--sp-2); padding: 5px; font-size: var(--fs-sm); min-width: 0; }
+.cm-manage-channel > svg { width: 16px; height: 16px; flex-shrink: 0; }
+.cm-manage-channel > .ellipsis { flex: 1; }
+.cm-manage-channel > .icon-btn, .cm-manage-channel > .badge { flex-shrink: 0; }
+.cm-prose { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; margin: 0; }
+.cm-about h4 { margin: 0; }
+.cm-chat-heading { flex: 1; min-width: 0; }
+.cm-chat-heading strong { display: block; overflow-wrap: anywhere; }
+.cm-channel-topic { margin: 3px 0 0; color: var(--text-2); font-size: var(--fs-xs); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 72px; overflow-y: auto; }
+.cm-topics { display: flex; flex-direction: column; gap: var(--sp-3); flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-3); }
+.cm-topic-card { display: flex; flex-direction: column; text-align: left; gap: var(--sp-2); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); color: var(--text); padding: var(--sp-4); cursor: pointer; font: inherit; }
+.cm-topic-card:hover:not(:disabled) { border-color: var(--accent); background: var(--hover-bg); }
+.cm-topic-card:disabled { cursor: default; opacity: .7; }
+.cm-topic-title { overflow-wrap: anywhere; }
+.cm-topic-excerpt { color: var(--text-2); font-size: var(--fs-sm); margin: 0; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cm-topic-meta, .cm-forum-note { font-size: var(--fs-xs); color: var(--muted); }
+.cm-forum-note { margin: 0; padding: var(--sp-2) var(--sp-3) 0; }
+.cm-topics-more { margin: var(--sp-2) auto; flex-shrink: 0; }
+.cm-topic-root { padding: var(--sp-3); border-bottom: 1px solid var(--border); max-height: 35%; overflow-y: auto; flex-shrink: 0; }
+.cm-layout[data-theme="compact"] .cm-channel { padding-top: 3px; padding-bottom: 3px; }
+.cm-layout[data-theme="compact"] .cm-msgs { gap: var(--sp-2); }
+.cm-layout[data-theme="cozy"] .cm-channel { padding-top: 10px; padding-bottom: 10px; }
+.cm-layout[data-theme="cozy"] .cm-msgs { gap: var(--sp-5, 24px); }
+@media (max-width: 800px) {
+  .cm-layout { grid-template-columns: 190px minmax(0, 1fr); gap: var(--sp-2); }
+  .cm-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .cm-manage-channel > .badge { display: none; }
+}

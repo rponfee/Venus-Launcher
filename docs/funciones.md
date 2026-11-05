@@ -327,11 +327,9 @@ En la rama 4.5.0, **Competir** muestra rankings semanales entre amigos que acept
 
 Podés desafiar a un amigo y consultar eventos y torneos. Un desafío válido paga 25 Venus Points, sin multiplicador Premium ni XP del pase: hasta tres premios por semana y uno contra el mismo amigo. Cada participante debe informar al menos diez minutos en el plazo. Los recordatorios de eventos requieren que Venus esté abierto. [Reglas completas](implementacion/competir.md).
 
-### Clanes y comunidades
+### Comunidades
 
-Los **clanes** agrupan jugadores con una etiqueta común. Compartir horas con el ranking del clan requiere un **permiso separado**, apagado por defecto, además del permiso de Competir. El total queda visible para cuentas con sesión y exige al menos dos miembros que hayan aceptado; con dos personas puede deducirse la contribución de la otra. Cuenta horas de la semana incluso anteriores al ingreso y la preferencia sigue vigente al cambiar de clan.
-
-Las **comunidades** tienen canales de texto y voz con roles y moderación. La lectura y escritura dependen de la pertenencia y los permisos del canal; requieren cuenta de Venus. Estas funciones están implementadas en la rama y necesitan la migración 0033 pendiente. [Reglas, permisos y límites](implementacion/clanes-comunidades.md).
+Las **comunidades** tienen canales de texto y voz con roles y moderación. La lectura y escritura dependen de la pertenencia y los permisos del canal; requieren cuenta de Venus y un backend compatible. [Reglas, permisos y límites](implementacion/clanes-comunidades.md). Clanes se retiró del launcher; Comunidades permanece disponible.
 
 ## Herramientas
 
@@ -400,16 +398,6 @@ Cuando no podés iniciar sesión o algo no descarga, Venus te dice si el problem
 - **El panel completo** está en **Ajustes → Descargas y almacenamiento → Estado de los servicios → Comprobar** y en la paleta de comandos (**Ctrl+K**). Muestra cada servicio con su estado (**Responde**, **Lento** o **No responde**), cuánto tardó y qué hacer. También detecta si falla solo el DNS de tu red, si un antivirus, un proxy o la hora de Windows rompen las conexiones seguras y si tu red bloquea todos los servicios del juego. Si Cloudflare (la prueba neutral de tu conexión) no contesta pero los servicios sí, no culpa a tu conexión. El resultado se reusa 20 segundos y después podés **Volver a comprobar**.
 - Con el **modo sin conexión** activado no consulta nada y te ofrece ir a desactivarlo.
 - Privacidad: nunca consulta en segundo plano, solo cuando abrís el panel o justo después de un error al iniciar sesión. Hace un pedido corto a cada servicio, sin datos tuyos.
-
-### Visor de semillas
-
-En la rama 4.5.0 podés explorar biomas y estructuras de una semilla antes de crear el mundo, y copiarla para crear una instancia o completar el campo Semilla de un servidor. Se calcula en la PC. La cobertura cambia según versión y dimensión: algunas estructuras y el punto de aparición son aproximados. La comparación con cubiomes es una referencia técnica; **todavía no se verificó contra Minecraft real**. Consultá la [tabla de cobertura](implementacion/semillas.md) antes de depender de una ubicación.
-
-### Extensiones
-
-Las extensiones de la comunidad agregan tarjetas y herramientas. Antes de instalar, Venus muestra los permisos del paquete; podés desactivarlo o quitarlo. El catálogo y la descarga de la lista de extensiones bloqueadas son **dos conexiones opcionales independientes**, apagadas por defecto.
-
-Si aceptás consultar la lista de bloqueadas, Venus la actualiza al abrir y cada cuatro horas. No envía el inventario de extensiones instaladas y conserva la última lista para usar sin conexión. Si no aceptás o no hay red, no puede conocer bloqueos nuevos. El aislamiento reduce el acceso de una extensión, pero no garantiza que su contenido sea correcto o confiable. [Guía de extensiones](extensiones.md) y [contratos y límites](implementacion/extensiones.md).
 
 ## Asistente IA
 
@@ -509,13 +497,12 @@ El engranaje de abajo a la izquierda. Cada sección tiene su enlace directo (por
 - **Accesibilidad**: modos para daltonismo con intensidad regulable, alto contraste, tamaño de la interfaz (90 a 130 %), movimiento reducido, foco siempre visible, símbolos en los estados y navegación con control (ver [Atajos y control](#atajos-y-control)). También instala **Controlify** para jugar Minecraft con control.
 - **Cuenta y nube**: tus cuentas de Minecraft y tu cuenta de Venus (crearla, iniciar sesión, código de amigo, nombre visible y contraseña) y **Editar perfil**.
 - **Privacidad**: compartir o no tu actividad con tus amigos, qué datos quedan en tu PC y cuáles en la nube, **Avisos** de amigos y servidores favoritos, y **Discord Rich Presence**: muestra en tu perfil de Discord si estás en el launcher o jugando (instancia, versión, mundo o servidor, tiempo y hasta 2 botones), sin mostrar nunca direcciones IP. Solo hace falta dejar abierta la app de escritorio de Discord (la web no sirve); **Probar** muestra una actividad de prueba.
-- **Modo streamer** (Privacidad, también en **Ctrl+K**): para transmitir o grabar sin mostrar datos de más. Mientras está activado, el launcher difumina tu código de amigo, los códigos de pack y de salas de voz, las IPs y direcciones de servidores y túneles, los nombres de tus amigos y el contenido de los mensajes (en Mensajes, Inicio, Multijugador, Voice Chat y los avisos); el overlay del juego muestra "Un amigo" y "Amigo 1, 2…" en lugar de nombres y tapa los mensajes; y Discord no muestra el mundo ni el servidor. Queda activado hasta que lo apagues y se ve un indicador en la barra de título. No cambia lo que ven tus amigos ni toca el chat de Minecraft.
 - **Inteligencia artificial**: estado de la IA, tu plan con las preguntas que te quedan por modelo y el presupuesto del mes, activar o desactivar la IA, **Probar la IA**, la conexión con **Claude y ChatGPT (MCP)**, los **servidores MCP del asistente** y qué se envía.
 - **Plan**: tu plan de Venus IA (con aviso si un pago falló o si la suscripción se cancela), las tarjetas de los 6 planes con su precio, modelos y preguntas, **Mejorar plan** (abre el pago de Stripe en tu navegador) y **Administrar suscripción** (cambiar la tarjeta, ver facturas o cancelar), y los beneficios de **Venus Premium**.
 - **Java**: el Java que descargó Venus, el que encuentra en tu PC, probar un ejecutable y qué Java usa cada versión de Minecraft.
 - **Descargas y almacenamiento**: medidor de descargas en vivo, pausa, límite de velocidad, descargas simultáneas y **modo sin conexión**; **descargas programadas** (una franja horaria, por ejemplo de 02:00 a 08:00, aunque cruce la medianoche: fuera de ella las descargas quedan en pausa y adentro se reanudan solas; **Bajar ahora** levanta la pausa por 2 horas y **Volver a la franja** la respeta de nuevo; mientras hay tareas esperando, el panel de tareas muestra "Descargas en espera" con el mismo botón; una pausa que pusiste vos desde Descargas no se toca); **estado de los servicios** (¿es tu conexión o un servicio caído?); uso del disco por categoría; **unificar archivos repetidos** (los mods y packs iguales de varias instancias pasan a ocupar lugar una sola vez, también en automático) y limpieza con vista previa (caché, versiones y Java que no usa nadie, descargas incompletas). La limpieza borra para siempre lo que se puede volver a descargar, y pide confirmación.
 - **Datos**: dónde se guarda todo (podés moverlo a otra carpeta o disco, con reinicio), cuánto ocupa cada cosa, vaciar la caché y el modo portable.
-- **Acerca de**: versión, información para copiar, **Novedades de Venus 2.0** (el recorrido de lo nuevo, también con Ctrl+K) y créditos. Venus no se actualiza solo por ahora: las versiones nuevas se instalan a mano.
+- **Acerca de**: versión, información para copiar, **Novedades de Venus 2.0** (el recorrido de lo nuevo, también con Ctrl+K) y créditos, además del acceso a la [web oficial](https://venuslauncher.fun/) en tu navegador. Venus no se actualiza solo por ahora: las versiones nuevas se instalan a mano.
 
 ### Datos, copias y modo familia en 4.5.0
 

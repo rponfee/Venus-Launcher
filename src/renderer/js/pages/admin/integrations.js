@@ -70,8 +70,16 @@ export function render(root) {
         controls.forEach(control => { control.disabled = true; });
         try {
           if (test) {
-            const { data, error } = await cloud.client.functions.invoke('curseforge', { body: { method: 'GET', path: '/v1/categories?gameId=432' } });
-            if (error || !Array.isArray(data?.data)) throw new Error('test_failed');
+            const { data, error } = await cloud.client.functions.invoke('curseforge', { body: { method: 'GET', path: '/v1/mods/search?gameId=432&classId=6&pageSize=1' } });
+            if (error || !Array.isArray(data?.data)) {
+              let code = data?.error?.code;
+              // Solo leemos los códigos propios del proxy; jamás mostramos cuerpos ni mensajes remotos.
+              if (error?.context?.status && typeof error.context.clone === 'function') {
+                const detail = await error.context.clone().json().catch(() => null);
+                code = detail?.error?.code;
+              }
+              throw Object.assign(new Error('test_failed'), { safeCode: ['badkey', 'forbidden', 'unauthorized', 'rate_limit'].includes(code) ? code : '' });
+            }
             if (active()) ok(T('curseforgeTestOk'));
           } else {
             const next = await rpc('admin_set_' + id + '_key', { p_key: value });
@@ -83,7 +91,8 @@ export function render(root) {
         } catch (err) {
           if (active()) {
             // Los errores pueden contener datos de la petición: nunca los pasamos al toast ni a la consola.
-            const detail = !test && typeof err?.message === 'string' && err.message.includes('bad_key') ? id + 'BadKey' : id + 'RetryHint';
+            const diagnostics = { badkey: 'curseforgeKeyRejected', forbidden: 'curseforgeAccessDenied', unauthorized: 'curseforgeSessionExpired', rate_limit: 'curseforgeRateLimit' };
+            const detail = test && diagnostics[err?.safeCode] ? diagnostics[err.safeCode] : !test && typeof err?.message === 'string' && err.message.includes('bad_key') ? id + 'BadKey' : id + 'RetryHint';
             fail(T(test ? 'curseforgeTestFailed' : id + 'Failed'), T(detail));
           }
         } finally {

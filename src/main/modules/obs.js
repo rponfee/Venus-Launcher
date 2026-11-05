@@ -1,12 +1,11 @@
 'use strict';
 // Integracion con OBS (obs-websocket v5), apagada por defecto. Con el interruptor prendido se conecta a OBS en esta PC o en
-// la red local y aplica dos reglas: cambia a la escena elegida al abrir y al cerrar el juego, y prende el modo streamer
-// mientras OBS transmite o graba (lo apaga al terminar solo si lo prendio esta integracion). Si OBS no esta abierto,
+// la red local y cambia a la escena elegida al abrir y al cerrar el juego. Si OBS no esta abierto,
 // reintenta con espera creciente sin avisar nada. La contraseña va cifrada (core/secure) y nunca vuelve a la interfaz.
 //
 // Canales: obs:status() -> estado · obs:test({ host, port, password? }) -> { ok, version, scenes, current, streaming, recording } o error con code
 //   obs:setPassword(texto | null)
-// Evento: obs:state (lo mismo que obs:status) · obs:streamer { on } (cambio el modo streamer: la interfaz relee los ajustes)
+// Evento: obs:state (lo mismo que obs:status).
 // Ajustes: settings.obs (obs/logic.js). Guia: docs/implementacion/clips.md.
 const settings = require('../core/settings');
 const secure = require('../core/secure');
@@ -16,7 +15,6 @@ const { ObsClient } = require('./obs/client');
 const logic = require('./obs/logic');
 
 const SECRET_KEY = 'obs.password';
-const GRACE_MS = 30000; // OBS se cerro o se corto la conexion: un rato despues se da por terminada la transmision
 
 let ctx = null;
 let cfg = logic.normalizeSettings({});
@@ -25,12 +23,9 @@ let state = 'off'; // off | connecting | connected | waiting | authFailed
 let lastError = null;
 let attempt = 0;
 let retryTimer = null;
-let graceTimer = null;
 let generation = 0;
 let info = { version: null, scenes: [], current: null, streaming: false, recording: false };
 let hasPassword = false;
-let streamerOn = false;
-let wasActive = false; // en el paso anterior, OBS transmitia o grababa (con la regla prendida)
 
 const send = (...a) => ctx?.send?.(...a);
 
@@ -61,44 +56,6 @@ function resetInfo() {
   info = { version: null, scenes: [], current: null, streaming: false, recording: false };
 }
 
-// ---------- Modo streamer ----------
-
-async function applyStreamer() {
-  const active = (info.streaming || info.recording) && cfg.streamerWhileLive && cfg.enabled;
-  const step = logic.streamerStep({ active, wasActive, on: streamerOn, owned: cfg.streamerOwned });
-  wasActive = active;
-  const patch = {};
-  if (step.owned !== cfg.streamerOwned) patch.obs = { streamerOwned: step.owned };
-  if (step.set !== null) patch.privacy = { streamer: step.set };
-  if (!Object.keys(patch).length) return;
-  try {
-    // El cambio de cfg.streamerOwned lo trae settings.onChange; se adelanta para no repetir el paso
-    cfg = { ...cfg, streamerOwned: step.owned };
-    if (step.set !== null) streamerOn = step.set;
-    await settings.set(patch);
-    if (step.set !== null) send('obs:streamer', { on: step.set });
-  } catch (err) {
-    console.warn('[obs] modo streamer:', err?.message || err);
-  }
-}
-
-function clearGrace() {
-  clearTimeout(graceTimer);
-  graceTimer = null;
-}
-
-// Sin conexion no se sabe que hace OBS: se espera un rato (puede volver) y recien ahi se da por terminado
-function startGrace() {
-  if (graceTimer || !cfg.streamerOwned) return;
-  graceTimer = setTimeout(() => {
-    graceTimer = null;
-    info.streaming = false;
-    info.recording = false;
-    applyStreamer();
-  }, GRACE_MS);
-  graceTimer.unref?.();
-}
-
 // ---------- Conexion ----------
 
 function scheduleRetry() {
@@ -112,11 +69,9 @@ function scheduleRetry() {
 function onEvent(type, data) {
   if (type === 'StreamStateChanged') {
     info.streaming = data.outputActive === true;
-    applyStreamer();
     emit();
   } else if (type === 'RecordStateChanged') {
     info.recording = data.outputActive === true;
-    applyStreamer();
     emit();
   } else if (type === 'CurrentProgramSceneChanged') {
     info.current = data.sceneName || null;
@@ -127,7 +82,6 @@ function onEvent(type, data) {
     // OBS se esta cerrando: el cierre llega enseguida y reintenta solo
     info.streaming = false;
     info.recording = false;
-    applyStreamer();
     emit();
   }
 }
@@ -161,18 +115,15 @@ async function connect() {
       if (client !== c) return;
       dropClient();
       setState('waiting');
-      startGrace();
       scheduleRetry();
     });
     const [scenes, outputs] = await Promise.all([c.sceneList(), c.outputs()]);
     if (gen !== generation) return c.close();
-    clearGrace();
     info.scenes = scenes.scenes;
     info.current = scenes.current;
     info.streaming = outputs.streaming;
     info.recording = outputs.recording;
     setState('connected');
-    await applyStreamer();
     // Si ya hay un juego abierto al conectar, la escena de abrir tambien vale
     if (runningGames().length) await applyScene('open');
   } catch (err) {
@@ -181,11 +132,9 @@ async function connect() {
     if (err?.code === 'auth' || err?.code === 'authRequired') {
       // Con la contraseña mal, reintentar no sirve: se espera a que la cambien
       setState('authFailed', err.code);
-      startGrace();
       return;
     }
     setState('waiting', err?.code === 'version' ? 'version' : null);
-    startGrace();
     scheduleRetry();
   }
 }
@@ -193,7 +142,6 @@ async function connect() {
 function disconnect() {
   generation += 1;
   clearTimeout(retryTimer);
-  clearGrace();
   dropClient();
   resetInfo();
   attempt = 0;
@@ -232,7 +180,6 @@ function applySettings(raw) {
   const changed = prev.host !== cfg.host || prev.port !== cfg.port;
   if (!cfg.enabled) {
     if (prev.enabled || state !== 'off') disconnect();
-    applyStreamer(); // si lo habia prendido esto, se apaga
     return;
   }
   if (!prev.enabled || changed || state === 'off') {
@@ -240,7 +187,6 @@ function applySettings(raw) {
     connect();
     return;
   }
-  if (prev.streamerWhileLive !== cfg.streamerWhileLive) applyStreamer();
   emit();
 }
 
@@ -278,22 +224,10 @@ function register(c) {
   Promise.all([settings.get(), secure.has(SECRET_KEY).catch(() => false)])
     .then(([s, has]) => {
       hasPassword = Boolean(has);
-      streamerOn = s?.privacy?.streamer === true;
       applySettings(s?.obs);
-      // Lo habia prendido esta integracion y el launcher se cerro: si OBS ya no transmite, se apaga despues de la espera
-      if (cfg.streamerOwned) startGrace();
     })
     .catch(() => {});
   settings.onChange((s, patch) => {
-    if (patch?.privacy && 'streamer' in patch.privacy) {
-      const next = s?.privacy?.streamer === true;
-      // Lo apago el usuario mientras estaba prendido por OBS: ya no es de esta integracion
-      if (!next && streamerOn && cfg.streamerOwned) {
-        cfg = { ...cfg, streamerOwned: false };
-        settings.set({ obs: { streamerOwned: false } }).catch(() => {});
-      }
-      streamerOn = next;
-    }
     if (patch && Object.prototype.hasOwnProperty.call(patch, 'obs')) applySettings(s?.obs);
   });
   game.events.on('state', onGameState);
@@ -315,7 +249,6 @@ function register(c) {
   onQuit(() => {
     generation += 1;
     clearTimeout(retryTimer);
-    clearGrace();
     dropClient();
   });
 }

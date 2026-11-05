@@ -13,8 +13,6 @@ registerIcons({
   srPlug: '<path d="m19 5 3-3"/><path d="m2 22 3-3"/><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="M7.5 13.5 10 11"/><path d="M10.5 16.5 13 14"/><path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/>',
 });
 
-const isStreamer = () => store.settings?.privacy?.streamer === true;
-
 // El QR lleva el token: se dibuja en un canvas propio con zona blanca alrededor, sea cual sea el tema
 function qrCanvas(qr) {
   const QUIET = 4;
@@ -44,7 +42,6 @@ export function remoteCard(serverId) {
   let addresses = [];
   let pick = null;
   let drawnUrl = null;
-  let drawnStreamer = null;
   let liveBox = null;
   let alive = true;
 
@@ -119,14 +116,12 @@ export function remoteCard(serverId) {
   }
 
   function drawOn() {
-    const streamer = isStreamer();
     // El QR y el código solo se redibujan si cambian: lo que se actualiza solo es la lista de conectados
-    if (status.url === drawnUrl && streamer === drawnStreamer && liveBox) {
+    if (status.url === drawnUrl && liveBox) {
       drawLive();
       return;
     }
     drawnUrl = status.url;
-    drawnStreamer = streamer;
     liveBox = h('div', { class: 'stack sr-live' });
     const copyLink = h('button', { class: 'btn sm', type: 'button', onclick: () => copyText(status.url, R('linkCopied')) }, icon('copy'), R('copyLink'));
     const copyCode = h('button', { class: 'icon-btn sm', type: 'button', title: R('copyCode'), 'aria-label': R('copyCode'), onclick: () => copyText(status.code, R('codeCopied')) }, icon('copy'));
@@ -136,7 +131,7 @@ export function remoteCard(serverId) {
       h(
         'div',
         { class: 'sr-on' },
-        streamer ? h('div', { class: 'sr-qr-hidden' }, icon('eyeOff'), h('span', {}, R('qrHidden'))) : qrCanvas(status.qr),
+        qrCanvas(status.qr),
         h(
           'div',
           { class: 'stack sr-pair' },

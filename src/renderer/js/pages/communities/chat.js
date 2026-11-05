@@ -8,14 +8,14 @@ import { openGroupReport } from '../../features/clans/report.js';
 import { COMMUNITY_LIMITS, validateMessage } from '../../features/clans/logic.js';
 import { renderBody } from '../../social/richtext.js';
 import { headImg, openProfile } from '../../social/profile-ui.js';
-import { canDeleteMessage, canReportMessage, groupMessages, isMuted, mergeMessages, messageFromRow, oldestAt, PAGE_SIZE, personName } from './logic.js';
+import { canDeleteMessage, canReportMessage, groupMessages, isMuted, mergeMessages, messageFromRow, oldestAt, PAGE_SIZE, personName, canPostIn, waitSeconds, afterPost, channelIcon, mergeChannelState } from './logic.js';
 
 const C = (key, vars) => t(`clans.${key}`, vars);
 const POLL_MS = 30000;
 const NEAR_BOTTOM_PX = 80;
 
 /** community: lo que devuelve community_get. people: Map userId -> persona (lo comparte con la lista de miembros). */
-export function chatView(host, { b, community, channel, people, onPerson }) {
+export function chatView(host, { b, community, channel, people, onPerson, topic = null, onBack, onPosted }) {
   const me = b.userId();
   let list = [];
   let hasMore = false;
@@ -23,6 +23,13 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
   let destroyed = false;
   let sending = false;
   let unknownAuthor = false;
+  let denied = false;
+  let loadingOlder = false;
+  const deleting = new Set();
+  const pageName = topic ? 'community_forum_replies' : 'community_messages_page';
+  const pageArgs = () => topic ? { p_topic: topic.id, p_limit: PAGE_SIZE } : { p_channel: channel.id, p_limit: PAGE_SIZE };
+  const header = h('header', { class: 'cm-chat-head' });
+  const topicBody = h('div', { class: 'cm-topic-root', hidden: !topic });
   const box = h('div', { class: 'cm-msgs', role: 'log', 'aria-live': 'polite', 'aria-label': C('chatLog', { name: channel.name }), tabindex: '0' });
   const older = h('button', { class: 'btn sm ghost cm-older', type: 'button', hidden: true }, icon('history'), C('olderMessages'));
   const input = h('textarea', { class: 'textarea cm-input', rows: '1', maxlength: String(COMMUNITY_LIMITS.message), placeholder: C('chatPlaceholder', { name: channel.name }), 'aria-label': C('chatPlaceholder', { name: channel.name }) });
@@ -86,21 +93,41 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
   }
 
   async function removeMessage(m) {
+    if (destroyed || deleting.has(m.id)) return;
     const theirs = m.authorId !== me;
-    if (!(await confirmDialog(C('deleteMessage'), theirs ? C('deleteTheirsText') : C('deleteMineText'), { okText: C('delete'), danger: true }))) return;
+    if (!(await confirmDialog(C(topic?.id === m.id ? 'cmTopicDelete' : 'deleteMessage'), topic?.id === m.id ? C('cmTopicDeleteConfirm') : theirs ? C('deleteTheirsText') : C('deleteMineText'), { okText: C('delete'), danger: true }))) return;
+    if (destroyed || deleting.has(m.id)) return;
+    deleting.add(m.id);
     try {
       await b.rpc('community_message_delete', { p_id: m.id });
+      if (destroyed) return;
+      if (topic?.id === m.id) { markThreadDeleted(); return; }
       list = mergeMessages(list, [{ ...m, deleted: true, body: '' }]);
       draw();
     } catch (err) {
-      fail(C('actionError'), errText(err));
-    }
+      if (!destroyed) fail(C('actionError'), errText(err));
+    } finally { deleting.delete(m.id); }
+  }
+
+  function markThreadDeleted() {
+    if (!topic) return;
+    topic = { ...topic, deleted: true, body: '', title: null };
+    list = []; hasMore = false;
+    drawHeader(); drawMute(); draw();
+  }
+  function handleAccessError(err) {
+    if (err?.code === 'thread_deleted') { markThreadDeleted(); return true; }
+    if (!['not_found', 'not_member', 'forbidden', 'noSession', 'user_banned'].includes(err?.code)) return false;
+    denied = true; list = []; input.value = ''; drawMute();
+    mount(topicBody); mount(box, emptyState('lock', errText(err), ''));
+    return true;
   }
 
   async function loadLatest({ first = false } = {}) {
+    if (destroyed || denied || topic?.deleted) return;
     try {
-      const page = await b.rpc('community_messages_page', { p_channel: channel.id, p_limit: PAGE_SIZE });
-      if (destroyed) return;
+      const page = await b.rpc(pageName, pageArgs());
+      if (destroyed || denied || topic?.deleted) return;
       const rows = Array.isArray(page) ? page : [];
       remember(rows);
       if (first) hasMore = rows.length >= PAGE_SIZE;
@@ -108,30 +135,33 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
       unknownAuthor = false;
       draw({ keepBottom: first });
     } catch (err) {
-      if (destroyed || !first) return;
+      if (destroyed || handleAccessError(err) || !first) return;
       mount(box, emptyState('alert', errText(err), '', h('button', { class: 'btn', type: 'button', onclick: () => { mount(box, skeleton('list', { rows: 5 })); loadLatest({ first: true }); } }, icon('refresh'), C('retry'))));
     }
   }
 
   older.addEventListener('click', async () => {
+    if (destroyed || loadingOlder || denied || topic?.deleted) return;
+    loadingOlder = true;
     const done = setBusy(older);
     try {
-      const page = await b.rpc('community_messages_page', { p_channel: channel.id, p_before: oldestAt(list), p_limit: PAGE_SIZE });
-      if (destroyed) return;
+      const page = await b.rpc(pageName, { ...pageArgs(), p_before: oldestAt(list) });
+      if (destroyed || denied || topic?.deleted) return;
       const rows = Array.isArray(page) ? page : [];
       remember(rows);
       hasMore = rows.length >= PAGE_SIZE;
       list = mergeMessages(list, rows);
       draw({ keepAnchor: true });
     } catch (err) {
-      fail(C('actionError'), errText(err));
+      if (!destroyed && !handleAccessError(err)) fail(C('actionError'), errText(err));
     } finally {
+      loadingOlder = false;
       done();
     }
   });
 
   async function submit() {
-    if (destroyed || sending || isMuted(community.mutedUntil) || !community.myRole) return;
+    if (destroyed || denied || sending || topic?.deleted || !canPostIn(community, channel) || waitSeconds(community, channel)) return;
     const draft = input.value;
     const check = validateMessage(draft);
     if (!check.ok) {
@@ -141,8 +171,10 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
     sending = true;
     const done = setBusy(send);
     try {
-      const m = await b.rpc('community_send', { p_channel: channel.id, p_body: check.value });
-      if (destroyed) return;
+      const m = await b.rpc(topic ? 'community_forum_reply' : 'community_send', { ...(topic ? { p_topic: topic.id } : { p_channel: channel.id }), p_body: check.value });
+      if (destroyed || denied || topic?.deleted) return;
+      channel = afterPost(community, channel, m?.at);
+      onPosted?.(channel);
       // Mientras llega la respuesta se puede escribir el siguiente mensaje: no borrar ese borrador.
       if (input.value === draft) input.value = '';
       resize();
@@ -152,7 +184,10 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
         draw({ keepBottom: true });
       }
     } catch (err) {
-      if (!destroyed) fail(C('sendError'), errText(err));
+      if (!destroyed) {
+        if (err?.nextPostAt) channel = { ...channel, nextPostAt: err.nextPostAt };
+        if (!handleAccessError(err)) fail(C('sendError'), errText(err));
+      }
     } finally {
       done();
       sending = false;
@@ -178,21 +213,35 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
   }
   input.addEventListener('input', resize);
 
+  function drawHeader() {
+    mount(header, topic ? h('button', { class: 'icon-btn sm', type: 'button', title: C('cmBackTopics'), 'aria-label': C('cmBackTopics'), onclick: onBack }, icon('arrowLeft')) : null,
+      icon(channelIcon(channel)), h('div', { class: 'cm-chat-heading' }, h('strong', {}, topic ? (topic.deleted ? C('cmTopicDeleted') : topic.title) : channel.name),
+        !topic && channel.topic ? h('p', { class: 'cm-channel-topic selectable' }, channel.topic) : null),
+      channel.isPrivate ? h('span', { title: C('cmPrivate'), 'aria-label': C('cmPrivate') }, icon('lock')) : null);
+    if (topic) mount(topicBody, topic.deleted ? h('p', { class: 'cm-gone' }, C('cmTopicDeleted')) : groupView({ authorId: topic.authorId, author: topic.author, at: topic.at, items: [topic] }));
+    input.placeholder = C(topic ? 'cmReplyPlaceholder' : 'chatPlaceholder', { name: channel.name });
+    input.setAttribute('aria-label', input.placeholder);
+  }
   function drawMute() {
     const muted = isMuted(community.mutedUntil);
-    banner.hidden = !muted;
-    input.disabled = muted || !community.myRole;
-    send.disabled = input.disabled || sending;
-    if (muted) mount(banner, icon('volumeX'), h('span', {}, C('mutedUntil', { date: `${fmtDate(Date.parse(community.mutedUntil))} ${fmtTime(Date.parse(community.mutedUntil))}` })));
+    const wait = waitSeconds(community, channel);
+    const allowed = !denied && !topic?.deleted && canPostIn(community, channel);
+    input.disabled = !allowed;
+    send.disabled = !allowed || sending || wait > 0;
+    banner.hidden = allowed && !wait;
+    if (topic?.deleted) mount(banner, icon('lock'), C('cmTopicDeleted'));
+    else if (muted) mount(banner, icon('volumeX'), C('mutedUntil', { date: fmtDate(Date.parse(community.mutedUntil)) + ' ' + fmtTime(Date.parse(community.mutedUntil)) }));
+    else if (!allowed) mount(banner, icon('lock'), C('cmReadOnly'));
+    else if (wait) mount(banner, icon('clock'), C('cmWaitSeconds', { n: wait }));
   }
-
   mount(host,
-    h('header', { class: 'cm-chat-head' }, icon('hash'), h('strong', { class: 'ellipsis' }, channel.name)),
+    header, topicBody,
     h('p', { class: 'cl-note cm-e2e' }, icon('eye'), h('span', {}, C('chatNotice'))),
     box,
     banner,
     h('div', { class: 'cm-composer' }, input, count, send));
   mount(box, skeleton('list', { rows: 5, label: C('loading') }));
+  drawHeader();
   drawMute();
   loadLatest({ first: true });
 
@@ -204,7 +253,9 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
       if (live && !was) loadLatest(); // lo que llegó mientras no estaba conectado
     },
     onRow: (row) => {
-      if (destroyed) return;
+      if (destroyed || denied || row.channel_id !== channel.id) return;
+      if (topic && row.id === topic.id) { if (row.deleted) markThreadDeleted(); return; }
+      if (topic ? row.parent_id !== topic.id || topic.deleted : !!row.parent_id) return;
       const m = messageFromRow(row, { people, isBlocked: b.isBlocked });
       if (!m) return;
       if (!m.author) unknownAuthor = true;
@@ -214,17 +265,22 @@ export function chatView(host, { b, community, channel, people, onPerson }) {
     },
   });
   const timer = setInterval(() => {
-    if (!live && document.visibilityState === 'visible') loadLatest();
+    if ((!live || topic) && document.visibilityState === 'visible') loadLatest();
   }, POLL_MS);
 
+  const clock = setInterval(() => { if (!destroyed) drawMute(); }, 1000);
   return {
-    setCommunity(next) {
+    setCommunity(next, nextChannel) {
+      if (destroyed) return;
       community = next;
+      channel = mergeChannelState(channel, nextChannel);
+      drawHeader();
       drawMute();
     },
     destroy() {
       destroyed = true;
       clearInterval(timer);
+      clearInterval(clock);
       stop();
     },
   };

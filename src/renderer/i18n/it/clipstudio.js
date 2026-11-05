@@ -154,7 +154,7 @@ export default {
   accountConnected: "Collegato",
   accountNotConnected: "Non collegato",
   obsTitle: "Integrazione con OBS",
-  obsSubtitle: "Cambia scena insieme al gioco e attiva la modalità streamer mentre trasmetti.",
+  obsSubtitle: "Cambia scena quando il gioco si avvia e si chiude.",
   obsEnable: "Collega a OBS",
   obsEnableSub: "Richiede OBS 28 o successivo con il server WebSocket attivo (Strumenti → Impostazioni server WebSocket). Se OBS è chiuso, continua a riprovare in silenzio.",
   obsHost: "Indirizzo",

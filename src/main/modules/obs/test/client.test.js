@@ -197,13 +197,13 @@ test('ajustes: apagado por defecto y valores validos', () => {
   assert.equal(d.enabled, false);
   assert.equal(d.host, '127.0.0.1');
   assert.equal(d.port, 4455);
-  assert.equal(d.streamerWhileLive, true);
-  assert.equal(d.streamerOwned, false);
+  assert.equal(d.streamerWhileLive, undefined);
+  assert.equal(d.streamerOwned, undefined);
   const s = logic.normalizeSettings({ enabled: true, host: 'obs.example.com', port: 99999, sceneOnOpen: ' Juego ', streamerWhileLive: false });
   assert.equal(s.host, '127.0.0.1', 'una direccion de internet no se acepta');
   assert.equal(s.port, 4455);
   assert.equal(s.sceneOnOpen, 'Juego');
-  assert.equal(s.streamerWhileLive, false);
+  assert.equal(s.streamerWhileLive, undefined);
 });
 
 test('la espera entre reintentos crece hasta 5 minutos', () => {
@@ -212,25 +212,6 @@ test('la espera entre reintentos crece hasta 5 minutos', () => {
   assert.equal(logic.backoff(3), 24000);
   assert.equal(logic.backoff(50), 300000);
   assert.equal(logic.backoff(undefined), 3000);
-});
-
-test('modo streamer: se prende al empezar y se apaga solo si lo prendio esto', () => {
-  const step = logic.streamerStep;
-  // Empieza a transmitir con el modo apagado: lo prende y queda como suyo
-  assert.deepEqual(step({ active: true, wasActive: false, on: false, owned: false }), { set: true, owned: true });
-  // Ya estaba prendido por el usuario: no es suyo
-  assert.deepEqual(step({ active: true, wasActive: false, on: true, owned: false }), { set: null, owned: false });
-  // Termina: lo apaga solo si era suyo
-  assert.deepEqual(step({ active: false, wasActive: true, on: true, owned: true }), { set: false, owned: false });
-  assert.deepEqual(step({ active: false, wasActive: true, on: true, owned: false }), { set: null, owned: false });
-  // Durante la transmision el usuario lo apaga: queda apagado y deja de ser suyo
-  assert.deepEqual(step({ active: true, wasActive: true, on: false, owned: true }), { set: null, owned: false });
-  // Y no se vuelve a prender en el proximo evento
-  assert.deepEqual(step({ active: true, wasActive: true, on: false, owned: false }), { set: null, owned: false });
-  // El usuario lo apago y termina: nada que hacer
-  assert.deepEqual(step({ active: false, wasActive: true, on: false, owned: true }), { set: null, owned: false });
-  // Sin OBS en vivo y sin nada prendido
-  assert.deepEqual(step({ active: false, wasActive: false, on: false, owned: false }), { set: null, owned: false });
 });
 
 test('escenas: la de cerrar no se pone si queda otro juego abierto', () => {

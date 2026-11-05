@@ -154,7 +154,7 @@ export default {
   accountConnected: "Gekoppeld",
   accountNotConnected: "Niet gekoppeld",
   obsTitle: "OBS-integratie",
-  obsSubtitle: "Wisselt scènes met het spel en schakelt de streamermodus in tijdens het streamen.",
+  obsSubtitle: "Wisselt van scène wanneer het spel start en sluit.",
   obsEnable: "Verbinden met OBS",
   obsEnableSub: "Vereist OBS 28 of nieuwer met de WebSocket-server ingeschakeld (Extra → WebSocket-serverinstellingen). Als OBS gesloten is, wordt stilletjes opnieuw verbinding geprobeerd.",
   obsHost: "Adres",

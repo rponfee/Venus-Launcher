@@ -2,12 +2,14 @@
 // ediciones del pase (Go, Pro y Max) con la compra, y cómo se sube de nivel. Estado compartido en features/pass.js;
 // reglas y RPC en supabase/migrations/0026_venus_pass.sql · guía: docs/venus-pass.md.
 import { h, icon, mount, skeleton, emptyState, setBusy, toast, fail, modal, fmtNumber, fmtDate } from '../ui.js';
-import { api } from '../store.js';
+import { api, store } from '../store.js';
 import { t, has } from '../i18n.js';
 import { navigate } from '../app.js';
 import { getPass, onPass, loadPass, claim, claimAll, passBackend } from '../features/pass.js';
 import { itemName } from '../features/rewards.js';
 import { fmtMoney, fmtUsd, fmtArs } from '../features/plans.js';
+import { pointsTicket, levelBadge } from '../features/cosmic-art.js';
+import { openAppearance } from './pass/appearance.js';
 import { levelInfo, rewardsByLevel, tierOffers, seasonState, daysLeft, claimableList, xpSources } from './pass/logic.js';
 
 const P = (key, vars) => t(`pass.${key}`, vars);
@@ -32,7 +34,7 @@ function pageHead(me) {
 
 // ---------- Premios ----------
 function rewardFace(r) {
-  if (r.kind === 'points') return [h('span', { class: 'ps-tile-icon ps-tile-points' }, icon('star')), h('span', { class: 'ps-tile-name' }, `+${fmtNumber(r.amount)}`), h('span', { class: 'ps-tile-sub' }, P('points', { n: fmtNumber(r.amount) }))];
+  if (r.kind === 'points') return [pointsTicket(`+${fmtNumber(r.amount)}`, { label: P('points', { n: fmtNumber(r.amount) }), compact: true }), h('span', { class: 'ps-tile-sub' }, P('points', { n: fmtNumber(r.amount) }))];
   return [h('span', { class: 'ps-tile-icon ps-tile-item' }, icon(KIND_ICON[r.kind] || 'gift')), h('span', { class: 'ps-tile-name' }, itemName(r.itemId)), h('span', { class: 'ps-tile-sub' }, has(`pass.kind_${r.kind}`) ? P(`kind_${r.kind}`) : r.kind)];
 }
 
@@ -58,7 +60,7 @@ function trackView(me, onClaim) {
   for (const row of rows) {
     const isCurrent = row.level === me.level;
     scroller.append(h('div', { class: ['ps-col', row.level <= me.level && 'is-reached', isCurrent && 'is-current'], role: 'listitem' },
-      h('div', { class: 'ps-col-level' }, h('span', { class: 'ps-col-num' }, String(row.level)), isCurrent ? h('span', { class: 'ps-col-tag' }, P('current')) : null),
+      h('div', { class: 'ps-col-level' }, levelBadge(row.level, store.settings?.passAppearance, { compact: true }), isCurrent ? h('span', { class: 'ps-col-tag' }, P('current')) : null),
       tile(row.free, me.level, onClaim),
       tile(row.premium, me.level, onClaim)));
   }
@@ -75,14 +77,14 @@ function trackView(me, onClaim) {
 }
 
 // ---------- Nivel ----------
-function heroView(me, { onClaimAll, onBuy }) {
+function heroView(me, { onClaimAll, onBuy, onCustomize }) {
   const lv = levelInfo(me);
   const claimable = claimableList(me).length;
   const claimBtn = claimable ? h('button', { type: 'button', class: 'btn primary' }, icon('gift'), P('claimAllCount', { count: claimable })) : null;
   if (claimBtn) claimBtn.addEventListener('click', async () => { const done = setBusy(claimBtn); try { await onClaimAll(); } finally { done(); } });
   const buyBtn = !me.purchase && seasonState(me.season) === 'active' ? h('button', { type: 'button', class: 'btn', onclick: onBuy }, icon('rocket'), P('tiersTitle')) : null;
   return h('section', { class: 'card ps-hero' },
-    h('div', { class: 'ps-level' }, h('span', { class: 'ps-level-label' }, P('level')), h('span', { class: 'ps-level-num' }, String(lv.level))),
+    h('div', { class: 'ps-emblem' }, levelBadge(lv.level, store.settings?.passAppearance, { label: P('level') }), h('button', { type: 'button', class: 'btn sm ghost ps-customize', onclick: onCustomize }, icon('palette'), P('customize'))),
     h('div', { class: 'ps-progress-wrap' },
       h('div', { class: 'ps-progress-head' }, h('strong', {}, lv.maxed ? P('levelMax') : P('levelOf', { level: lv.level, levels: lv.levels })), h('span', { class: 'ps-muted' }, lv.maxed ? P('xpTotal', { n: fmtNumber(me.xp.total) }) : P('xpToNext', { n: fmtNumber(lv.toNext), level: lv.level + 1 }))),
       h('div', { class: 'ps-progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(lv.pct), 'aria-label': P('levelOf', { level: lv.level, levels: lv.levels }) }, h('i', { style: { width: `${lv.pct}%` } })),
@@ -255,13 +257,15 @@ async function openCheckout(offer, me, catalog) {
 // ---------- Página ----------
 export default {
   ns: ['pass', 'rewards', 'plans'],
-  css: ['pages/pass', 'features/plans'],
+  css: ['pages/pass', 'features/plans', 'features/cosmic-art'],
   async render(root) {
     const b = await passBackend();
     if (!root.isConnected) return null;
     let alive = true;
     const cleanups = [];
     let catalog = null;
+    let appearanceDialog = null;
+    cleanups.push(() => appearanceDialog?.close());
 
     if (!b.signedIn()) {
       mount(root, pageHead(null), h('div', { class: 'ps-signed-out' }, emptyState('logIn', P('signInTitle'), P('signInText'),
@@ -290,6 +294,12 @@ export default {
         fail(P('claimError'), errText(err));
       }
     }
+    const onCustomize = () => {
+      const me = getPass().data;
+      if (!me) return;
+      appearanceDialog?.close();
+      appearanceDialog = openAppearance(me.level);
+    };
     const onBuy = (offer) => {
       const me = getPass().data;
       if (!me) return;
@@ -310,10 +320,11 @@ export default {
         return;
       }
       if (root.firstChild) root.firstChild.replaceWith(pageHead(me));
-      mount(body, heroView(me, { onClaimAll, onBuy }), tiersView(me, catalog, onBuy), trackView(me, onClaim), howView(me));
+      mount(body, heroView(me, { onClaimAll, onBuy, onCustomize }), tiersView(me, catalog, onBuy), trackView(me, onClaim), howView(me));
     }
 
     cleanups.push(onPass(paint));
+    cleanups.push(store.on('settings', paint));
     cleanups.push(b.onAuth?.(() => navigate('pass')) || (() => {}));
     try {
       catalog = b.fake ? null : await api.invoke('billing:catalog').catch(() => null);

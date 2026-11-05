@@ -165,7 +165,7 @@ test('KLIPY conserva sus RPC, limpia la clave y no recarga CurseForge al guardar
   r.api.destroy();
 });
 
-test('Probar consulta categorias por Venus, sin enviar el contenido del campo', async () => {
+test('Probar consulta busqueda de Minecraft por Venus, sin enviar el contenido del campo', async () => {
   const pending = deferred();
   const r = await rig(async () => result(true, '0001'), () => pending.promise);
   const card = r.card('curseforge'), input = card.querySelector('input');
@@ -175,7 +175,7 @@ test('Probar consulta categorias por Venus, sin enviar el contenido del campo', 
   button(card, 'curseforgeRemove').listeners.click();
   assert.equal(r.checks.length, 1);
   assert.equal(r.checks[0].name, 'curseforge');
-  assert.deepEqual(JSON.parse(JSON.stringify(r.checks[0].args)), { body: { method: 'GET', path: '/v1/categories?gameId=432' } });
+  assert.deepEqual(JSON.parse(JSON.stringify(r.checks[0].args)), { body: { method: 'GET', path: '/v1/mods/search?gameId=432&classId=6&pageSize=1' } });
   assert.ok(card.querySelectorAll('input,button').every(el => el.disabled));
   pending.resolve({ data: { data: [{ id: 1, name: 'Test category' }] }, error: null });
   await request;
@@ -265,3 +265,14 @@ test('los textos nuevos existen en es/en y errSignIn en los catorce idiomas con 
   }
   assert.equal(require(path.join(ROOT, 'src/main/i18n/es/curseforge.js')).errSignIn, 'Iniciá sesión con tu cuenta de Venus para usar CurseForge.');
 });
+
+for (const [code, key] of [['badkey', 'curseforgeKeyRejected'], ['forbidden', 'curseforgeAccessDenied'], ['unauthorized', 'curseforgeSessionExpired'], ['rate_limit', 'curseforgeRateLimit']]) {
+  test('la prueba explica ' + code + ' sin reflejar el cuerpo remoto', async () => {
+    const r = await rig(async () => result(true, '0001'), async () => ({ error: { context: new Response(JSON.stringify({ error: { code }, detail: 'FAKE_PRIVATE_BODY' }), { status: code === 'unauthorized' ? 401 : code === 'rate_limit' ? 429 : 403 }) } }));
+    await button(r.card('curseforge'), 'curseforgeTest').click();
+    assert.equal(r.failures[0][1], T(key));
+    assert.equal(JSON.stringify(r.failures).includes('FAKE_PRIVATE_BODY'), false);
+    assert.equal(r.calls.some(c => c.name === 'admin_set_curseforge_key'), false);
+    r.api.destroy();
+  });
+}

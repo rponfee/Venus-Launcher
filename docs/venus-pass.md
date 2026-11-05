@@ -11,6 +11,12 @@ Pase de temporada de Venus Launcher (3.1). Se compra una vez por temporada con M
 - **Devoluciones**: si se devuelve la compra, se quita el pase, los cosméticos de la edición y lo reclamado en la pista premium (los puntos se descuentan). Si se devuelve solo el pase a una edición mejor, se vuelve a la anterior y se quita lo que dio la mejor.
 - Los cosméticos del pase (`shop_items.source = 'pass'`) no se venden en la tienda ni se pueden comprar con puntos. Se equipan desde Mi perfil como cualquier otro.
 
+## Aspecto del nivel
+
+**Personalizar**, debajo del emblema, permite elegir Venus, Marte o Neptuno, los marcos Órbita, Halo o Nova y los colores del marco y del número. Hay vista previa, restablecimiento y cancelación. El número siempre representa el nivel real del pase. El estilo se guarda en esta PC y también se usa en las miniaturas de la pista. Los números oscuros se rechazan para conservar el contraste.
+
+Los premios de puntos usan el mismo ticket ilustrado que el saldo de Venus Points. Las cifras siguen siendo texto accesible. Assets y prompts: [Arte de Venus](arte-venus.md).
+
 ## Para el administrador
 
 Administración → **Venus Pass**:

@@ -5,6 +5,7 @@
 import { h, icon, mount, emptyState, loading } from '../ui.js';
 import { api } from '../store.js';
 import { navigate } from '../app.js';
+import { t } from '../i18n.js';
 import { T, call } from './admin/parts.js';
 import { currentPlans } from '../features/plans-catalog.js';
 import * as overviewTab from './admin/overview.js';
@@ -21,7 +22,6 @@ import * as stickersTab from './admin/stickers.js';
 import * as eventsTab from './admin/events.js';
 import * as galleryTab from './admin/gallery.js';
 import * as clansTab from './admin/clans.js';
-import * as extensionsTab from './admin/extensions.js';
 
 const TABS = [
   { id: 'overview', icon: 'chart', mod: overviewTab },
@@ -32,8 +32,7 @@ const TABS = [
   { id: 'stickers', icon: 'smile', mod: stickersTab },
   { id: 'events', icon: 'calendar', mod: eventsTab },
   { id: 'gallery', icon: 'camera', mod: galleryTab },
-  { id: 'clans', icon: 'shield', mod: clansTab },
-  { id: 'extensions', icon: 'puzzle', mod: extensionsTab },
+  { id: 'communities', icon: 'users', mod: clansTab },
   { id: 'integrations', icon: 'plug', mod: integrationsTab },
   { id: 'support', icon: 'message', mod: supportTab },
   { id: 'users', icon: 'users', mod: usersTab },
@@ -156,7 +155,7 @@ export default {
               onclick: () => select(tab.id),
             },
             icon(tab.icon),
-            T(`tab_${tab.id}`),
+            tab.id === 'communities' ? t('nav.communities') : T(`tab_${tab.id}`),
           );
         }),
       );

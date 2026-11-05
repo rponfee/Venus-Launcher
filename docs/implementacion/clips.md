@@ -1,5 +1,7 @@
 # Estudio de clips: montaje, timelapse, subida, OBS y galería
 
+> **Actualización del 4 de noviembre de 2026:** se retiró el modo streamer. OBS conserva conexión, estados, escenas y controles de grabación; ya no emite `obs:streamer` ni modifica `privacy.streamer`. Los resultados históricos sobre ese automatismo describen la implementación anterior. [Retirada y pruebas actuales](../retirada-funciones.md).
+
 > **Rama 4.5.0, sin publicar.** Consolidación documental del 3 de noviembre de 2026, reconciliada con el WIP congelado. Los informes de cada frente se conservan como antecedentes; las pruebas posteriores están atribuidas al final o en el estado de integración. Contratos y límites del código local; producción continúa hasta 0027 según la integración principal. Los resultados previos pertenecen a sus informes y no equivalen a pruebas externas repetidas ni a un despliegue. Ver [estado de integración](../estado-4.5.0.md).
 
 Cinco funciones de la hoja de ruta (64, 65, 66, 67 y 68). Sin dependencias nuevas ni ffmpeg: WebCodecs y el lector y escritor de WebM de `capture/webm.js`. Esta referencia conserva el detalle técnico de [clips](../clips.md) y [arquitectura](../arquitectura.md).
@@ -9,7 +11,7 @@ Cinco funciones de la hoja de ruta (64, 65, 66, 67 y 68). Sin dependencias nueva
 - **Montaje de la semana.** Botón en la página de Clips (`#/clips`). Propone los clips automáticos y los destacados de los últimos 7 días (destacado = en el perfil o compartido), en el orden en que pasaron; si no hay, los últimos clips guardados a mano. Se saca, se agrega y se reordena. Duración: 30 s, 1, 2 o 5 minutos, o sin tope; si los clips suman más, de cada uno se usa el **final** (en un clip automático, lo importante acaba de pasar). Placa de título opcional de 2,5 s. El resultado queda en `clips/` como `<fecha>_montage.webm` y aparece en la galería.
 - **Timelapse de tu mundo.** Botón en Clips y tarjeta en Ajustes → En el juego. Apagado por defecto y **por instancia**: cada cuánto (5 s a 2 minutos), tope de espacio (256 MB a 5 GB). Guarda JPEG de la ventana del juego en `timelapse/<mundo o server_dirección>/`, solo con un mundo o un servidor abierto. **Generar video** arma un WebM con la velocidad elegida, con progreso y cancelar, y después ofrece mandar las imágenes a la papelera. Sale como `<fecha>_timelapse.webm` en `clips/`.
 - **Subir.** Botón en el visor de un clip. Siempre anda el camino del navegador: abre la página de subida, muestra el archivo en su carpeta y copia título y descripción. Con los identificadores cargados al compilar aparece además **Directo desde Venus** (conectar la cuenta, aviso de qué se sube y adónde, progreso y cancelar). YouTube: privado por defecto. TikTok: queda como borrador en la bandeja de la cuenta y se termina de publicar desde la app. Se desconecta desde el mismo diálogo o desde Ajustes → En el juego.
-- **OBS.** Ajustes → En el juego, apagado por defecto. Con OBS 28 o más nuevo y su servidor WebSocket prendido. Reglas: escena al abrir el juego, escena al cerrarlo (no si queda otro abierto) y modo streamer mientras OBS transmite o graba.
+- **OBS.** Ajustes → En el juego, apagado por defecto. Con OBS 28 o más nuevo y su servidor WebSocket prendido. Reglas: escena al abrir el juego y escena al cerrarlo (no si queda otro abierto). La retirada del modo streamer elimina su automatismo y no modifica los controles de grabación o escenas.
 - **Galería.** Pestaña Galería de Clips (`#/clips/gallery`): Recientes, Más likes de la semana y Mis publicaciones. **Publicar** está en el visor de un clip: si no estaba compartido, primero pasa por el flujo de compartir de siempre. Título de hasta 80 caracteres, con el aviso de que lo ve cualquiera con sesión. Like, denunciar y despublicar. Panel de admin: pestaña Galería.
 
 ## Archivos
@@ -21,15 +23,15 @@ src/main/modules/clipstudio/
   job.js                                VideoJob: escribe a <archivo>.part, copia tramos, mezcla audio y cuadros codificados (sin Electron)
   timelapse-logic.js                    Ajustes, carpeta según la actividad, cuándo capturar, tope, cuadro vacío (sin Electron)
   timelapse.js                          Controlador del timelapse, con dependencias inyectadas (sin Electron)
-src/main/modules/obs.js                 Conexión, reintentos, reglas y modo streamer
+src/main/modules/obs.js                 Conexión, reintentos y reglas de escenas
 src/main/modules/obs/client.js          Cliente obs-websocket v5 con la WebSocket global (sin Electron)
-src/main/modules/obs/logic.js           Ajustes, host permitido, espera, regla del modo streamer, escenas (sin Electron)
+src/main/modules/obs/logic.js           Ajustes, host permitido, espera y escenas (sin Electron)
 src/main/modules/clipupload.js          Tokens, conectar, revocar, subir
 src/main/modules/clipupload/
   oauth.js                              PKCE y servidor de retorno en loopback (sin Electron)
   youtube.js · tiktok.js                Las dos API, con fetch inyectado (sin Electron)
   config.js                             Identificadores: variables de entorno en desarrollo, build-config.json al compilar
-src/renderer/js/features/clipstudio.js  startup(): tarjetas de Ajustes y aviso de OBS
+src/renderer/js/features/clipstudio.js  startup(): tarjetas de Ajustes
 src/renderer/js/features/clipstudio/
   logic.js                              Selección, reparto de la duración, cuentas del timelapse (sin DOM)
   encoder.js                            FrameEncoder (WebCodecs), placa de título, recodificar un tramo
@@ -74,13 +76,13 @@ Tocados con poco: `capture.js` (`grabFrame`, `savedElsewhere`), `capture/host.js
 | `clipupload:connect(proveedor)` · `clipupload:cancelConnect()` · `clipupload:revoke(proveedor)` | Abre el navegador y espera la vuelta |
 | `clipupload:upload({ jobId, provider, path, title, description, privacy })` · `clipupload:cancel(jobId)` | Los tokens nunca llegan a la interfaz |
 
-Eventos: `clipstudio:progress { jobId, done, total }`, `clipstudio:timelapse` (lo mismo que `timelapseStatus`), `obs:state` (lo mismo que `obs:status`), `obs:streamer { on }` (la interfaz relee los ajustes), `clipupload:progress { jobId, sent, total }`. Lo que se guarda en `clips/` avisa con `capture:saved` y `worlds:updated` (`capture.savedElsewhere`), con la copia extra incluida.
+Eventos: `clipstudio:progress { jobId, done, total }`, `clipstudio:timelapse` (lo mismo que `timelapseStatus`), `obs:state` (lo mismo que `obs:status`), `clipupload:progress { jobId, sent, total }`. Lo que se guarda en `clips/` avisa con `capture:saved` y `worlds:updated` (`capture.savedElsewhere`), con la copia extra incluida.
 
 Errores con `err.code`: `instance`, `job`, `write`, `clip`, `empty`, `badWebm`, `folder`, `trash`; OBS `refused`, `timeout`, `auth`, `authRequired`, `version`, `host`; subir `session`, `quota`, `noChannel`, `forbidden`, `badRequest`, `network`, `rejected`, `tooBig`, `denied`, `noSession`, `broker`, `notConfigured`, `cancelled`, `failed`.
 
 ## Ajustes y datos
 
-- `settings.obs`: `{ enabled (false), host ('127.0.0.1'), port (4455), sceneOnOpen (''), sceneOnClose (''), streamerWhileLive (true), streamerOwned (false) }`. `streamerOwned` = el modo streamer lo prendió esta integración; sobrevive a cerrar el launcher. El host solo acepta esta PC o la red local.
+- `settings.obs`: `{ enabled (false), host ('127.0.0.1'), port (4455), sceneOnOpen (''), sceneOnClose ('') }`. El host solo acepta esta PC o la red local. Los antiguos `streamerWhileLive` y `streamerOwned` se ignoran, sin escribir ni borrar preferencias existentes.
 - `<instancia>/.venus/timelapse.json`: `{ enabled (false), every (30), capMb (1024) }`. No se exporta ni se comparte (6.7). Duplicar una instancia lo copia, y `timelapse/` también.
 - `<instancia>/timelapse/<carpeta>/<fecha>.jpg`: fuera de las carpetas que exportan los packs (`packs/export.js`) y las instantáneas (`snapshots/scan.js`).
 - `clips/<fecha>_montage.webm`, `clips/<fecha>_timelapse.webm`. Mientras se arman van a `<nombre>.part`: un corte a la mitad no aparece como clip.

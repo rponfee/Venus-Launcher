@@ -252,10 +252,10 @@ Ayudantes de social reutilizables en `js/social/profile-ui.js`: `openProfile(use
 | Datos | Programación de copias, `perfhistory`, `family` y `portability` en main; sincronización de ajustes desde la interfaz con la sesión de `cloud` y `store.setSettings`. |
 | Overlay | `features/overlaytools.js` conecta paneles, rutas y eventos del asistente; recetas y estadísticas se leen localmente. |
 | Social | Stickers y traducción, soundboard y efectos; `social/preview.js` ofrece texto de aviso para stickers/GIF, sin mostrar su URL como mensaje. |
-| Competir y clanes | `features/compete.js` recoge progreso solo con permiso; `features/clans/sharing.js` gestiona el permiso de horas del clan desde Clanes y Competir. |
+| Competir | `features/compete.js` recoge progreso solo con permiso; la tarjeta de compartir horas con un clan se retiró de Competir. |
 | Clips | `features/clipstudio/` coordina montaje, timelapse, subida y OBS; la galería usa RPC y archivos compartidos. |
-| Extensiones | `pages/home.js` entrega el contenedor a `mountHomeCards(host)`; no depende de observar `#main` ni de buscar `.hm-foot`. Catálogo y blocklist tienen permisos distintos. |
-| Semillas | Cálculo local en `pages/seeds/gen/`; la tabla de cobertura distingue resultados exactos respecto de la referencia y aproximados. No implica validación con el juego. |
+| Extensiones (retirada) | Sin rutas, startup, tarjetas en Inicio ni pestaña de admin. `modules-loader.js` excluye `extensions.js` antes de importarlo: no registra protocolos ni canales `extensions:*`. El código y los datos anteriores se conservan. |
+| Visor de semillas (retirado) | Sin ruta ni entrada de menú. Se conserva como antecedente el generador de `pages/seeds/gen/`; el mapa de mundos y los campos Semilla de creación de mundos/servidores siguen disponibles. |
 | PWA | `web/app/` usa la misma cuenta y las RPC sociales, sin latido de presencia de escritorio. Su sesión y permiso de push son propios del dispositivo. |
 
 ### 6.2 `social` y `voice`
@@ -491,9 +491,9 @@ Todos se llaman con `api.invoke(canal, ...args)`; los eventos se escuchan con `a
 | Traducción y soundboard | Consentimiento, caché cifrada, importación y reproducción; efectos en la cadena de audio de voz | [Mensajes y voz](implementacion/mensajes-voz.md) |
 | `compete:collect`, `compete:commit`, `compete:reset` | Lectura local, confirmación de reportes aceptados y punto de partida | [Competir](implementacion/competir.md) |
 | `clipstudio:*`, `clipupload:*`, `obs:*` | Trabajos de vídeo, conexión/cancelación OAuth y OBS | [Clips](implementacion/clips.md) |
-| `extensions:*` | Inspección, instalación, permisos aceptados, sesión de marco, almacenamiento y bloqueos | [Extensiones](implementacion/extensiones.md) |
+| `extensions:*` (retirados) | No se registran: el módulo principal está excluido del cargador | [Antecedente de Extensiones](implementacion/extensiones.md) |
 
-Clanes, comunidades, reseñas, galería, capas y catálogo consumen RPC desde la interfaz; no crear un IPC paralelo para duplicar esas llamadas. Los tokens OAuth, la contraseña de OBS y el webhook de Discord no regresan al renderer.
+Comunidades, reseñas, galería y capas consumen RPC desde la interfaz; no crear un IPC paralelo para duplicar esas llamadas. Los tokens OAuth, la contraseña de OBS y el webhook de Discord no regresan al renderer.
 
 ### 6.4 Exports del proceso principal para otros módulos
 
@@ -612,9 +612,9 @@ Viajan por el buzón privado `inbox:<userId>` con la RPC `social_send_signal`: s
 
 **Permisos y operaciones de 4.5.0.** `core/permissions.js` valida las páginas locales autorizadas con `isAppPage(url, file)` e `isPermissionRequester(wc, details, file)`. Los handlers directos de `main.js` y `capture/host.js` exigen la página solicitante esperada, rechazan subframes y solo usan `wc.getURL()` como alternativa cuando `details.isMainFrame === true`. La captura de pantalla comprueba también identidad y URL del marco solicitante. `extensions.js` ya no envuelve esos handlers mediante `denyPermissions` / `session-created`.
 
-El inicio remoto se serializa por servidor y puede cancelarse antes de terminar; la sesión/token se vuelve a comprobar después de esperas antes de ejecutar una orden o entregar estado. Importar una transferencia calcula espacio sobre las entradas seleccionadas y validadas del archivo, incluyendo metadatos y ajustes. Los paquetes inspeccionados de extensiones vencen a los 15 minutos. Las regresiones locales benignas no certifican aislamiento completo ni reemplazan pruebas de integración reales.
+El inicio remoto se serializa por servidor y puede cancelarse antes de terminar; la sesión/token se vuelve a comprobar después de esperas antes de ejecutar una orden o entregar estado. Importar una transferencia calcula espacio sobre las entradas seleccionadas y validadas del archivo, incluyendo metadatos y ajustes. El código histórico de Extensiones fijaba una caducidad de 15 minutos para paquetes inspeccionados; ese módulo ya no se carga. Las regresiones locales benignas no certifican aislamiento completo ni reemplazan pruebas de integración reales.
 
-El registro de `venus://` se mantiene también en portable por decisión del dueño. Al desinstalar, `build/installer.nsh` compara `shell/open/command` con el ejecutable de esa copia antes de quitar la clave; no la borra al actualizar ni si apunta a otra instalación o portable. El cambio está en código: compilación y prueba NSIS pendientes. La explicación de conexiones incluye wiki; Discord y sincronización conservan sus controles propios. La descarga de blocklist necesita `extensions.blocklist === true` y funciona independientemente del catálogo: 4 segundos después de iniciar y cada 4 horas, además de recuperar conexión/configuración; la caché local sigue aplicándose sin red.
+El registro de `venus://` se mantiene también en portable por decisión del dueño. Al desinstalar, `build/installer.nsh` compara `shell/open/command` con el ejecutable de esa copia antes de quitar la clave; no la borra al actualizar ni si apunta a otra instalación o portable. El cambio está en código: compilación y prueba NSIS pendientes. La explicación de conexiones incluye wiki; Discord y sincronización conservan sus controles propios. La retirada de Extensiones desactiva las consultas de catálogo y blocklist, aunque sus preferencias anteriores sigan guardadas. [Alcance de la retirada](retirada-funciones.md).
 
 ## 7. Dueños, ajustes y archivos de datos
 
@@ -675,7 +675,7 @@ El registro de `venus://` se mantiene también en portable por decisión del due
 
 (Rutas relativas a `src/renderer/js/`, `src/renderer/styles/` o `src/main/` según corresponda. "css" = los archivos de `styles/pages/` o `styles/features/` con el nombre de la página o feature. Cada módulo puede crear subcarpetas auxiliares con su nombre.)
 
-**Dueños de 4.5.0:** instancias (`sharedoptions`, `modsets`, `deeplink`, `modchangelog`), datos (`perfhistory`, `family`, `portability` y features de datatools), overlay (`recipes` y paneles), servidores (`serverremote`, `serverdiscord`), social (stickers, traducción, soundboard y efectos), competir/clanes/comunidades, clips (`clipstudio`, `clipupload`, `obs`), capas (mod y skins), semillas (generador local), extensiones y PWA (`web/app`, `push-notify`). Las rutas exactas por frente y sus pruebas figuran en [implementacion/](implementacion/README.md). La validación de permisos de navegador pertenece a core/main/capture, no a extensiones.
+**Dueños de 4.5.0:** instancias (`sharedoptions`, `modsets`, `deeplink`, `modchangelog`), datos (`perfhistory`, `family`, `portability` y features de datatools), overlay (`recipes` y paneles), servidores (`serverremote`, `serverdiscord`), social (stickers, traducción, soundboard y efectos), competir/comunidades, clips (`clipstudio`, `clipupload`, `obs`), capas (mod y skins) y PWA (`web/app`, `push-notify`). Las rutas exactas por frente y sus pruebas figuran en [implementacion/](implementacion/README.md). La validación de permisos de navegador pertenece a core/main/capture, no a extensiones.
 
 ### 7.2 Claves de ajustes (`data/settings.json`)
 
@@ -736,9 +736,10 @@ Secretos (`core/secure`, en `data/secure.json` cifrado): `assistant.mcpToken.<id
 | `socialplus` | `translateConsent` y `translateChats`; consentimiento antes de enviar mensajes a IA. |
 | `voice.voiceEffect` | `'none'`; procesamiento local de voz. |
 | `compete` | `share: false`, avisos vistos y eventos recordados. El permiso de clan está en `clan_prefs.share_playtime` de la nube y también empieza en `false`. |
-| `clans.seen` | Hasta 100 invitaciones avisadas. No almacena el consentimiento de compartir horas. |
-| `extensions.catalog` / `extensions.blocklist` | Dos booleanos independientes, ambos `false`; el segundo exige consentimiento explícito. |
-| `obs` | `enabled: false`, host `127.0.0.1`, puerto `4455`, escenas y control del modo streamer. Contraseña en `secure`. |
+| `clans.seen` (histórico) | Se conserva si ya existía; Clanes no tiene startup ni sondeo de invitaciones. |
+| `extensions.catalog` / `extensions.blocklist` (históricos) | Se conservan sin uso: la retirada desactiva el catálogo, la blocklist y la carga de extensiones. |
+| `obs` | `enabled: false`, host `127.0.0.1`, puerto `4455` y escenas. Contraseña en `secure`. Los campos antiguos `streamerWhileLive` y `streamerOwned` se ignoran. |
+| `privacy.streamer` (histórico) | No tiene valor predeterminado ni efectos activos, incluso si estaba guardado como `true`. Los controles propios de privacidad, voz y overlay se mantienen. |
 | `discordNotify` del servidor | Habilitación y eventos en `venus-server.json`; webhook cifrado por separado. |
 
 PIN familiar, tokens OAuth y suscripciones push no van en ajustes sincronizables. Formas completas y límites: [Datos](implementacion/datos.md), [Overlay](implementacion/overlay.md), [Social](implementacion/mensajes-voz.md), [Clips](implementacion/clips.md) y [Capas](implementacion/capas.md).

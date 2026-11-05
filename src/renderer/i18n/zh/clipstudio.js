@@ -148,7 +148,7 @@ export default {
   accountConnected: "已连接",
   accountNotConnected: "未连接",
   obsTitle: "OBS 集成",
-  obsSubtitle: "随游戏启动和关闭切换场景，并在直播时开启主播模式。",
+  obsSubtitle: "在游戏启动和关闭时切换场景。",
   obsEnable: "连接 OBS",
   obsEnableSub: "需要 OBS 28 或更高版本，并开启 WebSocket 服务器（工具 → WebSocket 服务器设置）。OBS 关闭时，会在后台持续重试，不显示提示。",
   obsHost: "地址",

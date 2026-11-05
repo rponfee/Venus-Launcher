@@ -1,6 +1,6 @@
 # Estado de integración de Venus 4.5.0
 
-Actualizado el 4 de noviembre de 2026. **Las 35 funciones están implementadas para 4.5.0 en la rama `venus-3.2-funciones`; el launcher y la web siguen sin publicar.** La marca ☑ de la [hoja de ruta](hoja-de-ruta.md) registra implementación, no funcionamiento completo con servicios reales. **Producción ya tiene aplicadas 0028–0037 y desplegadas `push-notify`, `tiktok-token` y `curseforge`**, con autorización del dueño. Las credenciales de push/TikTok y la clave de CurseForge siguen pendientes. Versiones, evidencia y límites en [activación del backend](activacion-backend-4.5.0.md). La versión publicada de referencia del launcher sigue siendo 3.1.0.
+Actualizado el 4 de noviembre de 2026. **Las 35 funciones están implementadas para 4.5.0 en la rama `venus-3.2-funciones`; el launcher y la web siguen sin publicar.** La marca ☑ de la [hoja de ruta](hoja-de-ruta.md) registra implementación, no funcionamiento completo con servicios reales. **Producción ya tiene aplicadas 0028–0037 y desplegadas `push-notify`, `tiktok-token` y `curseforge`**, con autorización del dueño. Las credenciales de push/TikTok siguen pendientes; la clave aprobada para el launcher ya permitió búsquedas de CurseForge. Versiones, evidencia y límites en [activación del backend](activacion-backend-4.5.0.md). La versión publicada de referencia del launcher sigue siendo 3.1.0.
 
 La [guía de funciones](funciones.md) explica el uso; [arquitectura](arquitectura.md) concentra los contratos y [las referencias de implementación](implementacion/README.md) conservan archivos, canales, RPC, formatos y límites. Los doce WIP de funciones y el informe SQL se reconciliaron con esas referencias y se revisaron antes de retirar `docs/wip/`. El respaldo previo quedó en `%TEMP%/venus-docs-wip-ae6f586369d1478aa621587f1b7e5938.zip`. El prompt `continuar-con-chatgpt.md` se mantiene intacto como documento histórico, no como estado vigente.
 
@@ -65,7 +65,9 @@ El estado público devolvió **HTTP 200, `configured: false`**, porque el dueño
 | Estado de servicios | **56/56 PASS**. |
 | Sintaxis, IPC e inglés | **2613/2613 archivos**, **0 canales sin handler**, `i18n-check en` con salida **0**. |
 
-Evidencia SQL: `%TEMP%/venus-curseforge-sql-20261104-140020-cc533da2/result.json`; [test](../supabase/tests/curseforge-admin-local.sql) y [runner](../scripts/run-curseforge-admin-local.ps1). El Vault simulado no prueba cifrado real. No se cargó una clave de CurseForge ni se probaron el proveedor, JWT/cuentas reales o concurrencia; tampoco se enviaron mensajes.
+Evidencia SQL: `%TEMP%/venus-curseforge-sql-20261104-140020-cc533da2/result.json`; [test](../supabase/tests/curseforge-admin-local.sql) y [runner](../scripts/run-curseforge-admin-local.ps1). El Vault simulado no prueba cifrado real. En esa primera activación no se cargó una clave de CurseForge ni se probaron el proveedor, JWT/cuentas reales o concurrencia; tampoco se enviaron mensajes.
+
+**Comprobación posterior del proveedor:** la clave inicial era de Profile y daba 403 al buscar mods. El dueño cargó la clave aprobada para el launcher; la búsqueda mínima y la consulta exacta del catálogo respondieron **HTTP 200** desde el servidor, esta última con un resultado. No se expuso la clave. Queda pendiente el flujo autenticado completo dentro de la app.
 
 ## Traducciones y entrega local
 

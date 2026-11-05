@@ -148,7 +148,7 @@ export default {
   accountConnected: "연결됨",
   accountNotConnected: "연결되지 않음",
   obsTitle: "OBS 연동",
-  obsSubtitle: "게임에 맞춰 장면을 바꾸고 방송 중에는 스트리머 모드를 켭니다.",
+  obsSubtitle: "게임을 시작하거나 종료할 때 장면을 전환합니다.",
   obsEnable: "OBS 연결",
   obsEnableSub: "OBS 28 이상과 WebSocket 서버 활성화가 필요합니다(도구 → WebSocket 서버 설정). OBS가 닫혀 있으면 알림 없이 계속 재시도합니다.",
   obsHost: "주소",

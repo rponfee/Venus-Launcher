@@ -1,28 +1,28 @@
-// Pestaña Clanes y comunidades: ver, disolver y quitar, y las denuncias de mensajes, comunidades y clanes. RPC admin_group* de
+// Administración de comunidades y denuncias de sus mensajes. RPC admin_group* de
 // 0033 (admin_guard: solo administradores; lo que cambia algo queda en admin_log). Sus textos están en el namespace clans, que
 // esta pestaña carga por su cuenta. Lo que escribe la gente va siempre como texto.
 import { h, icon, mount, modal, ok, fail, setBusy, confirmDialog, promptDialog, emptyState, ensureCss, debounce, fmtAgo, fmtDate, skeleton } from '../../ui.js';
 import { t, loadNs } from '../../i18n.js';
 import { groupsBackend, errText } from '../../features/clans/backend.js';
-import { emblemBadge, tagChip } from '../../features/clans/tag.js';
 
 const C = (key, vars) => t(`clans.${key}`, vars);
 const nameOf = (p) => String(p?.displayName || p?.username || '').trim() || C('someone');
-const SECTIONS = [{ id: 'clan', icon: 'shield' }, { id: 'community', icon: 'users' }, { id: 'reports', icon: 'alert' }];
+const SECTIONS = [{ id: 'community', icon: 'users' }, { id: 'reports', icon: 'alert' }];
 
 export async function render(root) {
   ensureCss('pages/clans');
   await loadNs('clans');
   const b = await groupsBackend();
-  let section = 'clan';
-  const seg = h('div', { class: 'segmented cl-seg', role: 'group', 'aria-label': C('adminTitle') });
+  let section = 'community';
+  const seg = h('div', { class: 'segmented cl-seg', role: 'group', 'aria-label': t('nav.communities') });
   const host = h('div', { class: 'stack' });
 
   const askReason = (title) => promptDialog(title, C('adminReason'), { okText: C('adminConfirm') });
 
-  async function openDetail(kind, row, reload) {
+  async function openDetail(row, reload) {
+    const kind = 'community';
     const body = h('div', { class: 'stack' }, skeleton('list', { rows: 4 }));
-    const m = modal({ title: row.name, subtitle: kind === 'clan' ? row.tag : C(row.isPublic ? 'visibility_public' : 'visibility_code'), icon: kind === 'clan' ? 'shield' : 'users', body });
+    const m = modal({ title: row.name, subtitle: C(row.isPublic ? 'visibility_public' : 'visibility_code'), icon: 'users', body });
     async function load() {
       try {
         const detail = await b.rpc('admin_group_detail', { p_kind: kind, p_id: row.id });
@@ -57,12 +57,13 @@ export async function render(root) {
     load();
   }
 
-  function groupsView(kind) {
+  function groupsView() {
+    const kind = 'community';
     const search = h('input', { class: 'input', type: 'search', placeholder: C('adminSearch'), 'aria-label': C('adminSearch'), maxlength: '40' });
     const list = h('div', { class: 'stack', 'aria-live': 'polite' });
     let seq = 0;
     function row(g) {
-      const lead = kind === 'clan' ? g.leader : g.owner;
+      const lead = g.owner;
       const dissolve = h('button', { class: 'btn sm danger', type: 'button' }, icon('trash'), C('adminDissolve'));
       dissolve.addEventListener('click', async () => {
         if (!(await confirmDialog(C('adminDissolveTitle'), C('adminDissolveText', { name: g.name, n: g.memberCount ?? 0 }), { okText: C('adminDissolve'), danger: true }))) return;
@@ -80,11 +81,11 @@ export async function render(root) {
         }
       });
       return h('article', { class: 'card cl-clan-row' },
-        kind === 'clan' ? emblemBadge(g, { size: 'md' }) : h('span', { class: 'cm-card-icon', 'aria-hidden': 'true' }, icon(g.isPublic ? 'globe' : 'lock')),
+        h('span', { class: 'cm-card-icon', 'aria-hidden': 'true' }, icon(g.isPublic ? 'globe' : 'lock')),
         h('div', { class: 'cl-clan-main' },
-          h('div', { class: 'cl-clan-name' }, h('strong', { class: 'ellipsis selectable' }, g.name), kind === 'clan' ? tagChip({ tag: g.tag, color: g.color }) : null, g.reports ? h('span', { class: 'badge warn' }, icon('alert'), String(g.reports)) : null),
+          h('div', { class: 'cl-clan-name' }, h('strong', { class: 'ellipsis selectable' }, g.name), g.reports ? h('span', { class: 'badge warn' }, icon('alert'), String(g.reports)) : null),
           h('div', { class: 'cl-muted small' }, C('adminRowSub', { lead: lead ? nameOf(lead) : '—', n: g.memberCount ?? 0, date: fmtDate(Date.parse(g.createdAt)) }))),
-        h('div', { class: 'row' }, h('button', { class: 'btn sm', type: 'button', onclick: () => openDetail(kind, g, load) }, icon('eye'), C('view')), dissolve));
+        h('div', { class: 'row' }, h('button', { class: 'btn sm', type: 'button', onclick: () => openDetail(g, load) }, icon('eye'), C('view')), dissolve));
     }
     async function load() {
       const my = ++seq;
@@ -107,7 +108,7 @@ export async function render(root) {
     mount(host, list);
     async function load() {
       try {
-        const rows = await b.rpc('admin_group_reports');
+        const rows = (await b.rpc('admin_group_reports'))?.filter((row) => row.kind === 'community' || row.kind === 'message');
         if (!root.isConnected) return;
         if (!rows?.length) return mount(list, emptyState('shield', C('adminReportsEmpty'), ''));
         return mount(list, rows.map((r) => {
@@ -152,9 +153,9 @@ export async function render(root) {
     section = id;
     mount(seg, SECTIONS.map((s) => h('button', { type: 'button', class: s.id === section ? 'active' : null, 'aria-pressed': String(s.id === section), onclick: () => select(s.id) }, icon(s.icon), C(`adminTab_${s.id}`))));
     if (id === 'reports') reportsView();
-    else groupsView(id);
+    else groupsView();
   }
 
-  mount(root, h('div', { class: 'page-head' }, h('div', { class: 'ph-text' }, h('h2', { class: 'page-title' }, C('adminTitle')), h('p', { class: 'page-sub' }, C('adminSub')))), h('div', { class: 'stack' }, seg, host));
+  mount(root, h('div', { class: 'page-head' }, h('div', { class: 'ph-text' }, h('h2', { class: 'page-title' }, t('nav.communities')), h('p', { class: 'page-sub' }, C('adminSub')))), h('div', { class: 'stack' }, seg, host));
   select(section);
 }

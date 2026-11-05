@@ -15,6 +15,7 @@ import { loadSummary, onSummary, getSummary, claimAchievement, sweepServerAchiev
 import { perksPanel } from '../features/premium.js';
 import { capeArt, capesNotice } from '../features/capes.js';
 import { knownCapes } from '../features/capes/logic.js';
+import { pointsTicket } from '../features/cosmic-art.js';
 
 const R = (key, vars) => t(`rewards.${key}`, vars);
 const TABS = [
@@ -56,7 +57,7 @@ function waysView() {
 
 export default {
   ns: ['rewards', 'premium', 'capes'],
-  css: ['pages/rewards', 'features/premium', 'features/capes'],
+  css: ['pages/rewards', 'features/premium', 'features/capes', 'features/cosmic-art'],
   async render(root, params) {
     const b = await backend();
     if (!root.isConnected) return;
@@ -166,7 +167,7 @@ export default {
           'section',
           { class: ['card', 'rw-balance', d.premium && 'premium'], 'aria-labelledby': 'rw-balance-label' },
           h('div', { class: 'rw-balance-label', id: 'rw-balance-label' }, R('balanceLabel')),
-          h('div', { class: 'rw-balance-value' }, h('span', { class: 'rw-coin', 'aria-hidden': 'true' }, icon('vpoint')), h('span', { class: 'rw-amount num' }, pts(d.balance)), h('span', { class: 'rw-unit' }, 'Venus Points')),
+          pointsTicket(pts(d.balance)),
           h(
             'div',
             { class: 'rw-balance-meta' },
