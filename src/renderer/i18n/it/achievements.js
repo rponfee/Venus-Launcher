@@ -1,6 +1,6 @@
 export default {
   title: "Obiettivi",
-  subtitle: "Tutto ciò che hai ottenuto in Venus e in Minecraft, più le missioni di ogni giorno.",
+  subtitle: "Tutto ciò che hai ottenuto in Venus, più le missioni giornaliere.",
   tab_list: "Obiettivi",
   tab_missions: "Missioni",
   tab_minecraft: "Minecraft",
@@ -317,4 +317,13 @@ export default {
   mis_messages_one: "Invia un messaggio",
   mis_voiceJoins_one: "Entra in una stanza vocale",
   mis_dailyRewards_one: "Riscatta il premio giornaliero",
+  fam_days: "Giorno dopo giorno",
+  famDesc_days: "Gioca in {n} giorni diversi.",
+  fam_rotation: "Cambio d'aria",
+  famDesc_rotation: "Gioca in {n} istanze diverse.",
+  fam_reviews: "Critico",
+  famDesc_reviews: "Scrivi {n} recensioni di server.",
+  fam_spent: "Giro di shopping",
+  famDesc_spent: "Spendi {n} Venus Points nel negozio.",
+  famDesc_reviews_one: "Scrivi la tua prima recensione di un server.",
 };

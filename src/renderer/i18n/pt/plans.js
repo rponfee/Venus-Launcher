@@ -9,7 +9,7 @@ export default {
   yourPlan: 'Seu plano',
   activeBalance: 'O saldo não expira. Se você comprar outro plano, o que sobrar é somado ao novo.',
   noPlanTitle: 'Você ainda não tem um plano',
-  noPlanText: 'Com um plano, você usa o assistente, a explicação de crashes, a busca inteligente, a tradução de mods e a conexão com o Claude e o ChatGPT.',
+  noPlanText: "Com um plano você pode usar o assistente, as explicações de crashes, a busca inteligente e a tradução de mods.",
 
   // Sem login e erros
   signInText: 'Faça login com sua conta Venus para comprar um plano.',

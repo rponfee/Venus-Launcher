@@ -9,4 +9,5 @@ module.exports = {
   playerJoinBody: "No seu servidor {name}.",
   taskDoneTitle: "Tarefa concluída",
   taskFailedTitle: "Não foi possível concluir uma tarefa",
+  errOffline: "O assistente precisa de conexão com a internet para responder. Confira sua conexão e tente de novo.",
 };

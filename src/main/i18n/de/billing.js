@@ -16,4 +16,6 @@ module.exports = {
   errServer: 'Der Zahlungsserver hat nicht richtig geantwortet. Versuch es später noch einmal.',
   errNetwork: 'Keine Verbindung zum Zahlungsserver. Prüfe deine Internetverbindung.',
   perMonth: '{price}/Monat',
+  errUnknownCommunity: "Diese Community gibt es nicht oder du hast sie nicht mehr.",
+  errNotOwner: "Nur der Inhaber der Community kann ihren Plan kaufen.",
 };

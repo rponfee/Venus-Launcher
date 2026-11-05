@@ -178,7 +178,7 @@ export default {
   v45play_b3: "도우미는 내 Venus AI 플랜을 사용합니다",
   v45play_cta: "게임 내 기능 설정",
   v45social_title: "커뮤니티와 함께 플레이하고 대화하세요",
-  v45social_text: "텍스트·음성 채널이 있는 커뮤니티, 순위, 친구와의 도전, 이벤트 일정을 만나 보세요.",
+  v45social_text: "텍스트 채널과 음성 채널이 있는 커뮤니티.",
   v45social_b1: "메시지에서 나만의 스티커와 이모지 사용",
   v45social_b2: "사운드보드와 음성 효과",
   v45social_b3: "내 AI 플랜으로 메시지 번역",

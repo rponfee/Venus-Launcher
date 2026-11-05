@@ -29,4 +29,6 @@ module.exports = {
   stepDownloadPack: "모드팩 다운로드 중...",
   stepResolve: "모드팩 파일을 찾는 중...",
   warnUnsafePaths_other: "보안을 위해 허용되지 않는 경로가 있는 모드팩 파일 {count}개를 건너뛰었어요: {files}",
+  errBlocked: "CurseForge가 키를 확인하기 전에 요청을 차단했어요. 계정 문제는 아닌 것 같아요. 잠시 후에 다시 시도하고, 계속되면 관리자에게 알려 주세요.",
+  errDenied: "제작자가 이 파일을 다른 앱에서 요청하는 것을 허용하지 않아요.",
 };

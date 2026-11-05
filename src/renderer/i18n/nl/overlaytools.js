@@ -147,4 +147,9 @@ export default {
   mk_err_badMarker: "Controleer de naam en coördinaten.",
   mk_err_noName: "Geef de markering een naam.",
   mk_err_save: "De markering kon niet worden opgeslagen.",
+  rc_err_timeout: "Het lezen van de spelbestanden duurt te lang (er zijn heel veel mods). Probeer het later opnieuw: wat al gelezen was, is opgeslagen.",
+  rc_modsPending_one: "{count} mod wordt nog op de achtergrond gelezen. Open het paneel over een tijdje opnieuw.",
+  rc_modsPending_other: "{count} mods worden nog op de achtergrond gelezen. Open het paneel over een tijdje opnieuw.",
+  rc_modsPendingShort_one: "Nog {count} mod te lezen",
+  rc_modsPendingShort_other: "Nog {count} mods te lezen",
 };

@@ -9,7 +9,7 @@ export default {
   yourPlan: 'Jouw pakket',
   activeBalance: 'Je tegoed verloopt nooit. Als je nog een pakket koopt, wordt wat je over hebt bij het nieuwe opgeteld.',
   noPlanTitle: 'Je hebt nog geen pakket',
-  noPlanText: 'Met een pakket gebruik je de assistent, de uitleg van crashes, slim zoeken, het vertalen van mods en de koppeling met Claude en ChatGPT.',
+  noPlanText: "Met een pakket kun je de assistent, crashverklaringen, slim zoeken en modvertaling gebruiken.",
 
   // Niet ingelogd en fouten
   signInText: 'Log in met je Venus-account om een pakket te kopen.',

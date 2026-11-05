@@ -147,4 +147,9 @@ export default {
   mk_err_badMarker: "Vérifiez le nom et les coordonnées.",
   mk_err_noName: "Donnez un nom au repère.",
   mk_err_save: "Impossible d’enregistrer le repère.",
+  rc_err_timeout: "La lecture des fichiers du jeu prend trop de temps (il y a beaucoup de mods). Réessayez dans un moment : ce qui a déjà été lu est enregistré.",
+  rc_modsPending_one: "{count} mod est encore en cours de lecture en arrière-plan. Rouvrez le panneau dans un moment.",
+  rc_modsPending_other: "{count} mods sont encore en cours de lecture en arrière-plan. Rouvrez le panneau dans un moment.",
+  rc_modsPendingShort_one: "{count} mod restant à lire",
+  rc_modsPendingShort_other: "{count} mods restants à lire",
 };

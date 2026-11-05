@@ -32,4 +32,6 @@ module.exports = {
   warnUnsafePaths_few: "Ze względów bezpieczeństwa pominięto {count} pliki modpacka z niedozwolonymi ścieżkami: {files}",
   warnUnsafePaths_many: "Ze względów bezpieczeństwa pominięto {count} plików modpacka z niedozwolonymi ścieżkami: {files}",
   warnUnsafePaths_other: "Ze względów bezpieczeństwa pominięto {count} pliku modpacka z niedozwoloną ścieżką: {files}",
+  errBlocked: "CurseForge przerwał zapytanie, zanim sprawdził klucz, więc to nie wygląda na problem z Twoim kontem. Spróbuj ponownie za jakiś czas; jeśli to się powtarza, zgłoś to administratorowi.",
+  errDenied: "Autor nie zezwala na pobieranie tego pliku z innych aplikacji.",
 };

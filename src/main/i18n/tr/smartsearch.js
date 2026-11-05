@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title} ({index}/{total})",
   taskPrepare: "{name} yükleniyor",
   kitResult: "{total} öğeden {ok} tanesi yüklendi",
+  errAi_noplan: "Arama yapay zekâsı yalnızca ücretli Venus IA planları içindir.",
+  errAi_consent: "Yapay zekâyı kullanmadan önce gizlilik bildirimini kabul et.",
+  errAi_sourceUnavailable: "Bu yapay zekâ şu an kullanılamıyor: planını veya bilgisayarında kurulu uygulamayı kontrol et.",
+  errAi_badSource: "Böyle bir yapay zekâ seçeneği yok.",
 };

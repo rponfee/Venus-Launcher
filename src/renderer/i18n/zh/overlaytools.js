@@ -136,4 +136,7 @@ export default {
   mk_err_badMarker: "请检查名称和坐标。",
   mk_err_noName: "请为标记命名。",
   mk_err_save: "无法保存标记。",
+  rc_err_timeout: "读取游戏文件耗时过长（模组太多）。请稍后再试：已读取的内容已保存。",
+  rc_modsPending_other: "还有 {count} 个模组正在后台读取。请稍后重新打开面板。",
+  rc_modsPendingShort_other: "还剩 {count} 个模组待读取",
 };

@@ -9,7 +9,7 @@ export default {
   yourPlan: 'Dein Tarif',
   activeBalance: 'Dein Guthaben verfällt nie. Wenn du einen weiteren Tarif kaufst, wird dein Restguthaben dazugerechnet.',
   noPlanTitle: 'Du hast noch keinen Tarif',
-  noPlanText: 'Mit einem Tarif nutzt du den Assistenten, die Absturzerklärung, die intelligente Suche, die Mod-Übersetzung und die Verbindung mit Claude und ChatGPT.',
+  noPlanText: "Mit einem Plan kannst du den Assistenten, Absturzerklärungen, die intelligente Suche und die Mod-Übersetzung nutzen.",
 
   // Nicht angemeldet und Fehler
   signInText: 'Melde dich mit deinem Venus-Konto an, um einen Tarif zu kaufen.',

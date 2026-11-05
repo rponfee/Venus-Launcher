@@ -9,7 +9,7 @@ export default {
   yourPlan: 'Twój plan',
   activeBalance: 'Saldo nigdy nie wygasa. Jeśli kupisz kolejny plan, pozostałe środki zostaną do niego dodane.',
   noPlanTitle: 'Nie masz jeszcze planu',
-  noPlanText: 'Z planem korzystasz z asystenta, wyjaśniania awarii, inteligentnej wyszukiwarki, tłumaczenia modów i połączenia z Claude i ChatGPT.',
+  noPlanText: "Z planem możesz korzystać z asystenta, wyjaśnień awarii, inteligentnego wyszukiwania i tłumaczenia modów.",
 
   // Bez logowania i błędy
   signInText: 'Zaloguj się na konto Venus, aby kupić plan.',

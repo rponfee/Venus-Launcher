@@ -1,6 +1,6 @@
 export default {
   title: "Достижения",
-  subtitle: "Всё, что вы получили в Venus и Minecraft, и ежедневные миссии.",
+  subtitle: "Всё, что вы заработали в Venus, плюс ежедневные задания.",
   tab_list: "Достижения",
   tab_missions: "Миссии",
   tab_minecraft: "Minecraft",
@@ -317,4 +317,13 @@ export default {
   mis_messages_one: "Отправьте сообщение",
   mis_voiceJoins_one: "Зайдите в голосовую комнату",
   mis_dailyRewards_one: "Получите ежедневную награду",
+  fam_days: "День за днём",
+  famDesc_days: "Играйте в течение {n} разных дней.",
+  fam_rotation: "Смена обстановки",
+  famDesc_rotation: "Играйте в {n} разных экземплярах.",
+  fam_reviews: "Критик",
+  famDesc_reviews: "Напишите отзывов о серверах: {n}.",
+  fam_spent: "Шопинг",
+  famDesc_spent: "Потратьте {n} Venus Points в магазине.",
+  famDesc_reviews_one: "Напишите свой первый отзыв о сервере.",
 };

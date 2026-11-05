@@ -169,4 +169,9 @@ export default {
   mk_imported_many: "Dodano {count} znaczników",
   mk_importSkipped_few: "{count} znaczniki już istniały.",
   mk_importSkipped_many: "{count} znaczników już istniało.",
+  rc_err_timeout: "Odczyt plików gry trwa zbyt długo (jest bardzo dużo modów). Spróbuj ponownie za jakiś czas: to, co już odczytano, jest zapisane.",
+  rc_modsPending_one: "{count} mod jest jeszcze odczytywany w tle. Otwórz panel ponownie za jakiś czas.",
+  rc_modsPending_other: "Mody wciąż odczytywane w tle: {count}. Otwórz panel ponownie za jakiś czas.",
+  rc_modsPendingShort_one: "Do odczytu został {count} mod",
+  rc_modsPendingShort_other: "Mody do odczytu: {count}",
 };

@@ -30,9 +30,10 @@ for (const lang of langs) {
       const value = done[group]?.[key];
       if (typeof value !== 'string' || !value.trim()) { problems.push(`${lang} ${group}.${key}: falta`); continue; }
       if (vars(value) !== vars(info.en)) { problems.push(`${lang} ${group}.${key}: variables distintas`); continue; }
-      if (!/^\w+$/.test(key)) { problems.push(`${lang} ${group}.${key}: clave inválida`); continue; }
-      const line = `  ${key}: ${JSON.stringify(value)},`;
-      const re = new RegExp(`^  ${key}: .*$`, 'm');
+      if (!/^[\w-]+$/.test(key)) { problems.push(`${lang} ${group}.${key}: clave inválida`); continue; }
+      const label = /^\w+$/.test(key) ? key : `'${key}'`;
+      const line = `  ${label}: ${JSON.stringify(value)},`;
+      const re = new RegExp(`^  ${label}: .*$`, 'm');
       if (src && re.test(src)) src = src.replace(re, () => line);
       else lines.push(line);
       totals[lang]++;

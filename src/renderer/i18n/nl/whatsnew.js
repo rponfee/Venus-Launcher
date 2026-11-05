@@ -179,7 +179,7 @@ export default {
   v45play_b3: "De assistent gebruikt je Venus AI-abonnement",
   v45play_cta: "Spelfuncties instellen",
   v45social_title: "Samen spelen en chatten",
-  v45social_text: "Community's met tekst- en spraakkanalen, ranglijsten, uitdagingen tussen vrienden en een evenementenkalender.",
+  v45social_text: "Community's met tekst- en spraakkanalen.",
   v45social_b1: "Je eigen stickers en emoji in Berichten",
   v45social_b2: "Geluidenpaneel en stemeffecten",
   v45social_b3: "Berichten vertalen met je AI-abonnement",

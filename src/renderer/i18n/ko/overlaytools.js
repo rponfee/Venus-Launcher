@@ -136,4 +136,7 @@ export default {
   mk_err_badMarker: "이름과 좌표를 확인하세요.",
   mk_err_noName: "마커 이름을 입력하세요.",
   mk_err_save: "마커를 저장하지 못했습니다.",
+  rc_err_timeout: "게임 파일을 읽는 데 너무 오래 걸려요(모드가 아주 많아요). 잠시 후에 다시 시도하세요. 이미 읽은 내용은 저장돼 있어요.",
+  rc_modsPending_other: "모드 {count}개를 백그라운드에서 아직 읽는 중이에요. 잠시 후에 패널을 다시 여세요.",
+  rc_modsPendingShort_other: "읽을 모드 {count}개 남음",
 };

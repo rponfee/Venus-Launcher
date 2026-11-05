@@ -9,7 +9,7 @@ export default {
   yourPlan: 'Votre forfait',
   activeBalance: "Votre solde n'expire jamais. Si vous achetez un autre forfait, ce qui vous reste s'ajoute au nouveau.",
   noPlanTitle: "Vous n'avez pas encore de forfait",
-  noPlanText: "Avec un forfait, vous utilisez l'assistant, l'explication des plantages, la recherche intelligente, la traduction de mods et la connexion avec Claude et ChatGPT.",
+  noPlanText: "Avec un forfait, vous pouvez utiliser l’assistant, les explications de plantages, la recherche intelligente et la traduction des mods.",
 
   // Déconnecté et erreurs
   signInText: 'Connectez-vous avec votre compte Venus pour acheter un forfait.',

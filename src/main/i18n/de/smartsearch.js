@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title} ({index}/{total})",
   taskPrepare: "{name} wird installiert",
   kitResult: "{ok} von {total} installiert",
+  errAi_noplan: "Die Such-KI gibt es nur mit kostenpflichtigen Venus-IA-Plänen.",
+  errAi_consent: "Akzeptiere den Datenschutzhinweis, bevor du die KI nutzt.",
+  errAi_sourceUnavailable: "Diese KI ist gerade nicht verfügbar: Prüfe deinen Plan oder die auf deinem PC installierte App.",
+  errAi_badSource: "Diese KI-Option gibt es nicht.",
 };

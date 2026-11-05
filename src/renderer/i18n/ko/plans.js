@@ -9,7 +9,7 @@ export default {
   yourPlan: '내 요금제',
   activeBalance: '잔액은 만료되지 않아요. 다른 요금제를 구매하면 남은 잔액이 새 요금제에 더해져요.',
   noPlanTitle: '아직 요금제가 없어요',
-  noPlanText: '요금제가 있으면 어시스턴트, 크래시 설명, 스마트 검색, 모드 번역, Claude 및 ChatGPT 연결 기능을 사용할 수 있어요.',
+  noPlanText: "요금제가 있으면 어시스턴트, 크래시 설명, 스마트 검색, 모드 번역을 사용할 수 있어요.",
 
   // 로그아웃 상태 및 오류
   signInText: '요금제를 구매하려면 Venus 계정으로 로그인하세요.',

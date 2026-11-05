@@ -147,4 +147,9 @@ export default {
   mk_err_badMarker: "Adı ve koordinatları kontrol et.",
   mk_err_noName: "İşaretçiye bir ad ver.",
   mk_err_save: "İşaretçi kaydedilemedi.",
+  rc_err_timeout: "Oyun dosyalarının okunması çok uzun sürüyor (çok fazla mod var). Biraz sonra tekrar dene: şimdiye kadar okunanlar kaydedildi.",
+  rc_modsPending_one: "{count} mod hâlâ arka planda okunuyor. Biraz sonra paneli tekrar aç.",
+  rc_modsPending_other: "{count} mod hâlâ arka planda okunuyor. Biraz sonra paneli tekrar aç.",
+  rc_modsPendingShort_one: "{count} mod okunacak",
+  rc_modsPendingShort_other: "{count} mod okunacak",
 };

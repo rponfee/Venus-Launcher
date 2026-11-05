@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title} ({index}/{total})",
   taskPrepare: "Встановлення {name}",
   kitResult: "Встановлено {ok} з {total}",
+  errAi_noplan: "ШІ для пошуку доступний лише на платних тарифах Venus IA.",
+  errAi_consent: "Прийміть повідомлення про конфіденційність, перш ніж користуватися ШІ.",
+  errAi_sourceUnavailable: "Цей ШІ зараз недоступний: перевірте свій тариф або застосунок, встановлений на комп'ютері.",
+  errAi_badSource: "Такого варіанта ШІ не існує.",
 };

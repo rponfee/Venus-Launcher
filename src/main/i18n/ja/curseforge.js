@@ -29,4 +29,6 @@ module.exports = {
   stepDownloadPack: "Modパックをダウンロード中...",
   stepResolve: "Modパックのファイルを検索中...",
   warnUnsafePaths_other: "セキュリティのため、許可されていないパスを持つModパックのファイル{count}個をスキップしました：{files}",
+  errBlocked: "CurseForgeがキーを確認する前にリクエストを遮断したため、アカウントの問題ではなさそうです。しばらくしてからもう一度お試しください。続く場合は管理者にお知らせください。",
+  errDenied: "作者が、このファイルをほかのアプリから取得することを許可していません。",
 };

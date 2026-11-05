@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title} ({index}/{total})",
   taskPrepare: "Установка {name}",
   kitResult: "Установлено: {ok} из {total}",
+  errAi_noplan: "ИИ для поиска доступен только на платных тарифах Venus IA.",
+  errAi_consent: "Примите уведомление о конфиденциальности, прежде чем пользоваться ИИ.",
+  errAi_sourceUnavailable: "Этот ИИ сейчас недоступен: проверьте свой тариф или приложение, установленное на компьютере.",
+  errAi_badSource: "Такого варианта ИИ не существует.",
 };

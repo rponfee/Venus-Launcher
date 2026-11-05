@@ -136,4 +136,7 @@ export default {
   mk_err_badMarker: "名前と座標を確認してください。",
   mk_err_noName: "マーカーの名前を入力してください。",
   mk_err_save: "マーカーを保存できませんでした。",
+  rc_err_timeout: "ゲームファイルの読み込みに時間がかかりすぎています（Modが大量にあります）。しばらくしてからもう一度お試しください。ここまでに読み込んだ分は保存されています。",
+  rc_modsPending_other: "{count}個のModがまだバックグラウンドで読み込まれています。しばらくしてからパネルをもう一度開いてください。",
+  rc_modsPendingShort_other: "残り{count}個のMod",
 };

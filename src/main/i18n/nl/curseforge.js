@@ -30,4 +30,6 @@ module.exports = {
   stepResolve: "De bestanden van het modpack opzoeken...",
   warnUnsafePaths_one: "Uit veiligheidsoverwegingen is {count} bestand van het modpack met een niet-toegestaan pad overgeslagen: {files}",
   warnUnsafePaths_other: "Uit veiligheidsoverwegingen zijn {count} bestanden van het modpack met niet-toegestane paden overgeslagen: {files}",
+  errBlocked: "CurseForge heeft het verzoek afgebroken voordat de sleutel werd gecontroleerd, dus dit lijkt geen probleem met je account. Probeer het later opnieuw; blijft het gebeuren, meld het dan bij een beheerder.",
+  errDenied: "De auteur staat niet toe dat dit bestand vanuit andere apps wordt opgevraagd.",
 };

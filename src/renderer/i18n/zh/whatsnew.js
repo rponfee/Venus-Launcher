@@ -178,7 +178,7 @@ export default {
   v45play_b3: "助手使用你的 Venus AI 套餐",
   v45play_cta: "配置游戏内功能",
   v45social_title: "一起游玩，一起交流",
-  v45social_text: "拥有文字和语音频道的社区、排行榜、好友挑战及活动日历。",
+  v45social_text: "带有文字和语音频道的社区。",
   v45social_b1: "在消息中使用自己的贴纸和表情",
   v45social_b2: "音效板与变声效果",
   v45social_b3: "使用你的 AI 套餐翻译消息",

@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title} ({index}/{total})",
   taskPrepare: "{name} 설치 중",
   kitResult: "{total}개 중 {ok}개 설치 완료",
+  errAi_noplan: "검색 AI는 유료 Venus IA 요금제 전용이에요.",
+  errAi_consent: "AI를 사용하기 전에 개인정보 안내에 동의하세요.",
+  errAi_sourceUnavailable: "지금은 이 AI를 사용할 수 없어요. 요금제나 PC에 설치된 앱을 확인하세요.",
+  errAi_badSource: "존재하지 않는 AI 옵션이에요.",
 };

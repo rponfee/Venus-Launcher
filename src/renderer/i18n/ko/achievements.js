@@ -1,6 +1,6 @@
 export default {
   title: "업적",
-  subtitle: "Venus와 Minecraft에서 달성한 모든 것과 매일의 미션을 확인하세요.",
+  subtitle: "Venus에서 얻은 모든 것과 일일 미션을 확인하세요.",
   tab_list: "업적",
   tab_missions: "미션",
   tab_minecraft: "Minecraft",
@@ -258,4 +258,12 @@ export default {
   famDesc_badge_on: "게임 안에서 Venus 배지를 켜세요.",
   fam_premium: "Venus Premium",
   famDesc_premium: "유효한 Venus 요금제를 보유하세요.",
+  fam_days: "하루하루",
+  famDesc_days: "서로 다른 {n}일 동안 플레이하세요.",
+  fam_rotation: "기분 전환",
+  famDesc_rotation: "서로 다른 인스턴스 {n}개에서 플레이하세요.",
+  fam_reviews: "평론가",
+  famDesc_reviews: "서버 리뷰를 {n}개 작성하세요.",
+  fam_spent: "쇼핑 중독",
+  famDesc_spent: "상점에서 Venus Points를 {n}포인트 사용하세요.",
 };

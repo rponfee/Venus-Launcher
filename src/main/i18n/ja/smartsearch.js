@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title}（{index}/{total}）",
   taskPrepare: "{name}をインストール中",
   kitResult: "{total}個中{ok}個をインストールしました",
+  errAi_noplan: "検索AIは、有料のVenus IAプランでのみ利用できます。",
+  errAi_consent: "AIを使う前に、プライバシーに関する通知に同意してください。",
+  errAi_sourceUnavailable: "このAIは現在利用できません。プランや、PCにインストールされているアプリを確認してください。",
+  errAi_badSource: "そのAIの選択肢は存在しません。",
 };

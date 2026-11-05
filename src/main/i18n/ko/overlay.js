@@ -9,4 +9,5 @@ module.exports = {
   playerJoinBody: "내 서버 {name}에 접속했어요.",
   taskDoneTitle: "작업 완료",
   taskFailedTitle: "작업을 완료하지 못했어요",
+  errOffline: "어시스턴트가 답하려면 인터넷 연결이 필요해요. 연결을 확인하고 다시 시도하세요.",
 };

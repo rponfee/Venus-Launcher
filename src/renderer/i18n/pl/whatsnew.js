@@ -178,7 +178,7 @@ export default {
   v45play_b3: "Asystent korzysta z Twojego planu Venus AI",
   v45play_cta: "Skonfiguruj funkcje w grze",
   v45social_title: "Graj i rozmawiaj ze społecznością",
-  v45social_text: "Społeczności z kanałami tekstowymi i głosowymi, rankingi, wyzwania znajomych i kalendarz wydarzeń.",
+  v45social_text: "Społeczności z kanałami tekstowymi i głosowymi.",
   v45social_b1: "Własne naklejki i emoji w Wiadomościach",
   v45social_b2: "Panel dźwięków i efekty głosowe",
   v45social_b3: "Tłumaczenie wiadomości w ramach planu AI",

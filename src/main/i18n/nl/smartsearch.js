@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title} ({index}/{total})",
   taskPrepare: "{name} installeren",
   kitResult: "{ok} van {total} geïnstalleerd",
+  errAi_noplan: "De zoek-AI is alleen voor betaalde Venus IA-pakketten.",
+  errAi_consent: "Accepteer de privacyverklaring voordat je de AI gebruikt.",
+  errAi_sourceUnavailable: "Die AI is op dit moment niet beschikbaar: controleer je pakket of de app die op je pc staat.",
+  errAi_badSource: "Die AI-optie bestaat niet.",
 };

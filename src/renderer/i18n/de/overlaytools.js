@@ -147,4 +147,9 @@ export default {
   mk_err_badMarker: "Prüfe Name und Koordinaten.",
   mk_err_noName: "Gib der Markierung einen Namen.",
   mk_err_save: "Die Markierung konnte nicht gespeichert werden.",
+  rc_err_timeout: "Das Lesen der Spieldateien dauert zu lange (es sind sehr viele Mods). Versuch es in einer Weile noch einmal: Was schon gelesen wurde, ist gespeichert.",
+  rc_modsPending_one: "{count} Mod wird noch im Hintergrund gelesen. Öffne das Panel in einer Weile erneut.",
+  rc_modsPending_other: "{count} Mods werden noch im Hintergrund gelesen. Öffne das Panel in einer Weile erneut.",
+  rc_modsPendingShort_one: "Noch {count} Mod zu lesen",
+  rc_modsPendingShort_other: "Noch {count} Mods zu lesen",
 };

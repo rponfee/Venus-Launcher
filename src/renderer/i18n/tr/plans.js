@@ -9,7 +9,7 @@ export default {
   yourPlan: 'Planın',
   activeBalance: 'Bakiyenin süresi hiç dolmaz. Başka bir plan satın alırsan kalan bakiyen yeni plana eklenir.',
   noPlanTitle: 'Henüz bir planın yok',
-  noPlanText: 'Bir planla asistanı, çökme açıklamalarını, akıllı aramayı, mod çevirisini ve Claude ile ChatGPT bağlantısını kullanırsın.',
+  noPlanText: "Bir planla asistanı, çökme açıklamalarını, akıllı aramayı ve mod çevirisini kullanabilirsin.",
 
   // Oturum yok ve hatalar
   signInText: 'Plan satın almak için Venus hesabınla giriş yap.',

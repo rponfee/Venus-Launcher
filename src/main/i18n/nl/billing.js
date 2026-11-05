@@ -16,4 +16,6 @@ module.exports = {
   errServer: 'De betaalserver reageerde niet goed. Probeer het straks opnieuw.',
   errNetwork: 'Kan geen verbinding maken met de betaalserver. Controleer je internetverbinding.',
   perMonth: '{price}/maand',
+  errUnknownCommunity: "Die community bestaat niet of je hoort er niet meer bij.",
+  errNotOwner: "Alleen de eigenaar van de community kan het pakket kopen.",
 };

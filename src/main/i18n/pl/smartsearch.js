@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title} ({index}/{total})",
   taskPrepare: "Instalowanie {name}",
   kitResult: "Zainstalowano {ok} z {total}",
+  errAi_noplan: "AI wyszukiwarki jest tylko dla płatnych planów Venus IA.",
+  errAi_consent: "Zaakceptuj informację o prywatności, zanim użyjesz AI.",
+  errAi_sourceUnavailable: "To AI jest teraz niedostępne: sprawdź swój plan albo aplikację zainstalowaną na komputerze.",
+  errAi_badSource: "Taka opcja AI nie istnieje.",
 };

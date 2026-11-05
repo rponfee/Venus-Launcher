@@ -9,4 +9,5 @@ module.exports = {
   playerJoinBody: "你的服务器 {name}。",
   taskDoneTitle: "任务已完成",
   taskFailedTitle: "有一项任务未能完成",
+  errOffline: "助手需要网络连接才能回答。请检查网络连接后重试。",
 };

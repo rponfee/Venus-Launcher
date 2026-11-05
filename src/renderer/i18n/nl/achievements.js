@@ -1,6 +1,6 @@
 export default {
   title: "Prestaties",
-  subtitle: "Alles wat je in Venus en Minecraft hebt verdiend, plus dagelijkse missies.",
+  subtitle: "Alles wat je in Venus hebt verdiend, plus dagelijkse missies.",
   tab_list: "Prestaties",
   tab_missions: "Missies",
   tab_minecraft: "Minecraft",
@@ -317,4 +317,13 @@ export default {
   mis_messages_one: "Stuur een bericht",
   mis_voiceJoins_one: "Neem deel aan een voicekamer",
   mis_dailyRewards_one: "Haal de dagelijkse beloning op",
+  fam_days: "Dag na dag",
+  famDesc_days: "Speel op {n} verschillende dagen.",
+  fam_rotation: "Even iets anders",
+  famDesc_rotation: "Speel op {n} verschillende instanties.",
+  fam_reviews: "Criticus",
+  famDesc_reviews: "Schrijf {n} serverreviews.",
+  fam_spent: "Koopwoede",
+  famDesc_spent: "Geef {n} Venus Points uit in de winkel.",
+  famDesc_reviews_one: "Schrijf je eerste serverreview.",
 };

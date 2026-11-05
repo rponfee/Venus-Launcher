@@ -1,6 +1,6 @@
 export default {
   title: "Conquistas",
-  subtitle: "Tudo o que você conquistou no Venus e no Minecraft, mais as missões de cada dia.",
+  subtitle: "Tudo o que você já conquistou no Venus, mais as missões diárias.",
   tab_list: "Conquistas",
   tab_missions: "Missões",
   tab_minecraft: "Minecraft",
@@ -317,4 +317,13 @@ export default {
   mis_messages_one: "Envie uma mensagem",
   mis_voiceJoins_one: "Entre em uma sala de voz",
   mis_dailyRewards_one: "Resgate o prêmio diário",
+  fam_days: "Dia após dia",
+  famDesc_days: "Jogue em {n} dias diferentes.",
+  fam_rotation: "Mudança de ares",
+  famDesc_rotation: "Jogue em {n} instâncias diferentes.",
+  fam_reviews: "Crítico",
+  famDesc_reviews: "Escreva {n} avaliações de servidores.",
+  fam_spent: "Farra de compras",
+  famDesc_spent: "Gaste {n} Venus Points na loja.",
+  famDesc_reviews_one: "Escreva a sua primeira avaliação de servidor.",
 };

@@ -1,6 +1,6 @@
 export default {
   title: "成就",
-  subtitle: "你在 Venus 和 Minecraft 中获得的一切，以及每日任务。",
+  subtitle: "你在 Venus 中获得的一切，以及每日任务。",
   tab_list: "成就",
   tab_missions: "任务",
   tab_minecraft: "Minecraft",
@@ -258,4 +258,12 @@ export default {
   famDesc_badge_on: "在游戏中开启 Venus 徽章。",
   fam_premium: "Venus Premium",
   famDesc_premium: "拥有有效的 Venus 套餐。",
+  fam_days: "日积月累",
+  famDesc_days: "在 {n} 个不同的日子里游玩。",
+  fam_rotation: "换换环境",
+  famDesc_rotation: "在 {n} 个不同的实例中游玩。",
+  fam_reviews: "评论家",
+  famDesc_reviews: "撰写 {n} 条服务器评价。",
+  fam_spent: "买买买",
+  famDesc_spent: "在商店中花费 {n} Venus Points。",
 };

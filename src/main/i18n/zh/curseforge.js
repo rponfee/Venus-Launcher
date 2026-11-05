@@ -29,4 +29,6 @@ module.exports = {
   stepDownloadPack: "正在下载整合包...",
   stepResolve: "正在查找整合包的文件...",
   warnUnsafePaths_other: "出于安全考虑，整合包中有 {count} 个路径不被允许的文件已被跳过：{files}",
+  errBlocked: "CurseForge 在验证密钥之前就拦截了请求，所以这看起来不是你的账号问题。请稍后重试；如果持续出现，请告知管理员。",
+  errDenied: "作者不允许其他应用请求此文件。",
 };

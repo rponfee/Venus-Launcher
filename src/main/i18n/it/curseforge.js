@@ -30,4 +30,6 @@ module.exports = {
   stepResolve: "Ricerca dei file del modpack...",
   warnUnsafePaths_one: "Per sicurezza è stato saltato {count} file del modpack con un percorso non consentito: {files}",
   warnUnsafePaths_other: "Per sicurezza sono stati saltati {count} file del modpack con percorsi non consentiti: {files}",
+  errBlocked: "CurseForge ha interrotto la richiesta prima di controllare la chiave, quindi non sembra un problema del tuo account. Riprova tra un po'; se continua, avvisa un amministratore.",
+  errDenied: "L'autore non permette che questo file venga richiesto da altre app.",
 };

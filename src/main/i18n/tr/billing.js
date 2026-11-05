@@ -16,4 +16,6 @@ module.exports = {
   errServer: 'Ödeme sunucusu düzgün yanıt vermedi. Biraz sonra yeniden dene.',
   errNetwork: 'Ödeme sunucusuna bağlanılamadı. İnternet bağlantını kontrol et.',
   perMonth: '{price}/ay',
+  errUnknownCommunity: "Bu topluluk yok ya da artık sende değil.",
+  errNotOwner: "Bir topluluğun planını yalnızca sahibi satın alabilir.",
 };

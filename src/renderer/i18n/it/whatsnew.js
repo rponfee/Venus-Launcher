@@ -178,7 +178,7 @@ export default {
   v45play_b3: "L'assistente usa il tuo piano Venus IA",
   v45play_cta: "Configura le funzioni nel gioco",
   v45social_title: "Gioca e chatta in comunità",
-  v45social_text: "Comunità con canali di testo e vocali, classifiche, sfide tra amici e calendario degli eventi.",
+  v45social_text: "Comunità con canali di testo e vocali.",
   v45social_b1: "I tuoi adesivi ed emoji in Messaggi",
   v45social_b2: "Pannello dei suoni ed effetti vocali",
   v45social_b3: "Traduzione dei messaggi con il tuo piano IA",

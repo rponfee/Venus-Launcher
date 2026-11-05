@@ -178,7 +178,7 @@ export default {
   v45play_b3: "Asistan, Venus yapay zekâ planını kullanır",
   v45play_cta: "Oyun içi özellikleri yapılandır",
   v45social_title: "Topluluk olarak oyna ve sohbet et",
-  v45social_text: "Yazılı ve sesli kanalları olan topluluklar, sıralamalar, arkadaşlar arası meydan okumalar ve etkinlik takvimi.",
+  v45social_text: "Metin ve ses kanallarıyla topluluklar.",
   v45social_b1: "Mesajlar'da kendi çıkartmaların ve emojilerin",
   v45social_b2: "Ses panosu ve ses efektleri",
   v45social_b3: "Yapay zekâ planınla mesaj çevirisi",

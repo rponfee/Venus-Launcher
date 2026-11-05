@@ -9,7 +9,7 @@ export default {
   yourPlan: '你的套餐',
   activeBalance: '余额永不过期。如果你再购买一个套餐，剩余余额会累加到新套餐中。',
   noPlanTitle: '你还没有套餐',
-  noPlanText: '有了套餐，你就能使用助手、崩溃解析、智能搜索、模组翻译，以及与 Claude 和 ChatGPT 的连接。',
+  noPlanText: "有了套餐，你就可以使用助手、崩溃解释、智能搜索和模组翻译。",
 
   // 未登录与错误
   signInText: '请使用你的 Venus 账号登录后购买套餐。',

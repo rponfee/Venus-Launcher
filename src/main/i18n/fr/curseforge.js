@@ -30,4 +30,6 @@ module.exports = {
   stepResolve: "Recherche des fichiers du modpack...",
   warnUnsafePaths_one: "Par sécurité, {count} fichier du modpack avec un chemin non autorisé a été ignoré : {files}",
   warnUnsafePaths_other: "Par sécurité, {count} fichiers du modpack avec des chemins non autorisés ont été ignorés : {files}",
+  errBlocked: "CurseForge a coupé la requête avant de vérifier la clé, donc cela ne ressemble pas à un problème de votre compte. Réessayez dans un moment ; si cela continue, prévenez un administrateur.",
+  errDenied: "L’auteur n’autorise pas que ce fichier soit demandé par d’autres applications.",
 };

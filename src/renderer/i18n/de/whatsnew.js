@@ -179,7 +179,7 @@ export default {
   v45play_b3: "Der Assistent nutzt deinen Venus-KI-Tarif",
   v45play_cta: "Spielfunktionen einrichten",
   v45social_title: "Als Community spielen und chatten",
-  v45social_text: "Communitys mit Text- und Sprachkanälen, Ranglisten, Herausforderungen unter Freunden und ein Veranstaltungskalender.",
+  v45social_text: "Communitys mit Text- und Sprachkanälen.",
   v45social_b1: "Eigene Sticker und Emojis in Nachrichten",
   v45social_b2: "Soundboard und Stimmeffekte",
   v45social_b3: "Nachrichtenübersetzung mit deinem KI-Tarif",

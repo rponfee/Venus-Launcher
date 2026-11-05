@@ -30,4 +30,6 @@ module.exports = {
   stepResolve: "Mod paketinin dosyaları aranıyor...",
   warnUnsafePaths_one: "Güvenlik için mod paketindeki izin verilmeyen yola sahip {count} dosya atlandı: {files}",
   warnUnsafePaths_other: "Güvenlik için mod paketindeki izin verilmeyen yollara sahip {count} dosya atlandı: {files}",
+  errBlocked: "CurseForge, anahtarı kontrol etmeden önce isteği kesti; bu yüzden sorun hesabından kaynaklanıyor gibi görünmüyor. Biraz sonra tekrar dene; sürerse bir yöneticiye haber ver.",
+  errDenied: "Yazar, bu dosyanın diğer uygulamalardan istenmesine izin vermiyor.",
 };

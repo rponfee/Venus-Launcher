@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title}（{index}/{total}）",
   taskPrepare: "正在安装 {name}",
   kitResult: "已安装 {ok}/{total} 项",
+  errAi_noplan: "搜索 AI 仅限付费 Venus IA 套餐使用。",
+  errAi_consent: "使用 AI 之前，请先接受隐私声明。",
+  errAi_sourceUnavailable: "该 AI 目前不可用：请检查你的套餐或电脑上安装的应用。",
+  errAi_badSource: "该 AI 选项不存在。",
 };

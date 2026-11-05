@@ -1,6 +1,6 @@
 export default {
   title: "実績",
-  subtitle: "VenusとMinecraftで獲得したすべての実績と、デイリーミッションを確認できます。",
+  subtitle: "Venusで獲得したすべてのものと、デイリーミッションです。",
   tab_list: "実績",
   tab_missions: "ミッション",
   tab_minecraft: "Minecraft",
@@ -258,4 +258,12 @@ export default {
   famDesc_badge_on: "ゲーム内のVenusバッジを有効にする。",
   fam_premium: "Venus Premium",
   famDesc_premium: "有効なVenusのプランを持つ。",
+  fam_days: "毎日コツコツ",
+  famDesc_days: "{n}日間、別々の日にプレイしましょう。",
+  fam_rotation: "気分転換",
+  famDesc_rotation: "{n}個の別々のインスタンスでプレイしましょう。",
+  fam_reviews: "批評家",
+  famDesc_reviews: "サーバーのレビューを{n}件書きましょう。",
+  fam_spent: "お買い物三昧",
+  famDesc_spent: "ショップで{n} Venus Pointsを使いましょう。",
 };

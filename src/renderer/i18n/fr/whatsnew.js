@@ -178,7 +178,7 @@ export default {
   v45play_b3: "L’assistant utilise votre forfait Venus IA",
   v45play_cta: "Configurer les fonctionnalités en jeu",
   v45social_title: "Jouez et discutez en communauté",
-  v45social_text: "Communautés avec salons textuels et vocaux, classements, défis entre amis et calendrier d’événements.",
+  v45social_text: "Des communautés avec des salons textuels et vocaux.",
   v45social_b1: "Vos propres autocollants et emojis dans Messages",
   v45social_b2: "Boîte à sons et effets vocaux",
   v45social_b3: "Traduction de messages avec votre forfait IA",

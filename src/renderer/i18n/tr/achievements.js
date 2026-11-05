@@ -1,6 +1,6 @@
 export default {
   title: "Başarımlar",
-  subtitle: "Venus'ta ve Minecraft'ta kazandığın her şey, bir de günlük görevler.",
+  subtitle: "Venus'ta kazandığın her şey ve günlük görevler.",
   tab_list: "Başarımlar",
   tab_missions: "Görevler",
   tab_minecraft: "Minecraft",
@@ -317,4 +317,13 @@ export default {
   mis_messages_one: "Bir mesaj gönder",
   mis_voiceJoins_one: "Bir ses odasına katıl",
   mis_dailyRewards_one: "Günlük ödülü al",
+  fam_days: "Gün gün",
+  famDesc_days: "{n} farklı günde oyna.",
+  fam_rotation: "Ortam değişikliği",
+  famDesc_rotation: "{n} farklı örnekte oyna.",
+  fam_reviews: "Eleştirmen",
+  famDesc_reviews: "{n} sunucu yorumu yaz.",
+  fam_spent: "Alışveriş çılgınlığı",
+  famDesc_spent: "Mağazada {n} Venus Points harca.",
+  famDesc_reviews_one: "İlk sunucu yorumunu yaz.",
 };

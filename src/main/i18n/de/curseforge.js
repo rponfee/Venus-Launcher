@@ -30,4 +30,6 @@ module.exports = {
   stepResolve: "Dateien des Modpacks werden gesucht...",
   warnUnsafePaths_one: "Aus Sicherheitsgründen wurde {count} Datei des Modpacks mit einem nicht erlaubten Pfad übersprungen: {files}",
   warnUnsafePaths_other: "Aus Sicherheitsgründen wurden {count} Dateien des Modpacks mit nicht erlaubten Pfaden übersprungen: {files}",
+  errBlocked: "CurseForge hat die Anfrage unterbrochen, bevor der Schlüssel geprüft wurde. Es sieht also nicht nach einem Problem mit deinem Konto aus. Versuch es in einer Weile noch einmal; wenn es weiter passiert, sag einem Administrator Bescheid.",
+  errDenied: "Der Autor erlaubt nicht, dass diese Datei von anderen Apps angefordert wird.",
 };

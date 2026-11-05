@@ -17,4 +17,8 @@ module.exports = {
   taskItem: "{title} ({index}/{total})",
   taskPrepare: "Instalando {name}",
   kitResult: "{ok} de {total} instalados",
+  errAi_noplan: "A IA da busca é só para os planos pagos da Venus IA.",
+  errAi_consent: "Aceite o aviso de privacidade antes de usar a IA.",
+  errAi_sourceUnavailable: "Essa IA não está disponível agora: confira seu plano ou o app instalado no seu PC.",
+  errAi_badSource: "Essa opção de IA não existe.",
 };

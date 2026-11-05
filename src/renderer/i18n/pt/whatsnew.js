@@ -178,7 +178,7 @@ export default {
   v45play_b3: "O assistente usa seu plano da Venus IA",
   v45play_cta: "Configurar recursos durante o jogo",
   v45social_title: "Jogue e converse em comunidade",
-  v45social_text: "Comunidades com canais de texto e voz, classificações, desafios entre amigos e calendário de eventos.",
+  v45social_text: "Comunidades com canais de texto e de voz.",
   v45social_b1: "Suas próprias figurinhas e emojis em Mensagens",
   v45social_b2: "Painel de sons e efeitos de voz",
   v45social_b3: "Tradução de mensagens com seu plano de IA",

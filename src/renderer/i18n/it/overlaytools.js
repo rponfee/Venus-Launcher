@@ -147,4 +147,9 @@ export default {
   mk_err_badMarker: "Controlla il nome e le coordinate.",
   mk_err_noName: "Dai un nome al marcatore.",
   mk_err_save: "Impossibile salvare il marcatore.",
+  rc_err_timeout: "La lettura dei file del gioco sta richiedendo troppo tempo (ci sono moltissime mod). Riprova tra un po': ciò che è già stato letto è salvato.",
+  rc_modsPending_one: "{count} mod è ancora in lettura in background. Riapri il pannello tra un po'.",
+  rc_modsPending_other: "{count} mod sono ancora in lettura in background. Riapri il pannello tra un po'.",
+  rc_modsPendingShort_one: "{count} mod ancora da leggere",
+  rc_modsPendingShort_other: "{count} mod ancora da leggere",
 };
