@@ -6,7 +6,7 @@
 //   import { FRAME_CATALOG, frameStyleOf, drawFrame, framePreview } from '../social/frames.js';
 //
 // Este archivo no toca el DOM al cargarse (se puede probar con Node). Los estilos estan en styles/features/frames.css; el
-// dibujo de cada estilo esta en social/frames/*.js. Para sumar un marco: docs/wip/marcos-46.md.
+// dibujo de cada estilo esta en social/frames/*.js. Para sumar un marco: docs/perfiles.md (Marcos nuevos).
 import { begin, takeDefs } from './frames/kit.js';
 import { cosmic, nature, elements, gems } from './frames/art-a.js';
 import { retro, neon, seasonal, fantasy } from './frames/art-b.js';

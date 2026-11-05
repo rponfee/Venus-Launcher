@@ -81,7 +81,6 @@ Acciones: `start`, `stop`, `restart` y `command`. Las últimas tres exigen `conf
 | Lista cerrada | `parseAction` rechaza acciones desconocidas y campos de más. No hay `kill`, archivos ni propiedades |
 | Datos | Solo pasan nombre, tipo, versión, estado y jugadores (nombre y hora). Sin IP, UUID ni rutas. Las direcciones se sacan de la consola (`redactLine`) |
 | Texto no confiable | La página solo usa `textContent`. El User-Agent se reduce a una lista cerrada de sistemas y navegadores antes de llegar al launcher |
-| Modo streamer | El QR no se dibuja; la dirección y el código van con `.priv` |
 | Cortar | Esa IP recibe 403 hasta apagar y el código cambia, porque quien lo tiene podría entrar desde otra IP. Los demás dispositivos se tienen que volver a emparejar |
 
 ### HTTP sin TLS: qué implica

@@ -62,8 +62,7 @@ test('eventos del asistente: solo lo que se dibuja y con los textos acotados', (
   const ev = panels.cleanEvent({ type: 'tool-result', seq: 7, turnId: 't1', toolUseId: 'u1', name: 'list_mods', ok: true, summary: 'x'.repeat(1000), undoId: 'u123', input: { secreto: 'no viaja' }, warnings: ['a'], mcp: { tool: 'herramienta', serverId: 'no viaja' }, otro: 'no viaja' });
   assert.equal(ev.summary.length, 400);
   assert.equal(ev.undoable, true);
-  assert.equal(ev.mcpTool, 'herramienta');
-  for (const k of ['input', 'undoId', 'mcp', 'otro']) assert.equal(ev[k], undefined, k);
+  for (const k of ['input', 'undoId', 'mcp', 'mcpTool', 'otro']) assert.equal(ev[k], undefined, k);
   const conv = panels.cleanConversation({ id: 'c1', title: 'Hola', running: true, seq: 200, events: Array.from({ length: 150 }, (_, i) => ({ type: 'text', seq: i, text: 't' })), pendingConfirms: ['r1'], undoStates: { a: 1 }, model: 'x' });
   assert.equal(conv.events.length, 120, 'los ultimos alcanzan');
   assert.equal(conv.events[0].seq, 30);

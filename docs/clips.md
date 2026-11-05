@@ -1,6 +1,6 @@
 # Clips y capturas
 
-> La captura existente se amplía con el estudio de clips de la rama **4.5.0, sin publicar**. Contratos detallados: [montaje, timelapse, subida, OBS y galería](implementacion/clips.md). [Estado y validaciones pendientes](estado-4.5.0.md).
+> La captura existente se amplía con el estudio de clips de la 4.5.0 (publicado con la 4.6.0; la integración con OBS se retiró en la 4.6). Contratos detallados: [montaje, timelapse, subida y galería](implementacion/clips.md). [Estado y validaciones pendientes](estado-4.5.0.md).
 
 Grabación del juego, repetición instantánea, capturas de pantalla, galería con editor rápido y compartir. Sin dependencias nuevas: todo con `desktopCapturer` + `MediaRecorder` de Electron y un lector/escritor de WebM propio.
 
@@ -154,7 +154,6 @@ Prueba de punta a punta (sin Minecraft): un script de Electron que abre una vent
 | Montaje de la semana | `clipstudio:probe` y trabajos `montage*`: clips WebM de Venus; copia de cuadros si son compatibles o recodificación con WebCodecs. Duraciones de 30 s, 1/2/5 min o sin tope. No es un editor general de formatos arbitrarios. |
 | Timelapse | `clipstudio:timelapse*`; apagado por defecto. Intervalo de 5 s a 2 min y espacio de 256 MB a 5 GB; configuración en `.venus/timelapse.json`, cuadros en `<instancia>/timelapse/`. Se detiene al alcanzar el límite o faltar espacio. |
 | Subida | `clipupload:status/connect/cancelConnect/revoke/upload/cancel`. OAuth en navegador; tokens cifrados en main. YouTube parte de privado, TikTok envía al borrador. El camino de navegador permite continuar sin subida directa configurada. |
-| OBS | `obs:status/test/setPassword`; apagado por defecto, `127.0.0.1:4455`, host limitado a esta PC o LAN. Contraseña cifrada; nunca vuelve al renderer. |
 | Galería | RPC de 0032 sobre clips compartidos: cinco publicaciones por día, 200 me gusta y diez denuncias por día. Usa el bucket privado `clips` y sus links firmados; siguen los 50 MB por archivo. |
 
 Los vídeos se escriben primero como `.part` y se terminan antes de mostrarlos. La galería exige sesión; despublicar u ocultar no revoca una URL firmada ya emitida. Moderar/borrar una publicación no garantiza borrar el objeto de Storage: SQL no elimina el archivo físico. El panel informa ese límite.
@@ -170,7 +169,7 @@ El build agrega únicamente estos identificadores públicos, además de la confi
 
 No distribuir `client_secret` en el launcher ni agregarlo al workflow. Si el proveedor lo exige y el flujo actual no puede completarse con los identificadores públicos, **la subida directa no está lista hasta contar con un flujo aprobado y probado**. TikTok mantiene sus credenciales confidenciales exclusivamente del lado de `tiktok-token` en Supabase; requiere sesión Venus y aprobación de la app por el proveedor. La configuración y las condiciones históricamente revisadas están en el [documento técnico](implementacion/clips.md); deben revalidarse antes de publicar.
 
-Los permisos de captura se instalan desde `capture/host.js` usando `core/permissions.js`: página exacta del recorder, sin subframes; display media valida el marco solicitante. Las extensiones ya no envuelven esos handlers.
+Los permisos de captura se instalan desde `capture/host.js` usando `core/permissions.js`: página exacta del recorder, sin subframes; display media valida el marco solicitante.
 
 ### Evidencia y pendientes
 

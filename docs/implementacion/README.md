@@ -9,9 +9,9 @@ Documentación permanente de los doce frentes. Conserva sus tablas de archivos, 
 | [Overlay y mapa: recetas, contadores, marcadores y asistente](overlay.md) | Contratos, uso, datos y límites |
 | [Servidores: control remoto, Discord y reseñas](servidores.md) | Contratos, uso, datos y límites |
 | [Mensajes y voz: stickers, traducción, soundboard y efectos](mensajes-voz.md) | Contratos, uso, datos y límites |
-| [Capas de Venus y FPS del mod](capas.md) | Contratos, uso, datos y límites |
-| [Estudio de clips: montaje, timelapse, subida, OBS y galería](clips.md) | Contratos, uso, datos y límites |
-| [Clanes y comunidades](clanes-comunidades.md) | Comunidades permanece; Clanes se retiró del launcher. Se conservan los contratos anteriores |
+| [Estudio de clips: montaje, timelapse, subida y galería](clips.md) | Contratos, uso, datos y límites |
+| [Clanes y comunidades](clanes-comunidades.md) | Comunidades (con la ampliación de la 4.6: roles, permisos por canal, GIFs con aprobación, bienvenida y despedida). Clanes se retiró |
+| [Insignia y FPS del mod](../insignia.md) | Las capas de Venus se retiraron en el mod 1.3.0; la insignia y los FPS se conservan |
 | [App para celular: PWA, mensajes, clips y avisos](app-celular.md) | Contratos, uso, datos y límites |
 
 Los doce borradores de funciones y el informe SQL se reconciliaron con estas referencias el 3 de noviembre de 2026. Después de revisar los cambios se retiró `docs/wip/`, con un respaldo temporal indicado en el estado de integración. Las guías de usuario y los comentarios de fuentes apuntan a estas rutas permanentes.
@@ -27,7 +27,7 @@ Los nombres de origen son antecedentes de los grupos 3.2–3.4; el destino docum
 | Nombre de origen | Referencia permanente |
 |---|---|
 | `app-celular-34.md` | [app-celular.md](app-celular.md) |
-| `capas-34.md` | [capas.md](capas.md) |
+| `capas-34.md` | Retirada en la 4.6 ([insignia.md](../insignia.md)) |
 | `clanes-comunidades-34.md` | [clanes-comunidades.md](clanes-comunidades.md) |
 | `clips-33.md` | [clips.md](clips.md) |
 | `datos-32.md` | [datos.md](datos.md) |

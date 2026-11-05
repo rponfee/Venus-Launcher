@@ -38,7 +38,7 @@ test('frases a ciegas (escritas despues de congelar el vocabulario): se entiende
 });
 
 test('el interprete nuevo entiende mucho mas que el anterior en las mismas frases (sin ruido)', () => {
-  // El 41,8 % del commit anterior queda registrado en docs/wip/buscador-curseforge-46.md; aca se fija un piso.
+  // El 41,8 % del commit anterior queda registrado en docs/arquitectura.md (6.8); aca se fija un piso.
   const result = score(I);
   assert.ok(result.passed / result.total > 0.95);
 });

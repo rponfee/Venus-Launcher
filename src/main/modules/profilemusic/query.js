@@ -2,7 +2,7 @@
 // Arma el pedido a Openverse (GET /v1/audio/) a partir de lo que escribe la persona: texto, genero, duracion y
 // fuente. Sin Electron. Todo valor que llega de la interfaz se vuelve a validar aca (la interfaz no es de fiar).
 //
-// Parametros usados (verificados con pedidos reales, ver docs/wip/musica-perfil-46.md):
+// Parametros usados (verificados con pedidos reales, ver docs/perfiles.md):
 //   q            texto; la API busca en titulo, etiquetas y autor y exige todas las palabras
 //   source       jamendo y/o wikimedia_audio
 //   license      solo las que permiten uso comercial (by, by-sa, by-nd, cc0, pdm); nada de license_type=commercial

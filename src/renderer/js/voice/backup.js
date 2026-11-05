@@ -8,7 +8,7 @@
 import { MqttClient } from './mqtt.js';
 import { deriveRoom, sealFrame, openFrame } from './seal.js';
 
-// Brokers publicos gratuitos con MQTT sobre WebSocket seguro (probados el 5/11/2026, ver docs/wip/voz-respaldo-46.md).
+// Brokers publicos gratuitos con MQTT sobre WebSocket seguro (probados el 5/11/2026, ver docs/voice-turn.md).
 // El orden de preferencia sale del tema, asi que no hay uno "principal" que concentre todo el trafico; los "spare" solo
 // se usan si los demas no contestan. test.mosquitto.org:8081 y mqtt.eclipseprojects.io no respondian ese dia.
 // "public"/"public" son las credenciales abiertas que publica shiftr.io para su instancia publica (no es un secreto).

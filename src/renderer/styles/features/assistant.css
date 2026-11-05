@@ -145,16 +145,9 @@ body.as-drawer-open .tasks-dock { right: calc(min(440px, 100vw - 120px) + 18px);
 .as-confirm-items { margin: 0; padding: 0 0 0 18px; font-size: var(--fs-xs); line-height: 1.5; color: var(--text-2); font-family: var(--mono); max-height: 140px; overflow-y: auto; overflow-wrap: anywhere; }
 .as-confirm-actions { display: flex; gap: var(--sp-2); justify-content: flex-end; align-items: center; flex-wrap: wrap; }
 .as-confirm:not([data-state='pending']) { opacity: 0.85; }
-.as-confirm[data-kind='mcp'][data-danger='true'] { border-color: var(--bad-line); }
 .as-confirm-hint { display: flex; align-items: flex-start; gap: 6px; font-size: var(--fs-xs); color: var(--muted); line-height: 1.45; }
 .as-confirm-hint svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
 
-/* Herramientas de servidores MCP (las agrega el usuario en Ajustes > IA) */
-.as-tool-mcp .as-tool-ic { background: var(--accent-wash); color: var(--accent-hi); }
-.as-tool-mcp .as-tool-title { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
-.as-mcp-tool { min-width: 0; overflow-wrap: anywhere; }
-.as-mcp-server { display: inline-flex; align-items: center; max-width: 100%; padding: 0 var(--sp-2); border-radius: 999px; border: 1px solid var(--accent-line); color: var(--accent-hi); font-size: var(--fs-xs); font-weight: 600; line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.as-tool-mcp[data-state='done'] { border-color: var(--accent-line); }
 .as-notice { align-items: flex-start; line-height: 1.45; }
 .as-notice svg { margin-top: 2px; }
 

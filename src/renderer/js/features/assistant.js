@@ -78,15 +78,7 @@ const S = {
   drawer: null,
   pageChat: null,
   running: new Set(),
-  limits: {}, // motor externo -> ultimos limites del plan del usuario que informo el CLI (evento 'limits')
 };
-
-// Termino la deteccion de Claude Code y Codex en el proceso principal: el estado se actualiza sin volver a pedirlo
-api.on('assistant:engines', (view) => {
-  if (!S.status || !view) return;
-  S.status = { ...S.status, engines: view };
-  for (const fn of S.statusListeners) fn(S.status);
-});
 
 // ---------- Estado de la IA (plan, cuota, disponibilidad) ----------
 export async function getStatus(force = false) {
@@ -148,15 +140,6 @@ export function quotaInfo(st) {
     return { blocked: 'quota', quota: q, planName: q?.planName || q?.plan || '', reason, resetAt };
   }
   return { blocked: null, quota: q };
-}
-
-// Como quotaInfo, pero para el motor que va a responder: con el Claude Code o el Codex del usuario, la cuota de
-// Venus IA agotada no bloquea el chat (el plan sigue haciendo falta: sin plan o sin sesion se bloquea igual).
-export function blockedFor(st, engine) {
-  const info = quotaInfo(st);
-  if (!engine || engine === 'venus') return info;
-  if (info.blocked === 'quota') return { blocked: null, quota: info.quota };
-  return info;
 }
 
 // Esfuerzo permitido mas parecido al pedido (el mismo, o el mas alto por debajo, o el mas bajo permitido)
@@ -343,9 +326,8 @@ export function transparencyPanel({ compact = false } = {}) {
   return h(
     'div',
     { class: ['as-trans', compact && 'compact'] },
-    h('div', { class: 'as-tcard can' }, h('div', { class: 'as-tcard-title' }, icon('check'), t('assistant.canTitle')), list('can', 7, 'check', 'good', [t('assistant.canMcp')])),
-    // El ultimo "no puede" tiene la excepcion de los servidores MCP que agrega el usuario
-    h('div', { class: 'as-tcard cannot' }, h('div', { class: 'as-tcard-title' }, icon('ban'), t('assistant.cannotTitle')), list('cannot', 6, 'x', 'bad', [t('assistant.cannotDataMcp')])),
+    h('div', { class: 'as-tcard can' }, h('div', { class: 'as-tcard-title' }, icon('check'), t('assistant.canTitle')), list('can', 7, 'check', 'good')),
+    h('div', { class: 'as-tcard cannot' }, h('div', { class: 'as-tcard-title' }, icon('ban'), t('assistant.cannotTitle')), list('cannot', 6, 'x', 'bad')),
     h(
       'div',
       { class: 'as-tcard perms' },
@@ -357,7 +339,6 @@ export function transparencyPanel({ compact = false } = {}) {
         h('li', {}, h('span', { class: 'as-lvl reversible' }, icon('undo')), h('span', {}, t('assistant.permReversible'))),
         h('li', {}, h('span', { class: 'as-lvl destructive' }, icon('alert')), h('span', {}, t('assistant.permDestructive'))),
         h('li', {}, h('span', { class: 'as-lvl reversible' }, icon('package')), h('span', {}, t('assistant.permBulk'))),
-        h('li', {}, h('span', { class: 'as-lvl reversible' }, icon('plug')), h('span', {}, t('assistant.permMcp'))),
       ),
       h('p', { class: 'as-privacy' }, icon('lock'), h('span', {}, t('assistant.privacyNote'))),
     ),
@@ -392,8 +373,6 @@ export function createChat(opts = {}) {
     blocked: null,
     choice: null, // { model, effort } que viaja con cada pregunta (lo recuerda el proceso principal)
     noted: new Set(), // turnos con la nota del respaldo
-    engine: null, // 'venus' | 'claude' | 'chatgpt' elegido para esta conversacion (null = el de Ajustes)
-    engineLocked: false, // la conversacion ya empezo: el motor no se cambia
   };
 
   const thread = h('div', { class: 'as-thread' });
@@ -415,10 +394,6 @@ export function createChat(opts = {}) {
     h('span', { class: 'as-ctx-label' }, t('assistant.effortLabel')),
     effortSelect,
   );
-  // Motor: Venus IA con el plan, o el Claude Code / Codex del usuario con su cuenta (desde el plan Go). Fijo por
-  // conversacion: se elige antes de la primera pregunta.
-  const engineSelect = h('select', { class: 'as-ctx-select as-engine-select', 'aria-label': t('assistant.engineLabel'), title: t('assistant.engineHint') });
-  const engineBox = h('div', { class: 'as-ctx-group as-engine-box hidden' }, icon('sparkles'), h('span', { class: 'as-ctx-label' }, t('assistant.engineLabel')), engineSelect);
   const usageLine = h('div', { class: 'as-usage-line hidden' });
   // "Enter para enviar": en la fila de los selectores o, con el selector de modelo, a la derecha del uso del plan
   const enterHint = h('span', { class: 'as-ctx-hint' }, t('assistant.enterHint'));
@@ -426,7 +401,6 @@ export function createChat(opts = {}) {
     'div',
     { class: 'as-ctx' },
     h('div', { class: 'as-ctx-group' }, icon('layers'), h('span', { class: 'as-ctx-label' }, t('assistant.instance')), instSelect),
-    engineBox,
     modelBox,
     enterHint,
   );
@@ -458,87 +432,7 @@ export function createChat(opts = {}) {
     return o.label || o.id;
   }
 
-  // ----- Motor (quien responde) -----
-  // El elegido en esta conversacion o el de Ajustes; un motor externo que no se puede usar (sin plan, sin instalar,
-  // sin sesion) vuelve a Venus IA, salvo en una conversacion ya empezada con el.
-  function currentEngine(s = S.status) {
-    const eng = s?.engines;
-    const want = st.engine || eng?.current || 'venus';
-    if (want === 'venus') return 'venus';
-    if (st.engineLocked) return want;
-    return eng?.entitled && eng[want]?.usable ? want : 'venus';
-  }
-
-  function engineName(id) {
-    return t(`assistant.engine_${id}`);
-  }
-
-  function switchEngine(id) {
-    if (st.engineLocked) return;
-    st.engine = id;
-    st.choice = null;
-    drawModels(S.status);
-    renderBlocked(blockedFor(S.status, currentEngine()));
-  }
-
-  function drawEngine(s) {
-    const eng = s?.engines;
-    const cur = currentEngine(s);
-    const anyExternal = Boolean(eng && (eng.claude?.installed || eng.chatgpt?.installed));
-    const show = Boolean(eng?.entitled && (anyExternal || cur !== 'venus')) && !(st.blocked && st.blocked !== 'quota');
-    engineBox.classList.toggle('hidden', !show);
-    if (!show) return;
-    const q = s?.quota || {};
-    const planName = q.planName || q.plan || '';
-    const options = [h('option', { value: 'venus', selected: cur === 'venus' }, planName ? t('assistant.engineVenusPlan', { plan: planName }) : t('assistant.engineVenus'))];
-    for (const id of ['claude', 'chatgpt']) {
-      const e = eng[id] || {};
-      if (!e.installed && cur !== id) continue;
-      const usable = Boolean(e.usable) || cur === id;
-      options.push(h('option', { value: id, selected: cur === id, disabled: !usable }, usable ? engineName(id) : t('assistant.engineUnavailable', { app: engineName(id) })));
-    }
-    mount(engineSelect, options);
-    engineSelect.value = cur;
-    engineSelect.disabled = st.engineLocked;
-    engineSelect.title = st.engineLocked ? t('assistant.engineLocked') : t('assistant.engineHint');
-  }
-
-  // Modelo y esfuerzo de un motor externo: los que ofrece el CLI del usuario; el uso es el de SU plan (los
-  // limites de Claude Code llegan con cada respuesta, evento 'limits'), no la cuota de Venus IA.
-  function drawExternalModels(s, engine) {
-    const eng = s?.engines || {};
-    const models = Array.isArray(eng.models?.[engine]) && eng.models[engine].length ? eng.models[engine] : [{ id: 'default' }];
-    const efforts = Array.isArray(eng.efforts) && eng.efforts.length ? eng.efforts : ['low', 'medium', 'high', 'xhigh'];
-    const want = st.choice || eng.choice?.[engine] || {};
-    const model = models.some((m) => m.id === want.model) ? want.model : 'default';
-    const effort = efforts.includes(want.effort) ? want.effort : 'medium';
-    modelBox.classList.remove('hidden');
-    mount(
-      modelSelect,
-      models.map((m) => h('option', { value: m.id, selected: m.id === model }, m.id === 'default' ? t('assistant.engineModelDefault', { app: engineName(engine) }) : m.label || m.id)),
-    );
-    modelSelect.value = model;
-    mount(
-      effortSelect,
-      efforts.map((e) => h('option', { value: e, selected: e === effort }, t(`assistant.effort_${e}`))),
-    );
-    effortSelect.value = effort;
-    st.choice = { model, effort };
-    const parts = [h('span', { class: 'as-usage-stat' }, t('assistant.engineUsage', { app: engineName(engine) }))];
-    const lim = S.limits[engine];
-    if (lim && Number.isFinite(lim.fiveHour)) parts.push(h('span', { class: 'as-usage-stat num' }, t('assistant.engineLimit5h', { pct: lim.fiveHour })));
-    if (lim && Number.isFinite(lim.sevenDay)) parts.push(h('span', { class: 'as-usage-stat num' }, t('assistant.engineLimit7d', { pct: lim.sevenDay })));
-    mount(usageLine, parts, enterHint);
-    usageLine.classList.remove('hidden');
-  }
-
   function drawModels(s) {
-    drawEngine(s);
-    const engine = currentEngine(s);
-    if (engine !== 'venus' && !(st.blocked && st.blocked !== 'quota')) {
-      drawExternalModels(s, engine);
-      return;
-    }
     const options = Array.isArray(s?.modelOptions) ? s.modelOptions : [];
     const show = options.length > 0 && !st.blocked;
     modelBox.classList.toggle('hidden', !show);
@@ -575,7 +469,6 @@ export function createChat(opts = {}) {
   effortSelect.addEventListener('change', () => {
     st.choice = { model: modelSelect.value, effort: effortSelect.value };
   });
-  engineSelect.addEventListener('change', () => switchEngine(engineSelect.value || 'venus'));
 
   // ----- Composer -----
   const autosize = () => {
@@ -650,11 +543,6 @@ export function createChat(opts = {}) {
       out.push(h('button', { class: 'btn sm primary', type: 'button', onclick: () => openPlans({ reason }) }, icon('crown'), code === 'noplan' ? t('assistant.seePlans') : t('assistant.upgrade')));
     } else if (code === 'quota') {
       out.push(h('button', { class: 'btn sm primary', type: 'button', onclick: () => openPlans({ reason: 'quota' }) }, icon('crown'), t('assistant.upgrade')));
-      // Con el plan agotado, el Claude Code o el Codex del usuario pueden seguir respondiendo (conversacion nueva)
-      const eng = S.status?.engines;
-      if (eng?.entitled && !st.engineLocked) for (const id of ['claude', 'chatgpt']) if (eng[id]?.usable) out.push(h('button', { class: 'btn sm', type: 'button', onclick: () => switchEngine(id) }, icon('sparkles'), t('assistant.engineUse', { app: engineName(id) })));
-    } else if (['engine', 'engineLogin', 'engineLimit', 'engineMissing', 'engineTimeout'].includes(code)) {
-      out.push(h('button', { class: 'btn sm', type: 'button', onclick: () => go('settings/ai/engines') }, icon('settings'), t('assistant.engineSettings')));
     } else if (code === 'disabled') {
       out.push(h('button', { class: 'btn sm primary', type: 'button', onclick: () => go('settings/ai') }, icon('settings'), t('assistant.goAiSettings')));
     }
@@ -735,7 +623,7 @@ export function createChat(opts = {}) {
     return null;
   }
   const offStatus = onStatus((s) => {
-    renderBlocked(blockedFor(s, currentEngine(s)));
+    renderBlocked(quotaInfo(s));
     drawModels(s);
   });
 
@@ -822,44 +710,7 @@ export function createChat(opts = {}) {
     }
   }
 
-  // Argumentos de una herramienta MCP en una linea ("clave: valor · ...").
-  function mcpArgs(input = {}) {
-    return Object.entries(input)
-      .slice(0, 3)
-      .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`)
-      .join(' · ');
-  }
-
-  // Herramienta de un servidor MCP que agrego el usuario: servidor, herramienta y estado
-  function mcpToolCard(ev) {
-    const m = ev.mcp || {};
-    const read = m.readOnly === true || ev.level === 'read';
-    const label = m.title || m.tool || ev.name;
-    const detail = mcpArgs(ev.input) || t('assistant.toolRunning');
-    const sub = h('div', { class: 'as-tool-sub', title: detail }, detail);
-    const side = h('div', { class: 'as-tool-side' }, h('div', { class: 'spinner' }));
-    const warn = h('ul', { class: 'as-tool-warn hidden' });
-    const card = h(
-      'div',
-      { class: 'as-tool as-tool-mcp', dataset: { state: 'running', level: read ? 'read' : 'mcp', tool: ev.name }, title: t(read ? 'assistant.levelMcpRead' : 'assistant.levelMcp') },
-      h('div', { class: 'as-tool-ic' }, icon('plug')),
-      h(
-        'div',
-        { class: 'as-tool-main' },
-        h('div', { class: 'as-tool-title' }, h('span', { class: 'as-mcp-tool' }, label), m.server ? h('span', { class: 'as-mcp-server', title: t('assistant.mcpServerOf', { server: m.server }) }, t('assistant.mcpServerChip', { server: m.server })) : null),
-        sub,
-        warn,
-      ),
-      side,
-    );
-    card._sub = sub;
-    card._side = side;
-    card._warn = warn;
-    return card;
-  }
-
   function toolCard(ev) {
-    if (ev.mcp || /^mcp__/.test(ev.name || '')) return mcpToolCard(ev);
     const level = ev.level || 'read';
     const titleKey = `assistant.tool_${ev.name}`;
     const label = TOOL_ICONS[ev.name] ? t(titleKey) : t('assistant.toolUnknown');
@@ -924,23 +775,21 @@ export function createChat(opts = {}) {
 
   function confirmCard(ev, live) {
     const actions = h('div', { class: 'as-confirm-actions' });
-    const mcp = ev.kind === 'mcp';
     const card = h(
       'div',
-      { class: 'as-confirm', dataset: { kind: ev.kind || 'destructive', state: 'pending', ...(mcp && ev.danger ? { danger: 'true' } : {}) }, role: 'group', tabindex: -1, 'aria-label': ev.title || t('assistant.confirmNeeded') },
-      h('div', { class: 'as-confirm-head' }, icon(ev.kind === 'bulk' ? 'package' : mcp ? 'plug' : 'alert'), h('div', { class: 'as-confirm-title' }, ev.title || t('assistant.confirmNeeded'))),
+      { class: 'as-confirm', dataset: { kind: ev.kind || 'destructive', state: 'pending', ...(ev.danger ? { danger: 'true' } : {}) }, role: 'group', tabindex: -1, 'aria-label': ev.title || t('assistant.confirmNeeded') },
+      h('div', { class: 'as-confirm-head' }, icon(ev.kind === 'bulk' ? 'package' : 'alert'), h('div', { class: 'as-confirm-title' }, ev.title || t('assistant.confirmNeeded'))),
       ev.message ? h('div', { class: 'as-confirm-text' }, ev.message) : null,
       ev.items?.length ? h('ul', { class: 'as-confirm-items' }, ev.items.slice(0, 12).map((x) => h('li', {}, x))) : null,
-      mcp ? h('div', { class: 'as-confirm-hint' }, icon('shield'), t('assistant.mcpConfirmHint')) : null,
       actions,
     );
     card._actions = actions;
     const isPending = live || st.pending.has(ev.requestId);
     if (isPending) {
-      const answer = async (approved, always = false) => {
+      const answer = async (approved) => {
         actions.querySelectorAll('button').forEach((b) => (b.disabled = true));
         try {
-          await api.invoke('assistant:confirm', ev.requestId, approved, always ? { always: true } : undefined);
+          await api.invoke('assistant:confirm', ev.requestId, approved);
         } catch (err) {
           fail(t('assistant.errorTitle'), err);
           resolveConfirm(card, 'expired');
@@ -949,17 +798,15 @@ export function createChat(opts = {}) {
       mount(
         actions,
         h('button', { class: 'btn sm ghost', type: 'button', onclick: () => answer(false) }, t('assistant.cancel')),
-        // Herramientas MCP: "Permitir siempre" guarda el permiso de esa herramienta (se quita en Ajustes > IA)
-        ev.allowAlways ? h('button', { class: 'btn sm tonal', type: 'button', title: t('assistant.mcpAllowAlwaysHint'), onclick: () => answer(true, true) }, icon('shieldCheck'), t('assistant.mcpAllowAlways')) : null,
-        h('button', { class: ['btn sm', ev.danger ? 'danger' : 'primary'], type: 'button', onclick: () => answer(true) }, ev.danger ? icon(mcp ? 'alert' : 'trash') : icon('check'), ev.okText || t('assistant.confirm')),
+        h('button', { class: ['btn sm', ev.danger ? 'danger' : 'primary'], type: 'button', onclick: () => answer(true) }, ev.danger ? icon('trash') : icon('check'), ev.okText || t('assistant.confirm')),
       );
     } else resolveConfirm(card, 'expired');
     return card;
   }
 
-  function resolveConfirm(card, state, always = false) {
+  function resolveConfirm(card, state) {
     card.dataset.state = state;
-    const label = always && state === 'approved' ? 'confirmApprovedAlways' : { approved: 'confirmApproved', denied: 'confirmDenied', cancelled: 'confirmCancelled', expired: 'confirmExpired' }[state] || 'confirmExpired';
+    const label = { approved: 'confirmApproved', denied: 'confirmDenied', cancelled: 'confirmCancelled', expired: 'confirmExpired' }[state] || 'confirmExpired';
     mount(card._actions, h('span', { class: ['badge', state === 'approved' ? 'good' : ''] }, icon(state === 'approved' ? 'check' : 'x'), t(`assistant.${label}`)));
   }
 
@@ -1000,10 +847,6 @@ export function createChat(opts = {}) {
         thread.append(userBubble(ev));
         st.lastUserText = ev.text;
         groupFor(ev.turnId);
-        // La conversacion ya tiene un motor: no se cambia
-        st.engine = ev.engine && ev.engine !== 'venus' ? ev.engine : 'venus';
-        st.engineLocked = true;
-        drawEngine(S.status);
         if (live) setRunning(true);
         break;
       }
@@ -1042,12 +885,12 @@ export function createChat(opts = {}) {
             card.focus({ preventScroll: true });
             scrollDown(true);
           }
-        } else if (existing && ev.state !== 'pending') resolveConfirm(existing, ev.state, ev.always === true);
+        } else if (existing && ev.state !== 'pending') resolveConfirm(existing, ev.state);
         break;
       }
       case 'notice':
-        // Aviso del turno (por ejemplo, un servidor MCP que no respondio)
-        groupFor(ev.turnId).append(h('div', { class: 'as-note as-notice', title: (ev.details || []).map((d) => `${d.name}: ${d.error}`).join('\n') || null }, icon(ev.kind === 'mcp' ? 'plug' : 'info'), ev.text));
+        // Aviso del turno
+        groupFor(ev.turnId).append(h('div', { class: 'as-note as-notice', title: (ev.details || []).map((d) => `${d.name}: ${d.error}`).join('\n') || null }, icon('info'), ev.text));
         break;
       case 'undo': {
         const card = st.undoCards.get(ev.undoId);
@@ -1068,23 +911,11 @@ export function createChat(opts = {}) {
           st.noted.add(ev.turnId);
           groupFor(ev.turnId).append(h('div', { class: 'as-note as-failover' }, icon('info'), t('assistant.failoverNote')));
         }
-        // Respondio el Claude Code o el Codex del usuario: una nota discreta, una vez por conversacion
-        if (ev.engine && ev.engine !== 'venus' && !st.noted.has(`engine:${ev.engine}`)) {
-          st.noted.add(`engine:${ev.engine}`);
-          groupFor(ev.turnId).append(h('div', { class: 'as-note as-engine' }, icon('sparkles'), t('assistant.engineNote', { app: engineName(ev.engine) })));
-        }
         const body = st.groups.get(ev.turnId);
         if (body && !body.childNodes.length) body.closest('.as-turn')?.remove();
         if (live) setRunning(false);
         break;
       }
-      case 'limits':
-        // Limites del plan del usuario en su Claude Code (ventana de 5 h y semana): se muestran junto al modelo
-        if (ev.engine) {
-          S.limits[ev.engine] = { fiveHour: ev.fiveHour, sevenDay: ev.sevenDay, at: ev.at };
-          if (live) drawModels(S.status);
-        }
-        break;
       case 'quota':
         refreshStatusSoon();
         break;
@@ -1120,8 +951,6 @@ export function createChat(opts = {}) {
     st.noted = new Set();
     st.lastSeq = 0;
     st.title = '';
-    st.engine = null;
-    st.engineLocked = false;
     clear(thread);
     setRunning(false);
   }
@@ -1155,8 +984,6 @@ export function createChat(opts = {}) {
     st.undoStates = data.undoStates || {};
     st.pending = new Set(data.pendingConfirms || []);
     st.title = data.title || '';
-    st.engine = data.engine && data.engine !== 'venus' ? data.engine : 'venus';
-    st.engineLocked = Boolean(data.events?.length);
     // Cada conversacion sigue con el modelo y el esfuerzo de su ultima pregunta (si el plan los incluye)
     if (data.model) {
       st.choice = { model: data.model, effort: data.effort || st.choice?.effort || null };
@@ -1189,14 +1016,11 @@ export function createChat(opts = {}) {
     setRunning(true);
     try {
       const choice = st.choice && !modelBox.classList.contains('hidden') ? { model: st.choice.model, effort: st.choice.effort } : {};
-      const engine = currentEngine();
-      const r = await api.invoke('assistant:send', st.convId, body, { instanceId: st.instanceId, ...choice, ...(isNew ? { engine } : {}) });
+      const r = await api.invoke('assistant:send', st.convId, body, { instanceId: st.instanceId, ...choice });
       if (isNew) {
         reset();
         setRunning(true);
         st.convId = r.conversationId;
-        st.engine = r.engine || engine;
-        st.engineLocked = true;
         st.awaitingNew = false;
         for (const b of st.buffer.filter((x) => x.convId === r.conversationId).sort((a, c) => a.ev.seq - c.ev.seq)) onEvent(b.convId, b.ev);
         st.buffer = [];
@@ -1219,7 +1043,7 @@ export function createChat(opts = {}) {
   }
 
   getStatus().then((s) => {
-    renderBlocked(blockedFor(s, currentEngine(s)));
+    renderBlocked(quotaInfo(s));
     drawModels(s);
   });
 

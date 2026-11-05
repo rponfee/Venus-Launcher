@@ -10,7 +10,7 @@ const SOUND_ERRORS = new Set(['too_many', 'too_big', 'bad_type', 'bad_name', 'ty
 
 // Archivo elegido -> { name, bytes }: lo que pasa de 5 s o 200 KB se recorta y se vuelve a codificar en la PC
 async function prepareSound(file) {
-  const { decodeAudio, clipBuffer, encodeWebm } = await import('../features/profile-editor/audio.js');
+  const { decodeAudio, clipBuffer, encodeWebm } = await import('./audio-tools.js');
   const buffer = await decodeAudio(file);
   const blob = needsReencode({ bytes: file.size, duration: buffer.duration }) ? await encodeWebm(clipBuffer(buffer, 0, CUSTOM_SECONDS)) : file;
   return { name: cleanSoundName(file.name) || t('voice.boardCustomName'), bytes: new Uint8Array(await blob.arrayBuffer()), clipped: buffer.duration > CUSTOM_SECONDS };

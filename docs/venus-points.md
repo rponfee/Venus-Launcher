@@ -128,28 +128,18 @@ Con `VENUS_DEVSHOT` y sin empaquetar, `VENUS_REWARDS_FAKE=<escenario>` usa datos
 
 Los premios en puntos del pase entran a `points_ledger` con `reason = 'pass'` (`ref` = temporada:nivel:pista) y una devolución los descuenta con `'pass_refund'`. Los regalos entre amigos usan `'gift_in'` y `'gift_out'`. La XP del pase se calcula a partir de este libro: ver [venus-pass.md](venus-pass.md).
 
-## Desafíos y capas en la rama 4.5.0
+## Logros solo de Venus (4.6)
 
-Implementados en la rama, **sin publicar ni aplicar 0031/0034 en producción**. [Estado de integración](estado-4.5.0.md).
+El dueño pidió que los logros sean **solo y exclusivos de Venus**, sin nada de lo que pasa dentro del juego. `#/achievements` tiene dos pestañas, **Logros** y **Misiones** (la pestaña **Minecraft**, los advancements por mundo, se borró; `#/achievements/minecraft` abre la lista de Logros). Catálogo nuevo: **189 logros** (37 familias de las que ya había, con 166 pasos y **los mismos puntos de siempre**, más 23 pasos nuevos en 4 familias). Antes eran 421.
 
-### Desafíos entre amigos
+- **Regla.** Un logro vale si se calcula con datos del launcher o de la cuenta de Venus: horas, sesiones, rachas y sesión más larga medidas por el launcher, hitos de esas sesiones, instancias, mods, shaders, resource packs, servidores locales, galería de capturas y clips, perfil, amigos, mensajes, invitaciones, temas, reseñas, Venus Points, misiones, premios diarios, cosméticos, plan, insignia y cuenta de Minecraft verificada, y eventos de funciones del launcher (grupo, editor de skins, voz, overlay). No vale lo que sale de `saves/<mundo>/stats` (bloques, mobs, muertes, distancia), de `advancements/*.json` ni de `play_time`, ni los mundos y servidores "distintos" que el launcher deduce leyendo el registro del juego (`detectActivity`). Casos dudosos decididos del lado estricto: **Colonizador** (`worlds`) y **Multijugador** (`servers`) se desactivaron; **Fotógrafo** y **Director** cuentan los archivos de la galería del launcher y se dejaron. Para revertirlo: `update public.achievements set active = true where family in ('worlds', 'servers')` y volver a agregar las dos escaleras al catálogo.
+- **Los que no valen se desactivan** (`achievements.active = false`, 255 en producción). No se borra ningún desbloqueo ni se quita ningún punto: quien ya los tenía los conserva y el saldo y el XP no cambian. Solo dejan de poder conseguirse y de mostrarse (`achievements_me` y la medida de Cazalogros cuentan solo los activos). Desde la 0048, `profile_public.achievementCount` también.
+- **Familias nuevas** (datos de Venus): *Día a día* (`days`: 5 a 500 días distintos con el juego abierto, medida `daysPlayed` de la PC), *Cambio de aires* (`rotation`: 2 a 20 instancias distintas lanzadas, `instancesPlayed`), *Crítico* (`reviews`: 1 a 25 reseñas de servidores publicadas, 0029) y *De compras* (`spent`: 100 a 10.000 Venus Points gastados en la tienda). Los de la PC valen de 5 a 100 puntos y los del servidor de 15 a 250; los de la PC siguen con el tope de 40 por día.
+- **Servidor** (0043, aplicada): `private.achievement_metric` suma `reviews` y `pointsSpent` y cuenta solo logros activos en `achievements`; `achievements_me` devuelve solo logros activos con el mismo formato y permisos; el catálogo se genera con `node scripts/gen-achievements-sql.js --since <migración>`. `achievement_claim`, `achievements_claim` y `achievements_sweep` ya filtraban por `active`: un launcher viejo que pida un logro retirado recibe `bad_achievement`.
+- **Archivos.** `pages/achievements.js` (sin Minecraft ni `stats:ingame`), `pages/achievements/catalog.js` (grupos `time`, `collection`, `capture`, `social`, `venus` y `special`; `metricsFrom` ya no recibe `ingame`), `features/achievements.js`, `modules/statsplus/ingame.js` (sin `PICKS`), y `i18n/{es,en}/achievements.js` (55 familias menos). `stats:ingame` sigue para Estadísticas y el perfil.
+- **Misiones.** Sin cambios (24). `d_server_1`, `w_server_3` y `d_world_1` dependen de `game:activity` (el launcher lee el registro del juego para saber que entraste a un servidor o a un mundo): se dejaron como estaban hasta que el dueño decida. `w_ach_3` queda más difícil.
+- **Pendientes.** `features/profile-editor/demo.js` todavía usa ids retirados (solo se ve en capturas de demostración). Los otros 12 idiomas tienen claves viejas sin uso en `achievements.js` y en `stats` (`adv*`, `cat_*`) y les faltan las nuevas.
 
-0031 agrega el motivo `challenge` al libro de puntos. Un desafío válido paga **25 Venus Points**, sin multiplicador Premium y sin XP del Venus Pass. El límite es de tres premios por semana, uno contra el mismo amigo (hasta 75 puntos por semana). Ambos participantes deben informar al menos diez minutos durante el plazo; los estados de empate, abandono y actividad insuficiente se detallan en [Competir](implementacion/competir.md).
+## Retirados en la 4.6: desafíos y capas
 
-Las estadísticas provienen del launcher y mundos locales; no son una prueba independiente de lo jugado. El límite de premios se controla en el servidor. Toda migración posterior que reemplace `points_ledger_reason_check` debe conservar `challenge` y los motivos anteriores.
-
-### Capas de Venus
-
-Precios confirmados por el dueño para 4.5.0:
-
-| Capa | Venus Points / requisito |
-|---|---|
-| Amanecer | 1000 |
-| Nebulosa | 1500 |
-| Aurora | 1500 |
-| Magma | 2500 |
-| Órbita | Incluida solo con Premium |
-
-0034 agrega los ítems y `user_capes`; `cape_equip` valida compra o Premium y `badge_capes` entrega solo identificadores de texturas incluidas en el mod, hasta 100 UUID por consulta. Requiere Minecraft verificado y el mod Venus; no sustituye capas oficiales. No modifica los motivos contables ni `profiles.equipped`. [RPC, caché y límites](implementacion/capas.md).
-
-El build del mod terminó con cuatro JAR, según la integración principal. Eso no demuestra renderizado de capas/elytra en Minecraft; esa prueba sigue pendiente.
+Los **desafíos entre amigos** (0031) y las **capas de Venus** (0034) se retiraron del launcher y sus tablas y funciones las elimina la 0048 (sin aplicar al escribirse esto). El motivo `challenge` **se conserva** en `points_ledger_reason_check`: el historial de puntos todavía muestra los premios viejos (`rewards.hist_challenge`). Las capas se reintegran una sola vez (2 compras, 3000 puntos en producción) antes de borrar el catálogo; el cobro de las compras no se deshace al borrar `shop_items`, por eso el reintegro es una fila nueva del libro. Detalle en [supabase.md](supabase.md).

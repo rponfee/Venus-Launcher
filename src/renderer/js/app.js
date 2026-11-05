@@ -85,9 +85,8 @@ const EARLY_WAIT_MS = 1500;
 
 // Modulos que se inician solos despues de la primera pagina (cada uno exporta startup(), que se puede
 // llamar mas de una vez): modpacks compartidos y nube, asistente, invitaciones a mundos,
-// resultados de la busqueda del culpable de un crash, la
-// entrada del panel de administracion (solo aparece para los administradores) y las confirmaciones y
-// avisos con Deshacer de las acciones que piden Claude o ChatGPT por MCP.
+// resultados de la busqueda del culpable de un crash y la
+// entrada del panel de administracion (solo aparece para los administradores).
 const STARTUP = [
   () => import('./features/netprefs.js'),
   () => import('./features/share.js'),
@@ -97,7 +96,6 @@ const STARTUP = [
   () => import('./features/crash.js'),
   () => import('./features/admin.js'),
   () => import('./features/support-staff.js'),
-  () => import('./features/mcp.js'),
   () => import('./features/svcstatus.js'), // solo registra "Estado de los servicios" en Ctrl+K (no consulta nada)
   // Venus 2.0
   () => import('./features/nowplaying.js'), // comandos de Música en Ctrl+K (no abre el ayudante)

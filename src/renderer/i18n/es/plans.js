@@ -1,4 +1,4 @@
-// Textos de los planes de Venus IA (Ajustes > Plan, el Asistente y el panel MCP). Usar t('plans.<clave>').
+// Textos de los planes de Venus IA (Ajustes > Plan y el Asistente). Usar t('plans.<clave>').
 export default {
   title: 'Planes de Venus IA',
   modalSub: 'Elegí un plan y pagalo con Mercado Pago o PayPal: se activa solo.',
@@ -9,7 +9,7 @@ export default {
   yourPlan: 'Tu plan',
   activeBalance: 'El saldo no vence. Si comprás otro plan, lo que te queda se suma al nuevo.',
   noPlanTitle: 'Todavía no tenés un plan',
-  noPlanText: 'Con un plan usás el asistente, la explicación de crasheos, el buscador inteligente, la traducción de mods y la conexión con Claude y ChatGPT.',
+  noPlanText: 'Con un plan usás el asistente, la explicación de crasheos, el buscador inteligente y la traducción de mods.',
 
   // Sin sesión y errores
   signInText: 'Iniciá sesión con tu cuenta de Venus para comprar un plan.',

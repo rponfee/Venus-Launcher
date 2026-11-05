@@ -642,7 +642,6 @@ export default {
   tab_reviews: "Reseñas de servidores",
   tab_stickers: "Stickers",
   tab_gallery: "Galería",
-  tab_clans: "Clanes y comunidades",
   sec_rank: "Rango",
   rankLabel: "Rango en el perfil",
   rankNone: "Sin rango",

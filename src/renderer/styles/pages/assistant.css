@@ -12,10 +12,6 @@
 .as-side { display: flex; flex-direction: column; gap: var(--sp-4); min-height: 0; min-width: 0; overflow-y: auto; overscroll-behavior: contain; }
 .as-side .card-title { margin: 0; }
 .as-plan { padding: var(--sp-4); flex-shrink: 0; }
-/* Tarjeta de Claude y ChatGPT (features/mcp.js): resaltada, va primera (Venus IA no esta disponible) */
-.as-mcp-host { flex-shrink: 0; }
-.as-mcp-host > .mcp-assist { padding: var(--sp-4); }
-.as-mcp-host:has(.mcp-assist.highlight) { order: -1; }
 .as-plan-body { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-3); }
 .as-plan-body > .btn { align-self: flex-start; }
 .as-plan-name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }

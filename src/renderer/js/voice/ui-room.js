@@ -109,6 +109,8 @@ export function roomView(container, { onTab } = {}) {
   };
   window.addEventListener('resize', fit);
   requestAnimationFrame(fit);
+  // Escenario de una sala de comunidad (plan de clan): una capa detrás de los miembros. Una sala común no recibe nada.
+  import('../pages/communities/looks-view.js').then((m) => { if (roomEl.isConnected) offs.push(m.attachStage(membersCard, () => voice.room, (fn) => voice.on('room', fn))); }).catch(() => {});
 
   // ---------- Dibujo ----------
   function drawRoom() {

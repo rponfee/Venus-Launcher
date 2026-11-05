@@ -1,5 +1,5 @@
 // Ajustes > Inteligencia artificial (estado de la IA con tu cuenta de Venus y tu plan, uso del plan, prueba,
-// Claude y ChatGPT por MCP, servidores MCP del asistente y privacidad) y Plan (planes de Venus IA, en features/plans.js).
+// y privacidad) y Plan (planes de Venus IA, en features/plans.js).
 // La IA va siempre por el servidor del launcher con el plan de la cuenta: no hay API key propia ni elección de
 // modelo acá (el modelo y el esfuerzo se eligen en el Asistente).
 import { h, icon, mount, fail, skeleton } from '../../ui.js';
@@ -22,9 +22,6 @@ export function renderAi(body, ctx) {
   const statusPill = h('span', { class: 'cfg-pill-slot' });
   const statusBody = h('div', { class: 'cfg-ai-status' }, skeleton(3));
   const testBox = h('div', { class: 'cfg-test-result', 'aria-live': 'polite' });
-  const mcpHost = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'mcp' } });
-  const mcpServersHost = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'mcpservers' } });
-  const enginesHost = h('div', { class: 'cfg-embed-host', dataset: { anchor: 'engines' } });
 
   async function load(opts) {
     try {
@@ -156,13 +153,7 @@ export function renderAi(body, ctx) {
     h('p', { class: 'small muted cfg-hint' }, t('settings.aiRouteText')),
   );
 
-  mount(body, sectionHead('ai', 'sparkles'), card({ title: t('settings.aiStatusTitle'), iconName: 'activity', extra: statusPill, anchor: 'status' }, statusBody), mcpHost, enginesHost, mcpServersHost, privacy);
-  // Claude y ChatGPT por MCP: panel propio del módulo mcp (docs/mcp.md)
-  embedPanel(mcpHost, { load: () => import('../../features/mcp.js'), fn: 'mcpPanel', ns: ['mcp'] }, ctx);
-  // Servidores MCP del asistente (el asistente como cliente MCP): panel propio del módulo assistant
-  embedPanel(mcpServersHost, { load: () => import('../../features/mcpservers.js'), fn: 'mcpServersPanel', ns: ['assistant'] }, ctx);
-  // Tu Claude y tu ChatGPT en el Asistente (motores externos): panel propio del módulo assistant (features/engines.js)
-  embedPanel(enginesHost, { load: () => import('../../features/engines.js'), fn: 'enginesPanel', ns: ['assistant'] }, ctx);
+  mount(body, sectionHead('ai', 'sparkles'), card({ title: t('settings.aiStatusTitle'), iconName: 'activity', extra: statusPill, anchor: 'status' }, statusBody), privacy);
   drawStatus();
   load();
 

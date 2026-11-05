@@ -82,7 +82,6 @@ function cleanEvent(ev) {
   if (Array.isArray(ev.items)) out.items = ev.items.slice(0, 12).map((x) => text(x, 200));
   if (Array.isArray(ev.warnings)) out.warnings = ev.warnings.slice(0, 6).map((x) => text(x, 300));
   if (ev.undoId) out.undoable = true; // Deshacer sigue estando en la ventana del launcher
-  if (ev.mcp && typeof ev.mcp === 'object') out.mcpTool = text(ev.mcp.title || ev.mcp.tool, 80);
   return out;
 }
 

@@ -17,8 +17,11 @@ import { openBansDialog, openChannelsDialog, openCommunityForm, openInviteDialog
 import { openGreetingsDialog } from './greetings.js';
 import { openRolesDialog, openMemberRolesDialog } from './roles.js';
 import { openMediaGallery } from './gallery.js';
+import { openPlanDialog } from './plan.js';
+import { openLooksDialog } from './looks.js';
 
 const C = (key, vars) => t(`communities.${key}`, vars);
+const P = (key, vars) => t(`communityplans.${key}`, vars);
 const REFRESH_MS = 20000;
 
 function muteLabel(minutes) {
@@ -180,6 +183,9 @@ export function communityView(root, id, wantedChannel, { b }) {
       role === 'owner' ? { icon: 'logIn', label: C('menuGreetings'), run: () => openGreetingsDialog(b, community, { reload: refresh }) } : null,
       role === 'owner' ? { icon: 'tag', label: C('menuRoles'), run: () => openRolesDialog(b, community, { reload: refresh }) } : null,
       isStaff(role) ? { icon: 'image', label: C('menuGallery'), run: () => openMediaGallery(b, community) } : null,
+      // Planes de clan (0044): el dueño compra; el equipo ve el plan y arma fondos y escenarios con el cupo que haya.
+      isStaff(role) ? { icon: 'crown', label: P('menuPlan'), run: () => openPlanDialog(b, community, { onChange: refresh }) } : null,
+      isStaff(role) ? { icon: 'palette', label: P('menuLooks'), run: () => openLooksDialog(b, community, { openPlan: () => openPlanDialog(b, community, { onChange: refresh }) }) } : null,
       role === 'owner' ? { icon: 'edit', label: C('menuEdit'), run: () => openCommunityForm(b, { community, onSaved: refresh }) } : null,
       role !== 'owner' ? { icon: 'alert', label: C('report'), run: () => openGroupReport({ kind: 'community', id, name: community.name }) } : null,
       role === 'owner' && total > 1 ? null : { icon: 'logout', label: C('leave'), danger: true, run: leave },
@@ -252,6 +258,7 @@ export function communityView(root, id, wantedChannel, { b }) {
         h('span', { class: 'cm-community-symbol', 'aria-hidden': 'true' }, icon(iconGlyph(safeCommunityIcon(community.icon))))),
       h('div', { class: 'cm-side-head' },
         h('strong', { class: 'cm-side-name ellipsis', title: community.name }, community.name),
+        community.plan && community.plan.id !== 'free' ? h('span', { class: 'badge accent cp-plan-badge', title: P('planOf', { plan: P('clanName', { name: community.plan.name }) }) }, icon('crown'), community.plan.name) : null,
         h('button', { class: 'icon-btn sm', type: 'button', title: C('communityMenu'), 'aria-label': C('communityMenu'), 'aria-haspopup': 'menu', onclick: (e) => headerMenu(e.currentTarget) }, icon('more'))),
       community.welcome ? h('p', { class: 'cm-welcome-preview' }, community.welcome) : null,
       h('button', { class: 'btn sm ghost cm-about-button', type: 'button', onclick: showAbout }, icon('info'), C('cmAbout')),

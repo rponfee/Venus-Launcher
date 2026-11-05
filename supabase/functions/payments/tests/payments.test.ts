@@ -5,7 +5,7 @@ import { createPaymentsHandler } from '../handler.ts';
 import { createWebhookHandler } from '../webhook.ts';
 import { mpOutcome, mpVerifySignature, parsePayment } from '../../_shared/pagos/mercadopago.ts';
 import { paypalOutcome } from '../../_shared/pagos/paypal.ts';
-import { ADMIN, BASE, FakeDb, FakeProviders, NOW, OTHER, USER, recorder } from './fakes.ts';
+import { ADMIN, BASE, COMMUNITY, ELSE_COMMUNITY, FakeDb, FakeProviders, NOW, OTHER, USER, recorder } from './fakes.ts';
 
 function setup() {
   const db = new FakeDb();
@@ -68,6 +68,8 @@ test('checkout con Mercado Pago: preferencia en pesos con la orden como referenc
 test('checkout: plan, proveedor, sesión y ritmo', async () => {
   const s = setup();
   assert.equal((await body(await s.handler(call('checkout', { plan: 'ultra', provider: 'paypal' })))).data.error, 'unknown_plan');
+  // El Venus Pass ya no se compra.
+  assert.equal((await body(await s.handler(call('checkout', { plan: 'pass_go', provider: 'paypal', community: COMMUNITY })))).data.error, 'unknown_plan');
   assert.equal((await body(await s.handler(call('checkout', { plan: 'go', provider: 'stripe' })))).data.error, 'provider_disabled');
   s.db.enabled.paypal = false;
   s.tick(5000);

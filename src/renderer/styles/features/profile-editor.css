@@ -247,8 +247,3 @@
 .pfe-entry-art.is-snow { background: radial-gradient(circle at 20% 25%, #fff 0 1.6px, transparent 2.6px), radial-gradient(circle at 50% 60%, #e8f4ff 0 1.3px, transparent 2.3px), radial-gradient(circle at 78% 30%, #fff 0 1.8px, transparent 2.8px), linear-gradient(180deg, #22375f, #5b84b8); }
 /* Fondo de la skin */
 .pfe-skinbg-art { display: block; width: 56px; height: 32px; border-radius: var(--radius-s); background: var(--surface-3); border: 1px solid var(--border-2); }
-/* Cancion de perfil */
-.pfe-song { display: flex; flex-direction: column; gap: var(--sp-2); }
-.pfe-song-encoding { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
-.pfe-song-progress { flex: 1; min-width: 160px; }
-.pfe-song-progress-text { font-size: var(--fs-xs); color: var(--text-2); }

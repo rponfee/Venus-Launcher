@@ -26,7 +26,7 @@ export function uiHarness() {
     dialogs.push(dialog); return dialog;
   };
   // Lo que no es lógica pura (selector de GIF, galería, diálogos de otras pantallas) se reemplaza por funciones vacías.
-  const stubs = { openGifPicker() {}, closeGifPicker() {}, openMediaGallery() {}, mediaImage: () => h('media'), openGreetingsDialog() {}, openRolesDialog() {}, openMemberRolesDialog() {}, openChannelPermsDialog() {}, openGroupReport() {} };
+  const stubs = { attachChatBackdrop: () => ({ sync() {}, destroy() {} }), openPlanDialog() {}, openLooksDialog() {}, openGifPicker() {}, closeGifPicker() {}, openMediaGallery() {}, mediaImage: () => h('media'), openGreetingsDialog() {}, openRolesDialog() {}, openMemberRolesDialog() {}, openChannelPermsDialog() {}, openGroupReport() {} };
   const load = (file, extra = {}, names = []) => ui.load(new URL('../' + file, import.meta.url), { ...shared, ...greeting, ...permissions, ...media, ...logic, ...stubs, h, modal, ...extra }, names);
   return { ...ui, h, modal, dialogs, load, byLabel: (label) => ui.nodes.findLast((n) => n['aria-label'] === 'communities.' + label && n.isConnected),
     byText: (text) => ui.nodes.findLast((n) => n.tag === 'button' && n.children.includes('communities.' + text) && n.isConnected) };

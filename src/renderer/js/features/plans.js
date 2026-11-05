@@ -117,9 +117,14 @@ function breakdown(q) {
   return h('div', { class: 'pl-breakdown', role: 'group', 'aria-label': P('breakdown') }, rows);
 }
 
-/** Diálogo de compra: elegir medio de pago, ver impuestos, pagar y esperar la acreditación. */
+/**
+ * Diálogo de compra: elegir medio de pago, ver impuestos, pagar y esperar la acreditación. Un plan de clan (plan.clan) trae la
+ * comunidad (plan.communityId): el pago es por 30 días, se renueva a mano y plan.onPaid avisa cuando se acredita.
+ */
 export async function openCheckout(plan, catalog) {
   await preparePlans();
+  const clan = plan.clan === true;
+  if (clan) await loadNs('communityplans');
   const offered = PROVIDERS.filter((id) => plan.prices?.[id]);
   let provider = offered[0] || null;
   let order = null;
@@ -153,7 +158,7 @@ export async function openCheckout(plan, catalog) {
     pay.addEventListener('click', async () => {
       const done = setBusy(pay);
       try {
-        const res = await api.invoke('billing:checkout', { plan: plan.id, provider });
+        const res = await api.invoke('billing:checkout', clan ? { plan: plan.id, provider, community: plan.communityId } : { plan: plan.id, provider });
         order = res.order;
         url = res.url;
         waitView();
@@ -163,7 +168,7 @@ export async function openCheckout(plan, catalog) {
       } finally { done(); }
     });
     mount(body,
-      h('p', { class: 'pl-co-sub' }, P('checkoutIntro', { plan: plan.name, amount: fmtUsd(plan.budget) })),
+      h('p', { class: 'pl-co-sub' }, clan ? t('communityplans.checkoutIntro', { plan: plan.name, days: plan.periodDays || 30 }) : P('checkoutIntro', { plan: plan.name, amount: fmtUsd(plan.budget) })),
       options, detail,
       h('p', { class: 'pl-secure' }, icon('shieldCheck'), P('secure')),
       h('div', { class: 'pl-co-foot' }, pay));
@@ -203,7 +208,7 @@ export async function openCheckout(plan, catalog) {
       h('div', { class: ['pl-result', paid ? 'good' : 'bad'], role: 'status' },
         icon(paid ? 'check' : 'x'),
         h('div', {}, h('strong', {}, paid ? P('activatedTitle', { plan: o.planName || plan.name }) : P(`ended_${o.status}`)),
-          h('p', {}, paid ? (o.carriedUsd > 0 ? P('activatedCarry', { amount: fmtUsd(o.carriedUsd) }) : P('activatedText')) : P('endedText')))),
+          h('p', {}, paid ? (clan ? t('communityplans.activatedText', { days: plan.periodDays || 30 }) : o.carriedUsd > 0 ? P('activatedCarry', { amount: fmtUsd(o.carriedUsd) }) : P('activatedText')) : P('endedText')))),
       h('div', { class: 'pl-co-foot' }, paid
         ? h('button', { type: 'button', class: 'btn primary', onclick: () => dialog.close() }, P('done'))
         : h('button', { type: 'button', class: 'btn primary', onclick: () => { order = null; url = null; chooseView(); } }, icon('refresh'), P('tryAgain'))));
@@ -214,11 +219,14 @@ export async function openCheckout(plan, catalog) {
     if (o.status === 'timeout') return waitView(order, true);
     order = { ...order, ...o };
     if (o.status === 'pending') waitView(order);
-    else resultView(order);
+    else {
+      resultView(order);
+      if (clan && o.status === 'paid') plan.onPaid?.(order);
+    }
   }
 
   off = api.on('billing:order', onOrder);
-  dialog = modal({ title: P('buyTitle', { plan: plan.name }), subtitle: P('buySub'), icon: 'crown', body, size: 'wide', onClose: () => off?.() });
+  dialog = modal({ title: P('buyTitle', { plan: plan.name }), subtitle: clan ? t('communityplans.buySub', { days: plan.periodDays || 30 }) : P('buySub'), icon: 'crown', body, size: 'wide', onClose: () => off?.() });
   chooseView();
   return dialog;
 }

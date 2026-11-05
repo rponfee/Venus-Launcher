@@ -1,7 +1,7 @@
 // Venus Pass (4.6): el estado del pase que comparten la página y el menú, los minutos jugados que se reportan al
 // servidor (1 XP por minuto, hasta 120 por día: pass_playtime), el aviso al subir de nivel y el punto en el menú
 // cuando hay premios para reclamar. El pase solo se gana jugando: no se compra (nada de pagos acá).
-// Reglas y RPC: supabase/migrations/0041_venus_pass_tiempo.sql · guía: docs/wip/pase-46.md.
+// Reglas y RPC: supabase/migrations/0041_venus_pass_tiempo.sql · guía: docs/venus-pass.md.
 //   startup(), getPass() -> { data, error, at }, onPass(fn) -> off, loadPass({ force? }), claim(level),
 //   claimAll(), reportPlaytime(minutes), passBackend() -> { rpc }
 import { toast } from '../ui.js';

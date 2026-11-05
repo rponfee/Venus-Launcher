@@ -22,6 +22,10 @@ export type Order = {
   userId: string;
   plan: string;
   planName: string;
+  /** 'ai_plan' o 'clan_plan' (0044). */
+  product?: string;
+  /** Comunidad de un plan de clan. */
+  communityId?: string | null;
   provider: 'mercado_pago' | 'paypal';
   currency: 'ARS' | 'USD';
   amount: number;

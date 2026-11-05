@@ -383,7 +383,7 @@ export default {
   mediaGone: 'GIF no disponible',
   mediaAlt: 'GIF de la comunidad',
 
-  galleryTitle: 'GIFs de la comunidad',
+  galleryTitle: 'Galería de la comunidad',
   galleryPickTitle: 'Elegí un GIF de la comunidad',
   galleryRules: 'Subí GIF, WebP o PNG de hasta {mb} MB y de {min} a {max} píxeles por lado. Un administrador de Venus revisa cada archivo: hasta que lo aprueba, solo lo ven quien lo subió, el dueño y Venus.',
   galleryMemberNote: 'Acá están los GIFs que un administrador de Venus ya aprobó para esta comunidad.',
@@ -394,7 +394,7 @@ export default {
   galleryPickEmpty: 'No hay GIFs aprobados todavía',
   galleryUse: 'Usar',
 
-  mediaUpload: 'Subir un GIF',
+  mediaUpload: 'Subir un archivo',
   mediaNameTitle: 'Nombre del GIF',
   mediaNameLabel: 'Nombre (hasta 40 caracteres)',
   mediaNameHint: 'Lo ven el equipo y Venus al revisarlo.',
@@ -415,7 +415,7 @@ export default {
 
   menuGreetings: 'Bienvenida y despedida',
   menuRoles: 'Roles',
-  menuGallery: 'GIFs de la comunidad',
+  menuGallery: 'Galería de la comunidad',
 
   memberRolesMenu: 'Roles…',
 

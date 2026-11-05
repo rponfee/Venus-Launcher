@@ -15,7 +15,6 @@ export default {
   music: 'Music',
   rewards: 'Venus Points',
   pass: 'Venus Pass',
-  clans: 'Clans',
   communities: 'Communities',
   modrinth: 'Content',
   smartsearch: 'Smart search',

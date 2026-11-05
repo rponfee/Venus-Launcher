@@ -10,7 +10,7 @@
 // cae la señalizacion. Si Realtime o las RPC dejan de responder, voice/paths.js abre solo un segundo camino (voice/backup.js:
 // MQTT sobre brokers publicos, todo cifrado con una clave de la sala y firmado igual que arriba) y todo sale por los dos. Las
 // salas se pueden crear y abrir sin servidor ("salas de emergencia" y salas guardadas con su clave). Detalle en
-// docs/wip/voz-respaldo-46.md.
+// docs/voice-turn.md.
 //
 //   import { voice } from './voice.js';
 //   voice.on('room', (room) => ...)        // sala actual o null

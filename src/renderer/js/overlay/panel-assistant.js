@@ -179,7 +179,6 @@ export class AssistantPanel {
   }
 
   toolLabel(ev) {
-    if (ev.mcpTool) return ev.mcpTool;
     const key = `assistant.tool_${ev.name}`;
     const label = this.tr(key);
     return label === key ? this.tr('as_tool') : label;

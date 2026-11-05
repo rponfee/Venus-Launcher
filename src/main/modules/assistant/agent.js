@@ -13,7 +13,7 @@ const secure = require('../../core/secure');
 const { uid } = require('../../core/util');
 const store = require('./store');
 const toolDefs = require('./tool-defs');
-const { systemPrompt, externalPrompt } = require('./prompt');
+const { systemPrompt } = require('./prompt');
 const tools = require('./tools');
 const config = require('./config');
 const undo = require('./undo');
@@ -42,14 +42,7 @@ const deps = {
   optional: () => null, // carga perezosa de otros modulos (snapshots, crash, perf, compat, curseforge)
   user: currentUser, // () => id de la cuenta de Venus con la sesion abierta, o null
   snapshotTimeoutMs: 20000,
-  // Servidores MCP que agrego el usuario (./mcp-servers): sus herramientas se suman en cada turno. null = ninguno
-  mcp: null,
-  // Motores externos (./engines): el Claude Code o el Codex del usuario responden en vez del backend. null = solo Venus IA
-  engines: null,
 };
-const EXTERNAL_ENGINES = ['claude', 'chatgpt'];
-const MCP_MAX_RESULT = 32000; // el texto ya viene recortado a 20 000 caracteres; esto deja lugar al JSON
-const NO_MCP = Object.freeze({ defs: [], map: new Map(), skipped: [], truncated: false });
 
 function configure(d = {}) {
   Object.assign(deps, Object.fromEntries(Object.entries(d).filter(([, v]) => v !== undefined)));
@@ -211,8 +204,7 @@ function consumeNotes(conv) {
   return notes.filter((n) => typeof n === 'string' && n).map((n) => n.replace(/[<>]/g, ''));
 }
 
-// extraNotes: avisos de este turno (por ejemplo, un servidor MCP que no respondio); sin < ni >, como las notas.
-async function contextBlock(conv, instanceId, redact, extraNotes = []) {
+async function contextBlock(conv, instanceId, redact) {
   const lines = [];
   const s = await settings.get();
   lines.push(`launcher_language: ${s.language || getLanguage()}`);
@@ -221,7 +213,7 @@ async function contextBlock(conv, instanceId, redact, extraNotes = []) {
   // El nombre viene del pack importado: < y > escapados (sigue siendo JSON valido) por la misma razon
   const json = (v) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
   lines.push(inst ? `selected_instance: ${json({ id: inst.id, name: inst.name, mc_version: inst.mcVersion, loader: inst.loader })}` : 'selected_instance: none');
-  const notes = [...consumeNotes(conv), ...extraNotes.filter((n) => typeof n === 'string' && n).map((n) => n.replace(/[<>]/g, ''))];
+  const notes = consumeNotes(conv);
   if (notes.length) lines.push('notes:', ...notes.map((n) => `- ${n}`));
   return { text: `<launcher_context>\n${redact(lines.join('\n'))}\n</launcher_context>`, inst };
 }
@@ -274,7 +266,7 @@ function classify(err) {
   const is = (...keys) => keys.some((k) => matchesTemplate(message, k));
   const extra = {};
   for (const k of ['reason', 'model', 'effort', 'resetAt']) if (typeof err?.[k] === 'string' && err[k]) extra[k] = err[k];
-  const KNOWN = ['unavailable', 'session', 'noplan', 'plan', 'quota', 'backend', 'refused', 'network', 'ratelimit', 'error', 'engine', 'engineLogin', 'engineLimit', 'engineMissing', 'engineTimeout'];
+  const KNOWN = ['unavailable', 'session', 'noplan', 'plan', 'quota', 'backend', 'refused', 'network', 'ratelimit', 'error'];
   if (err?.code && KNOWN.includes(err.code)) return { code: err.code, message, ...extra };
   let code = 'error';
   if (is('ai.errUnavailable', 'ai.errSignIn', 'ai.errNoCloud', 'ai.errUnconfirmed', 'ai.errAnonymous')) code = 'unavailable';
@@ -294,22 +286,19 @@ function isThinkingSignatureError(err) {
 }
 
 // ---------- Confirmaciones ----------
-// payload.allowAlways: la interfaz ofrece "Permitir siempre" (herramientas MCP); si el usuario lo elige, out.always.
-function requestConfirm(conv, turn, payload, out = null) {
+function requestConfirm(conv, turn, payload) {
   return new Promise((resolve) => {
     const requestId = `r${uid(12)}`;
     let done = false;
-    const finish = (state, extra = {}) => {
+    const finish = (state) => {
       if (done) return;
       done = true;
       confirms.delete(requestId);
-      const always = state === 'approved' && extra.always === true;
-      if (out && always) out.always = true;
-      emit(conv, { type: 'confirm', turnId: turn.id, requestId, state, ...(always ? { always: true } : {}) });
+      emit(conv, { type: 'confirm', turnId: turn.id, requestId, state });
       flush(conv);
       resolve(state === 'approved');
     };
-    confirms.set(requestId, { convId: conv.id, resolve: finish, allowAlways: payload.allowAlways === true });
+    confirms.set(requestId, { convId: conv.id, resolve: finish });
     emit(conv, { type: 'confirm', turnId: turn.id, requestId, state: 'pending', ...payload });
     flush(conv);
     const signal = turn.controller.signal;
@@ -318,12 +307,10 @@ function requestConfirm(conv, turn, payload, out = null) {
   });
 }
 
-// opts.always: "Permitir siempre" (solo en las confirmaciones que lo ofrecen).
-function confirm(requestId, approved, opts = {}) {
+function confirm(requestId, approved) {
   const c = confirms.get(requestId);
   if (!c) throw new Error(t('assistant.errConfirmGone'));
-  const always = approved === true && opts?.always === true && c.allowAlways;
-  c.resolve(approved === true ? 'approved' : 'denied', always ? { always: true } : {});
+  c.resolve(approved === true ? 'approved' : 'denied');
   return true;
 }
 
@@ -395,72 +382,6 @@ function genericConfirm(name) {
   return { kind: 'destructive', title: t('assistant.confirmGenericTitle'), message: t('assistant.confirmGenericText', { tool: name }), danger: true };
 }
 
-// ---------- Herramientas MCP (servidores que agrego el usuario) ----------
-// Pide confirmacion en el launcher salvo que sea de solo lectura (readOnlyHint) o "Permitir siempre"; el
-// resultado (recortado y marcado como no confiable por mcp-servers) pasa por el anonimizador como todos.
-async function runMcp(conv, turn, e, redact) {
-  const { u, mcp: entry } = e;
-  const signal = turn.controller.signal;
-  const info = entry ? { server: entry.server.name, serverId: entry.server.id, tool: entry.tool.name, title: entry.tool.title || null, readOnly: entry.tool.readOnly === true } : { server: null, tool: String(u.name).slice(0, 80) };
-  const fail = (message, extra = {}) => {
-    emit(conv, { type: 'tool-result', turnId: turn.id, toolUseId: u.id, name: u.name, ok: false, error: message, summary: message, declined: Boolean(extra.user_declined), mcp: info });
-    return resultBlock(u.id, redact({ ok: false, error: message, ...extra }), true);
-  };
-  emit(conv, { type: 'tool-start', turnId: turn.id, toolUseId: u.id, name: u.name, level: e.level || 'mcp', input: uiInput(e.input), mcp: info });
-  if (!entry || !deps.mcp) return fail(t('assistant.mcpErrToolGone', { name: String(u.name).slice(0, 80) }));
-  if (e.invalid) return fail(t('assistant.errBadInput', { errors: e.invalid }));
-  if (signal.aborted) return fail(t('assistant.errCancelledBefore'));
-  try {
-    if (!entry.tool.readOnly && !(await deps.mcp.isAlwaysAllowed(entry.server.id, entry.tool.name))) {
-      const out = {};
-      const ok = await requestConfirm(
-        conv,
-        turn,
-        {
-          kind: 'mcp',
-          toolUseId: u.id,
-          tool: u.name,
-          title: t('assistant.mcpConfirmTitle', { server: entry.server.name }),
-          message: t('assistant.mcpConfirmText', { tool: entry.tool.title || entry.tool.name, server: entry.server.name }),
-          items: deps.mcp.argLines(e.input),
-          okText: t('assistant.mcpConfirmOk'),
-          danger: entry.tool.destructive === true,
-          allowAlways: true,
-          mcp: info,
-        },
-        out,
-      );
-      if (!ok) throw new ToolError(signal.aborted ? t('assistant.errCancelledBefore') : t('assistant.errUserDeclined'), 'declined');
-      if (out.always) await deps.mcp.setAlwaysAllow(entry.server.id, entry.tool.name, true).catch((err) => console.warn('[assistant] Permitir siempre:', err?.message || err));
-    }
-    if (signal.aborted) throw new ToolError(t('assistant.errCancelledBefore'), 'cancelled');
-    const r = await deps.mcp.call(entry, e.input, { signal });
-    const summary = r.isError ? t('assistant.mcpResultError') : r.truncated ? t('assistant.mcpResultCut', { total: r.chars, max: deps.mcp.LIMITS.resultChars }) : t('assistant.mcpResult', { count: r.chars });
-    emit(conv, { type: 'tool-result', turnId: turn.id, toolUseId: u.id, name: u.name, ok: !r.isError, summary, ...(r.isError ? { error: summary } : {}), warnings: [], undoId: null, noChange: false, mcp: info });
-    return resultBlock(u.id, redact(r.payload), r.isError, MCP_MAX_RESULT);
-  } catch (err) {
-    const declined = err instanceof ToolError && err.code === 'declined';
-    let message = err?.message || String(err);
-    if (!(err instanceof ToolError)) {
-      if (signal.aborted || err?.code === 'aborted') message = t('assistant.errCancelled');
-      else console.warn(`[assistant] ${u.name}:`, message);
-    }
-    return fail(message, declined ? { user_declined: true } : {});
-  }
-}
-
-async function mcpToolsForTurn(conv, turn) {
-  if (!deps.mcp) return NO_MCP;
-  try {
-    const r = await deps.mcp.toolsForTurn();
-    if (r?.skipped?.length) emit(conv, { type: 'notice', turnId: turn.id, kind: 'mcp', text: t('assistant.mcpSkipped', { count: r.skipped.length, servers: r.skipped.map((s) => `«${s.name}»`).join(', ') }), details: r.skipped.map((s) => ({ name: s.name, error: s.error })) });
-    return r && Array.isArray(r.defs) && r.map instanceof Map ? r : NO_MCP;
-  } catch (err) {
-    console.warn('[assistant] Herramientas MCP:', err?.message || err);
-    return NO_MCP;
-  }
-}
-
 async function runOne(conv, turn, e, redact) {
   const { u } = e;
   const signal = turn.controller.signal;
@@ -519,12 +440,6 @@ async function executeBatch(conv, turn, uses, redact) {
   const defs = await getDefs(conv);
   const schemas = new Map((defs.tools || []).map((d) => [d.name, d.input_schema]));
   const entries = uses.map((u) => {
-    // Herramienta de un servidor MCP: solo las de este turno (una de otro turno ya no esta disponible)
-    if (deps.mcp && deps.mcp.isMcpName(u.name)) {
-      const entry = turn.mcp?.map.get(u.name) || null;
-      const invalid = entry ? deps.mcp.checkInput(entry.def.input_schema, u.input ?? {}) : null;
-      return { u, mcp: entry, isMcp: true, tool: null, level: entry ? (entry.tool.readOnly ? 'read' : 'mcp') : null, input: u.input && typeof u.input === 'object' ? u.input : {}, invalid };
-    }
     const tool = tools.REGISTRY[u.name] || null;
     const level = tool ? config.effectiveLevel(u.name, tool.minLevel) : null;
     const schema = schemas.get(u.name) || toolDefs.build().find((d) => d.name === u.name)?.input_schema;
@@ -533,11 +448,10 @@ async function executeBatch(conv, turn, uses, redact) {
   });
   await bulkGuard(conv, turn, entries);
   const results = new Array(entries.length);
-  const run = (e) => (e.isMcp ? runMcp(conv, turn, e, redact) : runOne(conv, turn, e, redact));
-  // Lecturas en paralelo; cambios (y herramientas MCP que piden permiso) de a uno y en orden: evita carreras
-  // sobre la misma instancia y confirmaciones superpuestas
+  const run = (e) => runOne(conv, turn, e, redact);
+  // Lecturas en paralelo; cambios de a uno y en orden: evita carreras sobre la misma instancia y confirmaciones superpuestas
   await Promise.all(entries.map(async (e, i) => {
-    if (e.level === 'read' || !e.level || (!e.tool && !e.isMcp)) results[i] = await run(e);
+    if (e.level === 'read' || !e.level || !e.tool) results[i] = await run(e);
   }));
   for (let i = 0; i < entries.length; i++) {
     if (!results[i]) results[i] = await run(entries[i]);
@@ -553,12 +467,9 @@ async function runTurn(conv, turn) {
   let stripRetried = false;
   try {
     const redact = await currentRedactor();
-    // Primero se muestra la pregunta: listar las herramientas MCP puede tardar (un servidor local que arranca)
     const inst = turn.instanceId ? await instances.get(turn.instanceId).catch(() => null) : null;
     emit(conv, { type: 'turn-start', turnId: turn.id, text: turn.text, instanceId: inst?.id || null, instanceName: inst?.name || null, model: turn.model, effort: turn.effort });
-    turn.mcp = await mcpToolsForTurn(conv, turn);
-    const mcpNotes = turn.mcp.skipped.map((s) => `The MCP server "${s.name}" that the user connected did not answer, so its tools are not available in this question.`);
-    const ctx = await contextBlock(conv, turn.instanceId, redact, mcpNotes);
+    const ctx = await contextBlock(conv, turn.instanceId, redact);
     conv.messages.push({ role: 'user', content: [{ type: 'text', text: ctx.text }, { type: 'text', text: turn.text }] });
     await flush(conv);
 
@@ -571,10 +482,8 @@ async function runTurn(conv, turn) {
       let res;
       try {
         const defs = await getDefs(conv);
-        // Las herramientas MCP van despues de las propias (las mismas en todas las llamadas del turno)
-        const turnTools = turn.mcp?.defs.length ? [...defs.tools, ...turn.mcp.defs] : defs.tools;
         // El mismo modelo y esfuerzo en todas las llamadas del turno (model undefined = el primero del plan)
-        res = await deps.ai.messages({ system: defs.system, messages: requestView(conv), tools: turnTools, turnId: turn.id, maxTokens: responseTokenLimit(), model: turn.model || undefined, effort: turn.effort || EFFORT, signal });
+        res = await deps.ai.messages({ system: defs.system, messages: requestView(conv), tools: defs.tools, turnId: turn.id, maxTokens: responseTokenLimit(), model: turn.model || undefined, effort: turn.effort || EFFORT, signal });
       } catch (err) {
         if (signal.aborted) {
           outcome = 'cancelled';
@@ -681,197 +590,6 @@ async function runTurn(conv, turn) {
   return outcome;
 }
 
-// ---------- Turno con un motor externo (el Claude Code o el Codex del usuario) ----------
-// El CLI del usuario lleva el bucle de herramientas; Venus le da el prompt (contexto + pregunta), su prompt de
-// sistema y su servidor MCP local como unica herramienta, y traduce la salida del CLI a los mismos eventos de la
-// interfaz (text, tool-start, tool-result, error, done). El resumen, los avisos y el Deshacer de cada herramienta
-// salen de la Actividad MCP, que el servidor registra al ejecutarla. La sesion del CLI (conv.external.sessionId)
-// continua la conversacion en las preguntas siguientes.
-function externalLevel(name) {
-  const reg = tools.REGISTRY[name];
-  if (reg) return config.effectiveLevel(name, reg.minLevel) || reg.minLevel || 'read';
-  return name === 'undo_last_action' ? 'reversible' : 'read';
-}
-
-function parseToolJson(text) {
-  try {
-    const v = JSON.parse(String(text || ''));
-    return v && typeof v === 'object' ? v : null;
-  } catch {
-    return null;
-  }
-}
-
-async function runExternalTurn(conv, turn) {
-  const eng = deps.engines;
-  const mcp = deps.optional('mcp');
-  const engine = conv.engine;
-  const app = eng?.APP_NAME?.[engine] || engine;
-  const { signal } = turn.controller;
-  let outcome = 'error';
-  const texts = [];
-  try {
-    const redact = await currentRedactor();
-    const inst = turn.instanceId ? await instances.get(turn.instanceId).catch(() => null) : null;
-    emit(conv, { type: 'turn-start', turnId: turn.id, text: turn.text, instanceId: inst?.id || null, instanceName: inst?.name || null, model: turn.model, effort: turn.effort, engine });
-    if (!eng || !mcp || typeof mcp.localEndpoint !== 'function') throw coded('engine', t('assistant.errEngineUnavailable'));
-    const ctx = await contextBlock(conv, turn.instanceId, redact);
-    conv.messages.push({ role: 'user', content: [{ type: 'text', text: ctx.text }, { type: 'text', text: turn.text }] });
-    await flush(conv);
-    emit(conv, { type: 'thinking', turnId: turn.id, active: true }, { persist: false });
-    // Servidor MCP local del launcher (arranca si hace falta; exige plan Go o superior)
-    const endpoint = await mcp.localEndpoint();
-    const startedAt = Date.now();
-    const starts = new Map(); // toolUseId -> { name, at }
-    const used = new Set(); // entradas de la actividad ya asociadas a un resultado
-    const activityFor = (name, since) => {
-      const list = (typeof mcp.activitySince === 'function' ? mcp.activitySince(since - 1500) : []).filter((e) => e.kind === 'tool' && e.tool === name && e.state !== 'running' && e.state !== 'pending' && !used.has(e.id)).sort((a, b) => a.at - b.at);
-      const hit = list[0] || null;
-      if (hit) used.add(hit.id);
-      return hit;
-    };
-    const r = await eng.runTurn({
-      engine,
-      prompt: `${ctx.text}\n\n${turn.text}`,
-      system: externalPrompt({ app, provider: eng.PROVIDER_NAME?.[engine] }),
-      mcpUrl: endpoint.url,
-      model: turn.model,
-      effort: turn.effort,
-      sessionId: conv.external?.sessionId || null,
-      maxTurns: MAX_ROUNDS,
-      signal,
-      onEvent: (ev) => {
-        switch (ev.type) {
-          case 'session':
-            if (ev.id) {
-              conv.external = { ...(conv.external || {}), sessionId: ev.id };
-              scheduleSave(conv);
-            }
-            if (ev.model) turn.servedBy = ev.model;
-            break;
-          case 'model':
-            if (ev.model) turn.servedBy = ev.model;
-            break;
-          case 'text':
-            texts.push(ev.text);
-            emit(conv, { type: 'text', turnId: turn.id, text: ev.text });
-            break;
-          case 'tool-start': {
-            const name = eng.toolShortName(ev.name);
-            starts.set(ev.toolUseId, { name, at: Date.now() });
-            emit(conv, { type: 'tool-start', turnId: turn.id, toolUseId: ev.toolUseId, name, level: externalLevel(name), input: uiInput(ev.input) });
-            break;
-          }
-          case 'tool-result': {
-            const s = starts.get(ev.toolUseId);
-            const name = s?.name || eng.toolShortName(ev.name);
-            const act = activityFor(name, s?.at || startedAt);
-            const payload = parseToolJson(ev.text);
-            const ok = !ev.isError && payload?.ok !== false && act?.state !== 'error' && act?.state !== 'denied';
-            const error = ok ? null : payload?.error || act?.error || (ev.isError && ev.text ? String(ev.text).slice(0, 300) : t('assistant.errEngineTool'));
-            emit(conv, {
-              type: 'tool-result',
-              turnId: turn.id,
-              toolUseId: ev.toolUseId,
-              name,
-              ok,
-              error,
-              summary: act?.summary || (ok ? '' : error),
-              warnings: Array.isArray(act?.warnings) ? act.warnings : [],
-              undoId: act?.undoId || (typeof payload?.undo_id === 'string' ? payload.undo_id : null),
-              noChange: Boolean(act?.noChange),
-              declined: act?.state === 'denied' || /declined|did not confirm|no confirm/i.test(String(error || '')),
-            });
-            break;
-          }
-          case 'limits':
-            emit(conv, { type: 'limits', turnId: turn.id, engine, fiveHour: ev.fiveHour, sevenDay: ev.sevenDay, fiveHourResetsAt: ev.fiveHourResetsAt, sevenDayResetsAt: ev.sevenDayResetsAt }, { persist: false });
-            break;
-          case 'mcp-failed':
-            emit(conv, { type: 'notice', turnId: turn.id, kind: 'engine', text: t('assistant.engineMcpFailed', { app }) });
-            break;
-          default:
-            break;
-        }
-      },
-    });
-    if (r.sessionId) conv.external = { ...(conv.external || {}), sessionId: r.sessionId };
-    if (r.model) turn.servedBy = r.model;
-    const u = r.usage || {};
-    conv.usage.input += Number(u.input_tokens) || 0;
-    conv.usage.output += Number(u.output_tokens) || 0;
-    conv.usage.cacheRead += Number(u.cache_read_input_tokens ?? u.cached_input_tokens) || 0;
-    conv.usage.requests += 1;
-    if (texts.length) conv.messages.push({ role: 'assistant', content: [{ type: 'text', text: texts.join('\n\n') }] });
-    if (r.outcome === 'cancelled') outcome = 'cancelled';
-    else if (r.outcome === 'rounds') {
-      emit(conv, { type: 'error', turnId: turn.id, code: 'rounds', message: t('assistant.errRounds', { count: MAX_ROUNDS }) });
-      outcome = 'rounds';
-    } else if (r.outcome === 'error') {
-      const detail = String(r.error || '').trim();
-      const message = { engineLogin: t('assistant.errEngineLogin', { app }), engineLimit: t('assistant.errEngineLimit', { app, detail }), engineMissing: t('assistant.errEngineMissing', { app }), engineTimeout: t('assistant.errEngineTimeout', { app }) }[r.code] || t('assistant.errEngine', { app, detail });
-      emit(conv, { type: 'error', turnId: turn.id, code: r.code || 'engine', message });
-      outcome = 'error';
-    } else outcome = 'end_turn';
-  } catch (err) {
-    if (signal.aborted) outcome = 'cancelled';
-    else {
-      console.error('[assistant] Turno externo:', err);
-      const code = err?.code === 'plan' ? 'noplan' : err?.code === 'unavailable' || err?.code === 'disabled' ? 'engine' : err?.code || 'engine';
-      emit(conv, { type: 'error', turnId: turn.id, code, message: err?.message || String(err) });
-      outcome = 'error';
-    }
-  } finally {
-    conv.lastTurn = { id: turn.id, state: outcome, at: Date.now() };
-    emit(conv, { type: 'done', turnId: turn.id, stopReason: outcome, rounds: 0, model: turn.model, effort: turn.effort, servedBy: turn.servedBy || null, failover: false, engine });
-    await flush(conv);
-  }
-  return outcome;
-}
-
-// Motor de una conversacion nueva: el pedido de la interfaz o el elegido en Ajustes (settings.ai.engine).
-async function pickEngine(opts) {
-  const s = await settings.get();
-  const want = typeof opts?.engine === 'string' ? opts.engine : s.ai?.engine;
-  return EXTERNAL_ENGINES.includes(want) ? want : 'venus';
-}
-
-// Un motor externo exige: plan Go o superior (el mismo control que el MCP), el CLI instalado y con sesion.
-async function assertEngineUsable(engine) {
-  const eng = deps.engines;
-  const mcp = deps.optional('mcp');
-  if (!eng || !mcp || typeof mcp.planState !== 'function') throw coded('engine', t('assistant.errEngineUnavailable'));
-  const plan = await mcp.planState({ wait: 8000 });
-  if (!plan?.entitled) throw coded(plan?.reason === 'signedOut' ? 'session' : 'noplan', t('assistant.errEnginePlan'));
-  const det = await eng.detect({});
-  const e = det?.[engine];
-  const app = eng.APP_NAME[engine] || engine;
-  if (!e?.installed) throw coded('engineMissing', t('assistant.errEngineMissing', { app }));
-  if (e.loggedIn === false) throw coded('engineLogin', t('assistant.errEngineLogin', { app }));
-}
-
-// Modelo y esfuerzo de un motor externo: lo que manda la interfaz, lo ultimo de la conversacion o lo recordado.
-async function resolveExternalChoice(engine, conv, opts) {
-  const eng = deps.engines;
-  const s = await settings.get();
-  const saved = s.ai?.engineChoice?.[engine] || {};
-  const wantModel = typeof opts?.model === 'string' && opts.model ? opts.model : null;
-  const wantEffort = typeof opts?.effort === 'string' && opts.effort ? opts.effort : null;
-  return { model: eng.normalizeModel(engine, wantModel || conv.model || saved.model), effort: eng.normalizeEffort(wantEffort || conv.effort || saved.effort), explicit: Boolean(wantModel || wantEffort) };
-}
-
-async function rememberExternalChoice(engine, { model, effort }) {
-  try {
-    const s = await settings.get();
-    const cur = s.ai?.engineChoice?.[engine] || {};
-    if (cur.model === model && cur.effort === effort) return;
-    await settings.set({ ai: { engineChoice: { [engine]: { model, effort } } } });
-    deps.send('assistant:settingsChanged');
-  } catch (err) {
-    console.warn('[assistant] No se pudo guardar la eleccion del motor:', err?.message || err);
-  }
-}
-
 // ---------- Modelo y esfuerzo del turno ----------
 // Una eleccion recordada (no la que manda la interfaz en este envio) se ajusta a lo que permite el plan
 // segun la ultima cuota conocida: si el plan bajo de categoria se usa el primer modelo y el esfuerzo
@@ -937,22 +655,17 @@ async function send(conversationId, text, opts = {}) {
   if (opts && typeof opts.instanceId === 'string' && opts.instanceId) {
     instanceId = (await instances.get(opts.instanceId).catch(() => null))?.id || null;
   }
-  // El motor queda fijo en la primera pregunta de la conversacion (la sesion del CLI externo sigue la charla)
-  const engine = conversationId ? (EXTERNAL_ENGINES.includes(conv.engine) ? conv.engine : 'venus') : await pickEngine(opts);
-  const external = engine !== 'venus';
-  if (external) await assertEngineUsable(engine);
-  const choice = external ? await resolveExternalChoice(engine, conv, opts) : await resolveChoice(conv, opts);
+  const choice = await resolveChoice(conv, opts);
   // Otro envio a la misma conversacion pudo entrar mientras se esperaba
   if (live.has(conv.id)) throw new Error(t('assistant.errBusy'));
-  const turn = { id: `t${uid(12)}`, text: body, instanceId, model: choice.model, effort: choice.effort, servedBy: null, controller: new AbortController(), installs: new Map(), bulkApproved: new Set(), engine };
+  const turn = { id: `t${uid(12)}`, text: body, instanceId, model: choice.model, effort: choice.effort, servedBy: null, controller: new AbortController(), installs: new Map(), bulkApproved: new Set() };
   if (!conv.title) conv.title = makeTitle(body);
   conv.model = choice.model;
   conv.effort = choice.effort;
-  conv.engine = engine;
   live.set(conv.id, { conv, turn });
   const done = new Promise((resolve) => {
     setImmediate(() => {
-      (external ? runExternalTurn(conv, turn) : runTurn(conv, turn))
+      runTurn(conv, turn)
         .catch((err) => console.error('[assistant] Turno:', err))
         .finally(() => {
           live.delete(conv.id);
@@ -961,8 +674,8 @@ async function send(conversationId, text, opts = {}) {
     });
   });
   turn.done = done;
-  if (choice.explicit) await (external ? rememberExternalChoice(engine, choice) : rememberChoice(choice));
-  return { conversationId: conv.id, turnId: turn.id, model: turn.model, effort: turn.effort, engine };
+  if (choice.explicit) await rememberChoice(choice);
+  return { conversationId: conv.id, turnId: turn.id, model: turn.model, effort: turn.effort };
 }
 
 function cancel(conversationId) {
@@ -1023,7 +736,6 @@ async function conversation(id) {
     running: live.has(conv.id),
     model: conv.model || null, // ultimo modelo elegido en esta conversacion (null = el del plan)
     effort: conv.effort || null,
-    engine: EXTERNAL_ENGINES.includes(conv.engine) ? conv.engine : 'venus',
     seq: conv.seq,
     events: conv.events,
     undoStates: await undo.states(undoIds),
@@ -1052,15 +764,12 @@ function runningIds() {
   return [...live.keys()];
 }
 
-// Al cerrar el launcher: cancelar los turnos, guardar todo y cerrar los servidores MCP locales.
+// Al cerrar el launcher: cancelar los turnos y guardar todo.
 async function shutdown() {
   const ids = [...live.keys()];
   for (const id of ids) cancel(id);
-  // En paralelo con la espera de los turnos (el cierre completo tiene 4 s)
-  const mcpClosed = Promise.race([Promise.resolve(deps.mcp?.closeAll?.()).catch(() => {}), new Promise((r) => setTimeout(r, 1500))]);
   await Promise.race([Promise.allSettled(ids.map((id) => waitIdle(id))), new Promise((r) => setTimeout(r, 3000))]);
   for (const conv of loaded.values()) if (saveTimers.has(conv.id)) await flush(conv);
-  await mcpClosed;
 }
 
 module.exports = {

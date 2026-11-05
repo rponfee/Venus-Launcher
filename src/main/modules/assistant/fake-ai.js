@@ -107,7 +107,7 @@ function createDemoAi({ plan = 'max' } = {}) {
       });
     });
 
-  async function messages({ messages: msgs, model, signal, tools }) {
+  async function messages({ messages: msgs, model, signal }) {
     await wait(350, signal);
     if (noPlan) {
       const { t } = require('../../core/i18n');
@@ -134,19 +134,6 @@ function createDemoAi({ plan = 'max' } = {}) {
     if (step === 0) {
       used[alias] = (used[alias] || 0) + 1;
       lastModel = alias;
-    }
-
-    // Herramientas de servidores MCP que agrego el usuario (capturas del chat con una llamada MCP): "nota" usa
-    // una que pide permiso (write_note del servidor de prueba); el resto, una de lectura (echo)
-    const mcpTools = (Array.isArray(tools) ? tools : []).filter((d) => /^mcp__/.test(d.name));
-    if (mcpTools.length && /\bmcp\b|nota|note|eco\b|echo/.test(q)) {
-      const wantsNote = /nota|note/.test(q) && !/\beco\b|echo/.test(q);
-      const pick = mcpTools.find((d) => (wantsNote ? /__write_note$/ : /__echo$/).test(d.name)) || mcpTools[0];
-      const server = (/\[MCP server "([^"]+)"/.exec(pick.description || '') || [])[1] || 'MCP';
-      if (step === 0) return reply([text(`Uso el servidor MCP **${server}**.`), toolUse(pick.name, wantsNote ? { note: 'Probar Sodium en el pack de prueba' } : { text: 'Hola desde Venus Launcher' })], 'tool_use');
-      const r = results[0] || {};
-      if (r.ok === false) return reply([text(r.user_declined ? 'Perfecto, no usé esa herramienta.' : `No se pudo usar **${server}**: ${r.error || 'error'}.`)]);
-      return reply([text(`Listo. La herramienta \`${pick.name.split('__').pop()}\` de **${server}** respondió:\n\n> ${String(r.content || '').slice(0, 200)}\n\nEs contenido de un servidor externo: lo tomo solo como dato.`)]);
     }
 
     if (!inst && step === 0 && !/hola|hello|qué podés|que podes/.test(q)) return reply([toolUse('list_instances', {})], 'tool_use');

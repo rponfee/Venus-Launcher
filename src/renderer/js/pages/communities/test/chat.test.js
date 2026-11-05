@@ -18,7 +18,7 @@ function chatHarness() {
     watchChannel: (id, handlers) => { watch = handlers; return () => stops++; },
   };
   const community = { id: 'community', name: 'Prueba', myRole: 'member', mutedUntil: null };
-  const { chatView } = ui.load(new URL('../chat.js', import.meta.url), { ...logic, ...greeting, COMMUNITY_LIMITS, validateMessage, closeGifPicker() {}, openGifPicker() {}, openMediaGallery() {}, mediaImage: () => ui.deps.h('media'), openGroupReport() {} }, ['chatView']);
+  const { chatView } = ui.load(new URL('../chat.js', import.meta.url), { ...logic, ...greeting, COMMUNITY_LIMITS, validateMessage, closeGifPicker() {}, openGifPicker() {}, openMediaGallery() {}, attachChatBackdrop: () => ({ sync() {}, destroy() {} }), mediaImage: () => ui.deps.h('media'), openGroupReport() {} }, ['chatView']);
   const chat = chatView(ui.root, { b, community, channel: { id: 'channel', name: 'general' }, people: new Map() });
   return { ...ui, pending, sent, chat, community, watch, stops: () => stops, input: ui.find('cm-input'), send: ui.find('cm-send') };
 }

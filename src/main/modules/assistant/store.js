@@ -10,9 +10,6 @@
 //             bloques de razonamiento de otro modelo).
 //   userId    cuenta de Venus que la empezo (null = sin sesion; sin el campo = de antes de guardarla). La pone
 //             y la controla agent.js: cada cuenta ve solo las suyas.
-//   engine    quien responde: 'venus' (el backend del launcher, por defecto) o un motor externo ('claude' = el
-//             Claude Code del usuario, 'chatgpt' = su Codex). Fijo por conversacion: la sesion del CLI que sigue
-//             la charla queda en external.sessionId (no se puede cambiar de motor a mitad de una conversacion).
 // Un indice (index.json) evita leer todas las conversaciones para listarlas.
 const fsp = require('fs/promises');
 const path = require('path');
@@ -85,8 +82,6 @@ function create({ defs, now = Date.now() } = {}) {
     lastTurn: null,
     model: null,
     effort: null,
-    engine: 'venus',
-    external: null,
   };
 }
 
@@ -101,8 +96,6 @@ async function load(id) {
     notes: Array.isArray(data.notes) ? data.notes : [],
     createdInstances: Array.isArray(data.createdInstances) ? data.createdInstances : [],
     fullSnapshots: data.fullSnapshots && typeof data.fullSnapshots === 'object' ? data.fullSnapshots : {},
-    engine: typeof data.engine === 'string' && data.engine ? data.engine : 'venus',
-    external: data.external && typeof data.external === 'object' ? data.external : null,
   };
 }
 
@@ -114,7 +107,6 @@ function summaryOf(conv) {
     updatedAt: conv.updatedAt,
     turns: conv.events.filter((e) => e.type === 'turn-start').length,
     model: conv.model || null,
-    engine: conv.engine || 'venus',
     userId: conv.userId,
   };
 }

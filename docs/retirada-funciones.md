@@ -34,6 +34,10 @@ Esta comprobación no equivale a un recorrido visual en Electron, OBS real, Mine
 
 ## Referencias conservadas
 
-- Extensiones y visor de semillas: la guía, los contratos y los informes se borraron en la 4.6 junto con el código (ver `docs/wip/retiros-46.md`).
+- Extensiones y visor de semillas: la guía, los contratos y los informes se borraron en la 4.6 junto con el código (ver [supabase.md](supabase.md) para lo que queda en la base y la migración 0048).
 - [Clanes y comunidades: contratos anteriores](implementacion/clanes-comunidades.md); Comunidades sigue en desarrollo en su frente propio.
 - [Clips y OBS](implementacion/clips.md): contrato actual sin el evento `obs:streamer`; los resultados anteriores de ese automatismo se identifican como antecedentes.
+
+## Retiros de la 4.6
+
+La 4.6.0 borró del árbol, además de lo anterior: **Competir** (rankings, desafíos, eventos y el aviso de desafíos), **Extensiones**, el **visor de semillas**, el **modo streamer con OBS**, la página **Herramientas** (el conversor Nether, stacks, orden de encantamientos, ticks, colores § y chunks), las **capas de Venus** (tienda, mod y launcher; ver [insignia.md](insignia.md)) y el sistema viejo de **Clanes** (Comunidades lo reemplaza). Se conservan, funcionando igual, el recordatorio de descansos y tope de horas, el resumen al cerrar el juego, el aviso de versión nueva de Minecraft y las descargas programadas: mudaron a `features/playcare` sin cambiar ajustes ni canales (`play.breaks`, `play.today`, `play.sessionRecap`, `news.newVersions`, `downloads.schedule`, `mcnews:*`, `downloads:schedule*`). `modules-loader.js` ya no tiene lista de excepciones y la directiva `frame-src` de `index.html` volvió a `'none'`. Los campos "Semilla" al crear un mundo siguen. Las claves de ajustes de lo retirado quedan como datos inertes y en el disco pueden quedar `data/compete.json`, la carpeta `extensions/` y el secreto cifrado `obs.password`. La base: la migración **0048** (sin aplicar) elimina las tablas y funciones sin uso; ver [supabase.md](supabase.md).

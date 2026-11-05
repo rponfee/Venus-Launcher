@@ -9,8 +9,15 @@ fs.mkdirSync(OUT, { recursive: true });
 const LANGS = ['pt', 'fr', 'de', 'it', 'nl', 'pl', 'ru', 'uk', 'tr', 'ja', 'ko', 'zh'];
 // Textos que cambiaron en es/en desde la 3.1.0: los otros idiomas tienen una versión vieja. Sacalos después de traducir.
 const STALE = {
-  'renderer/overlay': ['perfNoFps'],
-  'renderer/whatsnew': ['title', 'kicker', 'kickerIntro', 'button', 'cmdTitle', 'cmdKeywords', 'intro_title', 'intro_text', 'intro_b1', 'intro_b2', 'intro_b3'],
+  'renderer/achievements': ['subtitle'],
+  'renderer/overlay': ['editHint', 'editWidgetAria', 'statusSearching', 'previewHint', 'shortcutHint', 'shortcutPressHint', 'shortcutInvalid'],
+  'renderer/pass': ['premiumXp', 'claimAllCount', 'err_no_season', 'trackTitle', 'current', 'howPremium'],
+  'renderer/plans': ['noPlanText'],
+  'renderer/premium': ['perk_frame', 'perk_frameText'],
+  'renderer/profile': ['bannerImageHint', 'bannerColorHint', 'errMedia_type', 'errMedia_denied', 'bannerKind_klipy'],
+  'renderer/rewards': ['item_frame_redstone', 'item_frame_ender'],
+  'renderer/support': ['subtitle', 'plansHint', 'openPlans', 'loading', 'noTickets', 'legacyPlanSubject', 'selectTicket', 'status_open', 'status_in_progress', 'detail_open', 'detail_in_progress', 'detail_paid', 'detail_closed', 'cat_bug', 'cat_payments', 'cat_assistant', 'cat_other', 'sendFailed', 'createdText', 'tooManyOpen', 'reply', 'closeNote', 'staffNav', 'staffTitle', 'staffSubtitle', 'staffDenied', 'staffDeniedText', 'staffUnavailableText', 'closeSummary'],
+  'renderer/whatsnew': ['v45social_text'],
 };
 function load(file) {
   if (!fs.existsSync(file)) return null;

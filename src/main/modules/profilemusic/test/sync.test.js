@@ -1,7 +1,7 @@
 'use strict';
 // El proceso principal (policy.js), la interfaz (features/profile-editor/music-logic.js) y el servidor (0042) tienen que
 // decir lo mismo sobre que cancion vale. Esta prueba compara las dos primeras con los mismos casos; la tercera se prueba
-// con la migracion (supabase/migrations/0042_musica_perfil.sql, ver docs/wip/musica-perfil-46.md).
+// con la migracion (supabase/migrations/0042_musica_perfil.sql, ver docs/perfiles.md).
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');

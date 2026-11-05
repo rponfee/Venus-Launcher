@@ -1,5 +1,5 @@
 'use strict';
-// Servidor local de prueba para las pruebas del asistente (selftest.js) y del MCP: carpeta temporal, sin Java ni red.
+// Servidor local de prueba para las pruebas del asistente (selftest.js): carpeta temporal, sin Java ni red.
 // setupServer() arma la carpeta de un servidor Paper "instalado"; patchServers() reemplaza arrancar, apagar y la
 // consola de core/servers.js por versiones falsas (nunca se lanza un proceso).
 const fs = require('fs');

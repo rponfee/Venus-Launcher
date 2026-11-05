@@ -2,7 +2,8 @@
 // admin configura los proveedores. El usuario sale SIEMPRE del JWT, nunca del cuerpo del pedido.
 //
 // POST { action, payload }:
-//   checkout        { plan, provider }   -> { order, url }      abre el link de pago en el navegador
+//   checkout        { plan, provider, community? } -> { order, url }  abre el link de pago en el navegador
+//                   (los planes de clan, clan_go|pro|max|ultra, piden la comunidad: los paga su dueño)
 //   status          { orderId }          -> { order }           consulta al proveedor si sigue pendiente
 //   payments.get    {}                   -> { config, urls }    (admin)
 //   payments.save   { settings, secrets }-> { config, urls }    (admin) los secretos nunca vuelven completos
@@ -20,8 +21,9 @@ const TAG = 'payments';
 const BODY_LIMIT = 16 * 1024;
 const CHECKOUT_INTERVAL_MS = 3000;
 const STATUS_INTERVAL_MS = 2500;
-// Planes de Venus IA y las ediciones del Venus Pass (0026): la base decide el precio y qué se entrega.
-const PLANS = new Set(['basic', 'go', 'pro', 'max', 'pass_go', 'pass_pro', 'pass_max']);
+// Planes de Venus IA y planes de clan (0044): la base decide el precio y qué se entrega. El Venus Pass ya no se compra.
+const PLANS = new Set(['basic', 'go', 'pro', 'max', 'clan_go', 'clan_pro', 'clan_max', 'clan_ultra']);
+const CLAN_PLAN = /^clan_(go|pro|max|ultra)$/;
 const PROVIDERS = new Set(['mercado_pago', 'paypal']);
 
 export type AuthResult =
@@ -48,6 +50,8 @@ const MESSAGES = {
   badAction: 'Acción desconocida.',
   forbidden: 'Solo un administrador puede hacer esto.',
   unknownPlan: 'Ese plan no existe o no está a la venta.',
+  unknownCommunity: 'Esa comunidad no existe.',
+  notOwner: 'Solo el dueño de la comunidad puede comprar su plan.',
   providerDisabled: 'Ese medio de pago no está habilitado por ahora.',
   tooMany: 'Hiciste muchos intentos de pago seguidos. Esperá un rato y probá de nuevo.',
   busy: 'Esperá unos segundos y probá de nuevo.',
@@ -84,7 +88,7 @@ export function webhookUrls(base: string) {
 }
 
 function planTitle(order: Order): string {
-  if (String(order.plan).startsWith('pass_')) return order.planName || `Venus Pass ${String(order.plan).slice(5)}`;
+  if (CLAN_PLAN.test(String(order.plan))) return `Venus Launcher · ${order.planName || order.plan} (30 días)`;
   return `Venus IA · Plan ${order.planName || order.plan}`;
 }
 
@@ -124,6 +128,9 @@ export function createPaymentsHandler(deps: PaymentsDeps) {
     const plan = typeof payload.plan === 'string' ? payload.plan : '';
     const provider = typeof payload.provider === 'string' ? payload.provider : '';
     if (!PLANS.has(plan)) return fail(400, 'unknown_plan', MESSAGES.unknownPlan);
+    // Un plan de clan es de una comunidad: sin ella (o con algo que no es un id) no hay orden.
+    const community = typeof payload.community === 'string' ? payload.community : '';
+    if (CLAN_PLAN.test(plan) && !UUID.test(community)) return fail(400, 'unknown_community', MESSAGES.unknownCommunity);
     if (!PROVIDERS.has(provider)) return fail(400, 'provider_disabled', MESSAGES.providerDisabled);
     if (throttled(lastCheckout, userId, CHECKOUT_INTERVAL_MS)) return fail(429, 'busy', MESSAGES.busy, { reason: 'busy' });
     const keys = await secrets();
@@ -131,8 +138,12 @@ export function createPaymentsHandler(deps: PaymentsDeps) {
     const live = provider === 'mercado_pago' ? mpTokenMode(keys.mpAccessToken) !== 'test' : keys.paypalEnv === 'live';
     let order: Order | null;
     try {
-      order = asOrder(await db('payments_create_order', { p_user: userId, p_plan: plan, p_provider: provider, p_live: live }));
+      order = asOrder(await db('payments_create_order', {
+        p_user: userId, p_plan: plan, p_provider: provider, p_live: live, ...(CLAN_PLAN.test(plan) ? { p_community: community } : {}),
+      }));
     } catch (err) {
+      if (err instanceof DbError && err.detail === 'not_owner') return fail(403, 'not_owner', MESSAGES.notOwner);
+      if (err instanceof DbError && err.detail === 'unknown_community') return fail(400, 'unknown_community', MESSAGES.unknownCommunity);
       if (err instanceof DbError && err.detail === 'provider_disabled') return fail(409, 'provider_disabled', MESSAGES.providerDisabled);
       if (err instanceof DbError && err.detail === 'unknown_plan') return fail(400, 'unknown_plan', MESSAGES.unknownPlan);
       if (err instanceof DbError && err.code === '54000') return fail(429, 'too_many', MESSAGES.tooMany, { reason: 'too_many' });

@@ -15,11 +15,11 @@ const webpL = (w, h) => { const b = new Uint8Array(40); b.set([...ascii('RIFF'),
 const webpLossy = (w, h) => { const b = new Uint8Array(40); b.set([...ascii('RIFF'), 0, 0, 0, 0, ...ascii('WEBPVP8 '), 0, 0, 0, 0, 0, 0, 0, 0x9d, 0x01, 0x2a, w & 255, w >> 8, h & 255, h >> 8]); return b; };
 
 test('tipo y medidas reales por la cabecera', () => {
-  assert.deepEqual(M.sniffImage(gif(320, 240)), { mime: 'image/gif', width: 320, height: 240 });
-  assert.deepEqual(M.sniffImage(png(640, 480)), { mime: 'image/png', width: 640, height: 480 });
-  assert.deepEqual(M.sniffImage(webpX(500, 300)), { mime: 'image/webp', width: 500, height: 300 });
-  assert.deepEqual(M.sniffImage(webpL(200, 100)), { mime: 'image/webp', width: 200, height: 100 });
-  assert.deepEqual(M.sniffImage(webpLossy(128, 96)), { mime: 'image/webp', width: 128, height: 96 });
+  assert.deepEqual(M.sniffImage(gif(320, 240)), { mime: 'image/gif', width: 320, height: 240, animated: true });
+  assert.deepEqual(M.sniffImage(png(640, 480)), { mime: 'image/png', width: 640, height: 480, animated: false });
+  assert.deepEqual(M.sniffImage(webpX(500, 300)), { mime: 'image/webp', width: 500, height: 300, animated: false });
+  assert.deepEqual(M.sniffImage(webpL(200, 100)), { mime: 'image/webp', width: 200, height: 100, animated: false });
+  assert.deepEqual(M.sniffImage(webpLossy(128, 96)), { mime: 'image/webp', width: 128, height: 96, animated: false });
   assert.equal(M.sniffImage(new Uint8Array(ascii('MZ\u0090\u0000'))), null);
   assert.equal(M.sniffImage(new Uint8Array(ascii('<svg xmlns="http://www.w3.org/2000/svg"/>'))), null);
   assert.equal(M.sniffImage(null), null);
@@ -27,7 +27,7 @@ test('tipo y medidas reales por la cabecera', () => {
 });
 
 test('validar un archivo elegido: tipo, tamaño y dimensiones', () => {
-  assert.deepEqual(M.validateMediaFile({ type: 'image/gif', size: 2000 }, gif(320, 240)), { ok: true, value: { mime: 'image/gif', ext: 'gif', width: 320, height: 240 } });
+  assert.deepEqual(M.validateMediaFile({ type: 'image/gif', size: 2000 }, gif(320, 240)), { ok: true, value: { mime: 'image/gif', ext: 'gif', width: 320, height: 240, animated: true } });
   assert.equal(M.validateMediaFile({ type: 'image/gif', size: 0 }, gif(320, 240)).error, 'media_empty');
   assert.equal(M.validateMediaFile({ type: 'image/gif', size: M.MEDIA_LIMITS.bytes + 1 }, gif(320, 240)).error, 'too_big');
   assert.equal(M.validateMediaFile({ type: 'image/gif', size: M.MEDIA_LIMITS.bytes }, gif(320, 240)).ok, true);
@@ -62,4 +62,30 @@ test('un GIF de un mensaje a lo que se dibuja', () => {
   assert.equal(M.canSeeDetails({ mine: true }, 'member'), true);
   assert.equal(M.canSeeDetails({ mine: false }, 'owner'), true);
   assert.equal(M.canSeeDetails({ mine: false }, 'moderator'), false);
+});
+
+test('fotos y fondos: PNG, WebP y JPEG pueden pesar 4 MB y medir 2560 px; un GIF no', () => {
+  const big = (w, h) => png(w, h);
+  assert.equal(M.validateMediaFile({ type: 'image/png', size: M.MEDIA_LIMITS.photoBytes }, big(2560, 1440)).ok, true);
+  assert.equal(M.validateMediaFile({ type: 'image/png', size: M.MEDIA_LIMITS.photoBytes + 1 }, big(2560, 1440)).error, 'too_big');
+  assert.equal(M.validateMediaFile({ type: 'image/png', size: 100 }, big(2561, 1440)).error, 'bad_dimensions');
+  assert.equal(M.validateMediaFile({ type: 'image/gif', size: M.MEDIA_LIMITS.bytes + 1 }, gif(320, 240)).error, 'too_big', 'un GIF sigue en 2 MB');
+  assert.equal(M.validateMediaFile({ type: 'image/gif', size: 100 }, gif(1025, 300)).error, 'bad_dimensions', 'y en 1024 px');
+});
+
+test('WebP animado: la bandera del encabezado VP8X', () => {
+  const still = webpX(300, 300);
+  const moving = webpX(300, 300);
+  moving[20] |= 0x02;
+  assert.equal(M.sniffImage(still).animated, false);
+  assert.equal(M.sniffImage(moving).animated, true);
+  assert.equal(M.validateMediaFile({ type: 'image/webp', size: 100 }, moving).value.animated, true);
+  assert.deepEqual(M.registerArgs('c1', 'm1', 'Fondo', { width: 300, height: 200, animated: true }), { p_id: 'm1', p_community: 'c1', p_name: 'Fondo', p_width: 300, p_height: 200, p_animated: true });
+  assert.equal(M.registerArgs('c1', 'm1', 'Fondo', { width: 3, height: 2 }).p_animated, false);
+});
+
+test('lo oculto por el plan lo marca el servidor', () => {
+  assert.equal(M.itemHidden({ hidden: true }), true);
+  assert.equal(M.itemHidden({ hidden: 'true' }), false);
+  assert.equal(M.itemHidden(null), false);
 });

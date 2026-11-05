@@ -14,6 +14,7 @@ import { openGifPicker, closeGifPicker } from '../../social/gifpicker.js';
 import { canDeleteMessage, canReportMessage, groupMessages, isMuted, mergeMessages, messageFromRow, oldestAt, PAGE_SIZE, personName, canPostIn, canEmbedIn, canReactIn, hasLink, waitSeconds, afterPost, channelIcon, mergeChannelState, REACTIONS, REACTION_GLYPHS, safeReactions } from './logic.js';
 import { mediaImage } from './media-view.js';
 import { openMediaGallery } from './gallery.js';
+import { attachChatBackdrop } from './looks-view.js';
 
 const C = (key, vars) => t(`communities.${key}`, vars);
 const POLL_MS = 30000;
@@ -359,6 +360,8 @@ export function chatView(host, { b, community, channel, people, onPerson, topic 
   drawHeader();
   drawMute();
   loadLatest({ first: true });
+  // Fondo del canal (plan de clan, 0044): una capa detrás de los mensajes; sin fondo o sin plan no se agrega nada.
+  const backdrop = attachChatBackdrop(host, b, community, channel);
 
   const stop = b.watchChannel(channel.id, {
     onStatus: (status) => {
@@ -391,6 +394,7 @@ export function chatView(host, { b, community, channel, people, onPerson, topic 
       if (destroyed) return;
       community = next;
       channel = mergeChannelState(channel, nextChannel);
+      backdrop.sync(community, channel);
       drawHeader();
       drawMute();
     },
@@ -398,6 +402,7 @@ export function chatView(host, { b, community, channel, people, onPerson, topic 
       destroyed = true;
       clearInterval(timer);
       clearInterval(clock);
+      backdrop.destroy();
       closeGifPicker();
       stop();
     },

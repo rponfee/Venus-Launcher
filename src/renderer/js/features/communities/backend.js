@@ -27,6 +27,8 @@ export class GroupError extends Error {
 export function errText(err) {
   const code = err?.code || classifyGroupError(err);
   if (code === 'too_many_channels') return t('communities.cmChannelsFull');
+  // Los errores de planes, fondos y escenarios (0044) tienen sus textos en communityplans.
+  if (!has(`communities.err_${code}`) && has(`communityplans.err_${code}`)) return t(`communityplans.err_${code}`);
   return has(`communities.err_${code}`) ? t(`communities.err_${code}`) : t('communities.err_server');
 }
 

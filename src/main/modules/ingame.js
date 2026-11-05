@@ -4,7 +4,7 @@
 // Ajustes (settings.ingame): pack (paquete de recursos) y window (icono y titulo), los dos prendidos por defecto, y
 // badge (insignia de Venus junto al nombre, ver ingame/badge.js e ingame/badgemod.js), apagada hasta que el jugador
 // la activa: instala el mod "Venus Badge" en las instancias compatibles y anota la cuenta de Minecraft.
-// (La 4.6 retiro las capas de Venus: el ajuste capes ya no existe y el mod 1.3.0 no las dibuja. Ver docs/wip/capas-retiro-46.md.)
+// (La 4.6 retiro las capas de Venus: el ajuste capes ya no existe y el mod 1.3.0 no las dibuja. Ver docs/insignia.md.)
 // Las partidas de prueba (busqueda del culpable de un crash) no se tocan.
 const fs = require('fs');
 const path = require('path');

@@ -1,4 +1,4 @@
-// Venus AI plan texts (Settings > Plan, the Assistant and the MCP panel). Use t('plans.<key>').
+// Venus AI plan texts (Settings > Plan and the Assistant). Use t('plans.<key>').
 export default {
   title: 'Venus AI plans',
   modalSub: 'Pick a plan and pay with Mercado Pago or PayPal: it activates automatically.',
@@ -9,7 +9,7 @@ export default {
   yourPlan: 'Your plan',
   activeBalance: 'Your balance never expires. If you buy another plan, what you have left is added to it.',
   noPlanTitle: 'You do not have a plan yet',
-  noPlanText: 'With a plan you can use the assistant, crash explanations, smart search, mod translation and the Claude and ChatGPT connection.',
+  noPlanText: 'With a plan you can use the assistant, crash explanations, smart search and mod translation.',
 
   // Signed out and errors
   signInText: 'Sign in with your Venus account to buy a plan.',

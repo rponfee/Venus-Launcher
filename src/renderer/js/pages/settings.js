@@ -1,7 +1,7 @@
 // Ajustes: pagina con secciones y una subnavegacion a la izquierda.
-// Rutas: #/settings/<seccion>[/<ancla>]  (por ejemplo #/settings/cloud, #/settings/plan o #/settings/ai/mcp)
+// Rutas: #/settings/<seccion>[/<ancla>]  (por ejemplo #/settings/cloud, #/settings/plan o #/settings/ai/privacy)
 // Secciones: general, appearance, a11y, cloud, privacy, ai, plan, java, storage, data, updates, about.
-// Anclas: cloud/{accounts,venus} · ai/{status,mcp,privacy} · plan/plans · privacy/{activity,discord} ·
+// Anclas: cloud/{accounts,venus} · ai/{status,privacy} · plan/plans · privacy/{activity,discord} ·
 //         java/system · data/{folder,cache}. El ancla lleva la vista a esa tarjeta y enfoca su campo.
 import { h, icon, mount } from '../ui.js';
 import { store, api } from '../store.js';
@@ -60,7 +60,6 @@ const ALIASES = {
   claude: 'ai',
   ia: 'ai',
   assistant: 'ai',
-  mcp: 'ai',
   plans: 'plan',
   planes: 'plan',
   billing: 'plan',

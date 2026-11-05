@@ -3,16 +3,14 @@
 // responden el plan de busqueda. Es la alternativa a Venus IA (nunca las dos a la vez; ver ai-source.js): no gasta la
 // cuota de Venus IA, gasta los limites del plan propio de Claude o ChatGPT.
 //
-// Mismas garantias que los motores del Asistente (assistant/engines.js): se lanza el ejecutable tal cual lo instalo la
+// Garantias: se lanza el ejecutable tal cual lo instalo la
 // persona, sin tocar sus credenciales, y SIN herramientas (ni de archivos ni de shell ni MCP): solo texto de entrada y
 // una respuesta JSON. Lo unico que sale es lo que escribio para buscar (ver el aviso de privacidad de la interfaz).
 //
 //   json({ system, prompt, schema, engine, signal, timeoutMs }) -> objeto JSON de la respuesta (lanza con err.code)
 //   Misma forma que ai.json(): ai-plan.js usa cualquiera de las dos.
 const path = require('path');
-const engines = require('../assistant/engines');
-const installers = require('../mcp/installers');
-const files = require('../mcp/files');
+const cli_ = require('./cli');
 const paths = require('../../core/paths');
 
 const MAX_OUTPUT = 400 * 1024;
@@ -51,7 +49,7 @@ function run({ cli, args, cwd, stdin, env, signal, timeoutMs, parse }) {
   return new Promise((resolve) => {
     let child;
     try {
-      child = installers.spawnCli(cli, args, { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] });
+      child = cli_.spawnCli(cli, args, { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] });
     } catch (err) {
       resolve({ code: -1, spawnError: err?.message || String(err), texts: [], result: '', stderr: '' });
       return;
@@ -135,34 +133,34 @@ function run({ cli, args, cwd, stdin, env, signal, timeoutMs, parse }) {
 }
 
 async function json({ system = '', prompt = '', schema, engine, signal, timeoutMs = 60000, cli = null, prefixArgs = [], cwd = null } = {}) {
-  if (!engines.EXTERNAL.includes(engine)) throw coded('engine', 'Unknown local engine');
-  const path_ = cli || (engines.cached() || (await engines.detect({})))?.[engine]?.cli;
-  if (!path_) throw coded('engineMissing', `${engines.APP_NAME[engine]} not found`);
+  if (!cli_.EXTERNAL.includes(engine)) throw coded('engine', 'Unknown local engine');
+  const path_ = cli || (cli_.cached() || (await cli_.detect({})))?.[engine]?.cli;
+  if (!path_) throw coded('engineMissing', `${cli_.APP_NAME[engine]} not found`);
   const dir = cwd || path.join(paths.data('smartsearch'), 'engine', engine);
-  await files.ensurePrivateDir(dir);
+  await cli_.ensurePrivateDir(dir);
   const text = withSchema(prompt, schema || { type: 'object' });
   let args;
   let stdin;
   let parse;
   if (engine === 'claude') {
     const sysFile = path.join(dir, SYSTEM_FILE);
-    await files.writePrivate(sysFile, String(system || ''));
+    await cli_.writePrivate(sysFile, String(system || ''));
     args = claudeArgs({ sysFile });
     stdin = text;
-    parse = engines.parseClaudeLine;
+    parse = cli_.parseClaudeLine;
   } else {
     args = codexArgs();
     stdin = `${system}\n\n${text}`;
-    parse = engines.parseCodexLine;
+    parse = cli_.parseCodexLine;
   }
-  const out = await run({ cli: path_, args: [...prefixArgs, ...args], cwd: dir, stdin, env: engines.childEnv(process.env, engine), signal, timeoutMs, parse });
+  const out = await run({ cli: path_, args: [...prefixArgs, ...args], cwd: dir, stdin, env: cli_.childEnv(process.env, engine), signal, timeoutMs, parse });
   if (out.aborted) throw coded('cancelled', 'cancelled');
   if (out.timedOut) throw coded('engineTimeout', 'timeout');
   const failure = `${out.stderr}\n${out.result}`;
   const reply = out.result || out.texts.join('\n');
   if (out.spawnError && !reply) throw coded('engineMissing', out.spawnError);
   const value = parseObject(reply);
-  if (!value) throw coded(out.code && out.code !== 0 ? engines.classifyFailure(failure) : 'parse', (failure.trim() || 'no JSON in the response').slice(0, 300));
+  if (!value) throw coded(out.code && out.code !== 0 ? cli_.classifyFailure(failure) : 'parse', (failure.trim() || 'no JSON in the response').slice(0, 300));
   return value;
 }
 

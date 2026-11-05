@@ -3,6 +3,7 @@ import { validateAppearance, validateChannelSettings, validateCategoryName, vali
 import { PERMS, ROLE_LIMITS, explainPerms, mergeOverrides, permApplies, permsFor, validateRoleName } from './permissions.js';
 import { greetingVariablesOk, renderGreeting, emptyGreeting } from './greeting.js';
 import { MEDIA_LIMITS } from './media.js';
+import { createFakePlans } from './fake-plans.js';
 // Comunidades de ejemplo para capturas (VENUS_DEVSHOT + VENUS_REWARDS_FAKE, como Venus Points): misma forma que las RPC de
 // 0033 y 0038, en memoria y sin red. 'new' no tiene comunidades; 'member' entra como miembro común; 'unavailable' responde que no hay servicio.
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -46,7 +47,7 @@ export function createFakeGroups(scenario = 'demo', base) {
     ['m-2', { id: 'm-2', name: 'Técnicos de Redstone', description: 'Máquinas, granjas y dudas.', isPublic: true, createdAt: iso(now - 90 * DAY), inviteCode: 'COM-TTT222', myRole: 'member', channels: [channel('t-9', 'text', 'general', 0), channel('v-9', 'voice', 'taller', 1)], members: [{ ...P.pixel, role: 'owner', joinedAt: iso(now - 90 * DAY) }, { ...ME, role: 'member', joinedAt: iso(now - DAY) }], bans: [], extra: 58 }],
     ['m-3', { id: 'm-3', name: 'Constructores del Oeste', description: 'Mostrá lo que construiste.', isPublic: true, createdAt: iso(now - 30 * DAY), inviteCode: 'COM-WWW333', myRole: null, channels: [channel('t-7', 'text', 'general', 0)], members: [{ ...P.mora, role: 'owner', joinedAt: iso(now - 30 * DAY) }], bans: [], extra: 31 }],
   ]);
-  for (const c of communities.values()) Object.assign(c, { theme: 'default', color: '#f6b45a', icon: 'users', banner: 'none', welcome: '', rules: '', categories: [], roles: [], media: [], greetings: { join: emptyGreeting(), leave: emptyGreeting() } });
+  for (const c of communities.values()) Object.assign(c, { plan: { id: 'free', endsAt: null }, backdrops: [], theme: 'default', color: '#f6b45a', icon: 'users', banner: 'none', welcome: '', rules: '', categories: [], roles: [], media: [], greetings: { join: emptyGreeting(), leave: emptyGreeting() } });
   const demo = communities.get('m-1');
   Object.assign(demo, { color: '#c87939', icon: 'mountain', banner: 'sunset', welcome: 'Un lugar para construir y jugar juntos.', rules: 'Respetá a los demás.\nNo compartas datos personales.\nPublicá cada tema en su canal.',
     categories: [{ id: 'cat-info', name: 'La comunidad', position: 0 }, { id: 'cat-play', name: 'Jugamos juntos', position: 1 }] });
@@ -222,6 +223,9 @@ export function createFakeGroups(scenario = 'demo', base) {
   const permsConfig = (c, ch) => ({ channelId: ch.id, kind: ch.kind, applies: permsFor(ch.kind), everyone: everyoneOf(ch),
     roles: c.roles.map((r) => ({ roleId: r.id, name: r.name, color: r.color, perms: { ...(ch.rolePerms[r.id] || {}) } })) });
 
+  // Planes de clan, fondos y escenarios (0044): se suman a rpcs más abajo.
+  for (const c of communities.values()) c.media.forEach((m) => { m.animated ??= m.mime === 'image/gif'; });
+  const plans = createFakePlans({ communities, commOf, needComm, fail, iso, everyMedia, mediaOf, ME });
   const rpcs = {
     community_my: () => [...communities.values()].filter((c) => c.myRole).map(commCard),
     community_search: ({ p_query }) => [...communities.values()].filter((c) => c.isPublic && like(c.name, p_query)).sort((a, b) => b.extra - a.extra).map(commCard),
@@ -317,7 +321,7 @@ export function createFakeGroups(scenario = 'demo', base) {
     community_channel_create: (args) => rpcs.community_channel_create_configured({ ...args, p_patch: {} }),
     community_channel_create_configured: ({ p_community, p_kind, p_name, p_patch = {} }) => {
       const c = needComm(p_community, 'owner', 'moderator');
-      if (c.channels.length >= 50) fail('too_many_channels');
+      if (c.channels.length >= plans.planOf(c).channels) fail('too_many_channels');
       const baseChannel = channel(newId('channel'), p_kind, p_name, c.channels.length);
       const check = validateChannelSettings({ ...baseChannel, ...p_patch, kind: p_kind, name: p_name }, c.categories);
       if (!check.ok) fail(check.error);
@@ -359,7 +363,7 @@ export function createFakeGroups(scenario = 'demo', base) {
         Object.assign(role, { name: check.value, color: p_color.toLowerCase() });
         return role;
       }
-      if (c.roles.length >= ROLE_LIMITS.roles) fail('too_many_roles');
+      if (c.roles.length >= plans.planOf(c).roles) fail('too_many_roles');
       const role = { id: newId('r'), name: check.value, color: p_color.toLowerCase(), position: c.roles.length };
       c.roles.push(role);
       return role;
@@ -513,9 +517,9 @@ export function createFakeGroups(scenario = 'demo', base) {
       if (!file) fail('no_file');
       const name = String(p_name ?? '').trim();
       if (!name || name.length > MEDIA_LIMITS.name) fail('bad_media_name');
-      if (![p_width, p_height].every((n) => n >= MEDIA_LIMITS.min && n <= MEDIA_LIMITS.max)) fail('bad_dimensions');
-      if (c.media.filter((m) => ['pending', 'approved'].includes(m.status)).length >= MEDIA_LIMITS.total) fail('media_limit');
-      if (c.media.filter((m) => m.status === 'pending').length >= MEDIA_LIMITS.pending) fail('media_pending_limit');
+      // Un GIF mide hasta 1024 px; una foto, hasta 2560. El tope de la galería lo pone el plan (fake-plans.js).
+      const maxDim = file.type === 'image/gif' ? MEDIA_LIMITS.max : MEDIA_LIMITS.photoMax;
+      if (![p_width, p_height].every((n) => n >= MEDIA_LIMITS.min && n <= maxDim)) fail('bad_dimensions');
       const item = { id: p_id, name, status: 'pending', path: file.path, mime: file.type, bytes: file.size, width: p_width, height: p_height, createdAt: iso(Date.now()), reviewedAt: null, rejectReason: null, uploadedBy: ME, hue: 250 };
       c.media.unshift(item);
       return mediaJson(c, item);
@@ -598,8 +602,24 @@ export function createFakeGroups(scenario = 'demo', base) {
 
   // Archivos "subidos" en memoria: lo que mediaUrl devuelve para un GIF de ejemplo es un dibujo propio.
   const files = new Map();
+  const allRpcs = plans.rpcs(rpcs);
+  // El pago de ejemplo (billing:changed) activa el plan de esa comunidad, como lo haría el servidor.
+  const applyBilling = (e) => {
+    const tier = String(e?.plan || '').replace(/^clan_/, '');
+    const c = e?.kind === 'clan' && communities.get(e.community);
+    if (c && ['go', 'pro', 'max', 'ultra'].includes(tier)) plans.grant(c, tier);
+  };
+  if (typeof document !== 'undefined') import('../../store.js').then(({ api }) => api.on('billing:changed', applyBilling)).catch(() => {});
   return {
     fake: true,
+    /** Solo para capturas y pruebas: pone el plan de una comunidad de ejemplo ('free' lo quita). */
+    fakeApplyBilling: applyBilling,
+    fakeSetPlan(id, plan, days = 30) {
+      const c = communities.get(id) || fail('not_found');
+      if (plan === 'free') c.plan = { id: 'free', endsAt: null };
+      else { c.plan = { id: 'free', endsAt: null }; plans.grant(c, plan, days); }
+      return c.plan;
+    },
     signedIn: base.signedIn,
     userId: base.userId,
     onAuth: base.onAuth,
@@ -607,7 +627,7 @@ export function createFakeGroups(scenario = 'demo', base) {
       await wait(60);
       if (!base.signedIn()) fail('noSession');
       if (scenario === 'unavailable') fail('unavailable');
-      const fn = rpcs[name];
+      const fn = allRpcs[name];
       if (!fn) fail('unavailable');
       return structuredClone(fn(args));
     },

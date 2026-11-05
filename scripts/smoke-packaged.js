@@ -48,8 +48,9 @@ async function checkFuses() {
   const { getCurrentFuseWire, FuseV1Options } = require('@electron/fuses');
   const wire = await getCurrentFuseWire(EXE);
   const on = (fuse) => wire[fuse] === 49; // FuseState.ENABLE ('1')
-  // RunAsNode sigue prendido a propósito: el puente MCP corre con ELECTRON_RUN_AS_NODE (modules/mcp.js).
-  check(on(FuseV1Options.RunAsNode), 'fuse RunAsNode prendido (lo usa el puente MCP)');
+  // RunAsNode sigue prendido como en package.json. Lo usaba el puente MCP (borrado en la 4.6): ya se puede apagar,
+  // junto con este chequeo y checkRunAsNode().
+  check(on(FuseV1Options.RunAsNode), 'fuse RunAsNode prendido (como en package.json)');
   check(!on(FuseV1Options.EnableNodeOptionsEnvironmentVariable), 'fuse NODE_OPTIONS apagado');
   check(!on(FuseV1Options.EnableNodeCliInspectArguments), 'fuse --inspect apagado');
   check(on(FuseV1Options.EnableEmbeddedAsarIntegrityValidation), 'fuse de integridad del asar prendido');

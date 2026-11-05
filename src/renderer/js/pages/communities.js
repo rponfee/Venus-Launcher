@@ -107,8 +107,8 @@ function exploreView(host, { b }) {
 const VIEWS = { mine: mineView, explore: exploreView };
 
 export default {
-  ns: ['communities'],
-  css: ['pages/communities', 'pages/messages'],
+  ns: ['communities', 'communityplans'],
+  css: ['pages/communities', 'pages/messages', 'features/communityplans'],
   async render(root, params = []) {
     const b = await groupsBackend();
     if (!root.isConnected) return null;

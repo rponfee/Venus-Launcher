@@ -5,7 +5,8 @@
 // Un GIF de KLIPY no sube ningún archivo, pero también nace pendiente (el servidor no puede saber si es apto). Cuántos elementos entran
 // en la galería, cuántos esperan revisión y si un GIF puede ser fondo lo decide el plan de la comunidad (community_plan_get, ver
 // features/communities/looks.js), no una constante de acá.
-export const MEDIA_LIMITS = { bytes: 2097152, min: 16, max: 1024, name: 40 };
+// GIF: hasta 2 MB y 1024 px. Fotos y fondos (PNG, WebP, JPEG): hasta 4 MB y 2560 px (el servidor repite la regla: 0044).
+export const MEDIA_LIMITS = { bytes: 2097152, photoBytes: 4194304, min: 16, max: 1024, photoMax: 2560, name: 40 };
 export const MEDIA_TYPES = { 'image/gif': 'gif', 'image/webp': 'webp', 'image/png': 'png', 'image/jpeg': 'jpg' };
 export const MEDIA_ACCEPT = Object.keys(MEDIA_TYPES).join(',');
 export const MEDIA_STATUSES = ['pending', 'approved', 'rejected', 'removed'];
@@ -53,20 +54,21 @@ function jpegSize(b) {
 export function sniffImage(bytes) {
   const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
   if (b.length >= 10 && (ascii(b, 0, 6) === 'GIF87a' || ascii(b, 0, 6) === 'GIF89a')) {
-    return { mime: 'image/gif', width: u16le(b, 6), height: u16le(b, 8) };
+    return { mime: 'image/gif', width: u16le(b, 6), height: u16le(b, 8), animated: true };
   }
   if (b.length >= 24 && b[0] === 0x89 && ascii(b, 1, 4) === 'PNG' && b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a && ascii(b, 12, 16) === 'IHDR') {
-    return { mime: 'image/png', width: u32be(b, 16), height: u32be(b, 20) };
+    return { mime: 'image/png', width: u32be(b, 16), height: u32be(b, 20), animated: false };
   }
   const jpeg = jpegSize(b);
-  if (jpeg) return { mime: 'image/jpeg', ...jpeg };
+  if (jpeg) return { mime: 'image/jpeg', ...jpeg, animated: false };
   if (b.length >= 30 && ascii(b, 0, 4) === 'RIFF' && ascii(b, 8, 12) === 'WEBP') {
     const chunk = ascii(b, 12, 16);
-    if (chunk === 'VP8X') return { mime: 'image/webp', width: u24le(b, 24) + 1, height: u24le(b, 27) + 1 };
-    if (chunk === 'VP8 ' && b[23] === 0x9d && b[24] === 0x01 && b[25] === 0x2a) return { mime: 'image/webp', width: u16le(b, 26) & 0x3fff, height: u16le(b, 28) & 0x3fff };
+    // VP8X trae la bandera de animación (bit 1 del primer byte de flags); el servidor se fía de ella solo para decidir si cuenta como fondo animado.
+    if (chunk === 'VP8X') return { mime: 'image/webp', width: u24le(b, 24) + 1, height: u24le(b, 27) + 1, animated: (b[20] & 0x02) !== 0 };
+    if (chunk === 'VP8 ' && b[23] === 0x9d && b[24] === 0x01 && b[25] === 0x2a) return { mime: 'image/webp', width: u16le(b, 26) & 0x3fff, height: u16le(b, 28) & 0x3fff, animated: false };
     if (chunk === 'VP8L' && b[20] === 0x2f) {
       const bits = u32le(b, 21);
-      return { mime: 'image/webp', width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1 };
+      return { mime: 'image/webp', width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1, animated: false };
     }
   }
   return null;
@@ -79,13 +81,16 @@ export function sniffImage(bytes) {
 export function validateMediaFile(file, head) {
   const size = Number(file?.size) || 0;
   if (size < 1) return { ok: false, error: 'media_empty' };
-  if (size > MEDIA_LIMITS.bytes) return { ok: false, error: 'too_big' };
   const seen = sniffImage(head);
+  // El tope depende del tipo real (no del que diga el nombre): un GIF pesa y mide menos que una foto.
+  const gif = seen?.mime === 'image/gif';
+  if (size > (gif || !seen ? MEDIA_LIMITS.bytes : MEDIA_LIMITS.photoBytes)) return { ok: false, error: 'too_big' };
   if (!seen || !MEDIA_TYPES[seen.mime] || (file?.type && file.type !== seen.mime)) return { ok: false, error: 'bad_type' };
-  if (!seen.width || !seen.height || seen.width < MEDIA_LIMITS.min || seen.height < MEDIA_LIMITS.min || seen.width > MEDIA_LIMITS.max || seen.height > MEDIA_LIMITS.max) {
+  const max = gif ? MEDIA_LIMITS.max : MEDIA_LIMITS.photoMax;
+  if (!seen.width || !seen.height || seen.width < MEDIA_LIMITS.min || seen.height < MEDIA_LIMITS.min || seen.width > max || seen.height > max) {
     return { ok: false, error: 'bad_dimensions' };
   }
-  return { ok: true, value: { mime: seen.mime, ext: MEDIA_TYPES[seen.mime], width: seen.width, height: seen.height } };
+  return { ok: true, value: { mime: seen.mime, ext: MEDIA_TYPES[seen.mime], width: seen.width, height: seen.height, animated: seen.animated === true } };
 }
 
 /** Nombre sugerido a partir del nombre del archivo: sin extensión, en una línea y de hasta 40 caracteres. */
@@ -127,6 +132,9 @@ export const safeSource = (value) => (value === 'klipy' ? 'klipy' : 'upload');
 /** ¿Es animado? Lo dice el servidor; si falta, un GIF subido o uno de KLIPY (un WebP animado cuenta como fijo, límite conocido). */
 export const itemAnimated = (item) => (typeof item?.animated === 'boolean' ? item.animated : safeSource(item?.source) === 'klipy' || item?.mime === 'image/gif');
 
+/** Argumentos del registro de un archivo subido (community_media_register). */
+export const registerArgs = (communityId, id, name, check) => ({ p_id: id, p_community: communityId, p_name: name, p_width: check.width, p_height: check.height, p_animated: check.animated === true });
+
 /** Un GIF de un mensaje, a lo que dibuja la interfaz: { kind: 'klipy', url } | { kind: 'upload', path, name } | { kind: 'gone' }. */
 export function viewMedia(media, isKlipyUrl) {
   if (!media || typeof media !== 'object') return null;
@@ -141,6 +149,9 @@ export function itemMedia(item) {
   if (safeSource(item.source) === 'klipy') return typeof item.url === 'string' ? { kind: 'klipy', url: item.url, still: item.still || null } : null;
   return typeof item.path === 'string' ? { kind: 'upload', id: item.id, path: item.path, name: item.name, width: item.width, height: item.height } : null;
 }
+
+/** ¿La galería lo oculta porque el plan ya no alcanza? (el servidor lo marca; vuelve solo al renovar). */
+export const itemHidden = (item) => item?.hidden === true;
 
 /** ¿Quién ve el motivo y la ruta? El dueño y quien lo subió; el resto solo lo aprobado. */
 export const canSeeDetails = (item, role) => item?.mine === true || role === 'owner';

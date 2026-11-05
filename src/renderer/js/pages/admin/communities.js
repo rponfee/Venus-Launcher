@@ -1,20 +1,26 @@
 // Administración de comunidades: buscar y disolver, cola de GIFs subidos (aprobar, rechazar con motivo, retirar) y denuncias de
 // mensajes, comunidades y GIFs ya aprobados. RPC admin_group* de 0033 y admin_community_media* de 0038 (admin_guard: solo
 // administradores; lo que cambia algo queda en admin_log). Sus textos están en el namespace communities, que esta pestaña carga por
-// su cuenta. Lo que escribe la gente va siempre como texto.
+// su cuenta. Lo que escribe la gente va siempre como texto. La sección Planes (communityplans, 0044) edita los límites de cada plan
+// de clan y da o quita un plan a mano a una comunidad.
 import { h, icon, mount, modal, ok, fail, setBusy, confirmDialog, promptDialog, emptyState, ensureCss, debounce, fmtAgo, fmtDate, skeleton } from '../../ui.js';
 import { t, loadNs } from '../../i18n.js';
 import { groupsBackend, errText } from '../../features/communities/backend.js';
 import { mediaImage } from '../communities/media-view.js';
+import { PAID_PLANS } from '../../features/communities/plan.js';
 
 const C = (key, vars) => t(`communities.${key}`, vars);
 const nameOf = (p) => String(p?.displayName || p?.username || '').trim() || C('someone');
-const SECTIONS = [{ id: 'media', icon: 'image' }, { id: 'community', icon: 'users' }, { id: 'reports', icon: 'alert' }];
+const P = (key, vars) => t(`communityplans.${key}`, vars);
+const planLabel = (id) => String(id).charAt(0).toUpperCase() + String(id).slice(1);
+const SECTIONS = [{ id: 'media', icon: 'image' }, { id: 'community', icon: 'users' }, { id: 'plans', icon: 'crown' }, { id: 'reports', icon: 'alert' }];
+const PLAN_FIELDS = [['name', 'text'], ['priceUsd', 'number'], ['periodDays', 'number'], ['media', 'number'], ['pending', 'number'], ['backdrops', 'number'], ['stages', 'number'], ['members', 'number'], ['channels', 'number'], ['roles', 'number'], ['animated', 'check'], ['priority', 'check'], ['active', 'check']];
 const MEDIA_FILTERS = ['pending', 'approved', 'rejected', 'removed'];
 
 export async function render(root) {
   ensureCss('pages/communities');
-  await loadNs('communities');
+  await Promise.all([loadNs('communities'), loadNs('communityplans')]);
+  ensureCss('features/communityplans');
   const b = await groupsBackend();
   let section = 'media';
   let mediaFilter = 'pending';
@@ -23,7 +29,8 @@ export async function render(root) {
   const host = h('div', { class: 'stack' });
 
   const askReason = (title) => promptDialog(title, C('adminReason'), { okText: C('adminConfirm') });
-  const preview = (item, size = 'md') => mediaImage(b, { kind: 'upload', path: item.path, name: item.name, width: item.width, height: item.height }, { size, alt: item.name });
+  // Un GIF de KLIPY no tiene archivo: se ve directo desde KLIPY (mediaImage valida la dirección).
+  const preview = (item, size = 'md') => mediaImage(b, item.source === 'klipy' ? { kind: 'klipy', url: item.url, still: item.still } : { kind: 'upload', path: item.path, name: item.name, width: item.width, height: item.height }, { size, alt: item.name });
 
   async function openDetail(row, reload) {
     const kind = 'community';
@@ -146,7 +153,11 @@ export async function render(root) {
         h('div', { class: 'cm-admin-media-main' },
           h('div', { class: 'row wrap' }, h('strong', { class: 'selectable' }, item.name), item.reports ? h('span', { class: 'badge warn' }, icon('alert'), C('adminMediaReports', { n: item.reports })) : null),
           h('div', { class: 'cl-muted small selectable' }, C('adminMediaFrom', { community: item.community || '—', user: item.uploadedBy ? nameOf(item.uploadedBy) : '—' })),
-          h('div', { class: 'cl-muted small' }, `${item.width}×${item.height} · ${Math.max(1, Math.round((item.bytes || 0) / 1024))} KB · ${item.mime} · ${fmtAgo(Date.parse(item.createdAt))}`),
+          h('div', { class: 'row wrap' },
+            item.priority ? h('span', { class: 'badge accent' }, icon('zap'), P('adminPriority')) : null,
+            item.plan && item.plan !== 'free' ? h('span', { class: 'badge' }, P('clanName', { name: planLabel(item.plan) })) : null,
+            item.source === 'klipy' ? h('span', { class: 'badge' }, 'KLIPY') : null),
+          h('div', { class: 'cl-muted small' }, `${item.width ? `${item.width}×${item.height} · ${Math.max(1, Math.round((item.bytes || 0) / 1024))} KB · ${item.mime} · ` : ''}${fmtAgo(Date.parse(item.createdAt))}`),
           item.rejectReason ? h('p', { class: 'cl-quote selectable' }, item.rejectReason === 'report' ? C('mediaRemovedReport') : item.rejectReason) : null,
           h('div', { class: 'row wrap' }, approve, reject, remove)));
     }
@@ -217,10 +228,116 @@ export async function render(root) {
     load();
   }
 
+  // Planes de clan: límites de cada plan (tabla community_plans) y plan de una comunidad (dar, quitar y ver sus períodos).
+  function plansView() {
+    const plansBox = h('div', { class: 'cp-admin-plans', 'aria-live': 'polite' }, skeleton('grid', { items: 3, min: 240, lines: 4 }));
+    const revenue = h('span', { class: 'badge num' });
+    const search = h('input', { class: 'input', type: 'search', placeholder: P('adminSearch'), maxlength: '60', 'aria-label': P('adminSearch') });
+    const found = h('div', { class: 'stack' });
+    const limitsText = (p) => [`${P('usage_media')}: ${p.limits.media}`, `${P('usage_backdrops')}: ${p.limits.backdrops}`, `${P('usage_stages')}: ${p.limits.stages}`];
+    function editPlan(plan, reload) {
+      const inputs = new Map();
+      const values = { name: plan.name, priceUsd: plan.priceUsd, periodDays: plan.periodDays, active: plan.active, ...plan.limits };
+      const fields = PLAN_FIELDS.filter(([key]) => !(plan.id === 'free' && ['priceUsd', 'periodDays', 'active'].includes(key))).map(([key, kind]) => {
+        const input = kind === 'check' ? h('input', { type: 'checkbox', checked: values[key] === true }) : h('input', { class: 'input', type: kind, value: String(values[key] ?? ''), min: kind === 'number' ? '0' : null, step: key === 'priceUsd' ? '0.01' : null, maxlength: key === 'name' ? '30' : null });
+        inputs.set(key, input);
+        return h('label', { class: 'field' }, h('span', {}, P(`adminField_${key}`)), input);
+      });
+      const save = h('button', { class: 'btn primary', type: 'button' }, icon('save'), P('adminSave'));
+      const dlg = modal({ title: P('adminEditTitle', { name: plan.name }), icon: 'crown', body: h('div', { class: 'cp-admin-fields' }, fields), footer: [save] });
+      save.addEventListener('click', async () => {
+        const patch = {};
+        for (const [key, kind] of PLAN_FIELDS) {
+          const input = inputs.get(key);
+          if (!input) continue;
+          patch[key] = kind === 'check' ? input.checked : kind === 'number' ? Number(input.value) : input.value.trim();
+        }
+        const done = setBusy(save);
+        try {
+          await b.rpc('admin_community_plan_save', { p_id: plan.id, p_patch: patch });
+          ok(P('adminSaved'));
+          dlg.close();
+          reload();
+        } catch (err) {
+          fail(C('actionError'), errText(err));
+        } finally {
+          done();
+        }
+      });
+    }
+    async function loadPlans() {
+      try {
+        const res = await b.rpc('admin_community_plans');
+        revenue.textContent = P('adminRevenue', { amount: new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(Number(res.revenueUsd) || 0) });
+        mount(plansBox, (res.plans || []).map((p) => h('article', { class: 'card cp-admin-plan' },
+          h('div', { class: 'row wrap' }, h('strong', {}, p.id === 'free' ? P('freeName') : P('clanName', { name: p.name })), !p.active ? h('span', { class: 'badge warn' }, P('adminInactive')) : null,
+            h('span', { class: 'badge num' }, P('adminCommunities', { n: p.communities, count: p.communities }))),
+          h('dl', {}, h('dt', {}, P('adminPrice')), h('dd', { class: 'num' }, p.id === 'free' ? '—' : `US$ ${p.priceUsd}`), ...limitsText(p).flatMap((line) => { const [k, v] = line.split(': '); return [h('dt', {}, k), h('dd', { class: 'num' }, v)]; })),
+          h('div', {}, h('button', { class: 'btn sm', type: 'button', onclick: () => editPlan(p, loadPlans) }, icon('edit'), P('adminEdit'))))));
+      } catch (err) {
+        mount(plansBox, emptyState('alert', errText(err), ''));
+      }
+    }
+    function communityPlan(row) {
+      const body = h('div', { class: 'stack' }, skeleton('list', { rows: 3 }));
+      const dlg = modal({ title: row.name, subtitle: P('adminCommunityPlan'), icon: 'crown', body });
+      const planSelect = h('select', { class: 'input', 'aria-label': P('adminGrantPlan') }, PAID_PLANS.map((id) => h('option', { value: id }, P('clanName', { name: planLabel(id) }))));
+      const days = h('input', { class: 'input', type: 'number', min: '1', max: '365', value: '30', 'aria-label': P('adminDays') });
+      async function load() {
+        try {
+          const s = await b.rpc('admin_community_plan_state', { p_community: row.id });
+          const grant = h('button', { class: 'btn primary', type: 'button' }, icon('plus'), P('adminGrant'));
+          const revoke = h('button', { class: 'btn danger', type: 'button', disabled: s.plan.id === 'free' }, icon('x'), P('adminRevoke'));
+          grant.addEventListener('click', async () => {
+            const done = setBusy(grant);
+            try { await b.rpc('admin_community_plan_grant', { p_community: row.id, p_plan: planSelect.value, p_days: Number(days.value) || null }); ok(P('adminGranted')); await load(); }
+            catch (err) { fail(C('actionError'), errText(err)); } finally { done(); }
+          });
+          revoke.addEventListener('click', async () => {
+            if (!(await confirmDialog(P('adminRevokeTitle'), P('adminRevokeText', { name: row.name }), { okText: P('adminRevoke'), danger: true }))) return;
+            const done = setBusy(revoke);
+            try { await b.rpc('admin_community_plan_revoke', { p_community: row.id }); ok(P('adminRevoked')); await load(); }
+            catch (err) { fail(C('actionError'), errText(err)); } finally { done(); }
+          });
+          mount(body,
+            h('p', {}, h('strong', {}, s.plan.id === 'free' ? P('freeName') : P('clanName', { name: s.plan.name })), s.plan.endsAt ? ` · ${P('adminUntil', { date: fmtDate(Date.parse(s.plan.endsAt)) })}` : ''),
+            h('div', { class: 'cp-admin-fields' }, h('label', { class: 'field' }, h('span', {}, P('adminGrantPlan')), planSelect), h('label', { class: 'field' }, h('span', {}, P('adminDays')), days)),
+            h('div', { class: 'row wrap' }, grant, revoke),
+            h('h4', { class: 'cl-h4' }, P('adminPeriods')),
+            (s.periods || []).length
+              ? h('ul', { class: 'cp-admin-periods' }, s.periods.map((p) => h('li', { class: p.revokedAt ? 'is-revoked' : null }, h('span', { class: 'badge' }, P('clanName', { name: planLabel(p.plan) })), h('span', { class: 'small' }, `${fmtDate(Date.parse(p.startsAt))} → ${fmtDate(Date.parse(p.endsAt))}`), h('span', { class: 'cl-muted small' }, P(`adminSource_${p.source}`)))))
+              : h('p', { class: 'cl-muted' }, P('adminNoPeriods')));
+        } catch (err) {
+          mount(body, emptyState('alert', errText(err), ''));
+          if (err?.code === 'not_found') dlg.close();
+        }
+      }
+      load();
+    }
+    async function lookup() {
+      const q = search.value.trim();
+      if (q.length < 2) return mount(found, null);
+      try {
+        const rows = await b.rpc('admin_groups', { p_kind: 'community', p_query: q });
+        mount(found, rows?.length ? rows.slice(0, 8).map((g) => h('article', { class: 'card cl-clan-row' },
+          h('div', { class: 'cl-clan-main' }, h('strong', { class: 'ellipsis selectable' }, g.name), h('div', { class: 'cl-muted small' }, C('adminRowSub', { lead: g.owner ? nameOf(g.owner) : '—', n: g.memberCount ?? 0, date: fmtDate(Date.parse(g.createdAt)) }))),
+          h('button', { class: 'btn sm', type: 'button', onclick: () => communityPlan(g) }, icon('crown'), P('adminManage')))) : emptyState('search', C('adminEmpty'), ''));
+      } catch (err) {
+        mount(found, emptyState('alert', errText(err), ''));
+      }
+    }
+    search.addEventListener('input', debounce(lookup, 300));
+    mount(host, h('div', { class: 'cp-admin' },
+      h('p', { class: 'cl-note' }, icon('info'), h('span', {}, P('adminNote'))), revenue, plansBox,
+      h('h3', { class: 'cl-h4' }, P('adminFind')), h('div', { class: 'input-icon cl-search' }, icon('search'), search), found));
+    loadPlans();
+  }
+
   function select(id) {
     section = id;
-    mount(seg, SECTIONS.map((s) => h('button', { type: 'button', class: s.id === section ? 'active' : null, 'aria-pressed': String(s.id === section), onclick: () => select(s.id) }, icon(s.icon), C(`adminTab_${s.id}`))));
-    if (id === 'reports') reportsView();
+    mount(seg, SECTIONS.map((s) => h('button', { type: 'button', class: s.id === section ? 'active' : null, 'aria-pressed': String(s.id === section), onclick: () => select(s.id) }, icon(s.icon), s.id === 'plans' ? P('adminTab') : C(`adminTab_${s.id}`))));
+    if (id === 'plans') plansView();
+    else if (id === 'reports') reportsView();
     else if (id === 'media') mediaView();
     else groupsView();
   }

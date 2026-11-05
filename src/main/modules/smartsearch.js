@@ -67,20 +67,16 @@ async function aiView({ refresh = false } = {}) {
   let entitled = false;
   if (paid) {
     try {
-      const eng = require('./assistant/engines');
+      const eng = require('./smartsearch/cli');
       if (refresh || eng.stale()) await Promise.race([eng.detect({ refresh }).catch(() => {}), new Promise((r) => setTimeout(r, refresh ? 8000 : 1200))]);
       engines = eng.cached();
     } catch {
       engines = null;
     }
-    try {
-      entitled = (await require('./mcp').planState({ wait: refresh ? 8000 : 1500, refresh })).entitled === true;
-    } catch {
-      entitled = false;
-    }
+    // La fuente local pide plan Go o superior (cualquier plan de pago menos Basic)
+    entitled = String(status?.quota?.plan || '').toLowerCase() !== 'basic';
   }
-  const s = await settings.get();
-  return aiSource.describe({ status, engines, entitled, preferredEngine: s.ai?.engine, prefs });
+  return aiSource.describe({ status, engines, entitled, preferredEngine: 'claude', prefs });
 }
 
 // Quien responde segun la fuente elegida: la misma forma ({ json }) para Venus IA y para la IA local.

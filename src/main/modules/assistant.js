@@ -13,15 +13,9 @@
 //   assistant:conversations() · assistant:conversation(id) · assistant:deleteConversation(id)
 //   assistant:status({ refresh }?) -> ai.status() + modelos permitidos (modelOptions), eleccion (selection),
 //     presupuesto (budget), renovaciones (resets), needsPlan y catalogo de planes (plans: del backend o plans.json)
-//   assistant:confirm(requestId, aprobado, { always }?) -> always: "Permitir siempre" (herramientas MCP)
-// Servidores MCP del asistente (./assistant/mcp-servers.js; solo con plan Go o superior, err.code 'plan'):
-//   assistant:mcpServers({ refresh }?) -> { plan, servers, limits, claudeDesktop: { found } }
-//   assistant:mcpSave(servidor) -> { server, servers } · assistant:mcpRemove(id) · assistant:mcpSetEnabled(id, bool)
-//   assistant:mcpTest(id) -> { ok, tools, info, ms } o { ok: false, error, code } · assistant:mcpTools(id, { refresh }?)
-//   assistant:mcpAllowAlways(id, herramienta, bool) · assistant:mcpImportPreview() · assistant:mcpImport(nombres)
 // Evento: assistant:event (conversationId, { type: 'turn-start'|'thinking'|'text'|'tool-start'|'tool-result'|
 //   'confirm'|'undo'|'done'|'error'|'quota'|'notice', seq, ... }). 'text' y 'done' traen failover: true si respondio
-//   el proveedor de respaldo (served_by.failover del backend). Las herramientas MCP traen mcp: { server, tool }.
+//   el proveedor de respaldo (served_by.failover del backend).
 const settings = require('../core/settings');
 const tasks = require('../core/tasks');
 const game = require('../core/game');
@@ -35,12 +29,9 @@ const system = require('./assistant/system');
 const undo = require('./assistant/undo');
 const config = require('./assistant/config');
 const models = require('./assistant/models');
-const mcpServers = require('./assistant/mcp-servers');
-const engines = require('./assistant/engines');
 
 // Modulos hermanos que se usan si existen (los construyen otros equipos): nunca son obligatorios.
-// 'mcp' da el control de plan de los servidores MCP del asistente (el mismo de Venus como servidor MCP).
-const OPTIONAL = new Set(['compat', 'crash', 'perf', 'snapshots', 'curseforge', 'mcp']);
+const OPTIONAL = new Set(['compat', 'crash', 'perf', 'snapshots', 'curseforge']);
 const optionalCache = new Map();
 function optional(name) {
   if (!OPTIONAL.has(name)) return null;
@@ -86,51 +77,6 @@ async function cancelInstanceTasks(instanceId, key = 'instanceId') {
   while (running().length && Date.now() - started < 10000) await new Promise((r) => setTimeout(r, 150));
 }
 
-// Motores del asistente para la interfaz: el elegido (settings.ai.engine), si el plan los incluye (Go o superior,
-// el mismo control que el MCP) y que se detecto de Claude Code y de Codex (instalado, con sesion, plan). La
-// deteccion corre aparte y avisa con el evento assistant:engines cuando cambia (ver engines.js).
-async function enginesView(det, { planWait = 1500 } = {}) {
-  const s = await settings.get();
-  let plan = { entitled: false, reason: 'error', checking: false };
-  try {
-    const m = optional('mcp');
-    if (typeof m?.planState === 'function') plan = await m.planState({ wait: planWait });
-  } catch {
-    plan = { entitled: false, reason: 'error', checking: false };
-  }
-  const one = (id) => {
-    const e = det?.[id] || null;
-    return {
-      app: engines.APP_NAME[id],
-      provider: engines.PROVIDER_NAME[id],
-      installed: Boolean(e?.installed),
-      loggedIn: e ? e.loggedIn : null,
-      method: e?.method || null,
-      plan: e?.plan || null,
-      error: e?.error || null,
-      usable: engines.usable(det, id),
-    };
-  };
-  const current = engines.ENGINES.includes(s.ai?.engine) ? s.ai.engine : 'venus';
-  return {
-    current,
-    entitled: plan.entitled === true,
-    planReason: plan.reason || null,
-    checking: !det,
-    at: det?.at || null,
-    claude: one('claude'),
-    chatgpt: one('chatgpt'),
-    models: engines.MODELS,
-    efforts: engines.EFFORTS,
-    choice: s.ai?.engineChoice && typeof s.ai.engineChoice === 'object' ? s.ai.engineChoice : {},
-  };
-}
-
-async function enginesStatus(opts = {}) {
-  if (opts.refresh === true || engines.stale()) engines.detect({ refresh: opts.refresh === true }).catch(() => {});
-  return enginesView(engines.cached(), { planWait: opts.refresh === true ? 8000 : 1500 });
-}
-
 async function status(opts = {}) {
   let base;
   try {
@@ -164,8 +110,6 @@ async function status(opts = {}) {
     jvmFlags: config.jvmFlags().map((f) => ({ id: f.id, label: f.label?.[lang] || f.label?.en || f.id })),
     limits: { maxRounds: agent.MAX_ROUNDS, bulkInstall: agent.BULK_LIMIT },
     running: agent.runningIds(),
-    // Motores externos: el Claude Code o el Codex del usuario responden desde Venus (plan Go o superior)
-    engines: await enginesStatus(opts || {}),
   };
 }
 
@@ -208,33 +152,7 @@ function register({ app, handle, send, onQuit }) {
       });
   };
 
-  // Servidores MCP del asistente: el plan sale del mismo control que Venus como servidor MCP (modules/mcp)
-  let version = '0.0.0';
-  try {
-    version = app?.getVersion?.() || version;
-  } catch {
-    /* sin app */
-  }
-  mcpServers.configure({
-    version,
-    plan: async (o) => {
-      const m = optional('mcp');
-      return typeof m?.planState === 'function' ? m.planState(o) : { entitled: false, reason: 'error' };
-    },
-    // El puente de Venus en Claude Desktop no se importa (seria el launcher hablandose a si mismo)
-    isOwnBridge: (entry) => {
-      const args = Array.isArray(entry?.args) ? entry.args.map(String) : [];
-      return args.some((a) => /venus-mcp-bridge\.js$/i.test(a)) || (entry?.command === process.execPath && entry?.env?.ELECTRON_RUN_AS_NODE === '1');
-    },
-  });
-
-  agent.configure({ ai: aiImpl, send: safeSend, optional, mcp: mcpServers, engines });
-  engines.configure({
-    onChange: (det) =>
-      enginesView(det)
-        .then((v) => safeSend('assistant:engines', v))
-        .catch(() => {}),
-  });
+  agent.configure({ ai: aiImpl, send: safeSend, optional });
   // Software de un servidor recien creado: se instala en segundo plano (igual que al crearlo desde Servidores)
   const installServer = (id, name) => {
     if (fakeMode) return;
@@ -261,41 +179,13 @@ function register({ app, handle, send, onQuit }) {
   });
 
   handle('assistant:send', (conversationId, text, opts) => agent.send(typeof conversationId === 'string' && conversationId ? conversationId : null, text, opts && typeof opts === 'object' ? opts : {}));
-  handle('assistant:confirm', (requestId, approved, opts) => agent.confirm(String(requestId || ''), approved === true, { always: opts?.always === true }));
+  handle('assistant:confirm', (requestId, approved) => agent.confirm(String(requestId || ''), approved === true));
   handle('assistant:cancel', (conversationId) => agent.cancel(String(conversationId || '')));
   handle('assistant:undo', (undoId) => agent.undoAction(String(undoId || '')));
   handle('assistant:conversations', () => agent.conversations());
   handle('assistant:conversation', (id) => agent.conversation(String(id || '')));
   handle('assistant:deleteConversation', (id) => agent.deleteConversation(String(id || '')));
   handle('assistant:status', (opts) => status(opts && typeof opts === 'object' ? opts : {}));
-  // Motores externos (docs/asistente-ia.md, seccion 11): deteccion de Claude Code y Codex, y el motor por defecto
-  handle('assistant:engines', async (opts) => {
-    const o = opts && typeof opts === 'object' ? opts : {};
-    const det = await engines.detect({ refresh: o.refresh === true });
-    return enginesView(det, { planWait: 8000 });
-  });
-  handle('assistant:setEngine', async (engine) => {
-    const id = engines.ENGINES.includes(engine) ? engine : 'venus';
-    const s = await settings.get();
-    if ((s.ai?.engine || 'venus') !== id) {
-      await settings.set({ ai: { engine: id } });
-      safeSend('assistant:settingsChanged');
-    }
-    return enginesView(engines.cached());
-  });
-
-  // Servidores MCP del asistente (Ajustes > IA). Solo el usuario los agrega: la IA no tiene herramientas para esto.
-  const id = (v) => String(v || '');
-  handle('assistant:mcpServers', (opts) => mcpServers.overview(opts && typeof opts === 'object' ? opts : {}));
-  handle('assistant:mcpSave', (server) => mcpServers.save(server && typeof server === 'object' ? server : {}));
-  handle('assistant:mcpRemove', (serverId) => mcpServers.remove(id(serverId)));
-  handle('assistant:mcpSetEnabled', (serverId, on) => mcpServers.setEnabled(id(serverId), on === true));
-  handle('assistant:mcpTest', (serverId) => mcpServers.test(id(serverId)));
-  handle('assistant:mcpTools', (serverId, opts) => mcpServers.tools(id(serverId), opts && typeof opts === 'object' ? opts : {}));
-  handle('assistant:mcpAllowAlways', (serverId, tool, on) => mcpServers.setAlwaysAllow(id(serverId), typeof tool === 'string' ? tool : '', on === true));
-  handle('assistant:mcpImportPreview', () => mcpServers.importPreview());
-  handle('assistant:mcpImport', (names) => mcpServers.importServers(Array.isArray(names) ? names : []));
-
   onQuit(() => agent.shutdown());
 }
 

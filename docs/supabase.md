@@ -56,13 +56,44 @@ En el proyecto de Venus (`dzchklzaxyygbvfpagvx`), cada migración quedó registr
 | `0028_sync_ajustes.sql` | Ajustes de apariencia por cuenta, versión optimista y objeto de hasta 64 KB | [Datos](implementacion/datos.md) |
 | `0029_resenas_servidores.sql` | Reseñas, votos, denuncias y moderación de servidores destacados | [Servidores](implementacion/servidores.md) |
 | `0030_stickers.sql` | Stickers por cuenta y cuotas de subida serializadas por usuario | [Mensajes y voz](implementacion/mensajes-voz.md) |
-| `0031_competencia.sql` | Rankings consentidos, desafíos, eventos e inscripciones; motivo `challenge` | Competir (retirada en la 4.6) |
+| `0031_competencia.sql` | Rankings consentidos, desafíos, eventos e inscripciones; motivo `challenge` | Competir (retirada en la 4.6) Retirada en la 4.6; sus tablas las limpia la 0048. |
 | `0032_galeria_clips.sql` | Publicaciones, me gusta y denuncias; validación de URL y vencimiento de clips | [Clips](implementacion/clips.md) |
-| `0033_clanes_comunidades.sql` | Clanes, comunidades, canales y `clan_prefs.share_playtime`, separado y apagado por defecto | [Clanes y comunidades](implementacion/clanes-comunidades.md) |
-| `0034_capas.sql` | Ítems de capa, elección por cuenta y consulta pública por UUID Minecraft verificado | [Capas](implementacion/capas.md) |
+| `0033_clanes_comunidades.sql` | Clanes, comunidades, canales y `clan_prefs.share_playtime`, separado y apagado por defecto | [Clanes y comunidades](implementacion/clanes-comunidades.md) El sistema de clanes se retiró en la 4.6 (lo limpia la 0048); Comunidades sigue. |
+| `0034_capas.sql` | Ítems de capa, elección por cuenta y consulta pública por UUID Minecraft verificado | Retirada en la 4.6; la limpia la 0048 (informe de la retirada en [insignia.md](insignia.md)). |
 | `0035_app_celular.sql` | Push opcional, bandeja móvil y clips recibidos; conserva `media-share` | [App para celular](implementacion/app-celular.md) |
-| `0036_extensiones.sql` | Catálogo moderado, versiones inmutables y blocklist pública | Extensiones (retiradas en la 4.6) |
+| `0036_extensiones.sql` | Catálogo moderado, versiones inmutables y blocklist pública | Extensiones (retiradas en la 4.6) Retirada en la 4.6; la limpia la 0048. |
 | `0037_curseforge_admin.sql` | Configuración administrativa de CurseForge en Vault, estado público y acceso del servidor con cuota de 240/minuto por cuenta | [Administración](admin.md) |
+
+### Migraciones de la 4.6
+
+Aplicadas en producción el 5 de noviembre de 2026 (registradas como `venus_<número>_<nombre>`), en este orden: 0038 a 0043, 0045 y 0047. Todas son idempotentes y se probaron en transacciones con `rollback` antes de aplicarlas. La 0044 (planes de clan y pagos) la prepara otra sesión y la 0046 no se usó. La **0048** está escrita y **sin aplicar**.
+
+| Archivo | Qué incorpora | Contratos y límites |
+|---|---|---|
+| `0038_comunidades.sql` | Comunidades sobre las tablas de la 0033: categorías, canales de texto, anuncios, foros y voz, roles propios (`community_role_*`), permisos por canal (`community_channel_perms`, columnas `perm_embeds`, `perm_react`, `perm_connect` y `perm_speak` en `community_channels`), reacciones, bienvenida y despedida, galería de GIFs con aprobación (`community_media`, bucket privado `community-media`) y la cola de Administración (`admin_community_media_queue`, `admin_community_media_review`). Redefine `community_report` (acepta `'media'`) y `admin_group_report_close` | [Comunidades](implementacion/clanes-comunidades.md) |
+| `0039_perfil_circular_banners.sql` | `private.banner_image_url`; `profile_customize` y `profile_public` con avatar siempre `round` y banners solo `none`, `image` quieta o `klipy`; el bucket `profile-media` sin `image/gif`; datos viejos convertidos | [Perfiles](perfiles.md) |
+| `0040_marcos_originales.sql` | 36 marcos nuevos en `shop_items`, los 21 anteriores desactivados, reintegro de lo pagado (`points_ledger`, `reason = 'shop'`, `ref = 'refund:<item>'`), `shop_items_frame_data` y `gift_send` solo para lo de la tienda | [Perfiles](perfiles.md) |
+| `0041_venus_pass_tiempo.sql` | Venus Pass permanente: temporada `venus-pass` (380 niveles, 60 XP), `pass_seasons.permanent`, `pass_playtime.premium_minutes`, los 8 marcos y los 380 premios, `pass_me`, `pass_playtime`, `pass_claim`, `pass_claim_all` y las RPC de Administración; elimina `admin_pass_grant` | [Venus Pass](venus-pass.md) |
+| `0042_musica_perfil.sql` | `private.card_song_ok` para canciones de Openverse; saca las políticas de subir y actualizar de `profile-audio` | [Perfiles](perfiles.md) |
+| `0043_logros_venus.sql` | Desactiva los 255 logros que dependían del juego (`achievements.active = false`; no se borra ningún desbloqueo) y deja 189 activos | [Venus Points](venus-points.md) |
+| `0045_soporte_mejoras.sql` | Columnas nuevas en `support_tickets`, tablas `support_attachments`, `support_notes` y `support_macros`, bucket privado `support-attachments`, `support_submit_ticket`, `support_queue`, `support_staff_panel`, asignación, prioridad, notas, respuestas guardadas, valoración, reapertura y `support_unread_summary` | `docs/implementacion/` y `supabase/tests/soporte-local.sql` |
+| `0047_voz_respaldo.sql` | `voice_room_secrets` (sin políticas), `voice_fallback_secret(uuid)`, `private.voice_new_secret` y los disparadores que rotan el secreto | [Voz](voice-turn.md) |
+| `0048_limpieza_retiros.sql` | **Sin aplicar.** Limpieza de lo retirado (ver abajo) | este documento |
+
+#### 0048: limpieza de lo retirado (sin aplicar)
+
+Elimina, con una sola corrida segura y repetible: las tablas de Competir (`ranking_prefs`, `ranking_weekly`, `ranking_reports`, `challenges`, `calendar_events`, `calendar_signups`), de Extensiones (`community_extensions`, `community_extension_versions`), de las capas (`user_capes`) y del sistema viejo de clanes (`clan_prefs`, `clans`, `clan_members`, `clan_invites`, `clan_requests`), con todas sus funciones (`ranking_*`, `challenge_*`, `event*`, `admin_event*`, `extension_*`, `admin_extension*`, `cape_*`, `badge_capes`, `clan_*` y los ayudantes de `private`) y las políticas `extension_packages_select` y `extension_packages_insert` de `storage.objects`. Antes:
+
+- Redefine **sin la rama `'clan'`**, partiendo de su definición vigente en producción, `admin_groups` (ahora `'community'` por defecto), `admin_group_detail`, `admin_group_dissolve`, `admin_group_remove` y `community_report`, y deja `group_reports_kind_check` en `('message', 'community', 'media')`.
+- Reintegra las capas compradas **una sola vez** (fila positiva de `points_ledger`, `reason = 'shop'`, `ref = 'refund:<item>'`; la clave única `(user_id, reason, ref)` lo impide repetir) y borra las filas `kind = 'cape'` de `shop_items` y la restricción `shop_items_cape_data`; `shop_items_kind_check` queda sin `'cape'`.
+- Corrige `public.profile_public`: `achievementCount` cuenta solo logros activos.
+- **Conserva** el motivo `challenge` en `points_ledger_reason_check` (el historial de puntos lo sigue mostrando), el bucket `community-media` y los datos de Comunidades. No toca nada del Venus Pass ni de pagos (`pass_tiers`, `pass_purchases`, `pass_quote`, `payments_*`).
+- Se detiene con un error claro si una recompensa del Pase todavía es una capa o si el bucket `extension-packages` tiene archivos. Las tablas se borran sin `cascade`: si algo más dependiera de ellas, falla en voz alta.
+- **Los buckets no se pueden borrar por SQL** (lo impide `storage.protect_delete`): `extension-packages` (vacío) y `profile-audio` (vacío, sin uso) se borran desde el panel de Storage o la API.
+
+Filas que tenían las tablas en producción (lectura del 5 de noviembre, solo conteos): `ranking_prefs`, `ranking_weekly`, `ranking_reports`, `challenges`, `calendar_events`, `calendar_signups`, `community_extensions`, `community_extension_versions` y `clan_invites`, `clan_requests`: **0**; `user_capes`: **1**; `clans`, `clan_members` y `clan_prefs`: **1** cada una (un clan con un solo miembro, creado el 5 de noviembre por la misma cuenta que es dueña de la única comunidad; el clan es distinto de la comunidad y su nombre y etiqueta se pierden al aplicar); `shop_items` con `kind = 'cape'`: 5; `user_items` de capas: 2; `group_reports` de clanes: 0; archivos en `extension-packages`: 0; filas del libro con el motivo `challenge`: 0. Una cuenta compró dos capas por **3000 Venus Points** en total y se le devuelven.
+
+Prueba: `begin; <0048>; <escenarios>; rollback;` contra producción, con la migración corrida dos veces dentro de la transacción. Resultado: la segunda corrida deja la base idéntica; el reintegro es de 2 filas (suma 3000) y el saldo de esa cuenta sube exactamente 3000; no queda ninguna tabla ni función retirada, ninguna función referencia algo borrado y las funciones de Pase y pagos quedan idénticas; `admin_groups`, `admin_group_detail`, `admin_group_remove`, `admin_group_dissolve`, `community_report('community', …)`, `community_get` y `community_my` siguen funcionando y todos rechazan `'clan'` con `bad_kind`; `profile_public` cuenta 33 en lugar de 47 para la cuenta con más logros inactivos desbloqueados. Producción quedó igual después de la prueba.
 
 La [revisión SQL permanente](implementacion/revision-sql-0028-0036.md) conserva el inventario de **183 funciones / 32 tablas**, las correcciones, ACL/RLS y el ensayo local **ejecutado** el 3 de noviembre: **1282 comprobaciones, incluidas 57 de escenarios**. El 4 de noviembre se aplicaron completas 0028–0036 en producción; se comprobaron **183/183 funciones, 32/32 tablas con RLS y la conservación del motivo `challenge`**. Las nueve versiones registradas y la activación posterior de 0037 figuran en [activación del backend](activacion-backend-4.5.0.md). 0037 pasó **84/84 comprobaciones SQL locales** sobre 0001–0036 completas, con rollback que restauró esquema/ACL, filas y secuencias. Su fixture de Vault solo usó valores ficticios y no prueba cifrado real.
 
@@ -103,7 +134,7 @@ Los buckets se crean desde las migraciones, todos **privados** salvo `profile-me
 | `world-saves` | 0004 | 50 MB | `application/octet-stream`, `application/zip` | Nube de mundos y configuraciones. Cada mundo se comprime y se sube en **partes de 45 MB** (`<userId>/<instancia>/<mundo>/<subida>/part-NNN`). Cuota de 2 GB por usuario. |
 | `screenshots` | 0005 | 15 MB | PNG, JPEG, WebP | Capturas compartidas (hasta 500 por usuario). |
 | `clips` | 0005 | 50 MB | MP4, WebM, MKV, MOV | Clips compartidos (hasta 100 por usuario). |
-| `profile-audio` | 0027 | 1 MB | `audio/webm` | **Público**: la canción de perfil, un solo archivo `<userId>/song.webm` (30 segundos recodificados en la PC). La tarjeta la ofrece solo a los amigos, pero el archivo es público por URL. Si se cierra una denuncia con "Quitar la canción", el perfil deja de apuntarlo pero el archivo sigue hasta que el dueño suba otro; para borrarlo del todo, Storage → profile-audio → carpeta del usuario. |
+| `profile-audio` | 0027 | 1 MB | `audio/webm` | **Sin uso desde la 0042**: la canción de perfil ya no se sube (se elige de Openverse). Quedó vacío, sin políticas de subir ni de actualizar; se puede borrar desde Storage. |
 
 **Límite de tamaño del proyecto:** en la configuración de Storage del proyecto (**Storage → Settings** o **Project Settings → Storage**), el límite global por archivo (*Upload file size limit*) tiene que ser de **50 MB o más**: si es menor, Supabase rechaza las partes de 45 MB de la nube de mundos y los clips grandes. En el plan gratuito, 50 MB es el máximo por archivo; por eso el launcher parte los mundos. Revisá también el espacio total que incluye tu plan.
 
@@ -112,7 +143,9 @@ Los buckets se crean desde las migraciones, todos **privados** salvo `profile-me
 | Bucket de 4.5.0 | Migración | Límite por archivo | Acceso y finalidad |
 |---|---|---|---|
 | `stickers` | 0030 | 256 KB; PNG/WebP/GIF | Público por URL; 30 archivos por cuenta, 100 con Premium. La conversación no hace privado el archivo. |
-| `extension-packages` | 0036 | 5 MB; paquete ZIP | Privado; versiones inmutables, sin UPDATE/DELETE del cliente. Aprobación administrativa y comprobación de hash al instalar/revisar. |
+| `extension-packages` | 0036 | 5 MB; paquete ZIP | **Sin uso** (Extensiones se retiró): vacío. La 0048 saca sus políticas; el bucket se borra desde Storage. |
+| `community-media` | 0038 | 2 MB; GIF, WebP y PNG | Privado. GIFs de las comunidades: lo pendiente lo ven solo quien lo subió, el dueño y los administradores; aprobado, los miembros por URL firmada. Al borrar una comunidad los archivos quedan en el bucket (hay que limpiarlos por la API de Storage). |
+| `support-attachments` | 0045 | 4 MiB; PNG, JPEG y WebP | Privado. Capturas de Soporte: leen la dueña de la consulta y el equipo, sin UPDATE ni DELETE. |
 | `clips` existente | 0032 usa 0005 | Mantiene 50 MB | La galería publica referencias firmadas; despublicar no revoca un enlace previo ni borra el archivo por sí solo. |
 
 Estas migraciones y sus políticas **ya se aplicaron en producción el 4 de noviembre**. Esto no sustituye una prueba de subida con una cuenta real. Los topes de descompresión de una extensión se controlan también en el launcher: 20 MB en total, 8 MB por archivo y 200 entradas.
@@ -171,3 +204,9 @@ El launcher pide hasta 60 servidores activos, los guarda 10 minutos en memoria y
 El [registro de activación](activacion-backend-4.5.0.md) separa aplicación, verificaciones y pendientes. Completan la referencia [Edge Functions](../supabase/functions/README.md), [web](../web/LEEME.md) y [estado de integración](estado-4.5.0.md).
 
 Actualización posterior de CurseForge: el dueño había cargado una clave de Profile que daba 403 en búsquedas. Después de reemplazarla por la clave aprobada para el launcher, la búsqueda mínima y la consulta exacta del catálogo respondieron HTTP 200 desde el servidor; la segunda devolvió un resultado. Falta comprobar el flujo completo con sesión real dentro del launcher. Ver [CurseForge](curseforge.md).
+
+## Estado operativo de la 4.6 al 5 de noviembre
+
+- **Migraciones aplicadas:** 0038 a 0043, 0045 y 0047 (junto con 0028 a 0037 de la 4.5.0, que ya estaban). **Sin aplicar:** la 0048. La 0044 (planes de clan y pagos) la prepara otra sesión y no existe la 0046. Antes de aplicar la 0048 hay que publicar el launcher 4.6.0 que ya no usa lo retirado; los mods Venus Badge 1.2.0 que sigan instalados verán un 404 en `badge_capes` y reintentarán con espera creciente (hasta cada 10 minutos) sin afectar a la insignia.
+- **Funciones de borde:** `curseforge` se corrigió en el repo (clasifica los rechazos en `badkey`, `blocked` y `denied` sin registrar el texto remoto); se despliega con `supabase functions deploy curseforge` y no tiene migración. `admin`, `ai-assistant` y `billing` desplegadas difieren del repo: no se redespliegan desde él.
+- **Pruebas SQL en el repo:** `supabase/tests/communities-local.sql` (929 comprobaciones), `soporte-local.sql` (156) y `curseforge-admin-local.sql`, con `scripts/run-communities-local.ps1` y `scripts/run-curseforge-admin-local.ps1`.

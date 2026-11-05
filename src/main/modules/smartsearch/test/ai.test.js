@@ -243,7 +243,7 @@ test('IA local: parseObject saca el objeto de cercos y textos alrededor', () => 
 
 // ---------- Todo junto en el proceso principal (con dobles de Venus IA y de la PC) ----------
 
-function loadSmartsearch({ status, engines = none, entitled = false, json, prefs = {} }) {
+function loadSmartsearch({ status, engines = none, json, prefs = {} }) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'venus-ss-main-'));
   const paths = require('../../../core/paths');
   paths.setRoot(root);
@@ -252,11 +252,9 @@ function loadSmartsearch({ status, engines = none, entitled = false, json, prefs
   const settings = require('../../../core/settings');
   // los modulos con red se reemplazan: nada sale de la PC
   const aiPath = require.resolve('../../ai');
-  const mcpPath = require.resolve('../../mcp');
-  const enginesPath = require.resolve('../../assistant/engines');
+  const enginesPath = require.resolve('../cli');
   const calls = { ai: 0, json: [] };
   require.cache[aiPath] = { id: aiPath, filename: aiPath, loaded: true, exports: { status: async () => (status instanceof Error ? Promise.reject(status) : status), json: async (o) => { calls.ai++; calls.json.push(o); return json(o); } } };
-  require.cache[mcpPath] = { id: mcpPath, filename: mcpPath, loaded: true, exports: { planState: async () => ({ entitled }) } };
   const realEngines = require(enginesPath);
   const originalCached = realEngines.cached;
   const originalStale = realEngines.stale;
@@ -264,7 +262,7 @@ function loadSmartsearch({ status, engines = none, entitled = false, json, prefs
   realEngines.stale = () => false;
   delete require.cache[require.resolve('../../smartsearch')];
   const smartsearch = require('../../smartsearch');
-  return { smartsearch, settings, calls, restore: () => { realEngines.cached = originalCached; realEngines.stale = originalStale; delete require.cache[aiPath]; delete require.cache[mcpPath]; fs.rmSync(root, { recursive: true, force: true }); } };
+  return { smartsearch, settings, calls, restore: () => { realEngines.cached = originalCached; realEngines.stale = originalStale; delete require.cache[aiPath]; fs.rmSync(root, { recursive: true, force: true }); } };
 }
 
 const aiPlanJson = () => ({ types: ['mod'], mcVersion: '1.20.1', loader: 'fabric', mode: 'singleplayer', themes: ['zombie apocalypse'], hardware: 'normal', searches: [{ type: 'mod', query: 'zombie', categories: ['mobs'], weight: 1 }], summary: 'Kit' });
@@ -342,7 +340,7 @@ test('plan de la cuenta imposible de comprobar (sin red): IA apagada y buscador 
 test('con dos fuentes se usa solo la elegida: la local no llama a Venus IA', async () => {
   // el CLI no existe: nunca se lanza el Claude Code real de esta PC desde una prueba
   const missing = { claude: { installed: true, loggedIn: true, cli: path.join(os.tmpdir(), 'venus-no-such-cli') }, chatgpt: { installed: false } };
-  const env = loadSmartsearch({ status: paidStatus('go'), engines: missing, entitled: true, json: aiPlanJson, prefs: { useAi: true, aiSource: 'local', aiConsent: consent('venus', 'local') } });
+  const env = loadSmartsearch({ status: paidStatus('go'), engines: missing, json: aiPlanJson, prefs: { useAi: true, aiSource: 'local', aiConsent: consent('venus', 'local') } });
   try {
     const view = await env.smartsearch.aiView();
     assert.equal(view.source, 'local');

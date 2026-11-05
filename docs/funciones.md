@@ -1,6 +1,6 @@
 # Guía de Venus Launcher
 
-> Esta guía incluye funciones implementadas en la **rama 4.5.0, todavía sin publicar**. Las funciones nuevas de nube requieren migraciones y despliegues pendientes. Consultá el [estado de integración y las pruebas pendientes](estado-4.5.0.md).
+> Esta guía describe la **versión 4.6.0**, que incluye también lo preparado para la 4.5.0. Las funciones que dependen de la nube necesitan que el servidor de Venus tenga aplicadas las migraciones correspondientes ([estado de la base](supabase.md)). Se retiraron Competir, Extensiones, el visor de semillas, el modo streamer con OBS, la página Herramientas, las capas de Venus y los Clanes viejos ([alcance de la retirada](retirada-funciones.md)).
 
 Todo lo que podés hacer con Venus Launcher, función por función: cómo se usa y qué necesita. Después de los primeros pasos, las funciones siguen el orden del menú de la izquierda (**Jugar**, **Contenido**, **En línea** y **Herramientas**); al final están el **Asistente IA**, las herramientas de cada instancia, los **Ajustes** (el engranaje de abajo a la izquierda), el [menú lateral y el modo mini](#menú-lateral-y-modo-mini) y los atajos.
 
@@ -78,6 +78,9 @@ Mientras jugás, Venus muestra encima del juego quién habla en el Voice Chat y 
 - En **Ajustes → En el juego** activás cada widget, elegís su lugar en una grilla de 3×3 o lo arrastrás a donde quieras (en la vista previa o con **Editar posiciones en el juego**), y cambiás su tamaño, opacidad y tema (oscuro, claro o acento). Podés ocultar el texto de los mensajes (solo se ve quién escribió) y elegir qué avisos ver.
 - **Rendimiento**: un widget con la RAM y la CPU que usa el juego, el ping del servidor en el que estás (si Venus sabe cuál es) y cuánto hace que abriste el juego. En **Ajustes → En el juego** lo activás y elegís qué mostrar. No muestra FPS: no se pueden medir desde afuera del juego (usá F3 o un mod). Se esconde solo cuando deja de haber datos.
 - **Alt+Shift+O** (se puede cambiar) lo muestra u oculta mientras jugás. **Probar overlay** manda avisos de ejemplo.
+- **Estado a la vista**: la tarjeta de **Ajustes → En el juego** dice en una línea si el overlay está activo, listo, apagado, en edición, buscando el juego o con un error y qué probar.
+- **Editor de widgets**: tocá un widget en la vista previa para elegirlo y ver sus opciones; los apagados se ven tenues, **Restablecer este widget** y **Restablecer todos** vuelven a lo de fábrica, y con el teclado lo movés (flechas), lo llevás a la grilla (`1` a `9`), cambiás tamaño (`+`/`-`) y opacidad (`[`/`]`) o lo ocultás (`Supr`).
+- **Atajos**: solo valen con el juego (o un panel del overlay) adelante, así no le roban la combinación a otra aplicación. Al cambiar uno, el launcher rechaza y explica los que chocan con las teclas de Minecraft, con AltGr, con Windows, con otra función de Venus o con otra aplicación que ya lo tomó.
 - Anda con cualquier versión y loader. En pantalla completa exclusiva puede no verse: jugá en ventana maximizada o sin bordes. Detalles: [overlay.md](overlay.md).
 
 En 4.5.0, los paneles de **recetas, contadores y asistente** se abren con sus atajos configurables. Mientras un panel está abierto podés interactuar con él; al cerrarlo se restaura el comportamiento habitual del overlay. La vuelta del foco con Minecraft real sigue pendiente de validación.
@@ -150,7 +153,7 @@ En **Skins** (menú Jugar) mirás tu skin en 3D, explorás el catálogo, guardá
 - Para cambiar la skin o la capa, primero tiene que cargarse tu perfil de Minecraft; si no carga, tocá **Reintentar**. Los cambios se ven en el juego la próxima vez que entres a un mundo o a un servidor.
 - Necesita: nada para la vista previa y la biblioteca, que funcionan sin internet (también con una cuenta sin conexión o sin cuenta). Para cambiar la skin o la capa, una cuenta de Microsoft con Minecraft: Java Edition; si la sesión venció, la página te ofrece volver a iniciar sesión. Con el modo sin conexión activado (**Ajustes → Descargas y almacenamiento**) no se conecta a nada.
 
-**Capas de Venus (rama 4.5.0).** Se equipan desde Skins y usan una cuenta de Minecraft verificada y el mod de Venus. Otros jugadores necesitan ese mod para verlas. No reemplazan una capa oficial de Mojang ni son una capa oficial: si hay una oficial, tiene prioridad. Amanecer cuesta 1000 Venus Points; Nebulosa y Aurora, 1500 cada una; Magma, 2500; Órbita está incluida solo con Premium. [Funcionamiento y requisitos](implementacion/capas.md).
+Las capas de Venus se retiraron en la 4.6: la insignia sigue, pero el mod ya no dibuja capas ni las pide al servidor. La capa oficial de tu cuenta de Minecraft se elige acá, como siempre.
 
 ### Editor de skins
 
@@ -169,7 +172,7 @@ En **Skins → Editor de skins** creás una skin de 64×64 (clásica o slim) des
 
 **Estudio de clips (rama 4.5.0).** El montaje reúne tus clips de la semana; podés elegir una duración de 30 segundos, 1, 2 o 5 minutos, o sin tope. Requiere WebCodecs y usa los WebM grabados por Venus. El timelapse toma capturas a intervalos, con un límite de espacio configurable, y empieza apagado.
 
-La integración opcional con **OBS** controla una instancia mediante su WebSocket en la PC o la red local. La subida a **YouTube o TikTok** necesita configuración y autorización del proveedor: YouTube parte de privado y TikTok deja un borrador para terminar en su app. El camino directo no está validado con proveedores reales; si exige un secreto adicional, queda pendiente un flujo aprobado. No se distribuyen secretos en el launcher.
+La subida a **YouTube o TikTok** necesita configuración y autorización del proveedor: YouTube parte de privado y TikTok deja un borrador para terminar en su app. El camino directo no está validado con proveedores reales; si exige un secreto adicional, queda pendiente un flujo aprobado. No se distribuyen secretos en el launcher.
 
 La **galería** publica clips para otras cuentas de Venus, con me gusta y denuncias. Quitar una publicación no invalida una URL firmada que alguien ya tenga. Los límites de tamaño de la nube siguen vigentes. [Guía técnica, configuración y límites](clips.md).
 
@@ -189,17 +192,18 @@ En **Música** (menú Jugar) ves lo que suena en Spotify (gratis o Premium), You
 - **Premio diario**: 10 puntos por día y 5 más por cada día seguido (hasta 35). Se reclama con un botón.
 - **Logros**: tienen su propia sección (ver [Logros y misiones](#logros-y-misiones)). Los de tu PC se reclaman solos.
 - **Invitaciones**: compartí tu código `VP-XXXXXX`. Cuando un amigo nuevo lo canjea (en sus primeros 14 días) y verifica su cuenta de Minecraft, vos ganás 500 y tu amigo 200. Sin verificar con Mojang no paga: así no se puede hacer trampa con cuentas falsas.
-- **Tienda**: marcos para tu perfil, efectos para tu nombre, estilos de la insignia en el juego y títulos. Se equipan al instante.
-- **Venus Premium** (cualquier plan de Venus): puntos x2 en el premio diario y los logros, insignia dorada en el juego, banners animados, efectos de nombre premium, Marco Venus y título Supporter, repetición instantánea de 5 minutos y todo lo del plan (IA). Se ve en **Venus Points → Premium** y en **Ajustes → Plan**.
+- **Tienda**: 36 marcos para tu perfil (dibujados con código, por categorías y con vista previa en tu cabeza), efectos para tu nombre, estilos de la insignia en el juego y títulos. Se equipan al instante.
+- **Venus Premium** (cualquier plan de Venus): puntos x2 en el premio diario y los logros, insignia dorada en el juego, efectos de nombre premium, cuatro marcos solo para Premium y título Supporter, repetición instantánea de 5 minutos y todo lo del plan (IA). Se ve en **Venus Points → Premium** y en **Ajustes → Plan**.
 - Necesita: cuenta de Venus. Reglas completas: [venus-points.md](venus-points.md).
 
 ### Venus Pass
 
-Pase de temporada, en **Venus Pass** del menú. Cada temporada dura 8 semanas y tiene 50 niveles con dos pistas: la gratis (puntos y dos cosméticos) y la premium (más puntos y cuatro cosméticos exclusivos), que se abre con cualquier edición del pase: **Go**, **Pro** (10 niveles al instante y el título Pro) o **Max** (25 niveles, +25 % de XP y el marco Max). Se compra una vez con Mercado Pago o PayPal, como los planes de IA, y pasar a una edición mejor cuesta la diferencia.
+Progresión **permanente** en **Venus Pass** del menú: **380 niveles**, 60 XP por nivel y una sola pista de premios. No se vende ni hay temporadas que terminen.
 
-- **XP**: cada Venus Point que ganás en la temporada vale 1 XP (premio diario, misiones, logros e invitaciones) y jugar da 1 XP por minuto, hasta 120 por día. Venus Premium multiplica la XP por 1,2.
-- **Premios**: se reclaman nivel por nivel o con **Reclamar todo**; el punto en el menú avisa cuando hay algo. Los cosméticos del pase se equipan desde Mi perfil y no se venden en la tienda.
-- Necesita: cuenta de Venus. El progreso vive en el servidor.
+- **XP**: solo viene del tiempo que jugás con el launcher: 1 XP por minuto, hasta 120 minutos por día (una hora de juego es un nivel). Venus Premium suma **+20 %** a los minutos que jugás con Premium, y perder Premium no te baja el nivel. Los Venus Points y las misiones ya no dan XP.
+- **Premios**: uno por nivel, que se reclama a mano (**Reclamar** o **Reclamar todo**). Casi todos son Venus Points (10 al principio y más con los niveles; los múltiplos de 10, el triple) y hay 21 cosméticos en niveles clave: ocho marcos de perfil, títulos y efectos de nombre. El punto del menú avisa cuando hay algo.
+- La lista se ve de a 50 niveles, con **Ir a mi nivel**. Los cosméticos se equipan desde Mi perfil y no se venden en la tienda.
+- Necesita: cuenta de Venus iniciada (los minutos y los premios se guardan en la cuenta). Detalle: [venus-pass.md](venus-pass.md).
 
 ## Contenido
 
@@ -212,13 +216,15 @@ Al instalar, el launcher te muestra en qué instancias o servidores es compatibl
 - **Por página**: elegí cuántos resultados se piden cada vez (Modrinth: 10, 20, 50 o 100; CurseForge: 10, 20 o 50). Se recuerda para la próxima vez.
 - **Más filtros**: frase exacta (las palabras juntas y en ese orden), palabras a excluir, autor, descargas mínimas, actualizado en los últimos N días, solo código abierto, entorno (cliente o servidor) y licencia. Muestra cuántos filtros hay activos, cada uno se quita con su ✕ y **Limpiar filtros** los saca todos; se recuerdan mientras el launcher está abierto y se manejan con el teclado (Tab, Enter, flechas y Escape para cerrar el panel). Modrinth filtra por autor (nombre de usuario exacto), descargas, fecha, código abierto y entorno; la frase y las palabras excluidas (que no las filtra ni Modrinth ni CurseForge) las filtra el launcher revisando los resultados de a tandas hasta llenar la página, así que el total se va completando ("20+ resultados").
 - **CurseForge**: con el selector Modrinth | CurseForge buscás e instalás también desde CurseForge, incluidos sus modpacks. Todos los filtros de **Más filtros** los aplica el launcher sobre lo que CurseForge devuelve (sin entorno ni licencia; "solo código abierto" pide que el proyecto enlace su código fuente).
-- Necesita: nada. CurseForge viene incluido en el launcher; si tu versión no lo trae, la pestaña te lo avisa y seguís con Modrinth.
+- Necesita: nada para Modrinth. **CurseForge** se pide a través del servidor de Venus con una clave que configura el administrador: hace falta tener la sesión de Venus iniciada, y si no se puede usar, la pestaña te dice por qué (sin sesión, clave rechazada, límite de consultas o servidor caído) y te deja **Volver a Modrinth**.
 
 ### Buscador inteligente
 
 Contá qué querés jugar ("mods de tecnología para jugar con amigos en la 1.20.1", "shaders livianos para una PC lenta") y el buscador arma un kit agrupado por tipo, con el motivo de cada elección, si es compatible y sus dependencias. Elegí la instancia destino, la versión y el loader (o dejalos en automático), y después instalá todo junto en tu instancia (**Instalar todo**), uno por uno o con **Crear instancia nueva con este kit**. Los plugins se instalan en un servidor Paper o Purpur tuyo y los modpacks crean una instancia nueva. Guarda tus últimas búsquedas. **Resultados por tipo** (3, 5, 8 o 12) define cuántas opciones arma el kit de cada tipo y se recuerda para la próxima vez; **Más filtros** suma los mismos criterios del catálogo (frase exacta, palabras a excluir, autor, descargas mínimas, actualizado hace poco, solo código abierto y entorno) y la tarjeta "Entendí" muestra cuáles se aplicaron.
 
-- Necesita: nada. Con IA entiende mejor pedidos complicados y explica cada elección.
+- **IA opcional**: el interruptor **Usar IA para entender la búsqueda** (apagado por defecto) solo anda con un **plan de pago de Venus IA**. Se usa una sola fuente a la vez: **Venus IA** (gasta la cuota del plan) o tu **Claude Code / Codex** instalado en la PC (desde el plan Go; no gasta la cuota). La primera vez por fuente te muestra qué se envía y tenés que aceptarlo. Sin plan, sin conexión o sin aceptar el aviso, el buscador normal sigue funcionando.
+- El vocabulario es más amplio (sinónimos, negaciones, cantidades en letras, modos de juego, hardware y unos 47 temas) y no necesita IA.
+- Necesita: nada para el buscador normal.
 
 ## En línea
 
@@ -266,6 +272,7 @@ Los avisos opcionales por **webhook de Discord** informan eventos del servidor y
   - **Calidad de voz**: Ahorro (40 kbps), Normal (80 kbps) o Alta (128 kbps) por persona. En salas de más de 5 personas el tope baja para no saturar tu subida, y baja solo si la conexión pierde paquetes.
 - **Cortes y compatibilidad**: la voz usa Opus en mono con corrección de errores (FEC) y sin mandar datos en silencio (DTX). Se puede entrar a la misma sala con clientes 2.x.
 - **Efecto de entrada**: cuando alguien entra a la sala, su tarjeta muestra durante un segundo y medio el efecto que eligió en su perfil (chispas, Nether, Ender o nieve) y la etiqueta "entró". Con movimiento reducido no se anima. El tuyo se elige en **Mi perfil → Estilo**.
+- **Respaldo si se cae el servidor** (siempre activo, sin interruptor): el audio ya iba directo entre las personas, así que una llamada en curso no se corta. Si el servidor de Venus deja de responder, la coordinación de la sala pasa sola, en pocos segundos, a una conexión de emergencia cifrada y firmada por brokers MQTT públicos; en el encabezado de la sala aparece **Conexión de respaldo**. Mientras dure podés entrar a una de tus **Salas guardadas** (en Voz → Salas) y crear una **Sala de emergencia**, cuyo código de respaldo se comparte como una contraseña. Quien entra durante la caída se ve como **Sin verificar**. No se puede listar salas, invitar por mensaje, usar contraseñas ni bloquear mientras no haya servidor. Funciona también en los canales de voz de las Comunidades. Detalle y límites: [voice-turn.md](voice-turn.md).
 - **En el juego**: instala **Simple Voice Chat** en tus instancias o servidores para tener voz de proximidad dentro de Minecraft.
 - Invitá a un amigo desde Mensajes con **Invitar a voz**: si no estás en una sala, se crea una privada.
 - Necesita: cuenta de Venus y micrófono. Pulsar para hablar funciona con el launcher en primer plano; dentro del juego usá el atajo global.
@@ -296,12 +303,13 @@ La **app para celular** de 4.5.0 está preparada como web instalable para amigos
 **Mi perfil** (en Mensajes, tocando tu cabeza, o **Ajustes → Cuenta y nube → Editar perfil**) abre un editor con vista previa en vivo de tu tarjeta y de cómo se ve tu nombre en la lista de un amigo:
 
 - **Perfil**: pronombres, descripción y el **estado con emoji**: un emoji de la grilla, un texto (hasta 70 caracteres) y **Dura** (30 minutos, 1 hora, 4 horas, hasta mañana o siempre); cuando vence, el estado desaparece solo.
-- **Estilo**: degradado de dos colores con ángulo, tipografía del nombre (7), efecto (brillo, degradado, destello, arcoíris o fuego), color y brillo del nombre. Desde la 3.1, además: **Tema de la tarjeta** (Nether, End, Océano, Cerezos, Espacio o Aurora; con Premium, también con partículas), **burbujas de chat** (clásica, redonda, pixel o recta y su color, con una muestra: así se ven tus mensajes en Mensajes), **entrada en salas de voz** (chispas, Nether, Ender o nieve) y la **canción de perfil**: elegís un archivo de tu PC (MP3, OGG, WAV, M4A o WebM de hasta 20 MB), marcás dónde empiezan los 30 segundos y el recorte se prepara en tu PC y se sube al guardar (el original no se sube). Solo tus amigos la escuchan al abrir tu tarjeta, con play, pausa y volumen, y cualquiera puede apagarlas con **No reproducir canciones de perfil**.
-- **Banner**: 8 diseños pixel, tu propia imagen (se recorta y comprime en tu PC), un GIF animado con Premium o el color clásico.
+- **Estilo**: degradado de dos colores con ángulo, tipografía del nombre (7), efecto (brillo, degradado, destello, arcoíris o fuego), color y brillo del nombre. Desde la 3.1, además: **Tema de la tarjeta** (Nether, End, Océano, Cerezos, Espacio o Aurora; con Premium, también con partículas), **burbujas de chat** (clásica, redonda, pixel o recta y su color, con una muestra: así se ven tus mensajes en Mensajes), **entrada en salas de voz** (chispas, Nether, Ender o nieve). La pestaña está organizada en secciones (Tarjeta, Nombre y Chat y voz) con un atajo arriba.
+- **Banner**: el color clásico, un GIF de KLIPY o una imagen tuya quieta (PNG, JPG o WebP; se recorta a 4:1 y se comprime en tu PC). Los diseños pixel y los GIF propios se retiraron; un GIF, un APNG o un WebP animado se rechazan.
+- **Música**: la canción del perfil se elige de un catálogo de música libre (Openverse: Jamendo y Wikimedia Commons) filtrando por texto, género, duración y fuente; la escuchás antes de elegirla, marcás desde dónde suena (hasta 30 segundos) y se muestran el autor, la licencia Creative Commons y el sitio de origen. Es opcional y está apagada hasta que la activás en **Ajustes → Privacidad → Música de perfil**. La oyen solo tus amigos y vos, y se pausa mientras hay un juego abierto.
 - **Vitrina**: hasta 5 servidores favoritos (tus amigos los ven con **Unirme**), tus estadísticas (si las querés publicar) y hasta 3 capturas destacadas. Desde la 3.1, además: la **pose** (de pie, saludando, sentado o caminando) y el **fondo** (atardecer, cueva, End o nieve) de tu skin en 3D, hasta 3 **insignias raras** (logros épicos o legendarios que tiene menos del 5 % de los jugadores, como chips en tu tarjeta) y el **libro de visitas**: si lo abrís, tus amigos te dejan mensajes en tu tarjeta (hasta 5 por día cada uno, de hasta 200 caracteres); los borra quien los escribió o vos.
-- **Cosméticos**: marco, título y estilo de la insignia de la tienda o de Premium, incluidos los marcos animados (Latido, Órbita) y de temporada (Halloween, Navidad), que se compran todo el año, y los del Venus Pass (marcos, efecto y títulos de la temporada), que se equipan acá pero no se venden en la tienda. Lo premium que no tenés se ve con un candado que lleva a los planes.
+- **Cosméticos**: marco, título y estilo de la insignia de la tienda o de Premium, y los del Venus Pass (marcos, efecto y títulos), que se equipan acá pero no se venden en la tienda. Los marcos son dibujos nuevos y siempre rodean un avatar **circular** (la forma de la cabeza ya no se elige). Los marcos anteriores se retiraron y quien había pagado alguno recibió sus puntos de vuelta. Lo premium que no tenés se ve con un candado que lleva a los planes.
 - **Regalar** (botón en la tarjeta de un amigo): Venus Points (de 10 a 500 por regalo, hasta 1000 por día) o un cosmético de la tienda al precio normal (no los de Premium ni los que ya tiene), con confirmación. Cuando te regalan, el launcher te avisa y el regalo queda en el historial de Venus Points.
-- **Denunciar** (en la tarjeta de otro jugador): la canción o el contenido de un perfil, con un motivo y un texto opcional (hasta 10 denuncias por día). Las revisa el equipo de Venus.
+- **Denunciar** (en la tarjeta de otro jugador): el contenido de un perfil, con un motivo y un texto opcional (hasta 10 denuncias por día). Las revisa el equipo de Venus.
 - **Compartir mi perfil** arma una imagen PNG de tu tarjeta para copiar o guardar. Ver [perfiles.md](perfiles.md).
 - Necesita: cuenta de Venus. Las partículas del tema de la tarjeta piden Venus Premium.
 
@@ -321,25 +329,25 @@ En **Ajustes → Privacidad → Avisos** elegís qué te avisa el launcher:
 - Un servidor favorito vuelve a estar en línea, se llena o se vacía: se revisan cada 5 minutos solo con el launcher abierto. Los favoritos del perfil vienen apagados; los marcás con la campana o los prendés en el panel.
 - Mientras jugás, los avisos solo aparecen en el overlay del juego (se puede cambiar).
 
-### Competir
-
-En la rama 4.5.0, **Competir** muestra rankings semanales entre amigos que aceptaron compartir estadísticas. El permiso empieza apagado. Las medidas salen de partidas y mundos locales, por lo que no constituyen un sistema de competición verificado.
-
-Podés desafiar a un amigo y consultar eventos y torneos. Un desafío válido paga 25 Venus Points, sin multiplicador Premium ni XP del pase: hasta tres premios por semana y uno contra el mismo amigo. Cada participante debe informar al menos diez minutos en el plazo. Los recordatorios de eventos requieren que Venus esté abierto. [Reglas completas](implementacion/competir.md).
-
 ### Comunidades
 
-Las **comunidades** tienen canales de texto y voz con roles y moderación. La lectura y escritura dependen de la pertenencia y los permisos del canal; requieren cuenta de Venus y un backend compatible. [Reglas, permisos y límites](implementacion/clanes-comunidades.md). Clanes se retiró del launcher; Comunidades permanece disponible.
+Espacios para un grupo grande de gente, en **Comunidades** del menú (reemplazan a los Clanes viejos).
+
+- **Canales** de texto, de anuncios, foros y voz, ordenados en categorías, con modo lento y canales privados. Cada comunidad puede ser pública o entrarse con un código.
+- **Roles y permisos**: el dueño crea roles propios (hasta 15, con color) y, en cada canal, decide qué puede hacer cada rol y todos los miembros: ver, escribir, mandar enlaces y GIFs, reaccionar, entrar a voz y hablar. El panel de permisos te muestra qué puede hacer alguien en ese canal y por qué. Dueño y moderadores pueden todo.
+- **Bienvenida y despedida**: mensajes automáticos con `{usuario}`, `{comunidad}` y `{miembros}`, el canal que elijas y un GIF opcional, con vista previa.
+- **GIFs**: de KLIPY, o subidos a la galería de la comunidad (GIF, WebP o PNG de hasta 2 MB). Un GIF subido **no lo ve nadie más** hasta que un administrador de Venus lo aprueba; podés ver el estado y el motivo si lo rechazan. Cualquier miembro puede denunciar un GIF aprobado.
+- **Reacciones** a los mensajes (ocho a elegir) y denuncias de mensajes y comunidades.
+- Necesita: cuenta de Venus. [Reglas, permisos y límites](implementacion/clanes-comunidades.md).
 
 ## Herramientas
 
 ### Logros y misiones
 
-Sección **Logros** del menú, con tres pestañas:
+Sección **Logros** del menú, con dos pestañas:
 
-- **Logros**: más de 400, agrupados por categoría (tiempo, minería, combate, exploración, vida, colección, capturas, social, Venus y especiales). Cada uno tiene niveles de bronce a netherita con su barra de progreso y sus puntos; se reclaman solos. Con suficientes jugadores se ve también qué tan raro es cada uno. Los que se cumplen a partir de esta PC se reclaman de a 40 por día como mucho: si ya venías jugando, los que falten entran los días siguientes.
+- **Logros**: 189, agrupados por categoría, con niveles de bronce a netherita, barra de progreso y puntos; se reclaman solos. **Son solo de Venus**: se calculan con datos del launcher (horas, sesiones y rachas medidas por el launcher, instancias, mods, clips) o de tu cuenta (perfil, amigos, mensajes, voz, Venus Points). Los logros que dependían de lo que pasa dentro del juego (bloques, criaturas, muertes, distancias, dimensiones) se desactivaron; los que ya tenías los conservás con sus puntos. Con suficientes jugadores se ve qué tan raro es cada uno.
 - **Misiones**: 3 por día y 3 por semana, distintas para cada cuenta (jugar un rato, sacar capturas, entrar a servidores...). Se reclaman con un botón, y completar las tres da un bono. Cambian a medianoche UTC y los lunes.
-- **Minecraft**: los logros (advancements) de cada mundo, por instancia, que antes estaban en Estadísticas.
 
 Podés destacar hasta 6 logros en tu perfil desde **Mi perfil → Vitrina**.
 
@@ -368,18 +376,6 @@ En **Opciones avanzadas** están el recolector de Java (explicado en criollo), a
 
 **Historial (rama 4.5.0).** Guarda localmente mediciones de CPU y RAM de las partidas y FPS cuando el mod de Venus los informa. **Registrar rendimiento** permite apagar el muestreo; empieza activo. La medición periódica puede tener un costo, especialmente en Windows. La ausencia de FPS no equivale a cero FPS. [Retención y precisión](implementacion/datos.md).
 
-### Caja de herramientas
-
-**Herramientas** (menú Herramientas) junta cuentas útiles para jugar. Todo se calcula en tu PC, sin conexión:
-
-- **Nether ↔ Overworld**: escribís las coordenadas de un lado y se completan las del otro (escala 1:8; la altura no cambia).
-- **Stacks y cofres**: cuántos stacks son tantos ítems (de 64, de 16 o no apilables), cuántos espacios ocupan y en cuántos cofres simples, dobles o shulkers entran; y al revés, de stacks a ítems.
-- **Orden de encantamientos**: elegís el ítem (espada, pico, armadura o arco), cuántas veces ya pasó por el yunque y hasta 8 libros, y te dice en qué orden combinarlos para gastar menos niveles, contando la penalización por trabajo previo. Avisa si ningún orden evita el "Demasiado caro" y qué encantamientos no van juntos.
-- **Ticks, segundos y hora del día**: convierte entre ticks, segundos y la hora del mundo (con la fase del día), con los atajos de `/time set` y el comando listo para copiar.
-- **Códigos de color §**: escribís un texto con § (o &) y lo ves como en el chat, con la paleta y botones de formato que insertan los códigos.
-- **Bloque, chunk y región**: en qué chunk y en qué archivo de región (`r.X.Z.mca`) cae una coordenada, y al revés.
-- Necesita: nada.
-
 ### Descansos, resumen y versiones nuevas
 
 Tres avisos alrededor del juego, que se prenden y apagan en **Ajustes → General → Descansos y resumen**:
@@ -398,6 +394,20 @@ Cuando no podés iniciar sesión o algo no descarga, Venus te dice si el problem
 - **El panel completo** está en **Ajustes → Descargas y almacenamiento → Estado de los servicios → Comprobar** y en la paleta de comandos (**Ctrl+K**). Muestra cada servicio con su estado (**Responde**, **Lento** o **No responde**), cuánto tardó y qué hacer. También detecta si falla solo el DNS de tu red, si un antivirus, un proxy o la hora de Windows rompen las conexiones seguras y si tu red bloquea todos los servicios del juego. Si Cloudflare (la prueba neutral de tu conexión) no contesta pero los servicios sí, no culpa a tu conexión. El resultado se reusa 20 segundos y después podés **Volver a comprobar**.
 - Con el **modo sin conexión** activado no consulta nada y te ofrece ir a desactivarlo.
 - Privacidad: nunca consulta en segundo plano, solo cuando abrís el panel o justo después de un error al iniciar sesión. Hace un pedido corto a cada servicio, sin datos tuyos.
+
+### Soporte
+
+**Soporte** del menú te comunica con el equipo de Venus. A la izquierda ves **Mis consultas** (todas, abiertas, cerradas o sin leer, con estado, prioridad y la última respuesta); a la derecha, el formulario o la conversación.
+
+- **Nueva consulta**: elegís un tema (error del launcher, error al jugar, cuenta y pagos, plan de IA, sugerencia u otra consulta) y cada uno pide los datos que el equipo necesita. Asunto de 3 a 120 caracteres y mensaje de 10 a 4000. Mientras escribís aparecen respuestas rápidas a las dudas más comunes, que se resuelven en tu PC sin consultar nada por internet.
+- **Capturas**: hasta 3 por envío, elegidas, pegadas con Ctrl+V o arrastradas. Antes de salir de tu PC se achican y se les borran los metadatos (ubicación del EXIF y textos incrustados).
+- **Diagnóstico opcional**: empieza apagado. Si lo activás, ves las partes (launcher y sistema, Java, instancia; los nombres de mods y el registro del juego quedan sin tildar) y el texto exacto que se va a enviar, sin rutas ni datos personales. Podés elegir la instancia y 50, 100 o 200 líneas del registro.
+- **Borrador**: asunto, mensaje y tema se guardan solos en tu PC para que los recuperes (las capturas y el diagnóstico no).
+- **Respuestas del equipo**: la lista marca **Respuesta nueva**. Si activás el aviso (tiene su propio interruptor), el launcher consulta cada 3 minutos con la ventana visible, muestra el número en el menú y un aviso con **Ver**.
+- **Al cerrarse**: podés valorar la atención de 1 a 5 y **reabrir** la consulta hasta 14 días después y hasta 3 veces. **Dar por resuelta** la cierra vos.
+- **Límites**: 3 consultas abiertas, 5 nuevas por día y 15 capturas por día.
+- **Para el equipo** (Administración → Soporte o `#/support-staff`): cola con contadores y filtros, tomar o asignar, prioridad, notas internas que no ve la persona, datos mínimos de la cuenta (nunca el correo ni datos de pago) y respuestas guardadas.
+- Necesita: cuenta de Venus. Los pagos y los planes no cambian: se compran desde **Plan** y se acreditan solos; Soporte nunca activa un plan.
 
 ## Asistente IA
 
@@ -496,7 +506,7 @@ El engranaje de abajo a la izquierda. Cada sección tiene su enlace directo (por
 - **En el juego**: el overlay (widgets —incluido **Rendimiento**: RAM y CPU del juego, ping y tiempo de sesión, con qué mostrar—, posiciones, tamaño, opacidad, tema y atajo), la grabación y la repetición instantánea (atajos, calidad, fps y audio) y la música (reproductor elegido, mostrarla en el overlay y atajos).
 - **Accesibilidad**: modos para daltonismo con intensidad regulable, alto contraste, tamaño de la interfaz (90 a 130 %), movimiento reducido, foco siempre visible, símbolos en los estados y navegación con control (ver [Atajos y control](#atajos-y-control)). También instala **Controlify** para jugar Minecraft con control.
 - **Cuenta y nube**: tus cuentas de Minecraft y tu cuenta de Venus (crearla, iniciar sesión, código de amigo, nombre visible y contraseña) y **Editar perfil**.
-- **Privacidad**: compartir o no tu actividad con tus amigos, qué datos quedan en tu PC y cuáles en la nube, **Avisos** de amigos y servidores favoritos, y **Discord Rich Presence**: muestra en tu perfil de Discord si estás en el launcher o jugando (instancia, versión, mundo o servidor, tiempo y hasta 2 botones), sin mostrar nunca direcciones IP. Solo hace falta dejar abierta la app de escritorio de Discord (la web no sirve); **Probar** muestra una actividad de prueba.
+- **Privacidad**: compartir o no tu actividad con tus amigos, qué datos quedan en tu PC y cuáles en la nube, **Avisos** de amigos y servidores favoritos, y **Discord Rich Presence**: muestra en tu perfil de Discord si estás en el launcher o jugando (instancia, versión, mundo o servidor, tiempo y hasta 2 botones), sin mostrar nunca direcciones IP. Solo hace falta dejar abierta la app de escritorio de Discord (la web no sirve); **Probar** muestra una actividad de prueba. Ahí también están **Música de perfil** (apagada por defecto) y las demás conexiones opcionales.
 - **Inteligencia artificial**: estado de la IA, tu plan con las preguntas que te quedan por modelo y el presupuesto del mes, activar o desactivar la IA, **Probar la IA**, la conexión con **Claude y ChatGPT (MCP)**, los **servidores MCP del asistente** y qué se envía.
 - **Plan**: tu plan de Venus IA (con aviso si un pago falló o si la suscripción se cancela), las tarjetas de los 6 planes con su precio, modelos y preguntas, **Mejorar plan** (abre el pago de Stripe en tu navegador) y **Administrar suscripción** (cambiar la tarjeta, ver facturas o cancelar), y los beneficios de **Venus Premium**.
 - **Java**: el Java que descargó Venus, el que encuentra en tu PC, probar un ejecutable y qué Java usa cada versión de Minecraft.

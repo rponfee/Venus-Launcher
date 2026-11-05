@@ -168,19 +168,29 @@ Las reglas visuales completas (tokens, componentes, layout y checklist antes de 
 
 **Integración 4.5.0.** Producción tiene aplicadas **0028–0037** desde el 4 de noviembre de 2026; ver [activación y límites](activacion-backend-4.5.0.md). La configuración de CurseForge del panel ya tiene 0037 aplicada (versión **`20261104170221`**) y la Edge Function `curseforge` **v1 ACTIVE**, **`verify_jwt = true`**, con autorización específica del dueño. No se reemplazó `admin`. El estado público devuelve HTTP 200, `configured: false`: falta que el dueño cargue la clave; no se probó el proveedor ni una cuenta real. El cierre de sesión del launcher usa `cloud.signOut()` con `scope: 'local'`: no cierra las sesiones de otros dispositivos. Las credenciales del escritorio siguen en `secure`; la PWA guarda su propia sesión en IndexedDB, con alternativa en memoria si el almacenamiento falla.
 
-| Migración pendiente | Contratos nuevos | Referencia completa |
+| Migración | Contratos nuevos | Referencia completa |
 |---|---|---|
 | 0028 | Preferencias sincronizadas por cuenta, lista de campos admitidos y marcas por clave | [Datos](implementacion/datos.md) |
 | 0029 | Reseñas, votos y denuncias de servidores destacados | [Servidores](implementacion/servidores.md) |
 | 0030 | Stickers propios y bucket público `stickers` | [Mensajes y voz](implementacion/mensajes-voz.md) |
-| 0031 | Rankings, desafíos y calendario; conserva el motivo contable `challenge` | Competir (retirada en la 4.6) |
+| 0031 | Rankings, desafíos y calendario; conserva el motivo contable `challenge` | Retirada en la 4.6; sus tablas las limpia la 0048 (sin aplicar) |
 | 0032 | Galería, me gusta y moderación sobre clips compartidos | [Clips](implementacion/clips.md) |
-| 0033 | Clanes, permiso `clan_prefs.share_playtime`, comunidades y canales | [Clanes y comunidades](implementacion/clanes-comunidades.md) |
-| 0034 | `cape_equip`, `cape_mine`, `badge_capes` y cosméticos de capa | [Capas](implementacion/capas.md) |
+| 0033 | Clanes (retirados en la 4.6, los limpia la 0048), comunidades y canales | [Clanes y comunidades](implementacion/clanes-comunidades.md) |
+| 0034 | Capas de Venus (retiradas en la 4.6; las limpia la 0048) | [Retirada de funciones](retirada-funciones.md) |
 | 0035 | Suscripciones push, bandeja móvil y persistencia de `media-share` | [App para celular](implementacion/app-celular.md) |
-| 0036 | Catálogo moderado, paquetes privados y lista de bloqueadas | Extensiones (retiradas en la 4.6) |
+| 0036 | Extensiones (retiradas en la 4.6; las limpia la 0048) | [Retirada de funciones](retirada-funciones.md) |
+| 0037 | Configuración administrativa de CurseForge en Vault y estado público | [CurseForge](curseforge.md) |
+| 0038 | Comunidades: roles propios, permisos por canal, reacciones, bienvenida y despedida, GIFs con aprobación (`community_media`, bucket `community-media`) | [Clanes y comunidades](implementacion/clanes-comunidades.md) |
+| 0039 | Avatar siempre `round`, banners `none` / `image` quieta / `klipy`, `profile-media` sin GIF | [Perfiles](perfiles.md) |
+| 0040 | 36 marcos originales, los anteriores desactivados y reintegrados, `gift_send` solo para lo de la tienda | [Perfiles](perfiles.md) |
+| 0041 | Venus Pass permanente de 380 niveles por tiempo jugado | [Venus Pass](venus-pass.md) |
+| 0042 | `private.card_song_ok` para canciones de Openverse; `profile-audio` sin subidas | [Perfiles](perfiles.md) |
+| 0043 | Desactiva los logros que dependían del juego (189 activos) | [Venus Points](venus-points.md) |
+| 0045 | Soporte: temas con campos, capturas, cola del equipo, notas, respuestas guardadas, valoración y avisos | [Estado de la base](supabase.md) |
+| 0047 | Secretos de sala para el respaldo de la voz | [Voz](voice-turn.md) |
+| 0048 | **Sin aplicar.** Limpieza de Competir, Extensiones, capas y Clanes; `profile_public` con logros activos | [Estado de la base](supabase.md) |
 
-Los contratos de las tablas enlazadas incluyen permisos, errores y cuotas. La prueba conjunta de las migraciones y la verificación real de Realtime siguen pendientes. Reemplazar `social_send_signal` debe conservar la persistencia de `media-share` incorporada en 0035; reemplazar `points_ledger_reason_check` debe conservar `challenge`. No agregar `net` a los esquemas expuestos de la API.
+La 0044 (planes de clan y pagos) la prepara otra sesión y la 0046 no se usó. Producción tiene aplicadas hasta la 0047 (menos la 0044); la 0048 está sin aplicar. Los contratos de las tablas enlazadas incluyen permisos, errores y cuotas. La prueba conjunta de las migraciones y la verificación real de Realtime siguen pendientes. Reemplazar `social_send_signal` debe conservar la persistencia de `media-share` incorporada en 0035; reemplazar `points_ledger_reason_check` debe conservar `challenge`. No agregar `net` a los esquemas expuestos de la API.
 
 ## 6. Contratos entre módulos
 
@@ -234,7 +244,7 @@ Estos son los nombres que usa cada módulo hoy. Quien consume algo de otro módu
 | `pages/skins/editor.js` | `openSkinEditor({ libraryId?, start?, onSaved? })` (editor de skins de 64×64 con vista 3D; lo abre el botón de Skins) | — | skineditor |
 | `decor.js` | `startup()` (idempotente, en `STARTUP`: partículas sobre el fondo, sonidos de la interfaz, pantalla de inicio y cursores; registra su tarjeta en Ajustes → Apariencia con `registerAppearanceCard`), `playUiSound(id)` (`'click'`, `'whoosh'` o `'bell'`; suena aunque los sonidos de la interfaz estén apagados) | `decorSettings()`, `saveDecor(patch, delay)` (escritura en serie), `onDecorChange(fn) → off`, `currentSeason()`, `previewSplash()`, `previewSound(pack, id)`. Escucha en `window` `venus:season` (`{ detail: { id: 'halloween' \| 'christmas' \| 'newyear' \| null } }`; otro id se trata como `null`; la temporada vigente no se guarda, vive en memoria) y `venus:ui-sound` (`{ detail: { id } }`). Usa `registerAppearanceCard` y `brandingView()` de `appearance.js` y respeta `html[data-ui-lite]` y `reducedMotion()` de `ui.js` (sin partículas ni fundidos). Clases globales que agrega: `html[data-dc-cursor="<id>"]` (+ variables `--dc-cursor` y `--dc-cursor-pointer`), `canvas.dc-particles` dentro de `.space-bg`, `.dc-splash` en `body`; un botón con `data-dc-silent` (o adentro de uno) no hace el clic genérico. Lógica sin DOM en `features/decor/settings.js` (`normalizeDecor`, `mergeDecor`, `cleanSplashText`, `seasonId`, `seasonParticles`, `resolveParticles`, `particleBudget`), `packs.js` (`soundSpec`, `uiSoundSpec`, `soundLength`, `volumeGain`) y `cursors.js` (`cursorSvg`, `cursorDataUrl`, `cursorCss`, `cursorGrid`, `applyCursor(id)`) | decor |
 | `navcustom.js` | `startup()` (en `STARTUP`: botón `.nc-tb-btn` en la barra de título antes de los botones de la ventana, **Ctrl+M** —no en campos de texto ni en la bienvenida— y los comandos "Modo mini" y "Personalizar menú" de Ctrl+K), `openNavEditor()` (editor "Personalizar menú"; también lo abre el engranaje `.nav-gear` que dibuja `buildNav` de `app.js`), `setMini(on)`, `toggleMini()`, `isMini()` | `syncButton()`. Lógica pura en `features/navcustom/logic.js` (`normalizeNav`, `navLayout(NAV, prefs)`), packs de íconos en `features/navcustom/packs.js` (`pixel` y `filled` para todos los íconos del menú) e `icons.js` (`navIconName(icono, pack)`; registra `px-<icono>` y `fi-<icono>` con `registerIcons` al importarse desde `app.js`; solo el menú los usa), vista del modo mini en `features/navcustom/mini.js` (`setMini(on, { persist })`, `redraw()`: cuenta con `openAccounts()`, instancia elegida con selector y `launchInstance` con los mismos estados que el héroe del Inicio, amigos de `social.friends` + `presenceOf`, y `miniPlayer()` de `nowplaying.js`; esconde la barra lateral y la página, que sigue dibujada debajo). El menú lo dibuja `app.js` (`navEntries()`, sección 3); el tamaño de la ventana lo cambia `modules/miniwindow.js` (`window:mini`, 6.3) | navcustom |
-| `tools.js` | `startup()` (en `STARTUP`: registra la página `#/tools` con `registerPage('tools', …)`, ícono `wrench` y etiqueta `tools.nav`, y arranca `features/tools/{mcnews,breaks,recap,schedule}.js`) | `features/tools/schedule.js`: `schedulePanel() → Element` (Ajustes → Descargas y almacenamiento, ancla `storage/schedule`) y la tarjeta "Descargas en espera" al principio del panel de tareas mientras hay tareas con la franja cerrada; `features/tools/recap.js`: `previewRecap(instanceId)` (resumen de ejemplo desde la consola); `features/tools/mcnews.js`: `showNewVersion(v)`; `features/tools/breaks.js`: `todayMinutesPlayed()`. Lógica sin DOM en `pages/tools/calc.js` (`toNether`, `toOverworld`, `stacksOf`, `itemsOf`, `anvilPlan`, `ENCHANTS`, `ticksToClock`, `clockToTicks`, `dayPhase`, `parseColorCodes`, `blockToChunk`, `chunkToBlocks`, `regionToBlocks`, `parseRegionFile`) y `pages/tools/breaks.js` (`tick(state, cfg, { now, playing, day })`). Avisos de descansos y tope: toast en el launcher y `overlay:push({ kind: 'alert', icon: 'info', ttl: 12 })`; nunca cierra el juego. El resumen al cerrar escucha `game:state` (no `quiet`, no `crashed`, al menos 1 minuto) y cuenta `capture:saved`, `venus:achievement` y las misiones de `features/missions.js`. La tarjeta "Descansos y resumen" de Ajustes → General la dibuja `pages/settings/general.js` con `settings.play.*` y `news.newVersions` (7.2) | tools |
+| `playcare.js` | `startup()` (en `STARTUP`: ya no registra ninguna página: arranca `features/playcare/{mcnews,breaks,recap,schedule}.js`) | `features/playcare/schedule.js`: `schedulePanel() → Element` (Ajustes → Descargas y almacenamiento, ancla `storage/schedule`) y la tarjeta "Descargas en espera" al principio del panel de tareas mientras hay tareas con la franja cerrada; `features/playcare/recap.js`: `previewRecap(instanceId)` (resumen de ejemplo desde la consola); `features/playcare/mcnews.js`: `showNewVersion(v)`; `features/playcare/breaks.js`: `todayMinutesPlayed()`. Lógica sin DOM en `features/playcare/breaks-logic.js` (`tick(state, cfg, { now, playing, day })`). Avisos de descansos y tope: toast en el launcher y `overlay:push({ kind: 'alert', icon: 'info', ttl: 12 })`; nunca cierra el juego. El resumen al cerrar escucha `game:state` (no `quiet`, no `crashed`, al menos 1 minuto) y cuenta `capture:saved`, `venus:achievement` y las misiones de `features/missions.js`. La tarjeta "Descansos y resumen" de Ajustes → General la dibuja `pages/settings/general.js` con `settings.play.*` y `news.newVersions` (7.2) | playcare |
 | `../social/gifts.js` | `openGiftDialog(friend)` (botón **Regalar** de la tarjeta de un amigo: pestañas Puntos / Cosmético, confirmación y errores traducidos; RPC `gift_send(p_to, 'points' \| 'item', p_value)`: puntos de 10 a 500 y hasta 1000 por día, ítems al precio normal, no premium ni repetidos), `startGiftWatch()` (en `STARTUP`; también lo arrancan Mensajes y las tarjetas: escucha `onSummary` de `features/rewards.js` y, con un `gift_in` nuevo, pide `gifts_received(p_since)` y avisa con un toast; guarda hasta dónde se vio en `settings.rewards.lastGiftSeen`). El historial de Venus Points muestra `hist_gift_in` / `hist_gift_out` | — | perfiles |
 | `../social/guestbook.js` | `guestbookSection(ownerId, { isMe?, isFriend?, preview? }) → Element` (libro de visitas de la tarjeta: últimas 10, Ver más, escribir si son amigos, borrar el autor o el dueño; RPC `guestbook_list`, `guestbook_post` —5 por día, sin bloqueados ni baneados—, `guestbook_delete`, `guestbook_set`) | — | perfiles |
 | `../social/song.js` | `songPlayer(song, { name?, autoplay? }) → Element` (reproductor de la canción de perfil: play/pausa, volumen, silenciar), `songsAllowed()`, `setSongsAllowed(on)` ("No reproducir canciones de perfil" → `settings.social.profileSongs`), `stopSongs()` | — | perfiles |
@@ -252,10 +262,8 @@ Ayudantes de social reutilizables en `js/social/profile-ui.js`: `openProfile(use
 | Datos | Programación de copias, `perfhistory`, `family` y `portability` en main; sincronización de ajustes desde la interfaz con la sesión de `cloud` y `store.setSettings`. |
 | Overlay | `features/overlaytools.js` conecta paneles, rutas y eventos del asistente; recetas y estadísticas se leen localmente. |
 | Social | Stickers y traducción, soundboard y efectos; `social/preview.js` ofrece texto de aviso para stickers/GIF, sin mostrar su URL como mensaje. |
-| Competir | `features/compete.js` recoge progreso solo con permiso; la tarjeta de compartir horas con un clan se retiró de Competir. |
-| Clips | `features/clipstudio/` coordina montaje, timelapse, subida y OBS; la galería usa RPC y archivos compartidos. |
-| Extensiones (retirada) | Sin rutas, startup, tarjetas en Inicio ni pestaña de admin. `modules-loader.js` excluye `extensions.js` antes de importarlo: no registra protocolos ni canales `extensions:*`. El código y los datos anteriores se conservan. |
-| Visor de semillas (retirado) | Sin ruta ni entrada de menú. Se conserva como antecedente el generador de `pages/seeds/gen/`; el mapa de mundos y los campos Semilla de creación de mundos/servidores siguen disponibles. |
+| Retiradas en la 4.6 | Competir, Extensiones, el visor de semillas, el modo streamer con OBS, la página Herramientas, las capas de Venus y los Clanes viejos se borraron del árbol (módulos, páginas, textos en los 14 idiomas, estilos, pruebas y rutas). Lo que sobrevivía de Herramientas pasó a `features/playcare`. [Alcance](retirada-funciones.md). |
+| Clips | `features/clipstudio/` coordina montaje, timelapse y subida;
 | PWA | `web/app/` usa la misma cuenta y las RPC sociales, sin latido de presencia de escritorio. Su sesión y permiso de push son propios del dispositivo. |
 
 ### 6.2 `social` y `voice`
@@ -489,11 +497,13 @@ Todos se llaman con `api.invoke(canal, ...args)`; los eventos se escuchan con `a
 | `overlay:*`, `recipes:*`, `mapviewer:markers*` / `markerSave` / `markerDelete` | Paneles, recetas y marcadores; `overlay:assistantEvent` y evento `overlay:route` | [Overlay](implementacion/overlay.md) |
 | `serverremote:*`, `serverdiscord:*` | Control HTTP LAN y avisos opcionales por webhook | [Servidores](implementacion/servidores.md) |
 | Traducción y soundboard | Consentimiento, caché cifrada, importación y reproducción; efectos en la cadena de audio de voz | [Mensajes y voz](implementacion/mensajes-voz.md) |
-| `compete:collect`, `compete:commit`, `compete:reset` | Lectura local, confirmación de reportes aceptados y punto de partida | Competir (retirada en la 4.6) |
-| `clipstudio:*`, `clipupload:*`, `obs:*` | Trabajos de vídeo, conexión/cancelación OAuth y OBS | [Clips](implementacion/clips.md) |
-| `extensions:*` (retirados) | No se registran: el módulo principal está excluido del cargador | Extensiones (retiradas en la 4.6) |
+| `clipstudio:*`, `clipupload:*` | Trabajos de vídeo y conexión/cancelación OAuth | [Clips](implementacion/clips.md) |
+| `profilemusic:status`, `profilemusic:search`, `profilemusic:clearCache` | Música de perfil (Openverse): estado y cupos, búsqueda con caché, vaciar caché. Sin pedidos si `settings.profileMusic.enabled` es falso | [Perfiles](perfiles.md) |
+| `support:call(action, payload)`, `support:detail`, `support:diagnostic`, `support:upload`, `support:attachment`, `support:fakeMode` | Soporte. Acciones de `call`: `staffState`, `list`, `queue`, `create`, `detail`, `reply`, `resolve`, `closeOwn`, `reopen`, `rate`, `markSeen`, `unread`, `diagnostic`, `attach`, `attachmentInfo`, `assign`, `priority`, `note`, `staffPanel`, `staffList`, `macros`, `macroSave`, `macroDelete`. El cliente valida lo mismo que el servidor (`modules/support/rules.js`) y los errores salen con `.code` que la interfaz traduce a `support.err_<code>` | [Estado de la base](supabase.md) |
+| `smartsearch:ai({ refresh? })`, `smartsearch:aiSet({ useAi?, source?, consent? })` | Estado de la IA del buscador (plan, fuentes, aviso aceptado) y cambio de interruptor, fuente (`venus` o `local`) y aviso. `smartsearch:context` devuelve `ai` como objeto y `smartsearch:savePrefs` ya no guarda la IA | [Funciones](funciones.md) |
+| `overlay:status`, `overlay:setShortcut`, `overlay:setPanelShortcut` | `status` suma `tracker`, `pageFailed`, `shortcutIssue` y `panelShortcutIssues`; los atajos devuelven `minecraft`, `system`, `altgr`, `venus` (con `who`), `taken` o `invalid`. La página manda `tweak { id, patch }` por `overlay:page` | [Overlay](overlay.md) |
 
-Comunidades, reseñas, galería y capas consumen RPC desde la interfaz; no crear un IPC paralelo para duplicar esas llamadas. Los tokens OAuth, la contraseña de OBS y el webhook de Discord no regresan al renderer.
+Comunidades, reseñas, galería y Soporte consumen RPC desde la interfaz; no crear un IPC paralelo para duplicar esas llamadas. Los tokens OAuth y el webhook de Discord no regresan al renderer.
 
 ### 6.4 Exports del proceso principal para otros módulos
 
@@ -560,14 +570,14 @@ Usan `game.addBeforeLaunch`: performance (memoria automática y Java elegido a m
 | `#/performance` | Rendimiento |
 | `#/achievements` | Logros, misiones y logros de Minecraft |
 | `#/pass` | Venus Pass: temporada, niveles, pistas y ediciones ([venus-pass.md](venus-pass.md)) |
-| `#/tools` | Caja de herramientas: Nether ↔ Overworld, stacks y cofres, orden de encantamientos, ticks y hora del día, códigos de color § y bloque/chunk/región (menú Herramientas, ícono `wrench`; la registra `features/tools.js` con `registerPage`) |
+| `#/communities` | Comunidades (canales, roles, permisos, GIFs, bienvenida); la página y la pestaña de Administración reemplazan a `#/clans` |
 | `#/admin` | Panel de administración. Solo existe para los administradores: la registra `features/admin.js` después de `admin:me` (para el resto no hay ítem de menú ni ruta). Guía: [admin.md](admin.md) |
 | `#/settings[/<sección>[/<ancla>]]` | Ajustes (abajo) |
 | `#/welcome` | Bienvenida (obligatoria hasta terminarla) |
 
 Ajustes: secciones `general`, `appearance`, `ingame` (En el juego: overlay, grabación y música), `a11y`, `cloud`, `privacy`, `ai`, `plan`, `java`, `storage`, `data`, `about` (una desconocida abre `general`). Alias: `account`, `accounts`, `venus`, `nube`, `cuenta` → `cloud`; `language`, `idioma` → `general`; `accessibility`, `accesibilidad` → `a11y`; `theme`, `apariencia` → `appearance`; `claude`, `ia`, `assistant`, `mcp` → `ai`; `plans`, `planes`, `billing`, `subscription`, `suscripcion` → `plan`; `discord`, `privacidad`, `notify`, `avisos` → `privacy`; `overlay`, `juego`, `game`, `music`, `musica`, `spotify`, `capture`, `clips`, `capturas` → `ingame`; `themes`, `temas` → `appearance`; `premium` → `plan`; `downloads`, `descargas` → `storage`; `cache`, `datos`, `folder` → `data`; `updates` → `about`. Anclas (llevan a la tarjeta y enfocan su campo): `general/language`, `general/play`, `cloud/accounts`, `cloud/venus`, `privacy/activity`, `privacy/discord`, `ai/status`, `ai/mcp`, `ai/mcpservers`, `ai/privacy`, `plan/plans`, `plan/premium`, `ingame/overlay`, `ingame/capture`, `ingame/music`, `appearance/themes`, `privacy/notify`, `java/venus`, `java/system`, `java/versions`, `storage/downloads`, `storage/schedule` (Descargas programadas), `storage/services` (Estado de los servicios), `storage/disk`, `data/folder`, `data/cache`, `data/portable`. Para mandar a resolver algo: `settings/cloud` (sin sesión de Venus), `settings/plan` u `openPlans()` de `features/plans.js` (sin plan, cuota agotada o para cambiar de plan), `settings/ai` (IA desactivada). Ajustes no tiene campos para claves, proyectos de Supabase ni servidores: Discord, TURN y bore usan lo que trae el launcher (`core/app-config.js`); CurseForge también admite la configuración central, restringida al panel de Administración.
 
-**Rutas de 4.5.0:** `#/compete`, `#/clans`, `#/communities`, `#/seeds[/<semilla>]` y `#/extensions`. Las nuevas herramientas de instancias, servidores, Rendimiento, Clips y Ajustes se integran en sus páginas existentes. La PWA vive en `/app/` del sitio web y no es una ruta del router de Electron. El enlace publicado definitivo sigue pendiente de confirmación.
+**Rutas de 4.5.0 y 4.6:** `#/communities`. `#/compete`, `#/clans`, `#/seeds`, `#/extensions` y `#/tools` ya no existen. Las nuevas herramientas de instancias, servidores, Rendimiento, Clips y Ajustes se integran en sus páginas existentes. `#/achievements/minecraft` (y cualquier pestaña que no exista) abre `#/achievements/list`. La PWA vive en `/app/` del sitio web y no es una ruta del router de Electron.
 
 ### 6.6 Señales entre amigos (`social.sendSignal` / `social.onSignal`)
 
@@ -581,7 +591,7 @@ Viajan por el buzón privado `inbox:<userId>` con la RPC `social_send_signal`: s
 | `party-invite` · `party-accept` · `party-decline` · `party-leave` · `party-kick` · `party-ready` · `party-state` · `party-play` · `party-end` | `{ v: 1, party, ... }` (forma de cada una en [grupos.md](grupos.md); las valida `features/party/logic.js` → `parseSignal`) | Líder ↔ miembros e invitados · `party.startup()` |
 | `media-share` | `{ url, kind: 'screenshot' o 'clip', name }` (solo links https firmados del Storage del proyecto) | Visor de Clips → **A un amigo** · `capture.startup()` (aviso con **Ver**) |
 
-**Señales nuevas:** `compete-update` pide volver a consultar los desafíos; `clan-update` refresca el estado social del clan. Son avisos, no autoridad para cambiar datos ni permisos: la RPC vuelve a validar la sesión. El soundboard usa el canal de voz existente; sus mensajes y topes están en [Mensajes y voz](implementacion/mensajes-voz.md). 0035 conserva la señal `media-share` y además registra los clips recibidos para la PWA.
+**Señales nuevas:** el soundboard usa el canal de voz existente; sus mensajes y topes están en [Mensajes y voz](implementacion/mensajes-voz.md). 0035 conserva la señal `media-share` y además registra los clips recibidos para la PWA. Los avisos `compete-update` y `clan-update` se retiraron.
 
 ### 6.7 Reglas transversales
 
@@ -616,6 +626,91 @@ El inicio remoto se serializa por servidor y puede cancelarse antes de terminar;
 
 El registro de `venus://` se mantiene también en portable por decisión del dueño. Al desinstalar, `build/installer.nsh` compara `shell/open/command` con el ejecutable de esa copia antes de quitar la clave; no la borra al actualizar ni si apunta a otra instalación o portable. El cambio está en código: compilación y prueba NSIS pendientes. La explicación de conexiones incluye wiki; Discord y sincronización conservan sus controles propios. La retirada de Extensiones desactiva las consultas de catálogo y blocklist, aunque sus preferencias anteriores sigan guardadas. [Alcance de la retirada](retirada-funciones.md).
 
+### 6.8 Buscador inteligente y CurseForge (4.6)
+
+Vocabulario ampliado (datos, no código):
+
+El intérprete local (`modules/smartsearch/interpreter.js`) ahora carga un **vocabulario ampliado como datos** en `modules/smartsearch/vocab/`; `lexicon.js` lo aplica al final sin pisar nada de lo que ya tenía. **Para entrenarlo con palabras nuevas se edita un archivo de esa carpeta**, no el código:
+
+| Archivo | Qué agrega |
+|---|---|
+| `types.js` | sinónimos de tipos (modpack, resource pack, shader, data pack, plugin, mod), negaciones ("ni", "evitar", "no necesito"…), cantidades con letras ("cinco mods") |
+| `loaders.js` | alias de cargadores, motores de shaders, software de servidor y "sin mods" |
+| `modes.js` | modo de juego (servidor propio, con amigos, "mis amigos y yo", solo, sin conexión) y hardware (PC de papa, 4 GB de RAM, PC potente) |
+| `themes.js` | sinónimos de 20 temas existentes y **27 temas nuevos**: mapas de aventura, pixel art, low poly, minimalista, futurista, steampunk, retro, gótico, neón, acuarela, moderno, recetas (JEI), encantamientos, aldeanos, progresión/habilidades, supervivencia (sed, temperatura), minerales, flora, agua, cielo, iluminación, fuentes, idioma, accesibilidad, emotes, cosméticos, modelos 3D |
+| `words.js` | traducciones es/pt a inglés de 278 sustantivos sueltos |
+| `typos.js` | 251 errores de escritura frecuentes y corrección difusa (Damerau-Levenshtein) contra el vocabulario propio |
+| `similar.js` | "como X": 58 proyectos y juegos conocidos (Sodium, OptiFine, Create, Botania, Terralith, Hypixel, Terraria, Skyrim, RLCraft…) con los temas que representan |
+| `versions.js` | rangos ("1.18 a 1.20", "1.19 o superior", "hasta la 1.16", "1.20.x", "1.19+") y apodos de actualizaciones ("nether update", "caves and cliffs") |
+
+Idiomas: español, inglés y portugués, que son los que ya tenían diccionario. Los otros idiomas del launcher no tenían y no se agregaron.
+
+Cambios en el intérprete (`interpreter.js`): corrige errores de escritura y resuelve apodos de versión antes de leer; elige una versión concreta dentro de un rango (`versionNote` avisa de dónde salió); cantidades con letras; "como X" (se detecta antes que los cargadores: "como sodium" no es el motor de shaders); y **las negaciones ya no pasan por encima de otro tipo** ("sin shaders, solo mods" excluye los shaders, no los mods; "que no explote con shaders" pide shaders).
+
+### Medición (antes y después)
+
+Corpus de 509 frases (49 tipos, 30 cargadores, 36 versiones, 107 géneros, 26 hardware, 51 estilos, 42 mecánicas, 41 "como X", 60 con errores de escritura, 31 oraciones completas, 16 que no deben despertar ningún tema y 20 que ya se entendían); `test/corpus.js`. Se mide con `node src/main/modules/smartsearch/test/score.js [carpeta-del-interprete-anterior] [--heldout] [--fails]`.
+
+| Conjunto | Antes (commit anterior) | Después |
+|---|---|---|
+| Corpus de 509 frases | **44,2 %** (225/509); 56,7 % de los campos | **100 %** (509/509) |
+| Frases "a ciegas" (89, escritas con el vocabulario ya congelado) | **66,3 %** (59/89) | **91,0 %** (81/89) en la primera pasada; 100 % después de entrenar con lo que falló |
+| Frases que ya se entendían (20) | 90 % | 100 % (se arregló una negación mal leída) |
+
+El 91,0 % a ciegas es la cifra honesta de generalización; el 100 % del corpus incluye lo que se entrenó viéndolo. Las 8 frases que fallaron en la primera pasada se agregaron como vocabulario ("muestre las recetas", "compras y ventas", "streamers", "mis amigos y yo", "alternativa liviana a", "para arriba", modpacks conocidos, "no" suelto que niega solo lo que tiene al lado).
+
+Pruebas: `node --test src/main/modules/smartsearch/test/interpreter.test.js` (19: corpus y piso, vocabulario válido —todas las expresiones compilan, categorías de Modrinth reales, temas existentes, sin palabras demasiado genéricas—, errores de escritura, versiones, negaciones, cantidades, "como X" y planes completos).
+
+#### La IA solo de pago, con una sola fuente
+
+Interruptor **"Usar IA para entender la búsqueda"** en los filtros de la página (y el cartel del encabezado, ahora "IA activada · Venus IA" o "Buscador normal").
+
+Reglas (`modules/smartsearch/ai-source.js`, lógica pura):
+
+1. **Solo con plan de pago de Venus IA.** Sin plan, sin sesión, con la IA apagada en Ajustes o si no se pudo comprobar el plan, el interruptor se ve apagado y deshabilitado con la explicación y el botón que corresponde (**Ver planes**, **Iniciar sesión**, **Comprobar de nuevo**, **Abrir ajustes de IA**). El buscador normal sigue funcionando igual.
+2. **Una sola fuente a la vez.** Con plan hay hasta dos: **Venus IA** (el backend, gasta la cuota del plan) y **Claude Code o Codex de esta PC** (la IA propia de la persona, no gasta la cuota de Venus IA; se ofrece con plan **Go o superior**, la app instalada y con sesión iniciada: el mismo control que los motores del Asistente). Si hay las dos, se muestra un grupo de opciones y se elige una; nunca las dos. Con una sola, no hay nada que elegir.
+3. **Aviso de privacidad** antes de mandar lo que escribe a un proveedor, una vez por fuente (qué se envía —lo que escribe hasta 400 caracteres, versión, loader y los títulos y descripciones públicos de los resultados—, qué no —cuenta de Minecraft, mundos, archivos, nombres de instancias— y el destino). Se guarda con la hora. Cambiar de fuente con la IA prendida pide el aviso de la otra; sin aceptarlo queda apagada.
+4. **Sin plan o sin conexión cae al buscador normal**, con un aviso en el resultado (`aiNoPlan`, `aiSignedOut`, `aiPlanUnknown`, `aiDisabled`, `aiNeedsConsent`, `aiOffline`, `aiFailed`). Lo comprueba el proceso principal en cada búsqueda: la interfaz sola no alcanza.
+5. La IA es opt-in: por defecto apagada. Quien tenía `useAi: true` de versiones anteriores (se guardaba sin avisar) queda apagada hasta aceptar el aviso.
+
+IA local (`modules/smartsearch/local-ai.js`): lanza el `claude` o el `codex` tal cual lo instaló la persona, **sin herramientas** (Claude Code con `--tools ""`, `--setting-sources ""`, `--strict-mcp-config` sin servidores, un solo turno; Codex con caja de arena de solo lectura y sin shell), sin tocar sus credenciales, y devuelve solo un objeto JSON. **No se probó con el Claude Code ni el Codex reales**, solo con un CLI falso que imita su salida (`test/fixtures/fake-search-cli.js`); las banderas son las mismas que ya usan los motores del Asistente.
+
+### Archivos, canales y ajustes
+
+- Proceso principal: `modules/smartsearch.js` (`aiView`, `runnerFor`, canales), `smartsearch/ai-source.js`, `smartsearch/local-ai.js`, `smartsearch/ai-plan.js` (acepta quién responde), `smartsearch/fake.js` (modo falso para capturas).
+- Canales IPC nuevos: `smartsearch:ai({ refresh? })` (estado de la IA) y `smartsearch:aiSet({ useAi?, source?: 'venus' | 'local', consent?: true })` (prender, elegir fuente, aceptar el aviso; el proceso principal vuelve a comprobar el plan). Cambian: `smartsearch:context` devuelve `ai` como objeto (`plan`, `planName`, `sources`, `choose`, `source`, `consent`, `wants`, `active`, `needsConsent`) y `smartsearch:savePrefs` ya no guarda la IA.
+- Ajustes: `settings.smartsearch.prefs.{ useAi, aiSource, aiConsent: { venus, local } }` (por defecto apagada, sin aviso aceptado).
+- Modo falso para capturas (solo con `VENUS_DEVSHOT`, nunca empaquetado): `VENUS_SMARTSEARCH_AI_FAKE=paid|both|basic|none|signedOut|unknown|disabled`.
+- Pruebas: `node --test src/main/modules/smartsearch/test/ai.test.js` (22: planes, solo de pago, aviso, una sola fuente, plan Go para la local, motor preferido, IA local con CLI falso —argumentos sin herramientas, errores, tiempo, cancelación—, y el proceso principal completo con dobles: sin plan no se llama a la IA, sin aviso no se manda nada, con plan y aviso se usa Venus IA, sin conexión cae al buscador normal, con la fuente local no se toca Venus IA).
+
+#### Límites
+
+- La causa exacta del 403 del 5 de noviembre depende de lo que conteste CurseForge; hasta desplegar la función nueva no hay forma de saber si fue la clave o un bloqueo (arriba).
+- La línea de CurseForge del panel de estado de servicios solo prueba que el servidor de Venus responde, no que la clave sirva (no se tocó `svcstatus`).
+- "Como X" solo entiende proyectos de la lista de `similar.js`; "como un modpack que no conozco" no lo trata como referencia (se agrega una línea).
+- La fuente local (Claude Code/Codex) solo se probó con un CLI falso.
+
+El arreglo de CurseForge (clasificación `badkey` / `blocked` / `denied` en la función `curseforge`, estados `on` / `off` / `unknown` en `modules/curseforge/cloud.js`) está en [curseforge.md](curseforge.md).
+
+### 6.9 Soporte (4.6)
+
+Servidor: `0045_soporte_mejoras.sql` (aplicada), que parte de las funciones desplegadas (0016 + 0017), conserva firmas y mensajes en español (los launchers viejos siguen andando) y suma campos al JSON y un `hint` legible por máquina. `support_create_ticket` sigue cerrada como la dejó la 0017 y Soporte nunca activa un plan.
+
+| Parte | Archivos |
+|---|---|
+| Páginas | `pages/support.js`, `pages/support-staff.js`, `pages/admin/support.js` (usa `ticketDesk({ admin: true })`) |
+| Fachada | `features/support.js` (conserva `S`, `supportCall`, `CATEGORIES`, `isPendingTicket`, `ticketStatus`, `ticketDesk`), `features/support-staff.js` (acceso del equipo; también arranca el aviso) |
+| Interfaz | `features/support/`: `logic.js` (lógica pura), `common.js`, `form.js`, `thread.js`, `desk.js`, `staffbar.js`, `media.js`, `diagnostic.js`, `faq.js`, `notify.js`; estilos `styles/pages/support.css` (prefijo `sp-`) |
+| Proceso principal | `modules/support.js` y `modules/support/`: `client.js`, `rules.js`, `redact.js`, `diagnostics.js`, `images.js`, `fake.js` |
+| Servidor | `0045`, `supabase/tests/soporte-local.sql` (156 comprobaciones en `BEGIN … ROLLBACK`) y `scripts/run-support-local.ps1` |
+
+- **Tablas y bucket.** Columnas nuevas de `support_tickets` (prioridad, asignación, detalles, diagnóstico, marcas de último mensaje, vista, valoración y reaperturas) y los temas `game` y `suggestion`; `support_attachments` (legible por la dueña y el equipo con RLS), `support_notes` y `support_macros` (RLS sin ninguna política: solo se tocan por las funciones); bucket privado `support-attachments` (4 MiB; PNG, JPEG y WebP; ruta `<quien sube>/<consulta>/<uuid>.<ext>`, sin UPDATE ni DELETE). El tamaño y el tipo de una captura salen de lo que Storage guardó, no de lo que dice el cliente.
+- **Límites que pone el servidor.** 3 consultas abiertas por persona y 5 nuevas por día; mensajes: 10 por minuto, 150 por día (el equipo no tiene el diario) y 500 por consulta; asunto de 3 a 120, mensaje de 1 a 4000, nota de 2000 y diagnóstico de 12000 caracteres; capturas: 3 por envío, 12 por consulta, 15 por día y 60 archivos por persona (15 por consulta); reabrir dentro de 14 días del cierre y hasta 3 veces (el equipo no tiene esos topes); diagnóstico agregado después, uno cada 30 s; 40 respuestas guardadas por integrante y 100 notas por consulta (20 por minuto); la cola da 100 filas por página con filtros validados contra listas. Con baneo de Auth no se usa ninguna función de Soporte; con baneo solo de moderación se puede leer y responder en una consulta ya abierta, pero no abrir, reabrir, valorar ni adjuntar. El silencio del chat no afecta a Soporte. Cuando quien atiende es también la dueña de la consulta, sus mensajes se guardan como de la persona.
+- **Datos locales.** Solo `localStorage`: `venus.support.draft.<usuario>`, `venus.support.reply.<usuario>.<consulta>`, `venus.support.notify` (aviso de respuestas, `1` o `0`) y `venus.support.queue` (estado y orden de la cola del equipo). El aviso consulta `support_unread_summary` cada 3 minutos con la ventana visible.
+- **Decisiones.** El formulario detecta un número de tarjeta (Luhn) en asunto, mensaje y campos y no deja enviarlo (el servidor no lo comprueba). El diagnóstico lo arma el proceso principal y lo vuelve a pasar por el anonimizador antes de enviarlo (reutiliza el del asistente y suma rutas de cualquier disco, chat y nombres del registro). No se hizo: adjuntar capturas desde el panel de administración, borrar capturas ya enviadas, avisar al equipo de consultas nuevas ni borrar archivos huérfanos de Storage.
+- **Pruebas y capturas.** `node --test "src/main/modules/support/test/*.test.js"` (48) y `node --test "src/renderer/js/features/support/test/*.test.js"` (25). Modo falso solo con `VENUS_DEVSHOT`: `VENUS_SUPPORT_FAKE=customer|staff|empty`.
+- **Orden de despliegue.** Aplicar la 0045 y publicar el launcher; sin ella, las consultas de los temas de siempre siguen yendo por `support_open_ticket` y lo demás avisa que el servidor no tiene activada esa parte.
+
 ## 7. Dueños, ajustes y archivos de datos
 
 ### 7.1 Dueños de archivos
@@ -646,7 +741,7 @@ El registro de `venus://` se mantiene también en portable por decisión del due
 | modtranslate | `features/modtranslate.js`, css, `modules/modtranslate.js` (+ `modules/modtranslate/`) | modtranslate · main: modtranslate | — |
 | a11y | `js/a11y.js` (+ `js/a11y/`), `js/appearance.js`, `styles/a11y.css` | a11y, appearance | — |
 | settings | `pages/settings.js` (+ `pages/settings/`), `styles/pages/settings.css` | settings | — |
-| achievements | `pages/achievements.js` (+ `pages/achievements/`: `catalog.js`, `names.js`, `minecraft.js`), `features/achievements.js`, `features/missions.js`, css, `modules/achievements.js` | achievements | — |
+| achievements | `pages/achievements.js` (+ `pages/achievements/`: `catalog.js`, `names.js`; sin pestaña Minecraft), `features/achievements.js`, `features/missions.js`, css, `modules/achievements.js` | achievements | — |
 | assistant | `pages/assistant.js`, `features/assistant.js`, `features/mcpservers.js` (+ `styles/features/mcpservers.css`), css, `modules/assistant.js` (+ `modules/assistant/`, con `mcp-servers.js`), `docs/asistente-ia.md` | assistant · main: assistant | — |
 | assistant-backend | `supabase/functions/ai-assistant/`, `supabase/functions/README.md`, `docs/backend-ia.md` | — | 0007, 0008, 0011 |
 | billing | `features/plans.js`, `styles/features/plans.css`, `modules/billing.js` (+ `modules/billing/`: `client.js`, `fake.js` para capturas, pruebas en `billing/test/`), `supabase/functions/billing/`, `supabase/functions/stripe-webhook/`, `docs/pagos.md` | plans · main: billing | 0009 |
@@ -669,7 +764,7 @@ El registro de `venus://` se mantiene también en portable por decisión del due
 | decor | `features/decor.js` (+ `features/decor/`: `settings.js`, `packs.js`, `cursors.js`, `particles.js`, `sounds.js`, `splash.js`, `panel.js`; pruebas en `decor/test/`), `styles/features/decor.css` | decor | — |
 | navcustom | `features/navcustom.js` (+ `features/navcustom/`: `logic.js`, `packs.js`, `icons.js`, `editor.js`, `mini.js`; pruebas en `navcustom/test/`), `styles/features/navcustom.css`, `modules/miniwindow.js`; en `app.js` solo el menú (`navEntries()`, `buildNav` con orden, fijados, ocultos, pack y engranaje, `html[data-mini]`) | navcustom (+ claves nuevas de `nav`) | — |
 | instancemeta | `modules/instancemeta.js` (+ `instancemeta/meta.js`, pruebas en `instancemeta/test/`), `modules/shortcuts.js` (+ `shortcuts/args.js`, pruebas en `shortcuts/test/`), `pages/versions/{meta,compare,compare-diff,catalog}.js` (pruebas en `pages/versions/test/`), `pages/instance/{notes,presentation}.js` (con versions) | versions, instance (claves nuevas) | — |
-| tools | `pages/tools.js` (+ `pages/tools/`: `calc.js`, `breaks.js`; pruebas en `tools/test/`), `features/tools.js` (+ `features/tools/`: `mcnews.js`, `breaks.js`, `recap.js`, `schedule.js`), `styles/pages/tools.css`, `js/overlay/perf.js`, `modules/mcnews.js` (+ `mcnews/`, pruebas en `mcnews/test/`), `modules/downloadschedule.js` (+ `downloadschedule/`, pruebas en `downloadschedule/test/`), `modules/overlay/perf.js` (con overlay) | tools (+ claves nuevas de `overlay` y `settings`) | — |
+| playcare | `features/playcare.js` (+ `features/playcare/`: `mcnews.js`, `breaks.js`, `breaks-logic.js`, `recap.js`, `schedule.js`; pruebas en `playcare/test/`), `styles/features/playcare.css`, `modules/mcnews.js` (+ `mcnews/`, pruebas en `mcnews/test/`), `modules/downloadschedule.js` (+ `downloadschedule/`, pruebas en `downloadschedule/test/`), `modules/overlay/perf.js` (con overlay) | playcare (+ claves nuevas de `overlay` y `settings`) | — |
 | pass | `features/pass.js`, `pages/pass.js` (+ `pages/pass/`: `logic.js`, `fake.js`; pruebas en `pass/test/`), `pages/admin/pass.js`, `docs/venus-pass.md` | pass | 0026 |
 | núcleo (compartido) | archivos `[compartido]` de la sección 1, `core/*` sin dueño en esta tabla (entre ellos `core/cloud-defaults.js` y `core/app-config.js`, que completa el dueño antes de compilar), `modules/ai.js`, `0001_base.sql` | common, nav · main: core, ai | 0001, 0010 |
 
@@ -735,14 +830,13 @@ Secretos (`core/secure`, en `data/secure.json` cifrado): `assistant.mcpToken.<id
 | `overlay.panelShortcuts` | Atajos de paneles; contadores y FPS se integran con los widgets del overlay. |
 | `socialplus` | `translateConsent` y `translateChats`; consentimiento antes de enviar mensajes a IA. |
 | `voice.voiceEffect` | `'none'`; procesamiento local de voz. |
-| `compete` | `share: false`, avisos vistos y eventos recordados. El permiso de clan está en `clan_prefs.share_playtime` de la nube y también empieza en `false`. |
-| `clans.seen` (histórico) | Se conserva si ya existía; Clanes no tiene startup ni sondeo de invitaciones. |
-| `extensions.catalog` / `extensions.blocklist` (históricos) | Se conservan sin uso: la retirada desactiva el catálogo, la blocklist y la carga de extensiones. |
-| `obs` | `enabled: false`, host `127.0.0.1`, puerto `4455` y escenas. Contraseña en `secure`. Los campos antiguos `streamerWhileLive` y `streamerOwned` se ignoran. |
-| `privacy.streamer` (histórico) | No tiene valor predeterminado ni efectos activos, incluso si estaba guardado como `true`. Los controles propios de privacidad, voz y overlay se mantienen. |
+| `profileMusic` | `enabled: false`. Es el único interruptor de la música de perfil: apagado, no sale ningún pedido a Openverse, Jamendo ni Wikimedia. Caché de resultados y contador de pedidos en `data/profilemusic.json`. |
+| `smartsearch.prefs` | `useAi` (apagada por defecto), `aiSource` (`venus` o `local`) y `aiConsent { venus, local }` (aviso aceptado por fuente, con su hora). Quien tenía `useAi: true` de versiones anteriores queda apagada hasta aceptar el aviso. |
+| `overlay` | Sin claves nuevas en la 4.6; los `panelShortcuts` repetidos con `shortcut` se normalizan al leer. |
+| Claves de lo retirado (históricas) | `compete.*`, `clans.seen`, `extensions.catalog`, `extensions.blocklist`, `obs.*`, `privacy.streamer` y `ingame.capes` ya no se leen: quedan como datos inertes en un `settings.json` viejo. En disco pueden quedar `data/compete.json`, la carpeta `extensions/` y el secreto cifrado `obs.password`. |
 | `discordNotify` del servidor | Habilitación y eventos en `venus-server.json`; webhook cifrado por separado. |
 
-PIN familiar, tokens OAuth y suscripciones push no van en ajustes sincronizables. Formas completas y límites: [Datos](implementacion/datos.md), [Overlay](implementacion/overlay.md), [Social](implementacion/mensajes-voz.md), [Clips](implementacion/clips.md) y [Capas](implementacion/capas.md).
+PIN familiar, tokens OAuth y suscripciones push no van en ajustes sincronizables. Formas completas y límites: [Datos](implementacion/datos.md), [Overlay](implementacion/overlay.md), [Social](implementacion/mensajes-voz.md) y [Clips](implementacion/clips.md).
 
 ### 7.3 Carpeta de datos
 
@@ -800,10 +894,8 @@ La raíz es `%APPDATA%\.venuslauncher` (Windows), `VENUS_DATA_DIR` si está defi
 | `data/perfhistory/AAAA-MM.json` | Mediciones locales: cada 10 s, hasta 240 puntos por partida, 90 días; topes de 2 MB por mes y 8 MB en total. |
 | `data/family.json` | Hash de PIN, reglas y consumo local; fuera de exportación y sincronización. No es una barrera de seguridad del sistema operativo. |
 | `data/settings-before-import-<fecha>.json` | Respaldo de ajustes antes de importar una transferencia. |
-| `data/compete.json` | Punto de partida por cuenta para estadísticas locales; se reinicia al cambiar de cuenta o permiso. |
 | `soundboard/` | Índice y sonidos propios; máximo ocho de 5 s / 200 KB. |
-| `extensions/registry.json`, `extensions/<id>/package/`, `storage.json` | Registro, caché de bloqueos, paquetes y almacenamiento acotado por extensión. |
-| `secure` | Webhooks, caché de traducción y secretos de integración según módulo; `obs.password`, `clipupload.youtube`, `clipupload.tiktok`. |
+| `secure` | Webhooks, caché de traducción y secretos de integración según módulo; `clipupload.youtube`, `clipupload.tiktok`. |
 | IndexedDB de la PWA | Sesión de ese dispositivo y preferencias de avisos. Si falla, la sesión usa memoria; al salir se limpia la copia local. |
 
 Una transferencia excluye cuentas, secretos reconocibles y rutas del equipo, pero el filtrado de configuraciones no puede garantizar eliminar todos los secretos de archivos arbitrarios. Los tamaños, formato ZIP64 y límites por entrada están en [Datos](implementacion/datos.md).

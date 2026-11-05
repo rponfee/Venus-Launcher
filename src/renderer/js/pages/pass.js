@@ -1,7 +1,7 @@
 // Venus Pass (#/pass): el nivel con su progreso, los premios destacados (marcos, títulos y efectos) y la lista de los
 // 380 niveles por páginas, con "Ir a mi nivel" y "Reclamar todo". El pase no se compra: se gana jugando (1 XP por
 // minuto, 60 XP por nivel). Estado compartido en features/pass.js; reglas y RPC en
-// supabase/migrations/0041_venus_pass_tiempo.sql · plan de premios: pages/pass/plan.js · guía: docs/wip/pase-46.md.
+// supabase/migrations/0041_venus_pass_tiempo.sql · plan de premios: pages/pass/plan.js · guía: docs/venus-pass.md.
 import { h, icon, mount, skeleton, emptyState, setBusy, toast, fail, fmtDate, fmtDuration, reducedMotion, avatarImg } from '../ui.js';
 import { store } from '../store.js';
 import { t, has, locale } from '../i18n.js';

@@ -137,38 +137,9 @@ export default {
     }
     const refreshSoon = debounce(refreshList, 250);
 
-    // ----- Claude y ChatGPT por MCP -----
-    // Tarjeta del modulo mcp (features/mcp.js): sin plan, o si el modulo falta, no muestra nada. Se resalta
-    // cuando Venus IA no esta disponible (apagada, sin sesion, sin cuota o con el servicio con problemas).
-    const mcpHost = h('div', { class: 'as-mcp-host' });
-    let mcpCard = null;
-    let lastStatus = null;
-    const aiDown = (st) => Boolean(st) && Boolean(quotaInfo(st).blocked) && quotaInfo(st).blocked !== 'plan';
-    import('../features/mcp.js')
-      .then((m) => {
-        if (!alive || typeof m.assistantCard !== 'function') return;
-        mcpCard = m.assistantCard();
-        mount(mcpHost, mcpCard);
-        mcpCard.setHighlight(aiDown(lastStatus));
-      })
-      .catch((err) => console.warn('[assistant] tarjeta MCP:', err?.message || err));
-    // ----- Tu Claude y tu ChatGPT en el Asistente (motores externos) -----
-    // Tarjeta de features/engines.js: sin plan no muestra nada. Deteccion de Claude Code y Codex y motor por defecto.
-    const enginesHost = h('div', { class: 'as-eng-host' });
-    let engCard = null;
-    import('../features/engines.js')
-      .then((m) => {
-        if (!alive || typeof m.engineCard !== 'function') return;
-        engCard = m.engineCard();
-        mount(enginesHost, engCard);
-      })
-      .catch((err) => console.warn('[assistant] tarjeta de motores:', err?.message || err));
-
     // ----- Plan y uso -----
     function renderPlan(st) {
       if (!alive) return;
-      lastStatus = st;
-      mcpCard?.setHighlight(aiDown(st));
       if (!st) {
         mount(planBox, skeleton(3));
         return;
@@ -238,8 +209,6 @@ export default {
           'aside',
           { class: 'as-side', 'aria-label': t('assistant.conversations') },
           h('section', { class: 'card as-plan' }, h('h2', { class: 'card-title' }, icon('crown'), t('assistant.planTitle')), planBox),
-          mcpHost,
-          enginesHost,
           h('section', { class: 'card as-convs' }, h('h2', { class: 'card-title' }, icon('history'), t('assistant.conversations')), listBox),
         ),
         h(
@@ -265,8 +234,6 @@ export default {
     const offStatus = onStatus(renderPlan);
     const offEvents = api.on('assistant:event', (convId, ev) => {
       if (ev.type === 'turn-start' || ev.type === 'done') refreshSoon();
-      // El servicio de IA no respondio: Claude o ChatGPT son la alternativa (con la cuenta del usuario)
-      if (ev.type === 'error' && ['backend', 'unavailable', 'network', 'ratelimit', 'quota'].includes(ev.code)) mcpCard?.setHighlight(true);
     });
 
     refreshList();
@@ -276,8 +243,6 @@ export default {
 
     return () => {
       alive = false;
-      mcpCard?.destroy();
-      engCard?.destroy();
       offStatus();
       offEvents();
       unregister();

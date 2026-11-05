@@ -5,8 +5,8 @@
 // Sin Electron: ../billing.js le pasa las dependencias reales y las pruebas, dobles.
 
 const PLAN_ID = /^[a-z][a-z0-9_-]{1,31}$/;
-// Ediciones del Venus Pass (0026): se compran por el mismo camino que los planes de IA.
-const PASS_PLAN = /^pass_(go|pro|max)$/;
+// Planes de clan (0044): se compran por el mismo camino que los de IA, para UNA comunidad (los paga su dueño).
+const CLAN_PLAN = /^clan_(go|pro|max|ultra)$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PROVIDERS = new Set(['mercado_pago', 'paypal']);
 const TERMINAL = new Set(['paid', 'failed', 'cancelled', 'expired', 'refunded']);
@@ -94,24 +94,25 @@ function normalizeCatalog(data) {
       prices: { mercado_pago: normalizeQuote(prices.mercado_pago), paypal: normalizeQuote(prices.paypal) },
     });
   }
-  // Venus Pass de la temporada activa (0026): precios completos de cada edición.
-  let pass = null;
-  if (d.pass && typeof d.pass === 'object' && d.pass.season && typeof d.pass.season === 'object') {
-    const s = d.pass.season;
-    pass = {
-      season: { id: str(s.id) || '', name: str(s.name) || '', startsAt: str(s.startsAt), endsAt: str(s.endsAt), levels: num(s.levels) ?? 50, xpPerLevel: num(s.xpPerLevel) ?? 150 },
-      tiers: (Array.isArray(d.pass.tiers) ? d.pass.tiers : [])
-        .filter((x) => x && PASS_PLAN.test(String(x.id)))
-        .map((x) => ({
-          id: x.id,
-          tier: String(x.id).slice(5),
-          priceUsd: num(x.priceUsd),
-          bonusLevels: num(x.bonusLevels) ?? 0,
-          xpMult: num(x.xpMult) ?? 1,
-          prices: { mercado_pago: normalizeQuote(x.prices?.mercado_pago), paypal: normalizeQuote(x.prices?.paypal) },
-        })),
-    };
-  }
+  // Planes de clan (0044): precio, período y límites de cada uno.
+  const clans = (Array.isArray(d.clans) ? d.clans : [])
+    .filter((x) => x && typeof x === 'object' && CLAN_PLAN.test(String(x.id)))
+    .map((x) => {
+      const prices = x.prices && typeof x.prices === 'object' ? x.prices : {};
+      const lim = x.limits && typeof x.limits === 'object' ? x.limits : {};
+      return {
+        id: x.id,
+        tier: String(x.id).slice(5),
+        name: str(x.name) || x.id,
+        priceUsd: num(x.priceUsd),
+        periodDays: num(x.periodDays) ?? 30,
+        limits: {
+          media: num(lim.media) ?? 0, backdrops: num(lim.backdrops) ?? 0, stages: num(lim.stages) ?? 0, animated: lim.animated === true,
+          members: num(lim.members) ?? 0, channels: num(lim.channels) ?? 0, roles: num(lim.roles) ?? 0, priority: lim.priority === true,
+        },
+        prices: { mercado_pago: normalizeQuote(prices.mercado_pago), paypal: normalizeQuote(prices.paypal) },
+      };
+    });
   return {
     source: 'backend',
     providers: {
@@ -121,7 +122,7 @@ function normalizeCatalog(data) {
     arsPerUsd: num(d.arsPerUsd),
     rateUpdatedAt: str(d.rateUpdatedAt),
     plans,
-    pass,
+    clans,
   };
 }
 
@@ -132,6 +133,7 @@ function staticCatalog() {
     arsPerUsd: null,
     rateUpdatedAt: null,
     plans: STATIC_PLANS.map((p) => ({ id: p.id, name: p.name, priceUsd: p.amount / 100, budgetUsd: null, maxTokensPerRequest: null, models: [], prices: { mercado_pago: null, paypal: null } })),
+    clans: [],
   };
 }
 
@@ -142,6 +144,7 @@ function normalizeOrder(o) {
     id: o.id,
     plan: str(o.plan),
     planName: str(o.planName),
+    communityId: typeof o.communityId === 'string' && UUID.test(o.communityId) ? o.communityId : null,
     provider: PROVIDERS.has(o.provider) ? o.provider : null,
     currency: o.currency === 'ARS' || o.currency === 'USD' ? o.currency : null,
     amount: num(o.amount),
@@ -207,6 +210,8 @@ function createBillingClient(deps) {
     if (res.status === 401 || error === 'unauthorized') throw coded('noSession', res.status === 403 ? t('billing.errSignIn') : t('billing.errSession'));
     const known = {
       unknown_plan: ['unknownPlan', 'billing.errUnknownPlan'],
+      unknown_community: ['unknownCommunity', 'billing.errUnknownCommunity'],
+      not_owner: ['notOwner', 'billing.errNotOwner'],
       provider_disabled: ['providerDisabled', 'billing.errProviderDisabled'],
       too_many: ['busy', 'billing.errTooMany'],
       busy: ['busy', 'billing.errBusy'],
@@ -247,8 +252,10 @@ function createBillingClient(deps) {
   function emitOrder(order) {
     deps.send?.('billing:order', order);
     if (order.status === 'paid') {
-      deps.send?.('billing:changed', { reason: 'paid', kind: PASS_PLAN.test(String(order.plan)) ? 'pass' : 'order', plan: order.plan });
-      deps.aiStatus?.({ refresh: true })?.catch?.(() => {});
+      const clan = CLAN_PLAN.test(String(order.plan));
+      deps.send?.('billing:changed', { reason: 'paid', kind: clan ? 'clan' : 'order', plan: order.plan, community: clan ? order.communityId : null });
+      // Un plan de clan no toca el saldo de IA.
+      if (!clan) deps.aiStatus?.({ refresh: true })?.catch?.(() => {});
     }
   }
 
@@ -287,14 +294,17 @@ function createBillingClient(deps) {
     w.timer = timers.setTimeout(tick, WATCH_EVERY_MS);
   }
 
-  // { plan, provider } -> abre el pago en el navegador y devuelve { order, url }.
+  // { plan, provider, community? } -> abre el pago en el navegador y devuelve { order, url }. Un plan de clan pide la comunidad.
   async function checkout(input) {
     const plan = typeof input?.plan === 'string' ? input.plan.trim().toLowerCase() : '';
     const provider = typeof input?.provider === 'string' ? input.provider : '';
-    if (!STATIC_PLANS.some((p) => p.id === plan) && !PASS_PLAN.test(plan)) throw coded('unknownPlan', t('billing.errUnknownPlan'));
+    const clan = CLAN_PLAN.test(plan);
+    if (!STATIC_PLANS.some((p) => p.id === plan) && !clan) throw coded('unknownPlan', t('billing.errUnknownPlan'));
     if (!PROVIDERS.has(provider)) throw coded('providerDisabled', t('billing.errProviderDisabled'));
+    const community = typeof input?.community === 'string' ? input.community : '';
+    if (clan && !UUID.test(community)) throw coded('unknownCommunity', t('billing.errUnknownCommunity'));
     const owner = deps.sessionUser ? await deps.sessionUser() : null;
-    const result = await payments('checkout', { plan, provider });
+    const result = await payments('checkout', clan ? { plan, provider, community } : { plan, provider });
     const o = normalizeOrder(result?.order);
     const url = typeof result?.url === 'string' && /^https:\/\/[^\s]+$/.test(result.url) ? result.url : null;
     if (!o || !url) throw coded('server', t('billing.errBadUrl'));
