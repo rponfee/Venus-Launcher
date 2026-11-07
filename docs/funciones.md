@@ -159,6 +159,10 @@ Las capas de Venus se retiraron en la 4.6: la insignia sigue, pero el mod ya no 
 
 En **Skins → Editor de skins** creás una skin de 64×64 (clásica o slim) desde cero o desde una de tu biblioteca: lápiz, goma, balde, cuentagotas, espejo izquierda/derecha, capa base y capa exterior, paleta y selector de color, zoom, deshacer y rehacer (Ctrl+Z / Ctrl+Y), plantilla con las zonas marcadas y vista 3D en vivo. Al guardarla queda en tu biblioteca, lista para usar en tu cuenta. Ver [temas.md](temas.md).
 
+**Crear con IA** (botón del pie del editor): sumás hasta 3 imágenes de referencia (elegidas, arrastradas o pegadas con Ctrl+V) y/o escribís cómo la querés, elegís el modelo (clásico o slim) y si usa la capa exterior, y la IA de Venus dibuja la skin de 64×64. Ves el frente y la espalda antes de usarla; **Usar en el editor** la carga como un solo cambio (Ctrl+Z vuelve a la anterior) para retocarla a mano y guardarla. Con una skin ya dibujada podés elegir **Retocar la actual** y pedir cambios con texto ("botas rojas", "sacale la capucha"). Las imágenes se achican a 640 px y se reencodean en tu PC (sin metadatos) y se envían solo al tocar **Generar**; cada generación gasta una consulta del plan. La IA toma los colores dominantes de las referencias como base de la paleta; lo que dibuje fuera de las zonas que usa el juego se descarta y los huecos de la capa base se rellenan solos.
+
+- Necesita: cuenta de Venus y un plan de Venus IA. Código: `modules/skinai.js` (canales `skinai:status`, `skinai:generate`, `skinai:cancel`) y `pages/skins/editor/aipanel.js`.
+
 ### Clips y capturas
 
 **Clips y capturas** (menú Jugar) junta las capturas, clips y grabaciones de todas tus instancias, con filtros por instancia y fecha, búsqueda y un visor que se maneja con el teclado (borrar va a la papelera).

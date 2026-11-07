@@ -121,3 +121,34 @@
 }
 
 html.ax-hc .se-card, html.ax-hc .se-stage, html.ax-hc .se-toolbar { border-color: var(--border-3); }
+
+/* ---------- Creador con IA ---------- */
+.se-ai { display: flex; flex-direction: column; gap: var(--sp-3); }
+.se-ai-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.se-ai-row .chips { display: flex; gap: var(--sp-1); flex-wrap: wrap; }
+.se-ai-row .chip[aria-checked="true"] { background: var(--accent-wash); color: var(--accent-hi); border-color: var(--accent-line); }
+.se-ai-drop {
+  display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3);
+  border: 1px dashed var(--border-3); border-radius: var(--radius); background: var(--surface-2);
+  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.se-ai-drop.over { border-color: var(--accent); background: var(--surface-3); }
+.se-ai-drop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.se-ai-drop-hint { flex: 1 1 200px; font-size: var(--fs-sm); }
+.se-ai-refs { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.se-ai-refs:empty { display: none; }
+.se-ai-ref { position: relative; width: 104px; display: flex; flex-direction: column; gap: 4px; }
+.se-ai-ref img { width: 104px; height: 104px; object-fit: cover; border-radius: var(--radius-s); border: 1px solid var(--border); background: var(--surface-3); }
+.se-ai-ref-x { position: absolute; top: 4px; right: 4px; background: var(--surface-raised); box-shadow: var(--shadow-s); }
+.se-ai-swatches { display: flex; height: 8px; border-radius: 4px; overflow: hidden; }
+.se-ai-swatches span { flex: 1; }
+.se-ai-text { width: 100%; resize: vertical; min-height: 84px; }
+.se-ai-meta { display: flex; justify-content: space-between; gap: var(--sp-3); font-size: var(--fs-sm); margin-top: calc(-1 * var(--sp-2)); }
+.se-ai-count { white-space: nowrap; }
+.se-ai-check { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); }
+.se-ai-working { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); }
+.se-ai-working .btn { margin-left: auto; }
+.se-ai-result { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
+.se-ai-views { display: flex; gap: var(--sp-4); justify-content: center; }
+.se-ai-view { width: 96px; height: 192px; image-rendering: pixelated; }
+.se-ai-notes { margin: 0; font-size: var(--fs-sm); color: var(--text); }

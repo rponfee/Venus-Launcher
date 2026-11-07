@@ -243,11 +243,13 @@ function buildEditor({ libraryId = null, start = null, onSaved = null } = {}) {
   const nameInput = h('input', { class: 'input se-name', id: nameId, maxlength: NAME_MAX, autocomplete: 'off', spellcheck: 'false' });
   const nameErr = h('div', { class: 'field-error se-name-err', id: nameErrId, role: 'alert', hidden: true }, icon('alert'), h('span', {}, t('skineditor.nameRequired')));
   const startBtn = h('button', { type: 'button', class: 'btn ghost', onclick: () => openStartPicker() }, icon('layers'), t('skineditor.startFrom'));
+  const aiBtn = h('button', { type: 'button', class: 'btn tonal', title: t('skineditor.aiOpenTip'), onclick: () => openAi() }, icon('sparkles'), t('skineditor.aiOpen'));
   const cancelBtn = h('button', { type: 'button', class: 'btn ghost', onclick: () => requestClose() }, t('skineditor.close'));
   const saveBtn = h('button', { type: 'button', class: 'btn primary', onclick: () => save() }, icon('save'), t('skineditor.save'));
   const footer = [
     h('div', { class: 'se-foot-name' }, h('label', { for: nameId }, t('skineditor.nameLabel')), h('div', { class: 'se-name-wrap' }, nameInput, nameErr)),
     startBtn,
+    aiBtn,
     h('span', { class: 'spacer' }),
     cancelBtn,
     saveBtn,
@@ -744,6 +746,32 @@ function buildEditor({ libraryId = null, start = null, onSaved = null } = {}) {
     syncTitle();
     redraw();
     update3d(true);
+  }
+
+  // ---------- Creador con IA ----------
+  // El resultado entra como un solo cambio del historial: Ctrl+Z vuelve a la skin de antes.
+  function openAi() {
+    import('./editor/aipanel.js')
+      .then(({ openAiPanel }) =>
+        openAiPanel({
+          variant: S.variant,
+          hasContent: !L.isBlank(S.px) && !L.samePixels(S.px, L.blankSkin(S.variant)),
+          getCurrent: () => new Uint8ClampedArray(S.px),
+          onApply: ({ px, variant }) => {
+            if (S.closed) return;
+            const before = new Uint8ClampedArray(S.px);
+            setVariant(variant);
+            S.px = new Uint8ClampedArray(px);
+            S.history.record(before);
+            S.layer = 'base';
+            S.show = { base: true, outer: true };
+            syncSide();
+            afterChange();
+            note(t('skineditor.aiApplied'));
+          },
+        }),
+      )
+      .catch((err) => toast('bad', t('skineditor.aiTitle'), err?.message || String(err)));
   }
 
   async function confirmDiscard() {
