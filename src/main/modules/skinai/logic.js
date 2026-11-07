@@ -51,6 +51,8 @@ function systemPrompt({ language = 'es', variant = 'classic', outer = true, edit
     '- The head front (x 8..15, y 8..15) holds the face: eyes at rows 11-12 of the texture, nose or mouth only if the character has them. Keep the face readable.',
     '- Use 3 or 4 shades per material (shadow, base, light, highlight), light coming from the top, and avoid black outlines or random noise.',
     '- Pixel art, not a photo: simplify the reference into clear shapes, keep its silhouette, its colors and its signature motifs (emblems, stripes, glowing parts).',
+    '- Before writing rows, plan the head, torso, arms and legs as one coherent character. The top, sides and back of each part must match its front in material and shading.',
+    '- Avoid isolated bright pixels. Use small clusters, readable contrast and a limited palette so the skin looks intentional at in-game size.',
     '- Both arms and both legs usually mirror each other (the left side is the mirror of the right side) unless the reference clearly differs.',
     outer
       ? '- Use the OUTER LAYER only for things that stick out (hair volume, hat, hood, jacket, shoulder pads, sleeves cuffs, boots). Leave it transparent ("."), everywhere else.'

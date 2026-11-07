@@ -30,7 +30,6 @@ export async function prepareSocialUi() {
   ensureCss('features/profile-social');
   await Promise.all([loadNs('social'), ensureProfileStyle(), loadNs('achievements').catch(() => null)]);
   // Bandeja de regalos (3.1): avisa cuando llega uno nuevo
-  import('./gifts.js').then((m) => m.startGiftWatch()).catch(() => {});
 }
 
 // ---------- Piezas ----------
@@ -308,11 +307,11 @@ export function profileCard(profile, { presence = 'offline', statusText = '', se
   const sub = [n.pronouns ? h('span', { class: 'ellipsis', title: n.pronouns }, n.pronouns) : null, n.username ? h('span', { class: 'ellipsis', title: `@${n.username}` }, `@${n.username}`) : null].filter(Boolean);
   const showStatus = presence || statusText;
   const body = [
-    h('div', { class: 'pf-card-top' }, head, h('div', { class: 'pf-card-chips' }, rankChip(n), premiumChip(n), badgeChips(n, { compact: true, max: 6, rank: false }))),
+    h('div', { class: 'pf-card-top' }, head, h('div', { class: 'pf-card-chips' }, rankChip(n), badgeChips(n, { compact: true, max: 6, rank: false }))),
     h(
       'div',
       { class: 'pf-card-names' },
-      h('div', { class: 'pf-card-name-line' }, styledName(n, { size: 'lg', title: true })),
+      h('div', { class: 'pf-card-name-line' }, styledName(n, { size: 'lg' })),
       sub.length ? h('div', { class: 'pf-card-sub' }, sub.flatMap((s, i) => (i ? [h('span', { class: 'pf-dot-sep', 'aria-hidden': 'true' }), s] : [s]))) : null,
     ),
     rareBadgeChips(n.showcase?.rareBadges),

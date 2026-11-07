@@ -73,7 +73,7 @@ export default {
   trError: "Vertalen lukt momenteel niet. Probeer het over een tijdje opnieuw.",
   trConsentTitle: "Vertalen met AI",
   trConsentText: "Om een bericht te vertalen, verlaat de tekst je pc en gaat die naar de AI-aanbieder.",
-  trConsentPoint1: "De tekst gaat via de Venus-server naar Anthropic (of OpenAI als reserve). Alleen de berichttekst wordt verstuurd, zonder namen.",
+  trConsentPoint1: "De tekst gaat via de Venus-server naar OpenAI. Alleen de berichttekst wordt verstuurd, zonder namen.",
   trConsentPoint2: "Dit gebruikt je AI-abonnement: het telt mee voor je dagelijkse vragenlimiet.",
   trConsentPoint3: "De vertaling wordt versleuteld op je pc opgeslagen, zodat je er niet twee keer voor betaalt. Je kunt de vertaling wissen en deze toestemming intrekken via Instellingen > Privacy.",
   trConsentOk: "Begrepen, vertalen",

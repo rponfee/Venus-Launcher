@@ -4,11 +4,12 @@ import { api } from '../store.js';
 import { cloud } from '../cloud.js';
 import { navigate } from '../app.js';
 import { S, ticketDesk } from '../features/support.js';
+import { supportAiCard } from '../features/support-ai.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default {
-  ns: ['support', 'plans'],
+  ns: ['support', 'supportai', 'plans'],
   css: ['pages/support', 'features/plans'],
   async render(root, params = []) {
     await cloud.ready();
@@ -23,7 +24,7 @@ export default {
       return cloud.on('auth', () => navigate('support'));
     }
     const desk = ticketDesk({ initial: UUID.test(params[0] || '') ? params[0] : null });
-    mount(root, header, plansHint, desk.el);
+    mount(root, header, supportAiCard(), plansHint, desk.el);
     const currentUser = cloud.user?.id;
     const offAuth = cloud.on('auth', () => {
       if (cloud.user?.id === currentUser) return;

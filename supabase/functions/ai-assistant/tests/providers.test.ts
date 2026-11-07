@@ -9,9 +9,9 @@ import { ANTHROPIC_ONLY, defaultSettings, failoverKind, parseProviderSettings, p
 import type { OpenAITier, ProviderSettings } from '../providers.ts';
 
 const EFFORTS = { low: 'low', medium: 'medium', high: 'high' } as const;
-const LUNA: OpenAITier = { model: 'gpt-6-luna', efforts: { ...EFFORTS } };
-const SOL: OpenAITier = { model: 'gpt-6.1-sol', efforts: { ...EFFORTS } };
-const ASTRA: OpenAITier = { model: 'gpt-6-astra', efforts: { ...EFFORTS } };
+const LUNA: OpenAITier = { model: 'gpt-6-luna', efforts: { ...EFFORTS, xhigh: null } };
+const SOL: OpenAITier = { model: 'gpt-6.1-sol', efforts: { ...EFFORTS, xhigh: null } };
+const ASTRA: OpenAITier = { model: 'gpt-6-astra', efforts: { ...EFFORTS, xhigh: null } };
 const BOTH = { anthropic: true, openai: true };
 
 function raw(extra: Record<string, unknown> = {}): Record<string, unknown> {
@@ -42,7 +42,7 @@ test('parseProviderSettings: la forma de ai_provider_settings()', () => {
   assert.ok(!settings?.failoverOn.has('unknown'));
   // Esfuerzos null (no se manda reasoning) y valores desconocidos (se ignoran).
   const partial = parseProviderSettings(raw({ openai: { haiku: { model: 'gpt-4.1', efforts: { low: null, medium: 'turbo', high: 'xhigh' } }, sonnet: { model: 'claude-sonnet-5-5' }, opus: 'x' } }));
-  assert.deepEqual(partial?.openai, { haiku: { model: 'gpt-4.1', efforts: { low: null, medium: null, high: 'xhigh' } } });
+  assert.deepEqual(partial?.openai, { haiku: { model: 'gpt-4.1', efforts: { low: null, medium: null, high: 'xhigh', xhigh: null } } });
   // Tipos de falla desconocidos se ignoran; nunca aparece un tipo que no está en FAILOVER_KINDS.
   assert.deepEqual([...(parseProviderSettings(raw({ failoverOn: ['overloaded', 'refusal', 'invalid_request', 3] }))?.failoverOn ?? [])], ['overloaded']);
   // Sin secundario (o igual al principal) no hay respaldo.

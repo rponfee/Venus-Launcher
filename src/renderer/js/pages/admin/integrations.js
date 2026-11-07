@@ -139,7 +139,7 @@ export function render(root) {
     return { el, load, clear: () => { if (input) input.value = ''; } };
   }
 
-  const cards = [integration('klipy', 'image'), integration('curseforge', 'package', true)];
+  const cards = [integration('openai', 'wand'), integration('klipy', 'image'), integration('curseforge', 'package', true)];
   mount(root, cards.map(item => item.el));
   cards.forEach(item => item.load());
   return { destroy() { alive = false; cards.forEach(item => item.clear()); } };

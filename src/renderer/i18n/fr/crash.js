@@ -22,7 +22,7 @@ export default {
   restoreSnapshot: "Restaurer l'instantané",
   playAgain: "Rejouer",
   aiTitle: "Explication par l'IA",
-  aiText: "Demandez à Claude une explication avec les étapes à suivre, à partir du rapport de plantage et de votre liste de mods.",
+  aiText: "Demandez à OpenAI une explication avec les étapes à suivre, à partir du rapport de plantage et de votre liste de mods.",
   aiButton: "Expliquer avec l'IA",
   aiWorking: "Réflexion...",
   aiGenerated: "Généré par l'IA",

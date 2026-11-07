@@ -120,7 +120,6 @@ function sessionItem(s, ctx) {
         kind === 'inferred' ? h('span', { class: 'badge wo-est-badge', title: t('worlds.estimatedHint') }, t('worlds.estimated')) : null,
         counts.length ? h('div', { class: 'wo-tl-counts' }, counts) : null,
       ),
-      mediaStrip(s, ctx.allMedia, ctx.onOpenMedia, ctx.sharedMap),
       advList(s.advancements),
       !s.media.length && !s.advancements.length && kind === 'tracked' ? h('p', { class: 'wo-tl-quiet' }, t('worlds.sessionQuiet')) : null,
     ),

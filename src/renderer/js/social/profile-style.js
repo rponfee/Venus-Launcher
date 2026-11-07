@@ -185,13 +185,6 @@ function paintName(el, label, n, { size, animate }) {
   label.dataset.text = label.textContent;
 }
 
-function titleChip(n) {
-  const id = titleOf(n);
-  if (!id) return null;
-  const label = titleLabel(id);
-  return h('span', { class: 'pf-title', dataset: { title: id }, title: label }, label);
-}
-
 /**
  * Nombre con el estilo del perfil. size: 'sm' (listas: hereda el tamaño, sin animaciones), 'md' o 'lg'.
  * title: true agrega el titulo equipado al lado. animate: fuerza (o apaga) las animaciones del efecto.
@@ -205,16 +198,11 @@ export function styledName(profile, { size = 'md', title = false, animate } = {}
   const label = h('span', { class: 'pf-name-text' }, text);
   const el = h('span', { class: ['pf-name', `pf-size-${sz}`] }, label);
   paintName(el, label, n, { size: sz, animate: anim });
-  const box = title ? h('span', { class: ['pf-namebox', `pf-size-${sz}`] }, el, titleChip(n)) : null;
+  const box = title ? h('span', { class: ['pf-namebox', `pf-size-${sz}`] }, el) : null;
   if (!n.hasStyle && n.id && !cachedStyle(n.id)) {
     requestStyle(n.id, () => {
       const fresh = normalize(n);
       paintName(el, label, fresh, { size: sz, animate: anim });
-      if (box) {
-        box.querySelector('.pf-title')?.remove();
-        const chip = titleChip(fresh);
-        if (chip) box.append(chip);
-      }
     });
   }
   return box || el;
@@ -223,10 +211,7 @@ export function styledName(profile, { size = 'md', title = false, animate } = {}
 // ---------- Marco ----------
 // Pone (o saca) el marco equipado en un elemento, normalmente el contenedor de la cabeza
 export function applyFrame(el, profile) {
-  if (!el) return el;
-  ensureCss(FRAMES_CSS);
-  // El avatar siempre es redondo (main.css) y el marco es un dibujo SVG que lo rodea (frames.js); sin marco, queda limpio
-  return drawFrame(el, frameOf(normalize(profile)));
+  return el;
 }
 
 // ---------- Banner ----------
@@ -277,6 +262,7 @@ export function titleLabel(titleId) {
 
 // Insignia Premium (o el estilo de insignia comprado) con el estilo equipado
 export function premiumChip(profile) {
+  return null;
   const n = normalize(profile);
   const style = badgeStyleOf(n);
   if (!n.premium && !style) return null;

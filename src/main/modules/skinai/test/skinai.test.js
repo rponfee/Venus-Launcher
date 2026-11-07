@@ -132,7 +132,8 @@ test('generate: valida antes de llamar, usa una sola consulta y devuelve los pix
   const res = await skinai.generate({ images: [PNG], text: 'guerrero', variant: 'classic' }, { ai, language: 'es' });
   assert.equal(calls, 1);
   assert.equal(res.rgba.length, 16384);
-  assert.equal(seen.maxTokens, 12000);
+  assert.equal(seen.maxTokens, 30000);
+  assert.equal(seen.model, 'haiku');
   assert.ok(seen.turnId && seen.schema && seen.signal);
   assert.equal(await skinai.status({ ai }).then((s) => s.available), true);
   assert.equal((await skinai.status({ ai: { available: async () => false } })).available, false);

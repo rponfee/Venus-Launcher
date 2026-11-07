@@ -92,13 +92,13 @@ test('parseTimeoutMs usa el valor por defecto y respeta el rango', () => {
   assert.equal(parseTimeoutMs('9999999'), MAX_TIMEOUT_MS);
 });
 
-test('clampMaxTokens nunca pasa el tope del plan ni 16000', () => {
+test('clampMaxTokens nunca pasa el tope del plan ni 36000', () => {
   assert.equal(clampMaxTokens(null, 8000), 8000);
-  assert.equal(clampMaxTokens(undefined, undefined), 16000);
+  assert.equal(clampMaxTokens(undefined, undefined), 36000);
   assert.equal(clampMaxTokens(2000, 8000), 2000);
   assert.equal(clampMaxTokens(9000, 8000), 8000);
-  assert.equal(clampMaxTokens(20000, 0), 16000);
-  assert.equal(clampMaxTokens(64000, 32000), 16000);
+  assert.equal(clampMaxTokens(20000, 0), 20000);
+  assert.equal(clampMaxTokens(64000, 32000), 32000);
   assert.equal(clampMaxTokens(16000, 16000), 16000);
   assert.equal(clampMaxTokens(0, 8000), 1);
   assert.equal(clampMaxTokens(Number.NaN, 8000), 8000);

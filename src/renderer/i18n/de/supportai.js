@@ -1,0 +1,1 @@
+export default { title: 'Schnelle KI-Hilfe', description: 'Frage in deiner Sprache. Falls dein Konto geprüft werden muss, eröffne unten eine Supportanfrage.', question: 'Deine Frage', placeholder: 'Wobei brauchst du Hilfe mit Venus Launcher?', ask: 'Fragen', working: 'Antwort wird vorbereitet…', error: 'Im Moment ist keine Antwort möglich. Eröffne eine Supportanfrage.' };

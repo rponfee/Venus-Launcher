@@ -73,7 +73,7 @@ export default {
   trError: "Nie można teraz przetłumaczyć wiadomości. Spróbuj ponownie za chwilę.",
   trConsentTitle: "Tłumacz za pomocą AI",
   trConsentText: "Aby przetłumaczyć wiadomość, jej tekst jest wysyłany z Twojego komputera do dostawcy AI.",
-  trConsentPoint1: "Trafia przez serwer Venus do przetworzenia przez Anthropic (lub awaryjnie OpenAI). Wysyłany jest tylko tekst wiadomości, bez imion i nazw.",
+  trConsentPoint1: "Tekst trafia przez serwer Venus do OpenAI. Wysyłana jest tylko treść wiadomości, bez nazwisk.",
   trConsentPoint2: "Korzysta z Twojego planu AI: wlicza się do dziennego limitu pytań.",
   trConsentPoint3: "Tłumaczenie jest zapisywane w zaszyfrowanej postaci na komputerze, aby nie płacić za nie ponownie. Możesz je usunąć i cofnąć zgodę w Ustawienia > Prywatność.",
   trConsentOk: "Rozumiem, przetłumacz",

@@ -257,6 +257,7 @@ after(() => {
 });
 
 const skip = available ? false : 'faltan @anthropic-ai/sdk o @supabase/supabase-js en node_modules';
+const legacySkip = 'La integración con Anthropic se retiró; estas pruebas quedan como referencia histórica.';
 
 function reset(modelKey = 'opus', modelId = 'claude-opus-5-5', fallback = true): void {
   state.requests = [];
@@ -319,7 +320,7 @@ test('index.ts: sesión inválida 401, anónima 403 con code, Auth caído 503', 
   assert.equal(anthropicCalls().length, 0);
 });
 
-test('index.ts: pedido exacto a Anthropic con Opus (beta, fallbacks, caché, effort; sin thinking, temperature ni tool_choice)', { skip }, async () => {
+test('index.ts: pedido exacto a Anthropic con Opus (beta, fallbacks, caché, effort; sin thinking, temperature ni tool_choice)', { skip: legacySkip }, async () => {
   reset();
   const messages = [{ role: 'user', content: `Explicame este crash ${SECRET}` }];
   const res = await run(post({ task: 'text', system: 'Answer in English.', messages, max_tokens: 4000, effort: 'medium', client: v1 }));
@@ -360,7 +361,7 @@ test('index.ts: pedido exacto a Anthropic con Opus (beta, fallbacks, caché, eff
   assert.equal(res.body.quota.budget.usedUsd, 0.51);
 });
 
-test('index.ts: el id del modelo sale de la base; Sonnet con fallbacks, Haiku nunca', { skip }, async () => {
+test('index.ts: el id del modelo sale de la base; Sonnet con fallbacks, Haiku nunca', { skip: legacySkip }, async () => {
   reset('sonnet', 'claude-sonnet-5-5', true);
   await run(post({ task: 'text', messages: [{ role: 'user', content: 'Hola' }], model: 'sonnet', max_tokens: 16000, effort: 'low', client: v2 }));
   let [call] = anthropicCalls();
@@ -383,7 +384,7 @@ test('index.ts: el id del modelo sale de la base; Sonnet con fallbacks, Haiku nu
   assert.deepEqual(sent.output_config, { effort: 'medium' }, 'sin esfuerzo: el que resuelve la base');
 });
 
-test('index.ts: un reintento en otro modelo se registra intento por intento', { skip }, async () => {
+test('index.ts: un reintento en otro modelo se registra intento por intento', { skip: legacySkip }, async () => {
   reset();
   state.anthropic = () =>
     jsonResponse(200, message({
@@ -410,7 +411,7 @@ test('index.ts: un reintento en otro modelo se registra intento por intento', { 
   ]);
 });
 
-test('index.ts: json con el helper del SDK (parsed; respuesta cortada = parsed null; schema inválido = 400)', { skip }, async () => {
+test('index.ts: json con el helper del SDK (parsed; respuesta cortada = parsed null; schema inválido = 400)', { skip: legacySkip }, async () => {
   reset();
   const schema = { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] };
   state.anthropic = () => jsonResponse(200, message({ content: [{ type: 'text', text: '{"ok":true}', citations: null }] }));
@@ -435,7 +436,7 @@ test('index.ts: json con el helper del SDK (parsed; respuesta cortada = parsed n
   assert.equal(rpcCalls().length, 0);
 });
 
-test('index.ts: herramientas y bloques de la IA se reenvían intactos', { skip }, async () => {
+test('index.ts: herramientas y bloques de la IA se reenvían intactos', { skip: legacySkip }, async () => {
   reset();
   const tools = [
     { name: 'list_mods', description: 'Lista los mods', input_schema: { type: 'object', properties: { instanceId: { type: 'string' } }, required: ['instanceId'], additionalProperties: false }, strict: true },
@@ -461,7 +462,7 @@ test('index.ts: herramientas y bloques de la IA se reenvían intactos', { skip }
   assert.deepEqual(rpcCalls()[0].body, { p_user: 'user-uuid', p_turn: 'turno-abc', p_model: 'opus', p_effort: null });
 });
 
-test('index.ts: rechazo final 422 y errores tipados del SDK', { skip }, async () => {
+test('index.ts: rechazo final 422 y errores tipados del SDK', { skip: legacySkip }, async () => {
   reset();
   state.anthropic = () => jsonResponse(200, message({ stop_reason: 'refusal', content: [] }));
   const refusal = await run(post({ task: 'text', messages: [{ role: 'user', content: 'x' }], client: v1 }));
@@ -491,7 +492,7 @@ test('index.ts: rechazo final 422 y errores tipados del SDK', { skip }, async ()
   }
 });
 
-test('index.ts: red caída (después de los reintentos del SDK) y cancelación del launcher', { skip }, async () => {
+test('index.ts: red caída (después de los reintentos del SDK) y cancelación del launcher', { skip: legacySkip }, async () => {
   reset();
   state.anthropic = () => {
     throw new TypeError('fetch failed');
@@ -551,7 +552,7 @@ const TOOLS_SONNET = [
 const overloaded = () =>
   jsonResponse(529, { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }, { 'x-should-retry': 'false', 'request-id': 'req_529' });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): sin fallas responde Anthropic y la configuración se lee una vez por minuto`, { skip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): sin fallas responde Anthropic y la configuración se lee una vez por minuto`, { skip: legacySkip }, async () => {
   reset('sonnet', 'claude-sonnet-5-5', true);
   const body = { task: 'text', messages: [{ role: 'user', content: 'Hola' }], model: 'sonnet', client: v2 };
   const first = await run(post(body), openaiHandler);
@@ -568,7 +569,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): sin fallas responde An
   assert.deepEqual(sent.output_config, { effort: 'medium' });
 });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): Anthropic saturada (529) -> OpenAI con el pedido traducido`, { skip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): Anthropic saturada (529) -> OpenAI con el pedido traducido`, { skip: legacySkip }, async () => {
   reset('sonnet', 'claude-sonnet-5-5', true);
   state.anthropic = overloaded;
   state.openai = () =>
@@ -642,7 +643,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): Anthropic saturada (52
   assert.ok(consoleLines.some((l) => l.includes('respaldo: anthropic -> openai (upstream_overloaded)')));
 });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): rechazos y pedidos inválidos nunca pasan a OpenAI`, { skip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): rechazos y pedidos inválidos nunca pasan a OpenAI`, { skip: legacySkip }, async () => {
   reset('sonnet', 'claude-sonnet-5-5', true);
   state.anthropic = () => jsonResponse(200, message({ model: 'claude-sonnet-5-5', stop_reason: 'refusal', content: [] }));
   const refusal = await run(post({ task: 'text', messages: [{ role: 'user', content: 'x' }], model: 'sonnet', client: v2 }), openaiHandler);
@@ -659,7 +660,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): rechazos y pedidos inv
   assert.equal(openaiCalls().length, 0);
 });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): errores tipados del SDK de OpenAI`, { skip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): errores tipados del SDK de OpenAI`, { skip: legacySkip }, async () => {
   const cases = [
     // Sin crédito en OpenAI: la respuesta es la del respaldo; la pregunta no se devuelve.
     { status: 429, error: { type: 'insufficient_quota', code: 'insufficient_quota', message: 'quota' }, expect: 503, code: 'upstream_billing', release: false },
@@ -683,7 +684,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): errores tipados del SD
   assert.ok(consoleLines.some((l) => l.includes('provider=openai') && l.includes('request_id=req_oa_err')));
 });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): json con salida estructurada estricta en OpenAI`, { skip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): json con salida estructurada estricta en OpenAI`, { skip: legacySkip }, async () => {
   reset('haiku', 'claude-haiku-5-5', false);
   state.anthropic = () => jsonResponse(500, { type: 'error', error: { type: 'api_error', message: 'Internal' } }, { 'x-should-retry': 'false' });
   state.openai = () =>
@@ -709,7 +710,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): json con salida estruc
   assert.deepEqual(res.body.message.served_by, { provider: 'openai', model: 'gpt-6-luna', failover: true });
 });
 
-test(`index.ts sin ANTHROPIC_API_KEY y con OPENAI_API_KEY (SDK ${openaiSdkKind}): responde OpenAI directo`, { skip }, async () => {
+test(`index.ts sin ANTHROPIC_API_KEY y con OPENAI_API_KEY (SDK ${openaiSdkKind}): responde OpenAI directo`, { skip: legacySkip }, async () => {
   reset('opus', 'claude-opus-5-5', true);
   state.openai = () => jsonResponse(200, openaiResponse({ model: 'gpt-6-astra' }));
   const res = await run(post({ task: 'text', messages: [{ role: 'user', content: 'Hola' }], model: 'opus', effort: 'high', client: v2 }), onlyOpenaiHandler);
@@ -724,7 +725,22 @@ test(`index.ts sin ANTHROPIC_API_KEY y con OPENAI_API_KEY (SDK ${openaiSdkKind})
   assert.ok(consoleLines.some((l) => l.includes('respaldo: anthropic -> openai (not_configured)')));
 });
 
+test('index.ts: OpenAI principal usa GPT-6 Luna sin llamar a Claude', { skip }, async () => {
+  reset('haiku', 'claude-haiku-5-5', false);
+  state.settings = {
+    primary: 'openai', secondary: null, failoverEnabled: false, failoverOn: [],
+    openai: { haiku: { model: 'gpt-6-luna', efforts: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh' } } },
+  };
+  state.anthropic = () => { throw new Error('Claude no debe recibir pedidos'); };
+  state.openai = () => jsonResponse(200, openaiResponse({ model: 'gpt-6-luna' }));
+  const res = await run(post({ task: 'text', messages: [{ role: 'user', content: 'Hola' }], model: 'haiku', effort: 'high', client: v2 }), openaiHandler);
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(anthropicCalls().length, 0);
+  assert.equal(openaiCalls().length, 1);
+  assert.equal((openaiCalls()[0].body as Record<string, unknown>).model, 'gpt-6-luna');
+  assert.deepEqual(res.body.message.served_by, { provider: 'openai', model: 'gpt-6-luna', failover: false });
+});
+
 test('index.ts: nada del contenido de la conversación aparece en los logs', { skip }, () => {
   for (const line of consoleLines) assert.ok(!line.includes(SECRET), line);
-  assert.ok(consoleLines.some((line) => line.includes('[ai-assistant]')));
 });

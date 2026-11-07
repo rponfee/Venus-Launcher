@@ -77,7 +77,7 @@ export default {
   trError: 'No se pudo traducir ahora. Probá de nuevo en un rato.',
   trConsentTitle: 'Traducir con IA',
   trConsentText: 'Para traducir un mensaje, su texto sale de tu PC y va al proveedor de IA.',
-  trConsentPoint1: 'Pasa por el servidor de Venus y lo procesa Anthropic (o OpenAI, de respaldo). Solo va el texto del mensaje, sin nombres.',
+  trConsentPoint1: "Pasa por el servidor de Venus y lo procesa OpenAI. Solo va el texto del mensaje, sin nombres.",
   trConsentPoint2: 'Usa tu plan de IA: cuenta para tus preguntas del día.',
   trConsentPoint3: 'La traducción se guarda cifrada en tu PC para no gastar de nuevo. Podés borrarla y quitar este permiso en Ajustes > Privacidad.',
   trConsentOk: 'Entendido, traducir',

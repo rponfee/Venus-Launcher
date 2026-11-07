@@ -1,0 +1,1 @@
+export default { title: 'AIによるクイックヘルプ', description: 'お使いの言語で質問できます。アカウントの確認が必要な場合は、下からサポートに問い合わせてください。', question: '質問', placeholder: 'Venus Launcherについて何にお困りですか？', ask: '質問する', working: '回答を準備しています…', error: '現在回答できません。サポートチームにお問い合わせください。' };

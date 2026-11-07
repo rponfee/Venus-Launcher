@@ -14,7 +14,6 @@ import { formatPoints } from './rewards/logic.js';
 const A = (key, vars) => t(`achievements.${key}`, vars);
 const TABS = [
   { id: 'list', icon: 'trophy' },
-  { id: 'missions', icon: 'target' },
 ];
 const pts = (n) => formatPoints(n, locale());
 
@@ -67,7 +66,6 @@ export default {
           { class: 'card ac-hero' },
           h('div', { class: 'ac-hero-main' }, h('div', { class: 'ac-hero-value' }, h('span', { class: 'num' }, fmtNum(done)), h('span', { class: 'ac-hero-of num' }, `/ ${fmtNum(total)}`)), h('div', { class: 'ac-hero-label' }, A('heroLabel', { pct: Math.round(pct * 100) })), h('div', { class: 'progress ac-hero-bar', role: 'img', 'aria-label': A('heroLabel', { pct: Math.round(pct * 100) }) }, h('i', { style: { width: `${(pct * 100).toFixed(1)}%` } }))),
           h('div', { class: 'ac-hero-tiers' }, tiers.map((x) => h('div', { class: 'ac-tier-count', dataset: { tier: x.tier }, title: tierLabel(x.tier) }, h('span', { class: 'ac-tier-dot', 'aria-hidden': 'true' }), h('span', { class: 'num' }, `${x.n}/${x.of}`), h('span', { class: 'ac-tier-name' }, tierLabel(x.tier))))),
-          h('div', { class: 'ac-hero-side' }, h('div', { class: 'ac-hero-points num' }, pts(earned)), h('div', { class: 'ac-hero-label' }, A('heroPoints')), h('button', { class: 'btn ghost sm', type: 'button', onclick: () => navigate('rewards/shop') }, icon('tag'), A('goShop'))),
         ),
         s.error === 'noSession' ? h('div', { class: 'notice info ac-note' }, icon('info'), h('div', { class: 'spacer' }, A('needSession')), h('button', { class: 'btn sm', type: 'button', onclick: () => navigate('settings/cloud') }, icon('logIn'), A('signIn'))) : null,
         s.error && s.error !== 'noSession' ? h('div', { class: 'notice warn ac-note' }, icon('alert'), h('div', {}, A('serverError'))) : null,
@@ -122,7 +120,7 @@ export default {
           rarity ? h('span', { class: 'ac-rarity', dataset: { rarity }, title: A('rarityPct', { pct: fmtNum(rarityPct, 1) }) }, A(`rarity_${rarity}`)) : null,
           stt.done
             ? h('span', { class: 'badge good' }, icon('check'), A('done'))
-            : h('span', { class: 'ac-fam-points num', title: A('pointsNext') }, `+${pts(shown.points)}`),
+            : null,
         ),
         open
           ? h(
@@ -138,7 +136,7 @@ export default {
                   h('span', { class: 'ac-step-name' }, roman(x.step)),
                   h('span', { class: 'ac-step-desc' }, achievementDesc(x.id)),
                   s.totalUsers >= RARITY_MIN_USERS && pct > 0 ? h('span', { class: 'ac-step-pct num' }, A('rarityPct', { pct: fmtNum(pct, 1) })) : null,
-                  at ? h('span', { class: 'ac-step-date' }, icon('check'), fmtDate(Date.parse(at))) : h('span', { class: 'ac-step-points num' }, `+${pts(x.points)}`),
+                  at ? h('span', { class: 'ac-step-date' }, icon('check'), fmtDate(Date.parse(at))) : null,
                 );
               }),
             )
@@ -277,13 +275,7 @@ export default {
       drawSummary();
       drawList();
     }));
-    offs.push(onMissions(() => {
-      if (disposed) return;
-      drawTabs();
-      if (st.tab === 'missions') drawBody();
-    }));
     loadAchievements({ force: true }).catch(() => {});
-    loadMissions({ force: true }).catch(() => {});
     checkAchievements({ force: true });
 
     return () => {

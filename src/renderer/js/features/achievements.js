@@ -90,12 +90,12 @@ async function announce(list) {
   const total = list.reduce((sum, x) => sum + (Number(x.points) || 0), 0);
   if (list.length > TOASTS_MAX) {
     // Los que ya estaban cumplidos al actualizar llegan juntos: un solo aviso
-    toast('good', A('toastMany', { n: list.length }), total > 0 ? A('toastPoints', { points: formatPoints(total, locale()) }) : null, 7000);
+    toast('good', A('toastMany', { n: list.length }), null, 7000);
     return;
   }
   for (const x of list) {
     const name = achievementName(x.id);
-    toast('good', A('toastOne', { name }), x.points > 0 ? A('toastPoints', { points: formatPoints(x.points, locale()) }) : null, 6000);
+    toast('good', A('toastOne', { name }), null, 6000);
     api.invoke('overlay:push', { kind: 'alert', title: A('toastOverlay'), body: name, icon: 'achievement', ttl: 6 }).catch(() => {});
   }
   window.dispatchEvent(new CustomEvent('venus:mission', { detail: { metric: 'achievements', amount: list.length } }));

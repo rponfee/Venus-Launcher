@@ -26,7 +26,7 @@ export default {
 
   // AI
   aiTitle: 'AI explanation',
-  aiText: 'Ask Claude for an explanation with steps to follow, based on the crash report and your mod list.',
+  aiText: 'Ask OpenAI for an explanation with steps to follow, based on the crash report and your mod list.',
   aiButton: 'Explain with AI',
   aiWorking: 'Thinking...',
   aiGenerated: 'AI generated',

@@ -21,7 +21,7 @@ export default {
   restoreSnapshot: "恢复快照",
   playAgain: "再次游玩",
   aiTitle: "AI 解析",
-  aiText: "让 Claude 根据崩溃报告和你的模组列表，给出带有操作步骤的解析。",
+  aiText: "让 OpenAI 根据崩溃报告和你的模组列表，给出带有操作步骤的解析。",
   aiButton: "用 AI 解析",
   aiWorking: "思考中…",
   aiGenerated: "由 AI 生成",

@@ -22,7 +22,7 @@ export default {
   restoreSnapshot: "Restaurar instantâneo",
   playAgain: "Jogar novamente",
   aiTitle: "Explicação com IA",
-  aiText: "Peça ao Claude uma explicação com os passos a seguir, com base no relatório de crash e na sua lista de mods.",
+  aiText: "Peça ao OpenAI uma explicação com os passos a seguir, com base no relatório de crash e na sua lista de mods.",
   aiButton: "Explicar com IA",
   aiWorking: "Pensando...",
   aiGenerated: "Gerado por IA",

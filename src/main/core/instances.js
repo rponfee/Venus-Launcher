@@ -378,7 +378,7 @@ async function duplicate(id, { name, worlds = true } = {}) {
     tags: src.tags || [],
     notes: src.notes || null,
     look: src.look || null,
-    sharedOptions: src.sharedOptions === true,
+    sharedOptions: src.sharedOptions !== false,
   });
 }
 

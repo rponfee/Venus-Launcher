@@ -48,7 +48,7 @@ const openai = OPENAI_API_KEY
   : null;
 
 if (!authClient || !adminClient) console.error('[ai-assistant] faltan SUPABASE_URL, SUPABASE_ANON_KEY o SUPABASE_SERVICE_ROLE_KEY');
-if (!anthropic) console.error('[ai-assistant] falta el secreto ANTHROPIC_API_KEY (supabase secrets set ANTHROPIC_API_KEY=...)');
+if (!openai && !adminClient) console.error('[ai-assistant] falta OPENAI_API_KEY o el acceso a Vault');
 
 async function verifyUser(token: string): Promise<AuthResult> {
   if (!authClient) return { status: 'unavailable' };
@@ -125,13 +125,19 @@ async function callModel(call: ModelCall, signal: AbortSignal): Promise<ModelRes
 // Proveedor secundario: el pedido ya viene traducido a la Responses API (openai.ts) y la respuesta vuelve tal
 // cual (el handler la traduce a la forma de Anthropic). store: false va en el cuerpo.
 async function callOpenAI(body: Record<string, unknown>, signal: AbortSignal): Promise<unknown> {
-  if (!openai) throw new Error('sin clave de OpenAI');
+  const vaultKey = adminClient ? await rpc('ai_openai_key', {}).catch(() => null) : null;
+  const client = typeof vaultKey === 'string' && vaultKey
+    ? new OpenAI({ apiKey: vaultKey, maxRetries: 0, timeout: TIMEOUT_MS, logLevel: 'warn' })
+    : openai;
+  if (!client) throw Object.assign(new Error('sin clave de OpenAI'), { code: 'not_configured' });
   const params = body as unknown as OpenAI.Responses.ResponseCreateParamsNonStreaming;
-  return await openai.responses.create(params, { signal, timeout: TIMEOUT_MS, maxRetries: 2 });
+  return await client.responses.create(params, { signal, timeout: TIMEOUT_MS, maxRetries: 0 });
 }
 
 // Errores tipados del SDK de OpenAI, llevados a los tipos de Anthropic que entiende errors.ts (openai.ts).
 function describeOpenAIError(err: unknown, context: ErrorContext): UpstreamFailure {
+  if ((err as { code?: unknown } | null)?.code === 'not_configured')
+    return { kind: 'status', status: 503, type: 'config_error' };
   if (context.timedOut) return { kind: 'timeout' };
   if (context.clientAborted) return { kind: 'aborted' };
   if (err instanceof OpenAI.APIUserAbortError) return { kind: 'aborted' };
@@ -174,8 +180,8 @@ function describeError(err: unknown, context: { timedOut: boolean; clientAborted
 Deno.serve(
   createHandler({
     supabaseReady: Boolean(authClient && adminClient),
-    modelReady: Boolean(anthropic),
-    openaiReady: Boolean(openai),
+    modelReady: false,
+    openaiReady: Boolean(openai || adminClient),
     timeoutMs: TIMEOUT_MS,
     verifyUser,
     rpc,

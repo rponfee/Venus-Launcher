@@ -24,7 +24,7 @@ export default {
   restoreSnapshot: "Przywróć migawkę",
   playAgain: "Zagraj ponownie",
   aiTitle: "Wyjaśnienie od AI",
-  aiText: "Poproś Claude'a o wyjaśnienie wraz z krokami do wykonania, na podstawie raportu awarii i listy Twoich modów.",
+  aiText: "Poproś OpenAI'a o wyjaśnienie wraz z krokami do wykonania, na podstawie raportu awarii i listy Twoich modów.",
   aiButton: "Wyjaśnij z AI",
   aiWorking: "Myślę...",
   aiGenerated: "Wygenerowane przez AI",

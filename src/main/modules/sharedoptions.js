@@ -16,9 +16,65 @@ const instances = require('../core/instances');
 const { readJson, writeJson } = require('../core/util');
 const safety = require('./packs/safety');
 const logic = require('./sharedoptions/logic');
+const serversdat = require('./serverlist/serversdat');
 
 const FILE = 'sharedoptions.json';
 const BACKUP = path.join('.venus', 'sharedoptions-backup.txt');
+const SERVERS = 'shared-servers.dat';
+const serversPath = () => paths.data(SERVERS);
+let serversChain = Promise.resolve();
+
+// La primera vez se unen los servidores de todas las instancias. Después,
+// servers.dat de la última instancia modificada pasa a ser la fuente común.
+async function ensureServerPool() {
+  const master = serversPath();
+  if (await fsp.stat(master).catch(() => null)) return master;
+  const all = (await instances.list()).filter((inst) => inst.sharedOptions !== false);
+  const sources = (await Promise.all(all.map(async (inst) => {
+    const file = path.join(inst.dir || instances.dir(inst.id), 'servers.dat');
+    return { file, stat: await fsp.stat(file).catch(() => null) };
+  }))).filter((x) => x.stat).sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs);
+  if (!sources.length) return master;
+  await fsp.copyFile(sources[0].file, master);
+  const seen = new Set((await serversdat.list(master)).map((item) => item.key));
+  for (const source of sources.slice(1)) {
+    for (const item of await serversdat.list(source.file)) {
+      if (seen.has(item.key)) continue;
+      await serversdat.add(master, { name: item.name, ip: item.ip });
+      seen.add(item.key);
+    }
+  }
+  return master;
+}
+
+async function copyServersToIdle(master) {
+  if (!(await fsp.stat(master).catch(() => null))) return;
+  for (const inst of await instances.list()) {
+    if (inst.sharedOptions === false || game.status()[inst.id]?.state === 'running') continue;
+    const file = path.join(inst.dir || instances.dir(inst.id), 'servers.dat');
+    if (path.resolve(file) === path.resolve(master)) continue;
+    await fsp.copyFile(master, file).catch((err) => console.warn(`[sharedoptions] servers.dat ${inst.id}:`, err.message));
+  }
+}
+
+function syncServersFrom(instanceId) {
+  const run = serversChain.then(async () => {
+    const inst = await instances.get(instanceId);
+    if (inst.sharedOptions === false) return;
+    const source = path.join(inst.dir || instances.dir(inst.id), 'servers.dat');
+    if (!(await fsp.stat(source).catch(() => null))) return;
+    await ensureServerPool();
+    await fsp.copyFile(source, serversPath());
+    await copyServersToIdle(serversPath());
+  });
+  serversChain = run.catch(() => {});
+  return run;
+}
+
+async function initializeServers() {
+  const master = await ensureServerPool();
+  await copyServersToIdle(master);
+}
 
 function codeError(code) {
   return Object.assign(new Error(code), { code });
@@ -60,9 +116,11 @@ async function applyToDir(dir, profile, { mcVersion, loader } = {}) {
 
 // Chequeo antes de jugar: corre con la partida en 'preparing', antes de abrir el juego.
 async function beforeLaunch({ id, instance, quiet }) {
-  if (quiet || instance?.sharedOptions !== true) return null;
+  if (quiet || instance?.sharedOptions === false) return null;
   if (game.status()[id]?.state === 'running') return null;
   const profile = await readProfile();
+  const master = await ensureServerPool();
+  if (await fsp.stat(master).catch(() => null)) await fsp.copyFile(master, path.join(instance.dir || instances.dir(id), 'servers.dat'));
   if (!profile.updatedAt) return null;
   try {
     const res = await applyToDir(instance.dir || instances.dir(id), profile, { mcVersion: instance.mcVersion, loader: instance.loader });
@@ -77,15 +135,24 @@ async function beforeLaunch({ id, instance, quiet }) {
 async function afterSession(session) {
   if (!session?.instanceId || session.quiet || session.crashed) return;
   const inst = await instances.get(session.instanceId).catch(() => null);
-  if (inst?.sharedOptions !== true) return;
+  if (!inst || inst.sharedOptions === false) return;
+  await syncServersFrom(inst.id);
   const { exists, doc } = await readDoc(inst.dir);
   if (!exists) return;
   const data = logic.extract(doc, { mcVersion: inst.mcVersion });
-  await changeProfile((profile) => {
-    if (!profile.syncBack || !profile.updatedAt) return null;
+  const updated = await changeProfile((profile) => {
+    if (!profile.syncBack) return null;
+    if (!profile.updatedAt) return logic.saveFrom(profile, data, { source: { id: inst.id, name: inst.name, mcVersion: inst.mcVersion } });
     const { profile: next, changed } = logic.mergeBack(profile, data);
     return changed.length ? next : null;
   });
+  if (updated) {
+    for (const other of await instances.list()) {
+      if (other.id === inst.id || other.sharedOptions === false || game.status()[other.id]?.state === 'running') continue;
+      await applyToDir(other.dir || instances.dir(other.id), updated, { mcVersion: other.mcVersion, loader: other.loader })
+        .catch((err) => console.warn(`[sharedoptions] options.txt ${other.id}:`, err.message));
+    }
+  }
 }
 
 async function status(instanceId) {
@@ -93,7 +160,7 @@ async function status(instanceId) {
   if (typeof instanceId !== 'string' || !instanceId) return { profile, instance: null };
   const inst = await instances.get(instanceId);
   const { exists, doc } = await readDoc(inst.dir);
-  return { profile, instance: { enabled: inst.sharedOptions === true, format: logic.effectiveFormat(inst.mcVersion, doc), hasOptions: exists, running: Boolean(game.status()[instanceId]) } };
+  return { profile, instance: { enabled: inst.sharedOptions !== false, format: logic.effectiveFormat(inst.mcVersion, doc), hasOptions: exists, running: Boolean(game.status()[instanceId]) } };
 }
 
 async function saveFromInstance(instanceId) {
@@ -116,10 +183,12 @@ async function setPrefs(prefs) {
   return logic.summarize(next);
 }
 
-function register({ handle }) {
+async function register({ handle }) {
   handle('sharedoptions:get', status);
   handle('sharedoptions:saveFrom', saveFromInstance);
   handle('sharedoptions:setPrefs', setPrefs);
+
+  await initializeServers().catch((err) => console.warn('[sharedoptions] pool inicial de servidores:', err?.message || err));
 
   game.addBeforeLaunch(beforeLaunch);
   game.events.on('session', (session) => {
@@ -127,4 +196,4 @@ function register({ handle }) {
   });
 }
 
-module.exports = { register, beforeLaunch, afterSession, applyToDir, readProfile, saveFromInstance, setPrefs, status };
+module.exports = { register, beforeLaunch, afterSession, applyToDir, readProfile, saveFromInstance, setPrefs, status, syncServersFrom, initializeServers };

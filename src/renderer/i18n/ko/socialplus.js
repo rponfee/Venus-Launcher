@@ -73,7 +73,7 @@ export default {
   trError: "지금은 번역할 수 없습니다. 잠시 후 다시 시도하세요.",
   trConsentTitle: "AI로 번역",
   trConsentText: "메시지를 번역하려면 해당 텍스트가 PC 밖으로 나가 AI 제공업체에 전달됩니다.",
-  trConsentPoint1: "Venus 서버를 거쳐 Anthropic(또는 예비 제공업체 OpenAI)이 처리합니다. 이름 없이 메시지 텍스트만 보냅니다.",
+  trConsentPoint1: "Venus 서버를 거쳐 OpenAI가 처리합니다. 이름 없이 메시지 텍스트만 보냅니다.",
   trConsentPoint2: "내 AI 플랜을 사용하며 하루 질문 한도에 포함됩니다.",
   trConsentPoint3: "중복 비용이 들지 않도록 번역을 PC에 암호화하여 저장합니다. 설정 > 개인정보에서 삭제하거나 이 권한을 취소할 수 있습니다.",
   trConsentOk: "이해했습니다. 번역하기",

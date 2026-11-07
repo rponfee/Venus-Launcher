@@ -1,0 +1,1 @@
+export default { title: 'Quick AI help', description: 'Ask in your language. If your account needs a review, open a ticket with the team below.', question: 'Your question', placeholder: 'What do you need help with in Venus Launcher?', ask: 'Ask', working: 'Preparing an answer…', error: 'Could not answer right now. Open a ticket with the support team.' };

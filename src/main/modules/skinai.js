@@ -59,9 +59,9 @@ async function generate(raw, deps = {}) {
       system: logic.systemPrompt({ language, variant: req.variant, outer: req.outer, edit: req.mode === 'edit' }),
       messages: [{ role: 'user', content: logic.buildContent(req) }],
       schema: logic.SCHEMA,
-      model: 'sonnet',
-      effort: 'medium',
-      maxTokens: 12000,
+      model: 'haiku',
+      effort: 'high',
+      maxTokens: 30000,
       turnId: uid(16),
       signal: controller.signal,
     });

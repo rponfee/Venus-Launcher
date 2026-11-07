@@ -9,8 +9,8 @@ export default {
   css: ['pages/worlds'],
   render(root, params = []) {
     if (params.length >= 2 && params[0] && params[1]) return renderDetail(root, params[0], params[1]);
-    const tab = params[0] === 'media' ? 'media' : 'worlds';
+    const tab = 'worlds';
     // Cambiar de pestana actualiza la ruta sin volver a dibujar la pagina (asi "Volver" recuerda la pestana)
-    return renderList(root, { tab, onTab: (id) => history.replaceState(null, '', id === 'media' ? '#/worlds/media' : '#/worlds') });
+    return renderList(root, { tab, onTab: () => history.replaceState(null, '', '#/worlds') });
   },
 };

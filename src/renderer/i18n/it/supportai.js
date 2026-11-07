@@ -1,0 +1,1 @@
+export default { title: 'Aiuto rapido con IA', description: 'Chiedi nella tua lingua. Se serve controllare il tuo account, apri una richiesta qui sotto.', question: 'La tua domanda', placeholder: 'In cosa ti serve aiuto con Venus Launcher?', ask: 'Chiedi', working: 'Preparazione della risposta…', error: 'Impossibile rispondere ora. Apri una richiesta al supporto.' };

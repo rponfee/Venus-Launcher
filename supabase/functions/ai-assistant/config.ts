@@ -80,7 +80,7 @@ export const PROVIDER_SETTINGS_TTL_MS = 60000;
 export const OPENAI_MIN_OUTPUT_TOKENS = 16;
 
 /** Tope duro de tokens de salida: los pedidos no usan streaming. */
-export const MAX_OUTPUT_TOKENS = 16000;
+export const MAX_OUTPUT_TOKENS = 36000;
 
 /** Tiempo máximo de espera a la IA. Supabase corta a los 150 s sin respuesta. */
 export const DEFAULT_TIMEOUT_MS = 140000;
@@ -91,7 +91,7 @@ export const TASKS = ['assistant', 'text', 'json'] as const;
 export type Task = (typeof TASKS)[number];
 
 /** Esfuerzos que acepta el protocolo. Cuáles permite cada modelo lo decide el plan (ai_plan_models). */
-export const EFFORTS = ['low', 'medium', 'high'] as const;
+export const EFFORTS = ['low', 'medium', 'high', 'xhigh'] as const;
 export type Effort = (typeof EFFORTS)[number];
 
 /** Límites del cuerpo del pedido (en bytes UTF-8 salvo que se indique otra cosa). */

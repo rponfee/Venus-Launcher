@@ -95,19 +95,13 @@ export function renderList(root, { tab = 'worlds', onTab } = {}) {
           'aria-controls': 'wo-list-panel',
           tabindex: tab === id ? '0' : '-1',
           onclick: () => select(id),
-          onkeydown: (e) => {
-            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-              e.preventDefault();
-              select(tab === 'worlds' ? 'media' : 'worlds');
-              tabBar.querySelector('.tab.active')?.focus();
-            }
-          },
+          onkeydown: (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') e.preventDefault(); },
         },
         icon(ic),
         label,
         count(n),
       );
-    mount(tabBar, btn('worlds', 'globe', t('worlds.tabWorlds'), worlds ? worlds.length : null), btn('media', 'camera', t('worlds.tabMedia'), mediaCount));
+    mount(tabBar, btn('worlds', 'globe', t('worlds.tabWorlds'), worlds ? worlds.length : null));
     panel.setAttribute('aria-labelledby', `wo-tab-${tab}`);
   }
 
@@ -507,7 +501,6 @@ export function renderList(root, { tab = 'worlds', onTab } = {}) {
     drawTabs();
     drawGrid();
     // La galeria se prepara en segundo plano: la pestana muestra su cantidad y abre al instante
-    if (!quiet && !media && !mediaError && tab === 'worlds') setTimeout(() => alive && !media && !mediaLoading && loadMedia(), 400);
   }
 
   let mediaToken = 0;

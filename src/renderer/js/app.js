@@ -24,11 +24,8 @@ const NAV = [
   { id: 'skins', icon: 'user' },
   { id: 'music', icon: 'music' },
   { id: 'achievements', icon: 'trophy' },
-  { id: 'rewards', icon: 'star' },
-  { id: 'pass', icon: 'rocket' },
   { group: 'content' },
   { id: 'modrinth', icon: 'package', cls: 'modrinth' },
-  { id: 'smartsearch', icon: 'sparkles' },
   { group: 'online' },
   { id: 'multiplayer', icon: 'wifi' },
   { id: 'servers', icon: 'server' },
@@ -55,11 +52,8 @@ const PAGES = {
   skins: () => import('./pages/skins.js'),
   clips: () => import('./pages/clips.js'),
   music: () => import('./pages/music.js'),
-  rewards: () => import('./pages/rewards.js'),
-  pass: () => import('./pages/pass.js'),
   achievements: () => import('./pages/achievements.js'),
   modrinth: () => import('./pages/modrinth.js'),
-  smartsearch: () => import('./pages/smartsearch.js'),
   performance: () => import('./pages/performance.js'),
   multiplayer: () => import('./pages/multiplayer.js'),
   servers: () => import('./pages/servers.js'),
@@ -101,17 +95,14 @@ const STARTUP = [
   () => import('./features/nowplaying.js'), // comandos de Música en Ctrl+K (no abre el ayudante)
   () => import('./features/overlay.js'), // manda voz y mensajes al overlay del juego
   () => import('./features/capture.js'), // avisos de capturas y clips guardados
-  () => import('./features/rewards.js'), // logros automáticos, saldo de Venus Points y punto del premio diario
   () => import('./features/party.js'), // grupos: señales party-*, líder caído, mundo del líder
   () => import('./features/notify.js'), // avisos de amigos y servidores favoritos
   () => import('./features/whatsnew.js'), // recorrido de novedades la primera vez que se abre la 3.0 (y Ctrl+K)
   () => import('./features/update-notice.js'), // edición portable: avisa si hay una versión nueva
   // Venus 3.1
-  () => import('./features/pass.js'), // Venus Pass: XP por jugar, subida de nivel y punto en el menú
   () => import('./features/decor.js'), // partículas, sonidos, cursores y pantalla de inicio
   () => import('./features/navcustom.js'), // menú lateral a gusto, packs de íconos y modo mini
   () => import('./features/playcare.js'), // descansos, resumen al cerrar, aviso de versión nueva y descargas programadas
-  () => import('./social/gifts.js').then((m) => ({ startup: m.startGiftWatch })), // aviso cuando un amigo te regala puntos o un cosmético
   // Venus 3.2 a 3.4
   () => import('./features/instancelook.js'), // fondo, color y música por instancia, y links venus://
   () => import('./features/datatools.js'), // copias automáticas, historial de rendimiento, modo familia y sincronizar ajustes
@@ -120,7 +111,6 @@ const STARTUP = [
   () => import('./features/socialplus.js'), // stickers, traducción de mensajes, soundboard y efectos de voz
   () => import('./features/clipstudio.js'), // montaje, timelapse, subir clips y galería pública
   () => import('./features/achievements.js'), // logros de Venus: revisa los cumplidos cada tanto (no hay tope de cantidad)
-  () => import('./features/missions.js'), // misiones diarias y semanales: cuenta el progreso
   () => import('./features/profilemusic.js'), // música de perfil (Openverse): tarjeta de Ajustes > Privacidad con su interruptor
 ];
 
@@ -863,11 +853,6 @@ function mountShellExtras() {
       if (!document.querySelector('.np-mini')) before(m.miniPlayer());
     })
     .catch((err) => console.warn('[nowplaying]', err));
-  import('./features/rewards.js')
-    .then((m) => {
-      if (!document.querySelector('.rw-chip')) before(m.pointsChip());
-    })
-    .catch((err) => console.warn('[rewards]', err));
   Promise.all([import('./features/party.js'), loadNs('party')])
     .then(([m]) => {
       const bar = document.querySelector('.titlebar');
