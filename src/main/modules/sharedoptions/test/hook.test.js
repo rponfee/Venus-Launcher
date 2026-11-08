@@ -45,6 +45,8 @@ test('antes de jugar se escribe y al cerrar vuelve al perfil', async () => {
     await launch(target);
     assert.match(read(target), /fov:0\.0/);
 
+    const preview = await shared.previewFromInstance(source.id);
+    assert.ok(preview.count >= 2);
     const summary = await shared.saveFromInstance(source.id);
     assert.equal(summary.saved, true);
     assert.equal(summary.source.name, 'Origen');
@@ -105,6 +107,17 @@ test('antes de jugar se escribe y al cerrar vuelve al perfil', async () => {
     assert.equal(st.instance.format, 'modern');
     assert.equal(st.instance.hasOptions, true);
     assert.equal((await shared.status()).instance, null);
+
+    const changes = await shared.listHistory();
+    assert.ok(changes.some((entry) => entry.kind === 'profile'));
+    const prefsChange = changes.find((entry) => entry.kind === 'prefs');
+    assert.ok(prefsChange);
+    await shared.undoHistory(prefsChange.id);
+    assert.equal((await shared.readProfile()).groups.fov, true);
+    const serverChange = changes.find((entry) => entry.kind === 'servers');
+    assert.ok(serverChange);
+    await shared.undoHistory(serverChange.id);
+    assert.deepEqual((await serversdat.list(path.join(source.dir, 'servers.dat'))).map((item) => item.ip).sort(), ['dos.example', 'uno.example']);
   } finally {
     game.status = originalStatus;
     await new Promise((r) => setTimeout(r, 50));

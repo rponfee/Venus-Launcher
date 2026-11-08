@@ -173,6 +173,29 @@ export function overviewTab(container, ctx) {
     ),
   );
 
+  const preflightResults = h('div', { class: 'preflight-results', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' }, t('reliability.preflightHint'));
+  const preflightButton = h('button', { class: 'btn sm', type: 'button', onclick: async () => {
+    preflightButton.disabled = true;
+    mount(preflightResults, t('reliability.checking'));
+    try {
+      const result = await api.invoke('preflight:check', inst.id);
+      if (!alive) return;
+      mount(preflightResults, h('ul', { class: 'list' }, result.checks.map((item) =>
+        h('li', { class: ['preflight-item', item.level] },
+          icon(item.level === 'ok' ? 'check' : item.level === 'info' ? 'info' : 'alert'),
+          h('span', {}, t(`reliability.${item.code}`, item.vars)),
+        ))));
+    } catch (err) {
+      if (alive) mount(preflightResults, h('span', { role: 'alert' }, t('reliability.checkFailed')));
+    } finally {
+      preflightButton.disabled = false;
+    }
+  } }, icon('check'), t('reliability.runCheck'));
+  const preflightCard = h('section', { class: 'card ih-preflight' },
+    h('div', { class: 'card-head' }, h('h2', { class: 'card-title' }, icon('check'), t('reliability.preflightTitle'))),
+    h('p', { class: 'card-sub' }, t('reliability.preflightSub')),
+    preflightButton, preflightResults);
+
   const contentCard = h(
     'div',
     { class: 'card ih-contentcard' },
@@ -186,7 +209,7 @@ export function overviewTab(container, ctx) {
   const present = presentationCard(ctx);
   mount(
     container,
-    h('div', { class: 'ih-overview' }, kpis, h('div', { class: 'grid ih-two' }, install, contentCard, present), sectionTitle(t('instance.tools')), toolGroups(inst), recentWrap),
+    h('div', { class: 'ih-overview' }, kpis, h('div', { class: 'grid ih-two' }, install, contentCard, present, preflightCard), sectionTitle(t('instance.tools')), toolGroups(inst), recentWrap),
   );
 
   manifestEntry(inst.mcVersion)

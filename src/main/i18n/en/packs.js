@@ -33,6 +33,7 @@ module.exports = {
   errBusyImport: 'That file is already being imported.',
   errSnapshot: 'The snapshot could not be saved, so nothing was updated: {error}',
   errApply: 'The update could not be finished: {error}',
+  errApplyRolledBack: 'The update failed ({error}). The previous instance state was restored automatically.',
   errApplySnapshot: 'The update could not be finished ({error}). Restore the "Before updating the modpack" snapshot to go back.',
   errDownloadPack: 'The modpack could not be downloaded from Modrinth: {error}',
   errDownloads_one: 'Could not download {file}: {error}',

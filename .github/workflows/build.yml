@@ -1,6 +1,7 @@
 # Compila Venus Launcher desde el código fuente en un runner de GitHub, sube los ejecutables como artefacto y,
-# cuando SignPath está configurado, los manda a firmar. Corre al subir un tag v* (por ejemplo v1.0.13) o a mano
-# desde la pestaña Actions. Con un tag, además publica la release de GitHub con VenusLauncher-Setup.exe,
+# cuando SignPath está configurado, los manda a firmar. Corre al subir un tag v* (por ejemplo v1.0.13),
+# al cambiar package.json en main o a mano desde Actions. El cambio a 6.0.0 en main crea el tag y publica la
+# release después de superar los chequeos. Con un tag también publica la release con VenusLauncher-Setup.exe,
 # VenusLauncher-Portable.exe y latest.yml (nombres fijos: los links releases/latest/download/… bajan siempre
 # la última versión y los launchers instalados se actualizan solos). El tag tiene que coincidir con la
 # versión de package.json.
@@ -33,8 +34,12 @@ name: Build
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
+    paths:
+      - package.json
   workflow_dispatch:
 
 permissions:
@@ -182,7 +187,7 @@ jobs:
       # Microsoft al compilar). El .blockmap (descargas diferenciales del actualizador) solo sirve en dist: la firma
       # de SignPath cambia el archivo después de armarlo.
       - name: Publicar la release
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && github.event_name == 'push') }}
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -190,6 +195,12 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_TYPE -eq 'branch') {
+            if ($version -ne '6.0.0') { Write-Output 'El build de main no publica esta versión.'; exit 0 }
+            $env:TAG = "v$version"
+            $tagSha = gh api "repos/$env:REPO/git/ref/tags/$env:TAG" --jq '.object.sha' 2>$null
+            if ($LASTEXITCODE -eq 0 -and $tagSha.Trim() -ne $env:GITHUB_SHA) { throw "El tag $env:TAG ya apunta a otro commit" }
+          }
           if ("v$version" -ne $env:TAG) { throw "El tag $env:TAG no coincide con la versión $version de package.json" }
           $origen = if (Test-Path dist-signed) { 'dist-signed' } else { 'dist' }
           $archivos = @("$origen/VenusLauncher-Setup.exe", "$origen/VenusLauncher-Portable.exe", "$origen/latest.yml")
@@ -204,10 +215,12 @@ jobs:
             "- [Privacy policy](https://github.com/$env:REPO#privacy-policy)",
             "- [Funciones y guía](https://github.com/$env:REPO#readme)"
           ) -join "`n"
+          if ($version -eq '6.0.0') { $notas = Get-Content docs/release-6.0.0.md -Raw }
           gh release view $env:TAG --repo $env:REPO 2>$null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $env:TAG $archivos --repo $env:REPO --clobber
           } else {
-            gh release create $env:TAG $archivos --repo $env:REPO --title "Venus Launcher $version" --notes $notas
+            $opciones = if ($env:GITHUB_REF_TYPE -eq 'branch') { @('--target', $env:GITHUB_SHA, '--latest') } else { @() }
+            gh release create $env:TAG $archivos --repo $env:REPO --title "Venus Launcher $version" --notes $notas @opciones
           }
           if ($LASTEXITCODE -ne 0) { throw "No se pudo publicar la release" }

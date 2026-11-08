@@ -79,3 +79,8 @@
 .it-updates-bar .select { flex: 1; min-width: 180px; max-width: 360px; }
 .it-updates-row .badge { flex-shrink: 0; }
 .it-updates-row .btn { flex-shrink: 0; }
+
+.it-shared-history { margin-top: var(--sp-4); border-top: 1px solid var(--border); padding-top: var(--sp-3); }
+.it-shared-history .list { display: flex; flex-direction: column; gap: var(--sp-2); margin: var(--sp-2) 0 0; padding: 0; list-style: none; }
+.it-shared-history-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2); padding: var(--sp-2); border: 1px solid var(--border); border-radius: var(--radius); }
+.it-shared-history-row > span:first-child { flex: 1; min-width: 180px; overflow-wrap: anywhere; }

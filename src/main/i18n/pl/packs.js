@@ -28,6 +28,7 @@ module.exports = {
   errBusyImport: "Ten plik jest już importowany.",
   errSnapshot: "Nie udało się zapisać migawki, więc nic nie zostało zaktualizowane: {error}",
   errApply: "Nie udało się dokończyć aktualizacji: {error}",
+  errApplyRolledBack: 'Aktualizacja nie powiodła się ({error}). Poprzedni stan instancji przywrócono automatycznie.',
   errApplySnapshot: "Nie udało się dokończyć aktualizacji ({error}). Przywróć migawkę „Przed aktualizacją modpacka”, aby cofnąć zmiany.",
   errDownloadPack: "Nie udało się pobrać modpacka z Modrinth: {error}",
   errDownloads_one: "Nie udało się pobrać {file}: {error}",

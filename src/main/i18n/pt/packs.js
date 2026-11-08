@@ -28,6 +28,7 @@ module.exports = {
   errBusyImport: "Esse arquivo já está sendo importado.",
   errSnapshot: "Não foi possível salvar o instantâneo, então nada foi atualizado: {error}",
   errApply: "Não foi possível concluir a atualização: {error}",
+  errApplyRolledBack: 'A atualização falhou ({error}). O estado anterior da instância foi restaurado automaticamente.',
   errApplySnapshot: "Não foi possível concluir a atualização ({error}). Restaure o instantâneo “Antes de atualizar o modpack” para voltar atrás.",
   errDownloadPack: "Não foi possível baixar o modpack do Modrinth: {error}",
   errDownloads_one: "Não foi possível baixar {file}: {error}",

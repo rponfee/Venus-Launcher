@@ -28,6 +28,7 @@ module.exports = {
   errBusyImport: "该文件正在导入。",
   errSnapshot: "无法保存快照，因此没有更新任何内容：{error}",
   errApply: "无法完成更新：{error}",
+  errApplyRolledBack: '更新失败（{error}）。已自动恢复实例之前的状态。',
   errApplySnapshot: "无法完成更新（{error}）。请恢复名为“更新整合包之前”的快照来回退。",
   errDownloadPack: "无法从 Modrinth 下载整合包：{error}",
   errDownloads_other: "有 {count} 个文件无法下载。第一个：{file}（{error}）",

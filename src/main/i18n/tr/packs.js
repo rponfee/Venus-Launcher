@@ -28,6 +28,7 @@ module.exports = {
   errBusyImport: "Bu dosya zaten içe aktarılıyor.",
   errSnapshot: "Anlık görüntü kaydedilemedi, bu yüzden hiçbir şey güncellenmedi: {error}",
   errApply: "Güncelleme tamamlanamadı: {error}",
+  errApplyRolledBack: 'Güncelleme başarısız oldu ({error}). Önceki örnek durumu otomatik olarak geri yüklendi.',
   errApplySnapshot: "Güncelleme tamamlanamadı ({error}). Geri dönmek için “Mod paketini güncellemeden önce” anlık görüntüsünü geri yükle.",
   errDownloadPack: "Mod paketi Modrinth'ten indirilemedi: {error}",
   errDownloads_one: "{file} indirilemedi: {error}",
