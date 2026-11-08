@@ -28,6 +28,7 @@ module.exports = {
   errBusyImport: "そのファイルはすでにインポート中です。",
   errSnapshot: "スナップショットを保存できなかったため、何も更新されませんでした：{error}",
   errApply: "更新を完了できませんでした：{error}",
+  errApplyRolledBack: '更新に失敗しました（{error}）。インスタンスの以前の状態を自動的に復元しました。',
   errApplySnapshot: "更新を完了できませんでした（{error}）。元に戻すには、スナップショット「Modパックの更新前」を復元してください。",
   errDownloadPack: "ModrinthからModパックをダウンロードできませんでした：{error}",
   errDownloads_other: "{count}個のファイルをダウンロードできませんでした。最初のエラー：{file}（{error}）",

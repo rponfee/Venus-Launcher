@@ -27,7 +27,8 @@ export function sharedOptionsCard(ctx) {
 
   const load = async () => {
     try {
-      data = await api.invoke('sharedoptions:get', ctx.id);
+      const [status, history] = await Promise.all([api.invoke('sharedoptions:get', ctx.id), api.invoke('sharedoptions:history')]);
+      data = { ...status, history };
       if (alive) draw();
     } catch (err) {
       if (alive) mount(box, h('div', { class: 'notice bad', role: 'alert' }, icon('alert'), h('div', {}, errorText(err))));
@@ -47,7 +48,7 @@ export function sharedOptionsCard(ctx) {
   const setPrefs = async (patch) => {
     try {
       data.profile = await api.invoke('sharedoptions:setPrefs', patch);
-      draw();
+      load();
     } catch (err) {
       fail(t('instancetools.sharedSaveFailed'), err);
     }
@@ -60,12 +61,43 @@ export function sharedOptionsCard(ctx) {
     try {
       data.profile = await api.invoke('sharedoptions:saveFrom', ctx.id);
       ok(t('instancetools.sharedSaved'), ctx.inst.name);
-      draw();
+      load();
     } catch (err) {
       release();
       fail(t('instancetools.sharedSaveFailed'), errorText(err));
     }
   };
+
+  const undo = async (entry, btn) => {
+    if (!(await confirmDialog(t('reliability.sharedHistoryUndo'), t('reliability.sharedHistoryConfirm'), { okText: t('reliability.sharedHistoryUndo') }))) return;
+    const release = setBusy(btn);
+    try {
+      const result = await api.invoke('sharedoptions:undo', entry.id);
+      data.profile = result.profile;
+      data.history = result.history;
+      ok(t('reliability.sharedHistoryRestored'));
+      draw();
+    } catch (err) {
+      fail(t('reliability.sharedHistoryFailed'), errorText(err));
+    } finally {
+      release();
+    }
+  };
+
+  function historyView() {
+    const entries = (data.history || []).slice(0, 8);
+    return h('div', { class: 'it-shared-history' },
+      h('h3', { class: 'card-title' }, t('reliability.sharedHistoryTitle')),
+      entries.length ? h('ul', { class: 'list' }, entries.map((entry) => {
+        const kind = t(`reliability.sharedHistory_${entry.kind}`);
+        const name = entry.source?.name || kind;
+        const button = h('button', { class: 'btn sm', type: 'button', 'aria-label': t('reliability.sharedHistoryUndoLabel', { name }), onclick: () => undo(entry, button) }, icon('history'), t('reliability.sharedHistoryUndo'));
+        return h('li', { class: 'it-shared-history-row' },
+          h('span', {}, h('strong', {}, kind), ' · ', name, ' · ', fmtAgo(entry.at)),
+          h('span', { class: 'small muted' }, t('reliability.sharedHistoryCount', { count: entry.changed?.length || 0 })),
+          button);
+      })) : h('p', { class: 'small muted' }, t('reliability.sharedHistoryEmpty')));
+  }
 
   function controlsNote() {
     const { profile: p, instance: inst } = data;
@@ -112,6 +144,7 @@ export function sharedOptionsCard(ctx) {
         h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, t('instancetools.sharedSync')), h('div', { class: 'tr-sub' }, t('instancetools.sharedSyncSub'))),
         switchEl(p.syncBack, (v) => setPrefs({ syncBack: v }), t('instancetools.sharedSync')),
       ),
+      historyView(),
     );
   }
 

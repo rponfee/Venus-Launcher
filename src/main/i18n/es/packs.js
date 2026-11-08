@@ -33,6 +33,7 @@ module.exports = {
   errBusyImport: 'Ese archivo ya se está importando.',
   errSnapshot: 'No se pudo guardar la instantánea, así que no se actualizó nada: {error}',
   errApply: 'No se pudo terminar de actualizar: {error}',
+  errApplyRolledBack: 'La actualización falló ({error}). Se restauró automáticamente la instancia anterior.',
   errApplySnapshot: 'No se pudo terminar de actualizar ({error}). Restaurá la instantánea «Antes de actualizar el modpack» para volver atrás.',
   errDownloadPack: 'No se pudo descargar el modpack de Modrinth: {error}',
   errDownloads_one: 'No se pudo descargar {file}: {error}',

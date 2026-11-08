@@ -9,6 +9,7 @@
 //   sharedoptions:setPrefs({ groups?, syncBack? }) -> resumen
 // Errores con err.code (la interfaz los traduce): noOptions, running.
 const fsp = require('fs/promises');
+const { randomUUID } = require('crypto');
 const path = require('path');
 const paths = require('../core/paths');
 const game = require('../core/game');
@@ -22,7 +23,45 @@ const FILE = 'sharedoptions.json';
 const BACKUP = path.join('.venus', 'sharedoptions-backup.txt');
 const SERVERS = 'shared-servers.dat';
 const serversPath = () => paths.data(SERVERS);
+const historyPath = () => paths.data('sharedoptions-history.json');
+const HISTORY_LIMIT = 24;
 let serversChain = Promise.resolve();
+let historyChain = Promise.resolve();
+
+function profileChanges(before, after) {
+  const old = logic.normalizeProfile(before);
+  const next = logic.normalizeProfile(after);
+  const changed = [];
+  for (const id of logic.GROUP_IDS) if (old.groups[id] !== next.groups[id]) changed.push(`groups.${id}`);
+  if (old.syncBack !== next.syncBack) changed.push('syncBack');
+  for (const group of ['common', 'bindings.modern', 'bindings.legacy']) {
+    const a = group === 'common' ? old.common : old.bindings[group.split('.')[1]];
+    const b = group === 'common' ? next.common : next.bindings[group.split('.')[1]];
+    for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
+      if (a[key] !== b[key]) changed.push(`${group}.${key}`);
+    }
+  }
+  return changed.slice(0, 80);
+}
+
+function appendHistory(entry) {
+  const run = historyChain.then(async () => {
+    const raw = await readJson(historyPath(), []);
+    const items = Array.isArray(raw) ? raw : [];
+    const item = { id: randomUUID(), at: Date.now(), ...entry };
+    await writeJson(historyPath(), [item, ...items].slice(0, HISTORY_LIMIT));
+    return item;
+  });
+  historyChain = run.catch(() => {});
+  return run;
+}
+
+async function listHistory() {
+  await historyChain;
+  const raw = await readJson(historyPath(), []);
+  return (Array.isArray(raw) ? raw : []).map(({ id, at, kind, source, changed }) => ({ id, at, kind, source, changed: changed || [] }));
+}
+
 
 // La primera vez se unen los servidores de todas las instancias. Después,
 // servers.dat de la última instancia modificada pasa a ser la fuente común.
@@ -50,7 +89,7 @@ async function ensureServerPool() {
 async function copyServersToIdle(master) {
   if (!(await fsp.stat(master).catch(() => null))) return;
   for (const inst of await instances.list()) {
-    if (inst.sharedOptions === false || game.status()[inst.id]?.state === 'running') continue;
+    if (inst.sharedOptions === false || game.status()[inst.id]) continue;
     const file = path.join(inst.dir || instances.dir(inst.id), 'servers.dat');
     if (path.resolve(file) === path.resolve(master)) continue;
     await fsp.copyFile(master, file).catch((err) => console.warn(`[sharedoptions] servers.dat ${inst.id}:`, err.message));
@@ -63,9 +102,20 @@ function syncServersFrom(instanceId) {
     if (inst.sharedOptions === false) return;
     const source = path.join(inst.dir || instances.dir(inst.id), 'servers.dat');
     if (!(await fsp.stat(source).catch(() => null))) return;
-    await ensureServerPool();
-    await fsp.copyFile(source, serversPath());
-    await copyServersToIdle(serversPath());
+    const master = await ensureServerPool();
+    const next = await fsp.readFile(source);
+    const before = await fsp.readFile(master).catch(() => null);
+    if (before?.equals(next)) return;
+    await safety.copyFileAtomic(source, master);
+    if (before && before.length <= 1024 * 1024) {
+      await appendHistory({
+        kind: 'servers',
+        source: { id: inst.id, name: inst.name },
+        changed: ['servers.dat'],
+        beforeServers: before.toString('base64'),
+      }).catch((err) => console.warn('[sharedoptions] historial de servidores:', err.message));
+    }
+    await copyServersToIdle(master);
   });
   serversChain = run.catch(() => {});
   return run;
@@ -88,10 +138,18 @@ async function readProfile() {
 
 // Una escritura por vez: leer, cambiar y guardar el perfil no se pisa con otro cierre de juego.
 let chain = Promise.resolve();
-function changeProfile(fn) {
+function changeProfile(fn, meta = null) {
   const run = chain.then(async () => {
-    const next = await fn(await readProfile());
-    if (next) await writeJson(profilePath(), next);
+    const before = await readProfile();
+    const next = await fn(before);
+    if (next) {
+      await writeJson(profilePath(), next);
+      const changed = profileChanges(before, next);
+      if (meta && changed.length) {
+        await appendHistory({ kind: meta.kind, source: meta.source || next.source, changed, beforeProfile: before })
+          .catch((err) => console.warn('[sharedoptions] historial de teclas:', err.message));
+      }
+    }
     return next;
   });
   chain = run.catch(() => {});
@@ -145,10 +203,10 @@ async function afterSession(session) {
     if (!profile.updatedAt) return logic.saveFrom(profile, data, { source: { id: inst.id, name: inst.name, mcVersion: inst.mcVersion } });
     const { profile: next, changed } = logic.mergeBack(profile, data);
     return changed.length ? next : null;
-  });
+  }, { kind: 'profile', source: { id: inst.id, name: inst.name, mcVersion: inst.mcVersion } });
   if (updated) {
     for (const other of await instances.list()) {
-      if (other.id === inst.id || other.sharedOptions === false || game.status()[other.id]?.state === 'running') continue;
+      if (other.id === inst.id || other.sharedOptions === false || game.status()[other.id]) continue;
       await applyToDir(other.dir || instances.dir(other.id), updated, { mcVersion: other.mcVersion, loader: other.loader })
         .catch((err) => console.warn(`[sharedoptions] options.txt ${other.id}:`, err.message));
     }
@@ -165,10 +223,11 @@ async function status(instanceId) {
 
 async function saveFromInstance(instanceId) {
   const inst = await instances.get(instanceId);
+  if (game.status()[inst.id]) throw codeError('running');
   const { exists, doc } = await readDoc(inst.dir);
   if (!exists) throw codeError('noOptions');
   const data = logic.extract(doc, { mcVersion: inst.mcVersion });
-  const next = await changeProfile((profile) => logic.saveFrom(profile, data, { source: { id: inst.id, name: inst.name, mcVersion: inst.mcVersion } }));
+  const next = await changeProfile((profile) => logic.saveFrom(profile, data, { source: { id: inst.id, name: inst.name, mcVersion: inst.mcVersion } }), { kind: 'profile', source: { id: inst.id, name: inst.name, mcVersion: inst.mcVersion } });
   return logic.summarize(next);
 }
 
@@ -179,14 +238,47 @@ async function setPrefs(prefs) {
     for (const id of logic.GROUP_IDS) if (typeof p.groups?.[id] === 'boolean') out.groups[id] = p.groups[id];
     if (typeof p.syncBack === 'boolean') out.syncBack = p.syncBack;
     return out;
-  });
+  }, { kind: 'prefs' });
   return logic.summarize(next);
+}
+
+async function undoHistory(id) {
+  if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) throw codeError('historyNotFound');
+  await historyChain;
+  const entries = await readJson(historyPath(), []);
+  const entry = (Array.isArray(entries) ? entries : []).find((item) => item.id === id);
+  if (!entry) throw codeError('historyNotFound');
+  if (entry.kind === 'servers') {
+    if (typeof entry.beforeServers !== 'string' || entry.beforeServers.length > 2 * 1024 * 1024) throw codeError('historyNotFound');
+    const restored = Buffer.from(entry.beforeServers, 'base64');
+    if (!restored.length) throw codeError('historyNotFound');
+    const run = serversChain.then(async () => {
+      const master = await ensureServerPool();
+      const current = await fsp.readFile(master).catch(() => null);
+      await safety.writeFileAtomic(master, restored);
+      if (current && current.length <= 1024 * 1024) {
+        await appendHistory({ kind: 'servers', source: entry.source, changed: ['servers.dat'], beforeServers: current.toString('base64') });
+      }
+      await copyServersToIdle(master);
+    });
+    serversChain = run.catch(() => {});
+    await run;
+  } else if (entry.beforeProfile && typeof entry.beforeProfile === 'object') {
+    const profile = await changeProfile(() => logic.normalizeProfile(entry.beforeProfile), { kind: 'undo', source: entry.source });
+    for (const inst of await instances.list()) {
+      if (inst.sharedOptions === false || game.status()[inst.id]?.state === 'running') continue;
+      await applyToDir(inst.dir || instances.dir(inst.id), profile, { mcVersion: inst.mcVersion, loader: inst.loader });
+    }
+  } else throw codeError('historyNotFound');
+  return { history: await listHistory(), profile: logic.summarize(await readProfile()) };
 }
 
 async function register({ handle }) {
   handle('sharedoptions:get', status);
   handle('sharedoptions:saveFrom', saveFromInstance);
   handle('sharedoptions:setPrefs', setPrefs);
+  handle('sharedoptions:history', listHistory);
+  handle('sharedoptions:undo', undoHistory);
 
   await initializeServers().catch((err) => console.warn('[sharedoptions] pool inicial de servidores:', err?.message || err));
 
@@ -196,4 +288,4 @@ async function register({ handle }) {
   });
 }
 
-module.exports = { register, beforeLaunch, afterSession, applyToDir, readProfile, saveFromInstance, setPrefs, status, syncServersFrom, initializeServers };
+module.exports = { register, beforeLaunch, afterSession, applyToDir, readProfile, saveFromInstance, setPrefs, status, syncServersFrom, initializeServers, listHistory, undoHistory };

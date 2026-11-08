@@ -63,7 +63,7 @@ function headSkeleton() {
 }
 
 export default {
-  ns: ['instance', 'versions', 'instancetools'],
+  ns: ['instance', 'versions', 'instancetools', 'reliability'],
   css: ['pages/versions', 'pages/instance'],
   async render(root, params) {
     const [id, rawTab = 'overview', ...rest] = params;

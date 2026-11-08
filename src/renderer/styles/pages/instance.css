@@ -337,3 +337,10 @@ body.reduce-motion .ih-shot:hover img, body.reduce-motion .ih-shot-mini:hover im
 @media (prefers-reduced-motion: reduce) {
   .ih-present-cover, .ih-present-cover-hint, .ih-task, .ih-task-check, .ih-task-del { transition: none; }
 }
+
+.ih-preflight { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-3); }
+.preflight-results { width: 100%; line-height: 1.5; }
+.preflight-results .list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
+.preflight-item { display: flex; align-items: flex-start; gap: var(--sp-2); overflow-wrap: anywhere; }
+.preflight-item.warning, .preflight-item.error { color: var(--warn); }
+.preflight-item.ok { color: var(--success); }

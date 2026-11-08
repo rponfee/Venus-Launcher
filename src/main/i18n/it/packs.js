@@ -28,6 +28,7 @@ module.exports = {
   errBusyImport: "Quel file è già in fase di importazione.",
   errSnapshot: "Impossibile salvare l'istantanea, quindi non è stato aggiornato nulla: {error}",
   errApply: "Impossibile completare l'aggiornamento: {error}",
+  errApplyRolledBack: 'Aggiornamento non riuscito ({error}). Lo stato precedente dell’istanza è stato ripristinato automaticamente.',
   errApplySnapshot: "Impossibile completare l'aggiornamento ({error}). Ripristina l'istantanea «Prima di aggiornare il modpack» per tornare indietro.",
   errDownloadPack: "Impossibile scaricare il modpack da Modrinth: {error}",
   errDownloads_one: "Impossibile scaricare {file}: {error}",

@@ -28,6 +28,7 @@ module.exports = {
   errBusyImport: "Diese Datei wird bereits importiert.",
   errSnapshot: "Der Sicherungspunkt konnte nicht gespeichert werden, daher wurde nichts aktualisiert: {error}",
   errApply: "Die Aktualisierung konnte nicht abgeschlossen werden: {error}",
+  errApplyRolledBack: 'Die Aktualisierung ist fehlgeschlagen ({error}). Der vorherige Zustand der Instanz wurde automatisch wiederhergestellt.',
   errApplySnapshot: "Die Aktualisierung konnte nicht abgeschlossen werden ({error}). Stelle den Sicherungspunkt „Vor dem Aktualisieren des Modpacks“ wieder her, um zum vorherigen Stand zurückzukehren.",
   errDownloadPack: "Das Modpack konnte nicht von Modrinth heruntergeladen werden: {error}",
   errDownloads_one: "{file} konnte nicht heruntergeladen werden: {error}",

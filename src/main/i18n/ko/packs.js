@@ -28,6 +28,7 @@ module.exports = {
   errBusyImport: "해당 파일을 이미 가져오는 중이에요.",
   errSnapshot: "스냅샷을 저장하지 못해서 아무것도 업데이트하지 않았어요: {error}",
   errApply: "업데이트를 끝내지 못했어요: {error}",
+  errApplyRolledBack: '업데이트에 실패했습니다({error}). 인스턴스의 이전 상태가 자동으로 복원되었습니다.',
   errApplySnapshot: "업데이트를 끝내지 못했어요 ({error}). '모드팩 업데이트 전' 스냅샷을 복원하면 이전 상태로 돌아갈 수 있어요.",
   errDownloadPack: "Modrinth에서 모드팩을 다운로드하지 못했어요: {error}",
   errDownloads_other: "파일 {count}개를 다운로드하지 못했어요. 첫 번째: {file} ({error})",

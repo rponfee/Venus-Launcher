@@ -252,7 +252,19 @@ async function applyUpdate(inst, versionId, opts, task, hooks) {
       });
       hooks.onChanged?.();
     } catch (err) {
-      throw userError(snapshot ? 'packs.errApplySnapshot' : 'packs.errApply', { error: err?.message || String(err) });
+      // La instantánea incluye mods, configuración, estado del pack y metadatos de la instancia.
+      // Si la fase de aplicación falla, restauramos todo antes de informar el error.
+      if (snapshot?.id) {
+        try {
+          await require('../snapshots').restore(inst.id, snapshot.id, { worlds: 'none' });
+          hooks.onChanged?.();
+          throw userError('packs.errApplyRolledBack', { error: err?.message || String(err) });
+        } catch (rollbackErr) {
+          if (rollbackErr?.key === 'packs.errApplyRolledBack') throw rollbackErr;
+          throw userError('packs.errApplySnapshot', { error: `${err?.message || String(err)}; ${rollbackErr?.message || String(rollbackErr)}` });
+        }
+      }
+      throw userError('packs.errApply', { error: err?.message || String(err) });
     }
 
     // 6) Preparar (loader y Minecraft nuevos). Si falla, se reintenta al jugar.

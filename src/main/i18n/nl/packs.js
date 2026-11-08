@@ -28,6 +28,7 @@ module.exports = {
   errBusyImport: "Dat bestand wordt al geïmporteerd.",
   errSnapshot: "De momentopname kon niet worden opgeslagen, dus er is niets bijgewerkt: {error}",
   errApply: "De update kon niet worden afgerond: {error}",
+  errApplyRolledBack: 'De update is mislukt ({error}). De vorige staat van de instantie is automatisch hersteld.',
   errApplySnapshot: "De update kon niet worden afgerond ({error}). Herstel de momentopname “Voor het bijwerken van het modpack” om terug te gaan.",
   errDownloadPack: "Het modpack kon niet van Modrinth worden gedownload: {error}",
   errDownloads_one: "{file} kon niet worden gedownload: {error}",
