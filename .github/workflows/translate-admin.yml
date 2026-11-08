@@ -1,0 +1,40 @@
+name: Translate Admin UI (open model)
+
+on:
+  push:
+    branches:
+      - preview/openai-instance-groups-4.6.3-beta.1
+    paths:
+      - scripts/translate-admin.py
+      - .github/workflows/translate-admin.yml
+
+permissions:
+  contents: write
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      HF_HUB_DISABLE_XET: "1"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install CPU translation runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install "transformers>=4.46,<5" sentencepiece
+      - name: Generate and validate 12 admin locales
+        run: python scripts/translate-admin.py
+      - name: Commit translated files to preview branch
+        run: |
+          git diff --check
+          git add src/renderer/i18n/*/admin.js docs/administracion-traducciones.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "i18n: translate administration into twelve languages"
+          git push origin HEAD:preview/openai-instance-groups-4.6.3-beta.1
