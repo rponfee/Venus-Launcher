@@ -33,7 +33,6 @@ const NEWS = [
 const FEATURES = [
   ['versions', 'layers'],
   ['modrinth', 'package'],
-  ['smartsearch', 'sparkles'],
   ['worlds', 'globe'],
   ['servers', 'server'],
   ['voice', 'mic'],

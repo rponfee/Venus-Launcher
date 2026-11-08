@@ -22,7 +22,7 @@ export default {
   restoreSnapshot: "Sicherungspunkt wiederherstellen",
   playAgain: "Erneut spielen",
   aiTitle: "KI-Erklärung",
-  aiText: "Lass dir von Claude eine Erklärung mit Schritten zur Lösung geben, basierend auf dem Absturzbericht und deiner Mod-Liste.",
+  aiText: "Lass dir von OpenAI eine Erklärung mit Schritten zur Lösung geben, basierend auf dem Absturzbericht und deiner Mod-Liste.",
   aiButton: "Mit KI erklären",
   aiWorking: "Denke nach...",
   aiGenerated: "KI-generiert",

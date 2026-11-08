@@ -33,7 +33,6 @@ const TABS = [
   { id: 'banner', icon: 'image' },
   { id: 'showcase', icon: 'star' },
   { id: 'music', icon: 'music', label: () => t('profilemusic.tab') }, // 4.6: la cancion se elige de Openverse (profile-editor/music.js)
-  { id: 'items', icon: 'sparkles' },
 ];
 const FIELD_TAB = { pronouns: 'identity', bio: 'identity', theme: 'style', nameStyle: 'style', banner: 'banner', cardStyle: 'style', links: 'showcase', showcase: 'showcase', favoriteServers: 'showcase', publicStats: 'showcase', featured: 'showcase', equipped: 'items' };
 const SLOTS = [
@@ -306,6 +305,7 @@ const groupTitle = (text, sub) => h('div', { class: 'pfe-group-head' }, h('h4', 
  * demo: 'premium' o 'free' muestra datos de ejemplo (solo en capturas de desarrollo, VENUS_DEVSHOT).
  */
 export async function openProfileEditor({ tab = 'identity', demo = false } = {}) {
+  if (tab === 'items') tab = 'identity';
   if (current) {
     current.focus();
     return current.dialog;
@@ -1948,7 +1948,7 @@ export async function openShareProfile({ profile = null, demo = false } = {}) {
   });
   try {
     const images = await loadShareImages(n);
-    drawShareCard(canvas, n, { images });
+    drawShareCard(canvas, { ...n, equipped: {}, premium: false }, { images: { ...images, frame: null } });
     mount(stage, canvas);
     copyBtn.disabled = false;
     saveBtn.disabled = false;

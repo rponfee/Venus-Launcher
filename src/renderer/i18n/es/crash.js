@@ -26,7 +26,7 @@ export default {
 
   // IA
   aiTitle: 'Explicación con IA',
-  aiText: 'Pedile a Claude una explicación con pasos a seguir, a partir del crash report y de tu lista de mods.',
+  aiText: 'Pedile a OpenAI una explicación con pasos a seguir, a partir del crash report y de tu lista de mods.',
   aiButton: 'Explicar con IA',
   aiWorking: 'Pensando...',
   aiGenerated: 'Generado por IA',

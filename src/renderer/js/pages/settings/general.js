@@ -366,7 +366,7 @@ export function renderPrivacy(body, ctx) {
     h('div', { class: 'cfg-where' }, icon('shieldCheck'), h('span', {}, cloud.isConfigured() ? t('settings.privCloudWhere') : t('settings.privCloudOff'))),
   );
 
-  // Conexiones opcionales (features/netprefs.js): apagadas hasta que el usuario las active.
+  // Conexiones opcionales (features/netprefs.js): las actualizaciones vienen activas en instalaciones nuevas.
   const setNet = (key) => async (v) => {
     try {
       await store.setSettings({ privacy: { [key]: v, decided: true } });

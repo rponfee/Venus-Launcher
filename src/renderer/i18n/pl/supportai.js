@@ -1,0 +1,1 @@
+export default { title: 'Szybka pomoc AI', description: 'Zapytaj w swoim języku. Jeśli trzeba sprawdzić konto, otwórz zgłoszenie poniżej.', question: 'Twoje pytanie', placeholder: 'W czym potrzebujesz pomocy z Venus Launcher?', ask: 'Zapytaj', working: 'Przygotowywanie odpowiedzi…', error: 'Nie można teraz odpowiedzieć. Otwórz zgłoszenie do zespołu pomocy.' };

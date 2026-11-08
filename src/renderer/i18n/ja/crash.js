@@ -21,7 +21,7 @@ export default {
   restoreSnapshot: "スナップショットを復元",
   playAgain: "もう一度プレイ",
   aiTitle: "AIによる解説",
-  aiText: "クラッシュレポートとModリストをもとに、対処手順つきの解説をClaudeに依頼できます。",
+  aiText: "クラッシュレポートとModリストをもとに、対処手順つきの解説をOpenAIに依頼できます。",
   aiButton: "AIで解説",
   aiWorking: "考え中...",
   aiGenerated: "AI生成",

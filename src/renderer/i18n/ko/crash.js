@@ -21,7 +21,7 @@ export default {
   restoreSnapshot: "스냅샷 복원",
   playAgain: "다시 플레이",
   aiTitle: "AI 설명",
-  aiText: "크래시 리포트와 모드 목록을 바탕으로, 해결 단계까지 담은 설명을 Claude에게 요청해 보세요.",
+  aiText: "크래시 리포트와 모드 목록을 바탕으로, 해결 단계까지 담은 설명을 OpenAI에게 요청해 보세요.",
   aiButton: "AI로 설명 받기",
   aiWorking: "생각하는 중...",
   aiGenerated: "AI가 생성함",

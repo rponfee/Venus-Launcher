@@ -33,6 +33,18 @@ export const ANTHROPIC_ONLY: ProviderSettings = Object.freeze({
   openai: {},
 }) as ProviderSettings;
 
+/** Configuración segura cuando la base aún no tiene la fila de proveedores. */
+export const OPENAI_ONLY: ProviderSettings = Object.freeze({
+  primary: 'openai',
+  secondary: null,
+  failoverEnabled: false,
+  failoverOn: new Set<FailoverKind>(),
+  openai: Object.fromEntries(MODEL_KEYS.map((key) => [key, {
+    model: 'gpt-6-luna',
+    efforts: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh' },
+  }])) as Record<ModelKey, OpenAITier>,
+}) as ProviderSettings;
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

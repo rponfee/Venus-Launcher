@@ -1,0 +1,1 @@
+export default { title: 'AI 快速帮助', description: '用你的语言提问。如需核查账户，请在下方提交客服工单。', question: '你的问题', placeholder: '使用 Venus Launcher 时需要什么帮助？', ask: '提问', working: '正在准备回答…', error: '目前无法回答。请向客服团队提交工单。' };

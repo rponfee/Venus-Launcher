@@ -137,7 +137,7 @@ test('cada familia y mision tiene texto en espanol e ingles, y no sobran los de 
 test('la pagina de Logros ya no tiene la pestana de Minecraft', () => {
   assert.ok(!fs.existsSync(path.join(root, 'src/renderer/js/pages/achievements/minecraft.js')));
   const page = read('src/renderer/js/pages/achievements.js');
-  assert.match(page, /const TABS = \[\s*\{ id: 'list', icon: 'trophy' \},\s*\{ id: 'missions', icon: 'target' \},\s*\];/);
+  assert.match(page, /const TABS = \[\s*\{ id: 'list', icon: 'trophy' \},\s*\];/);
   assert.ok(!/minecraft\.js|stats:ingame|openWorldStats|advancementsCard|'pages\/stats'/.test(page));
   // #/achievements/minecraft (y cualquier pestana que no exista) abre la lista y corrige la direccion
   assert.match(page, /TABS\.some\(\(x\) => x\.id === params\?\.\[0\]\) \? params\[0\] : 'list'/);

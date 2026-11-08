@@ -1,0 +1,1 @@
+export default { title: 'Snelle AI-hulp', description: 'Stel je vraag in je eigen taal. Moet je account worden nagekeken? Open dan hieronder een ticket.', question: 'Je vraag', placeholder: 'Waarmee heb je hulp nodig in Venus Launcher?', ask: 'Stel vraag', working: 'Antwoord wordt voorbereid…', error: 'Er is nu geen antwoord mogelijk. Open een ticket bij de ondersteuning.' };

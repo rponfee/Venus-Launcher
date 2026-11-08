@@ -50,9 +50,9 @@ function defaults() {
     // Documentados aca; sus modulos ya aplican estos mismos valores por defecto.
     downloads: { maxKBps: 0, concurrency: 0, offline: false }, // core/http.js: KB/s (0 = sin limite), descargas a la vez (0 = automatico), sin conexion
     storage: { autoDedupe: false }, // modules/storage.js: unificar duplicados al abrir
-    // Conexiones que el launcher haría por su cuenta: apagadas hasta que el usuario las active (aviso al terminar la
-    // bienvenida y Ajustes > Privacidad). decided = ya respondió el aviso. Ver README > Privacy policy.
-    privacy: { decided: false, autoUpdates: false, news: false, featuredServers: false, playerHeads: false },
+    // Las actualizaciones de GitHub vienen activas en instalaciones nuevas; las demás conexiones opcionales siguen
+    // apagadas. Un valor guardado por el usuario prevalece. Ver README > Privacy policy.
+    privacy: { decided: false, autoUpdates: true, news: false, featuredServers: false, playerHeads: false },
   };
 }
 

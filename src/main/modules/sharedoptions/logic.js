@@ -156,7 +156,7 @@ function dataVersionOf(doc) {
 
 // ---------- Perfil ----------
 function emptyProfile() {
-  return { version: 1, groups: defaultGroups(), syncBack: false, common: {}, bindings: { modern: {}, legacy: {} }, dataVersion: { modern: null, legacy: null }, source: null, updatedAt: 0 };
+  return { version: 1, groups: defaultGroups(), syncBack: true, common: {}, bindings: { modern: {}, legacy: {} }, dataVersion: { modern: null, legacy: null }, source: null, updatedAt: 0 };
 }
 
 function cleanBindings(raw, format) {
@@ -176,7 +176,7 @@ function normalizeProfile(raw) {
   const r = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
   const out = emptyProfile();
   for (const id of GROUP_IDS) if (typeof r.groups?.[id] === 'boolean') out.groups[id] = r.groups[id];
-  out.syncBack = r.syncBack === true;
+  out.syncBack = r.syncBack === undefined ? true : r.syncBack === true;
   if (r.common && typeof r.common === 'object') {
     for (const [k, v] of Object.entries(r.common)) if (typeof v === 'string' && validCommon(k, v)) out.common[k] = v;
   }

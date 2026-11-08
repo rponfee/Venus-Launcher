@@ -10,7 +10,7 @@ import type { MappedError, UpstreamFailure } from './errors.ts';
 import { buildOpenAIRequest, fromOpenAIResponse, openaiUsageLines, UpstreamResponseError } from './openai.ts';
 import { buildSystem } from './policy.ts';
 import type { SystemBlock } from './policy.ts';
-import { ANTHROPIC_ONLY, failoverKind, parseProviderSettings, planAttempts } from './providers.ts';
+import { ANTHROPIC_ONLY, OPENAI_ONLY, failoverKind, parseProviderSettings, planAttempts } from './providers.ts';
 import type { Attempt, ProviderSettings, Readiness } from './providers.ts';
 import {
   clampMaxTokens,
@@ -214,7 +214,7 @@ function createContext(deps: Deps, logger: Logger): HandlerContext {
   let loading: Promise<ProviderSettings> | null = null;
 
   async function load(): Promise<ProviderSettings> {
-    let settings: ProviderSettings = ANTHROPIC_ONLY;
+    let settings: ProviderSettings = deps.modelReady ? ANTHROPIC_ONLY : OPENAI_ONLY;
     try {
       const parsed = parseProviderSettings(await deps.rpc('ai_provider_settings', {}));
       if (parsed) settings = parsed;
@@ -377,7 +377,7 @@ async function handlePost(req: Request, deps: Deps, logger: Logger, userId: stri
 
   // Proveedores: sin OPENAI_API_KEY no hay nada que leer (solo Anthropic, exactamente como antes). Si ningún
   // proveedor puede atender, se corta acá, antes de gastar una pregunta.
-  const settings = ready.openai ? await ctx.providerSettings() : ANTHROPIC_ONLY;
+  const settings = ready.openai ? await ctx.providerSettings() : ready.anthropic ? ANTHROPIC_ONLY : OPENAI_ONLY;
   if (!planAttempts(settings, ready, request.model).attempts.length) return notConfigured();
 
   // Plan y cuota: resuelve el modelo y el esfuerzo, abre la pregunta (turn_id) o suma una llamada a una

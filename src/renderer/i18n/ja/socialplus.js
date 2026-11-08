@@ -73,7 +73,7 @@ export default {
   trError: "現在翻訳できません。しばらくしてから再試行してください。",
   trConsentTitle: "AIで翻訳",
   trConsentText: "翻訳するメッセージの本文を、このPCからAIの提供元へ送信します。",
-  trConsentPoint1: "Venusのサーバーを経由してAnthropic（代替としてOpenAI）が処理します。送信するのは本文だけで、名前は含みません。",
+  trConsentPoint1: "Venusのサーバーを経由してOpenAIが処理します。送信するのは本文だけで、名前は含みません。",
   trConsentPoint2: "AIプランを使用し、その日の質問回数に加算されます。",
   trConsentPoint3: "同じ翻訳に二重に利用枠を使わないよう、翻訳結果をこのPCに暗号化して保存します。「設定 > プライバシー」で削除や許可の取り消しができます。",
   trConsentOk: "理解して翻訳する",

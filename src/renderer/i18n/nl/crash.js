@@ -22,7 +22,7 @@ export default {
   restoreSnapshot: "Momentopname herstellen",
   playAgain: "Opnieuw spelen",
   aiTitle: "Uitleg door AI",
-  aiText: "Vraag Claude om een uitleg met stappen die je kunt volgen, op basis van het crashrapport en je lijst met mods.",
+  aiText: "Vraag OpenAI om een uitleg met stappen die je kunt volgen, op basis van het crashrapport en je lijst met mods.",
   aiButton: "Uitleggen met AI",
   aiWorking: "Aan het nadenken...",
   aiGenerated: "Gegenereerd door AI",

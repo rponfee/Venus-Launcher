@@ -73,7 +73,7 @@ export default {
   trError: "Übersetzung derzeit nicht möglich. Versuche es später erneut.",
   trConsentTitle: "Mit KI übersetzen",
   trConsentText: "Zum Übersetzen verlässt der Nachrichtentext deinen PC und wird an den KI-Anbieter gesendet.",
-  trConsentPoint1: "Er läuft über den Venus-Server und wird von Anthropic verarbeitet, ersatzweise von OpenAI. Nur der Nachrichtentext wird gesendet, ohne Namen.",
+  trConsentPoint1: "Der Text läuft über den Venus-Server und wird von OpenAI verarbeitet. Nur der Nachrichtentext wird gesendet, ohne Namen.",
   trConsentPoint2: "Die Übersetzung nutzt deinen KI-Tarif und zählt zu deinen täglichen Fragen.",
   trConsentPoint3: "Die Übersetzung wird verschlüsselt auf deinem PC gespeichert, damit sie nicht doppelt berechnet wird. Unter Einstellungen > Datenschutz kannst du sie löschen und diese Berechtigung widerrufen.",
   trConsentOk: "Verstanden, übersetzen",

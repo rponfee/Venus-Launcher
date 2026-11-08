@@ -73,7 +73,7 @@ export default {
   trError: "Şu anda çevrilemedi. Biraz sonra dene.",
   trConsentTitle: "Yapay zekâyla çevir",
   trConsentText: "Mesajı çevirmek için metni PC'nden çıkar ve yapay zekâ sağlayıcısına gider.",
-  trConsentPoint1: "Venus sunucusu üzerinden geçer ve Anthropic, yedek olarak da OpenAI tarafından işlenir. Yalnızca mesaj metni gönderilir; adlar gönderilmez.",
+  trConsentPoint1: "Metin Venus sunucusu üzerinden OpenAI tarafından işlenir. Yalnızca mesaj metni gönderilir; adlar gönderilmez.",
   trConsentPoint2: "Yapay zekâ planını kullanır ve günlük soru hakkına sayılır.",
   trConsentPoint3: "Aynı çeviri için iki kez ödeme yapılmaması amacıyla çeviri PC'nde şifreli saklanır. Ayarlar > Gizlilik'ten silebilir ve bu izni kaldırabilirsin.",
   trConsentOk: "Anladım, çevir",

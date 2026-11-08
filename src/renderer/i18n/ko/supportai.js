@@ -1,0 +1,1 @@
+export default { title: 'AI 빠른 도움말', description: '사용하는 언어로 질문하세요. 계정 확인이 필요하면 아래에서 지원 문의를 작성하세요.', question: '질문', placeholder: 'Venus Launcher에서 어떤 도움이 필요하신가요?', ask: '질문하기', working: '답변 준비 중…', error: '지금은 답변할 수 없습니다. 지원팀에 문의를 작성하세요.' };

@@ -22,11 +22,9 @@ const { t } = require('../core/i18n');
 const SESSION_KEY = 'ui:sb.venus-auth'; // sesion de Supabase que guarda cloud.js (cifrada)
 const FUNCTION = 'ai-assistant';
 // Alias del protocolo 2 -> id del modelo (para mostrarlo y compararlo con lo que manda el backend)
-const MODEL_ALIASES = { haiku: 'claude-haiku-5-5', sonnet: 'claude-sonnet-5-5', opus: 'claude-opus-5-5' };
+const MODEL_ALIASES = { haiku: 'gpt-6-luna', sonnet: 'gpt-6-luna', opus: 'gpt-6-luna' };
 const MODELS = [
-  { id: 'claude-opus-5-5', alias: 'opus', label: 'Claude Opus 5.5' },
-  { id: 'claude-sonnet-5-5', alias: 'sonnet', label: 'Claude Sonnet 5.5' },
-  { id: 'claude-haiku-5-5', alias: 'haiku', label: 'Claude Haiku 5.5' },
+  { id: 'gpt-6-luna', alias: 'haiku', label: 'GPT-6 Luna' },
 ];
 const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
 const TASK_MODEL = 'haiku'; // tareas internas (text/json) si no piden otro modelo

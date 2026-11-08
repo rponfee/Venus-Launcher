@@ -34,7 +34,6 @@ import { openCopyDialog, renameWorld, deleteWorld, backupsPanel } from './dialog
 
 const TABS = [
   { id: 'history', icon: 'history' },
-  { id: 'media', icon: 'camera' },
   { id: 'stats', icon: 'chart' },
   { id: 'data', icon: 'database' },
 ];
@@ -176,7 +175,6 @@ export function renderDetail(root, instanceId, folder) {
       kpiHost,
       kpi('woHourglass', t('worlds.kpiPlaytime'), shortDur(w.playtime), tot?.trackedMs ? t('worlds.kpiTracked', { time: shortDur(tot.trackedMs) }) : t('worlds.kpiPlaytimeFoot')),
       kpi('gamepad', t('worlds.kpiSessions'), pending ? null : tot ? fmtInt(tot.sessions) : '—', tot?.sessions ? t('worlds.kpiSessionsFoot', { count: tot.days }) : t('worlds.kpiNoSessions')),
-      kpi('camera', t('worlds.kpiMedia'), pending ? null : tot ? fmtInt(tot.screenshots + tot.clips) : '—', mediaFoot),
       kpi(
         'trophy',
         t('worlds.kpiAdvancements'),

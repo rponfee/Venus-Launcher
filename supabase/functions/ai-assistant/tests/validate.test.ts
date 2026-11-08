@@ -177,7 +177,7 @@ test('valida task, effort, max_tokens y turn_id', () => {
   expectError(textBody({ task: 'chat' }), /task/);
   expectError(textBody({ task: undefined }), /task/);
   expectError(textBody({ effort: 'max' }), /effort/);
-  expectError(textBody({ effort: 'xhigh' }), /effort/);
+  assert.equal(validateRequest(textBody({ effort: 'xhigh' })).ok, true);
   expectError(textBody({ max_tokens: 0 }), /max_tokens/);
   expectError(textBody({ max_tokens: 1.5 }), /max_tokens/);
   expectError(textBody({ max_tokens: '4000' }), /max_tokens/);

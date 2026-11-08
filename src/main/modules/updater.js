@@ -20,8 +20,8 @@ function register({ app, handle, send, onQuit }) {
   handle('updater:check', controller.check);
   handle('updater:install', controller.install);
 
-  // La búsqueda automática (al abrir y cada 4 horas) solo corre si el usuario activó privacy.autoUpdates; si no,
-  // GitHub se consulta únicamente cuando toca "Buscar actualizaciones". Los errores quedan en Actualizaciones.
+  // La búsqueda automática (al abrir y cada 4 horas) respeta privacy.autoUpdates; viene activa en instalaciones
+  // nuevas y quien la desactivó conserva su elección. Los errores quedan en Actualizaciones.
   // Vale igual para la portable, que en vez de instalar avisa (features/update-notice.js).
   const autoCheck = async () => {
     const s = await require('../core/settings').get().catch(() => null);
@@ -35,9 +35,13 @@ function register({ app, handle, send, onQuit }) {
     initial.unref?.();
     periodic.unref?.();
   }
+  const unsubscribe = require('../core/settings').onChange((_settings, patch) => {
+    if (patch?.privacy?.autoUpdates === true) autoCheck();
+  });
   onQuit(() => {
     clearTimeout(initial);
     clearInterval(periodic);
+    unsubscribe();
     controller.dispose();
   });
 }

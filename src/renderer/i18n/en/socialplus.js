@@ -77,7 +77,7 @@ export default {
   trError: 'Couldn’t translate right now. Try again in a while.',
   trConsentTitle: 'Translate with AI',
   trConsentText: 'To translate a message, its text leaves your PC and goes to the AI provider.',
-  trConsentPoint1: 'It goes through the Venus server and is processed by Anthropic (or OpenAI, as a backup). Only the message text is sent, with no names.',
+  trConsentPoint1: "It goes through the Venus server and is processed by OpenAI. Only the message text is sent, with no names.",
   trConsentPoint2: 'It uses your AI plan: it counts toward your questions for the day.',
   trConsentPoint3: 'The translation is saved encrypted on your PC so it isn’t paid for twice. You can delete it and remove this permission in Settings > Privacy.',
   trConsentOk: 'Got it, translate',

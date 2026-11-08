@@ -14,6 +14,7 @@ test('antes de jugar se escribe y al cerrar vuelve al perfil', async () => {
   const instances = require('../../../core/instances');
   const game = require('../../../core/game');
   const shared = require('../../sharedoptions');
+  const serversdat = require('../../serverlist/serversdat');
   const originalStatus = game.status;
   const read = (inst) => fs.readFileSync(path.join(inst.dir, 'options.txt'), 'utf8');
   const write = (inst, lines) => fs.writeFileSync(path.join(inst.dir, 'options.txt'), `${lines.join('\n')}\n`);
@@ -22,7 +23,7 @@ test('antes de jugar se escribe y al cerrar vuelve al perfil', async () => {
     const source = await instances.update((await instances.create({ name: 'Origen', mcVersion: '1.20.1', loader: 'fabric' })).id, { sharedOptions: true });
     const target = await instances.update((await instances.create({ name: 'Destino', mcVersion: '1.21', loader: 'fabric' })).id, { sharedOptions: true });
     const old = await instances.update((await instances.create({ name: 'Vieja', mcVersion: '1.12.2', loader: 'forge' })).id, { sharedOptions: true });
-    const off = await instances.create({ name: 'Apagada', mcVersion: '1.21', loader: 'fabric' });
+    const off = await instances.update((await instances.create({ name: 'Apagada', mcVersion: '1.21', loader: 'fabric' })).id, { sharedOptions: false });
 
     await assert.rejects(() => shared.saveFromInstance(source.id), (e) => e.code === 'noOptions', 'sin options.txt no hay qué guardar');
 
@@ -30,6 +31,15 @@ test('antes de jugar se escribe y al cerrar vuelve al perfil', async () => {
     write(target, ['version:3700', 'fov:0.0', 'lang:en_us', 'key_key.forward:key.keyboard.z']);
     write(old, ['version:1343', 'fov:0.0', 'key_key.forward:17']);
     write(off, ['version:3700', 'fov:0.0']);
+
+    await serversdat.add(path.join(source.dir, 'servers.dat'), { name: 'Uno', ip: 'uno.example' });
+    await serversdat.add(path.join(target.dir, 'servers.dat'), { name: 'Dos', ip: 'dos.example' });
+    await shared.initializeServers();
+    assert.deepEqual((await serversdat.list(path.join(source.dir, 'servers.dat'))).map((s) => s.ip).sort(), ['dos.example', 'uno.example']);
+    assert.deepEqual((await serversdat.list(path.join(target.dir, 'servers.dat'))).map((s) => s.ip).sort(), ['dos.example', 'uno.example']);
+    await serversdat.remove(path.join(target.dir, 'servers.dat'), 'uno.example');
+    await shared.syncServersFrom(target.id);
+    assert.deepEqual((await serversdat.list(path.join(source.dir, 'servers.dat'))).map((s) => s.ip), ['dos.example']);
 
     // Sin perfil guardado no se toca nada
     await launch(target);
@@ -59,10 +69,10 @@ test('antes de jugar se escribe y al cerrar vuelve al perfil', async () => {
     assert.match(read(target), /fov:0\.1/, 'con el juego corriendo no se escribe');
     game.status = originalStatus;
 
-    // Al cerrar: con el interruptor apagado el perfil no cambia
+    // Al cerrar: con el interruptor activado por defecto, el cambio vuelve al perfil
     write(target, ['version:3700', 'fov:0.8', 'key_key.forward:key.keyboard.up']);
     await shared.afterSession({ instanceId: target.id });
-    assert.equal((await shared.readProfile()).common.fov, '0.5');
+    assert.equal((await shared.readProfile()).common.fov, '0.8');
 
     await shared.setPrefs({ syncBack: true });
     // Crash, partida silenciosa o instancia sin el perfil: tampoco
@@ -70,7 +80,7 @@ test('antes de jugar se escribe y al cerrar vuelve al perfil', async () => {
     await shared.afterSession({ instanceId: target.id, quiet: true });
     write(off, ['version:3700', 'fov:0.33']);
     await shared.afterSession({ instanceId: off.id });
-    assert.equal((await shared.readProfile()).common.fov, '0.5');
+    assert.equal((await shared.readProfile()).common.fov, '0.8');
 
     await shared.afterSession({ instanceId: target.id });
     const after = await shared.readProfile();

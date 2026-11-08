@@ -73,7 +73,7 @@ export default {
   trError: "暂时无法翻译，请稍后重试。",
   trConsentTitle: "使用 AI 翻译",
   trConsentText: "翻译消息时，其文本会离开你的电脑并发送给 AI 服务提供商。",
-  trConsentPoint1: "文本经 Venus 服务器转发，由 Anthropic 处理，必要时由 OpenAI 备用处理。只发送消息文本，不包含姓名。",
+  trConsentPoint1: "文本经 Venus 服务器转发，由 OpenAI 处理。只发送消息文本，不包含姓名。",
   trConsentPoint2: "翻译会使用你的 AI 套餐，计入当日提问额度。",
   trConsentPoint3: "译文会加密保存在此电脑上，避免重复付费。你可以在“设置 > 隐私”中删除译文并撤销授权。",
   trConsentOk: "了解，开始翻译",

@@ -101,6 +101,8 @@ async function datOp(inst, fn) {
 }
 
 async function addSaved(instanceId, entry = {}) {
+  const shared = require('./sharedoptions');
+  await shared.initializeServers();
   const addr = checkAddress(String(entry.ip || ''));
   const ids = idList(instanceId);
   if (!ids.length) throw new Error(t('serverlist.errNoInstance'));
@@ -109,27 +111,36 @@ async function addSaved(instanceId, entry = {}) {
     const inst = await getInstance(id);
     out[id] = await datOp(inst, (file) => serversdat.add(file, { name: String(entry.name || '').trim() || addr.display, ip: addr.display }));
   }
+  await shared.syncServersFrom(ids[0]);
   return out;
 }
 
 async function updateSaved(instanceId, oldIp, entry = {}) {
+  const shared = require('./sharedoptions');
+  await shared.initializeServers();
   if (typeof oldIp !== 'string' || !oldIp.trim()) throw new Error(t('serverlist.errInvalidAddress'));
   const addr = entry.ip !== undefined ? checkAddress(String(entry.ip)) : null;
   const out = {};
-  for (const id of idList(instanceId)) {
+  const ids = idList(instanceId);
+  for (const id of ids) {
     const inst = await getInstance(id);
     out[id] = await datOp(inst, (file) => serversdat.update(file, oldIp, { name: entry.name, ip: addr ? addr.display : undefined }));
   }
+  if (ids.length) await shared.syncServersFrom(ids[0]);
   return out;
 }
 
 async function removeSaved(instanceId, ip) {
+  const shared = require('./sharedoptions');
+  await shared.initializeServers();
   if (typeof ip !== 'string' || !ip.trim()) throw new Error(t('serverlist.errInvalidAddress'));
   let removed = 0;
-  for (const id of idList(instanceId)) {
+  const ids = idList(instanceId);
+  for (const id of ids) {
     const inst = await getInstance(id);
     removed += await datOp(inst, (file) => serversdat.remove(file, ip));
   }
+  if (ids.length) await shared.syncServersFrom(ids[0]);
   return removed;
 }
 

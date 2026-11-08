@@ -88,7 +88,7 @@ test('CurseForge: guardar, reemplazar y quitar usan el contrato y muestran solo 
   assert.equal(button(card, 'curseforgeTest').disabled, true);
   input.value = '   ';
   await button(card, 'curseforgeSave').click();
-  assert.equal(r.calls.length, 2);
+  assert.equal(r.calls.length, 3);
   for (const [key, value] of [['curseforgeSave', 'test-only-key-0001'], ['curseforgeReplace', 'test-only-key-0002']]) {
     input.value = '  ' + value + '  ';
     await button(card, key).click();

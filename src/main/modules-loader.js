@@ -16,7 +16,7 @@ function load() {
   try {
     files = fs
       .readdirSync(DIR, { withFileTypes: true })
-      .filter((d) => d.isFile() && d.name.endsWith('.js'))
+      .filter((d) => d.isFile() && d.name.endsWith('.js') && !['smartsearch.js', 'rewards.js'].includes(d.name))
       .map((d) => d.name)
       .sort();
   } catch {

@@ -26,7 +26,7 @@ export default {
   desc_a11y: 'Make the launcher easier to read and use.',
   desc_cloud: 'Your Minecraft accounts and your Venus account.',
   desc_privacy: 'What you share with friends and what is stored on your PC or in the cloud.',
-  desc_ai: 'Claude helps you in the assistant, with crashes, in search and with translations.',
+  desc_ai: "Venus AI helps in the assistant, with crashes and with translations.",
   desc_plan: 'Venus AI plans: what each one includes, your current plan and your subscription.',
   desc_java: 'The Java that Minecraft uses and the Java you already have on your PC.',
   desc_storage: 'How files are downloaded and how much space everything takes.',
@@ -228,7 +228,7 @@ export default {
   privCloudWhere: 'Stored on Venus servers, protected so only you (and your friends, when it applies) can see it.',
   privCloudOff: 'The cloud is not connected: for now nothing is stored outside your PC.',
   privAiTitle: 'Artificial intelligence',
-  privAiText: 'AI features only send Claude what it needs to answer, and only when you use them.',
+  privAiText: 'AI features only send OpenAI what it needs to answer, and only when you use them.',
   privAiGo: 'See what is sent',
 
   // Artificial intelligence

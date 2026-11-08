@@ -15,7 +15,6 @@ import * as auditTab from './admin/audit.js';
 import * as supportTab from './admin/support.js';
 import * as paymentsTab from './admin/payments.js';
 import * as integrationsTab from './admin/integrations.js';
-import * as passTab from './admin/pass.js';
 import * as reportsTab from './admin/reports.js';
 import * as reviewsTab from './admin/reviews.js';
 import * as stickersTab from './admin/stickers.js';
@@ -25,7 +24,6 @@ import * as clansTab from './admin/communities.js';
 const TABS = [
   { id: 'overview', icon: 'chart', mod: overviewTab },
   { id: 'payments', icon: 'card', mod: paymentsTab },
-  { id: 'pass', icon: 'rocket', mod: passTab },
   { id: 'reports', icon: 'alert', mod: reportsTab },
   { id: 'reviews', icon: 'star', mod: reviewsTab },
   { id: 'stickers', icon: 'smile', mod: stickersTab },

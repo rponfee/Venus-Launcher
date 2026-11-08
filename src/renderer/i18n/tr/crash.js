@@ -22,7 +22,7 @@ export default {
   restoreSnapshot: "Anlık görüntüyü geri yükle",
   playAgain: "Tekrar oyna",
   aiTitle: "Yapay zekâ açıklaması",
-  aiText: "Claude'dan, çökme raporuna ve mod listene bakarak izlenecek adımları içeren bir açıklama iste.",
+  aiText: "OpenAI'dan, çökme raporuna ve mod listene bakarak izlenecek adımları içeren bir açıklama iste.",
   aiButton: "Yapay zekâyla açıkla",
   aiWorking: "Düşünüyor...",
   aiGenerated: "Yapay zekâ tarafından oluşturuldu",

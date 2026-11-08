@@ -90,4 +90,15 @@ test('sin empaquetar sigue desactivado y la instalada sigue usando electron-upda
   assert.equal((await installed.check()).status, 'current');
   assert.equal(asked, 1);
   assert.equal(updater.autoDownload, true);
+  assert.equal(updater.allowPrerelease, false);
+  assert.equal(updater.allowDowngrade, false);
+});
+
+test('una beta recibe futuras betas sin permitir bajar a una versión anterior', () => {
+  const updater = { on() {}, removeListener() {} };
+  createController({ app: app('4.6.3-beta.3'), updater, repository: REPO, platform: 'win32' });
+  assert.equal(updater.allowPrerelease, true);
+  assert.equal(updater.allowDowngrade, false);
+  assert.equal(updater.autoDownload, true);
+  assert.equal(updater.autoInstallOnAppQuit, true);
 });

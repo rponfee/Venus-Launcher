@@ -70,8 +70,10 @@ function createController({ app, updater, repository, portable = false, fetchTex
     updater.autoDownload = true;
     updater.autoInstallOnAppQuit = true;
     updater.autoRunAppAfterInstall = true;
+    // Quien instaló una beta recibe betas y la próxima estable; las instalaciones estables no reciben betas.
+    updater.allowPrerelease = /-[0-9A-Za-z]/.test(app.getVersion());
+    // electron-updater puede activar downgrades al habilitar prereleases: no volver a una beta anterior.
     updater.allowDowngrade = false;
-    updater.allowPrerelease = false;
     updater.disableWebInstaller = true;
     listen('checking-for-update', () => change({ status: 'checking', error: null, percent: null }));
     listen('update-available', (info) => change({ status: 'downloading', version: info.version, percent: 0, lastChecked: now(), error: null }));
