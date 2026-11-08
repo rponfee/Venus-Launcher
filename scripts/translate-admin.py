@@ -80,6 +80,7 @@ def render(value: str, direct: dict[str, str], translated: dict[str, str]) -> st
 
 def generate() -> None:
     source = read_entries(ROOT / "en" / "admin.js")
+    glossary = json.loads((ROOT.parents[2] / "scripts" / "admin-glossary.json").read_text(encoding="utf-8"))
     if len(source) != 721:
         raise ValueError(f"Expected 721 admin keys, found {len(source)}")
     torch.set_num_threads(4)
@@ -132,7 +133,7 @@ def generate() -> None:
         reused = 0
         identical = 0
         for key, value in source:
-            target = render(value, direct, translated)
+            target = glossary.get(lang, {}).get(key, render(value, direct, translated))
             if sorted(MARKER.findall(value)) != sorted(MARKER.findall(target)):
                 raise ValueError(f"Marker mismatch: {lang}/{key}")
             if value in direct:
@@ -148,6 +149,7 @@ def generate() -> None:
         )
         report.append(f"| {lang} | {len(output)} | {reused} | {identical} |")
         print(f"{lang}: {len(output)} keys, {reused} reused, {identical} identical", flush=True)
+    report.extend(["", "## Revisión manual", "", f"Se corrigieron {sum(len(v) for v in glossary.values())} entradas mediante scripts/admin-glossary.json, sobre todo acciones de moderación y textos de seguridad. Las demás salidas de traducción automática requieren revisión por hablantes nativos antes de la versión estable."])
     if fallbacks:
         report.extend(["", "## Segmentos que requieren corrección manual", ""])
         for lang, segments in fallbacks.items():

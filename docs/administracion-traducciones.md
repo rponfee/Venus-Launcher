@@ -19,6 +19,6 @@ Revisión lingüística por hablantes nativos recomendada antes de publicar una 
 | uk | 721 | 140 | 4 |
 | zh | 721 | 140 | 6 |
 
-## Segmentos que requieren corrección manual
+## Revisión manual
 
-- zh: 'Mute', 'muted', 'Paste your', 'CurseForge'
+Se corrigieron 250 entradas con [el glosario](../scripts/admin-glossary.json), sobre todo acciones de moderación y textos de seguridad. «CurseForge» se conserva como nombre de producto. Las demás salidas de traducción automática requieren revisión por hablantes nativos antes de la versión estable.
