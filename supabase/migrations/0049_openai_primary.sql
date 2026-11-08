@@ -48,6 +48,11 @@ update public.ai_models
        long_cache_read_usd_mtok = 0.02, long_cache_write_usd_mtok = 0.25
  where id = 'haiku';
 update public.ai_models set active = false where id in ('sonnet', 'opus');
+-- La restricción anterior solo admitía identificadores Claude. Mantenerlos
+-- válidos para filas históricas y admitir el modelo OpenAI de los planes.
+alter table public.ai_plans drop constraint if exists ai_plans_model_check;
+alter table public.ai_plans add constraint ai_plans_model_check
+  check (model ~ '^(claude-[a-z0-9][a-z0-9-]{1,62}|gpt-[a-z0-9][a-z0-9.-]{0,60}|o[0-9][a-z0-9.-]{0,60})$');
 update public.ai_plans set model = 'gpt-6-luna' where id in ('basic','go','pro','max');
 delete from public.ai_plan_models
  where plan_id in ('basic','go','pro','max') and model_id <> 'haiku';
@@ -69,3 +74,4 @@ $$;
 
 revoke all on function public.ai_provider_settings() from public, anon, authenticated;
 grant execute on function public.ai_provider_settings() to service_role;
+

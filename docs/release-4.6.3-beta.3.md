@@ -12,7 +12,11 @@ La beta 2 ya instalada necesita una actualización manual única a beta 3 si la
 búsqueda automática estaba desactivada. La versión estable 4.6.2 no recibirá
 esta beta de forma automática.
 
-El backend de OpenAI aún requiere la clave en Supabase Vault y la activación de
-las migraciones 0049–0052 y las funciones nuevas. La traducción integral del
-panel de administración sigue pendiente en 12 idiomas. Esta beta no sustituye
-la versión estable.
+OpenAI ya es el proveedor principal de Venus IA en Supabase producción. La
+clave está en Vault y el soporte con MCP quedó desplegado. Los cuatro planes
+usan GPT-6 Luna con distintos niveles de razonamiento; sus presupuestos USD
+siguen intactos. La migración 0052, que retira Points y Pass del servidor, se
+aplicará cuando la versión nueva reemplace a la estable 4.6.2. La traducción
+integral del panel de administración sigue pendiente en 12 idiomas. Esta beta
+no sustituye la versión estable.
+

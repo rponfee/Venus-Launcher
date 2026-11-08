@@ -39,9 +39,10 @@ esa sesión. Se puede desactivar el grupo por instancia.
 ## Estado de verificación
 
 - Beta 3 publicada en GitHub y compilada por CI; el instalador aún no está firmado.
-- En Supabase producción se aplicó solo 0050 y la clave OpenAI figura guardada.
-  Anthropic sigue como proveedor primario; 0049, 0051, 0052 y las nuevas Edge
-  Functions aún no se desplegaron.
+- En Supabase producción se aplicaron 0050, 0049 y 0051; la clave OpenAI figura
+  guardada. OpenAI es el proveedor primario y `ai-assistant`, `support-mcp` y
+  `support-ai` están activas. La migración 0052 sigue pendiente hasta que la
+  versión nueva reemplace a la estable 4.6.2.
 - Pruebas automatizadas de backend y sincronización ejecutadas con dobles de
   prueba. Falta probar las migraciones y las Edge Functions contra el proyecto de
   Supabase real y confirmar la conexión MCP remota.
