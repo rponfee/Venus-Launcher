@@ -1,5 +1,5 @@
-// Conexiones opcionales: lo que el launcher haría por su cuenta (sin que el usuario lo pida) queda apagado hasta que
-// lo active. Al terminar la bienvenida (o la primera vez que se abre esta versión) aparece un aviso para elegir;
+// Conexiones opcionales: la búsqueda de actualizaciones de GitHub viene activa en instalaciones nuevas; las demás
+// quedan apagadas hasta que el usuario las active. Al terminar la bienvenida aparece un aviso para elegir;
 // después se cambia en Ajustes > Privacidad. Ver README > Privacy policy.
 //   autoUpdates      buscar e instalar actualizaciones de GitHub al abrir y cada 4 horas
 //   news             novedades de Minecraft en Inicio (launchercontent.mojang.com)
