@@ -70,14 +70,17 @@ async function stash(batch, folder, file) {
 
 async function saveBatch(batch) {
   if (!batch.index.entries.length) return false;
-  for (const e of batch.index.entries) delete e.placed;
-  await writeJson(path.join(batch.dir, 'index.json'), batch.index);
+  // Conservar 'placed' en memoria hasta que el lote quede confirmado: si falla
+  // guardar el índice o los registros, undoEntries todavía puede quitar lo nuevo.
+  const saved = { ...batch.index, entries: batch.index.entries.map(({ placed, ...entry }) => entry) };
+  await writeJson(path.join(batch.dir, 'index.json'), saved);
   return true;
 }
 
 // Deshace (lo mejor posible) las entradas ya aplicadas de un lote que fallo a mitad de camino.
 // Solo se borra el archivo nuevo de las entradas marcadas "placed" (las que llegaron a moverse a su lugar).
 async function undoEntries(batch, entries) {
+  let complete = true;
   for (const e of [...entries].reverse()) {
     try {
       if (e.placed && e.new?.file) {
@@ -88,9 +91,11 @@ async function undoEntries(batch, entries) {
         await moveFile(path.join(batch.dir, e.folder, e.old.storedAs), path.join(batch.baseDir, e.folder, e.old.file + (e.old.disabled ? '.disabled' : '')));
       }
     } catch (err) {
+      complete = false;
       console.error('[compat] No se pudo deshacer', e.old?.file || e.new?.file, err?.message || err);
     }
   }
+  return complete;
 }
 
 async function readBatches(baseDir) {

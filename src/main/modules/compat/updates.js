@@ -359,8 +359,14 @@ async function applyUpdates(instanceId, items, { task } = {}) {
       await history.undoEntries(batch, batch.index.entries);
       throw err;
     }
-    await history.saveBatch(batch);
-    await history.applyRecords(target, batch.index.entries);
+    try {
+      await history.saveBatch(batch);
+      await history.applyRecords(target, batch.index.entries);
+    } catch (err) {
+      const undone = await history.undoEntries(batch, batch.index.entries);
+      if (undone) await fsp.rm(batch.dir, { recursive: true, force: true }).catch(() => {});
+      throw err;
+    }
     return { updated: plans.length, added: applied.filter((e) => e.kind === 'add').length, failed, batch: batch.id };
   } finally {
     await fsp.rm(staging, { recursive: true, force: true }).catch(() => {});

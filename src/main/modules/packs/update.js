@@ -255,14 +255,17 @@ async function applyUpdate(inst, versionId, opts, task, hooks) {
       // La instantánea incluye mods, configuración, estado del pack y metadatos de la instancia.
       // Si la fase de aplicación falla, restauramos todo antes de informar el error.
       if (snapshot?.id) {
+        let rollbackError = null;
         try {
           await require('../snapshots').restore(inst.id, snapshot.id, { worlds: 'none' });
-          hooks.onChanged?.();
-          throw userError('packs.errApplyRolledBack', { error: err?.message || String(err) });
-        } catch (rollbackErr) {
-          if (rollbackErr?.key === 'packs.errApplyRolledBack') throw rollbackErr;
-          throw userError('packs.errApplySnapshot', { error: `${err?.message || String(err)}; ${rollbackErr?.message || String(rollbackErr)}` });
+        } catch (restoreErr) {
+          rollbackError = restoreErr;
         }
+        if (!rollbackError) {
+          try { hooks.onChanged?.(); } catch { /* la restauración ya terminó */ }
+          throw userError('packs.errApplyRolledBack', { error: err?.message || String(err) });
+        }
+        throw userError('packs.errApplySnapshot', { error: `${err?.message || String(err)}; ${rollbackError?.message || String(rollbackError)}` });
       }
       throw userError('packs.errApply', { error: err?.message || String(err) });
     }
