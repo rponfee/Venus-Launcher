@@ -23,6 +23,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: m2m100-418m-v1
       - name: Install CPU translation runtime
         run: |
           python -m pip install --upgrade pip

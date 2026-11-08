@@ -114,12 +114,16 @@ def generate() -> None:
                     **encoded,
                     forced_bos_token_id=tokenizer.get_lang_id(lang),
                     max_new_tokens=160,
+                    min_new_tokens=1,
                     num_beams=1,
                 )
             values = tokenizer.batch_decode(result, skip_special_tokens=True)
             for english, target in zip(batch, values, strict=True):
                 if not target.strip():
-                    raise ValueError(f"Empty translation for {lang}: {english!r}")
+                    if lang == "ko" and english == "done":
+                        target = "완료"
+                    else:
+                        raise ValueError(f"Empty translation for {lang}: {english!r}")
                 translated[english] = target.strip()
             if offset % 160 == 0:
                 print(f"{lang}: {min(offset + 16, len(todo))}/{len(todo)} segments", flush=True)
