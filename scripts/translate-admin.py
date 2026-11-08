@@ -97,6 +97,8 @@ def generate() -> None:
         "| Idioma | Claves | Reutilizadas | Textos idénticos al inglés |",
         "|---|---:|---:|---:|",
     ]
+    fallbacks: dict[str, list[str]] = {}
+    manual = {"ko": {"done": "완료", "Unban": "차단 해제"}}
     for lang in TARGETS:
         direct = memory_for(lang)
         todo = sorted({
@@ -120,10 +122,9 @@ def generate() -> None:
             values = tokenizer.batch_decode(result, skip_special_tokens=True)
             for english, target in zip(batch, values, strict=True):
                 if not target.strip():
-                    if lang == "ko" and english == "done":
-                        target = "완료"
-                    else:
-                        raise ValueError(f"Empty translation for {lang}: {english!r}")
+                    target = manual.get(lang, {}).get(english, english)
+                    if target == english:
+                        fallbacks.setdefault(lang, []).append(english)
                 translated[english] = target.strip()
             if offset % 160 == 0:
                 print(f"{lang}: {min(offset + 16, len(todo))}/{len(todo)} segments", flush=True)
@@ -147,6 +148,10 @@ def generate() -> None:
         )
         report.append(f"| {lang} | {len(output)} | {reused} | {identical} |")
         print(f"{lang}: {len(output)} keys, {reused} reused, {identical} identical", flush=True)
+    if fallbacks:
+        report.extend(["", "## Segmentos que requieren corrección manual", ""])
+        for lang, segments in fallbacks.items():
+            report.append(f"- {lang}: " + ", ".join(repr(x) for x in segments))
     (ROOT.parents[2] / "docs" / "administracion-traducciones.md").write_text(
         "\n".join(report) + "\n", encoding="utf-8"
     )
