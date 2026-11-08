@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Les paramètres partagés seront rétablis à leur état précédent. Les instances ouvertes recevront la modification à leur fermeture. Continuer ?",
   "sharedHistoryRestored": "Paramètres partagés restaurés.",
   "sharedHistoryFailed": "Impossible de restaurer les paramètres partagés.",
-  "sharedHistoryCount": "{count} modifications",
+  "sharedHistoryCount": "Modifications enregistrées : {count}",
   "sharedHistory_profile": "Touches et options",
   "sharedHistory_servers": "Serveurs",
   "sharedHistory_prefs": "Préférences",

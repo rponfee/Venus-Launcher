@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "这将把共享设置恢复到此次更改之前的状态。运行中的实例会在关闭后收到更改。继续吗？",
   "sharedHistoryRestored": "共享设置已恢复。",
   "sharedHistoryFailed": "无法恢复共享设置。",
-  "sharedHistoryCount": "{count} 项更改",
+  "sharedHistoryCount": "已记录的更改：{count}",
   "sharedHistory_profile": "按键与选项",
   "sharedHistory_servers": "服务器",
   "sharedHistory_prefs": "偏好设置",

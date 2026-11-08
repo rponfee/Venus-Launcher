@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Общие настройки вернутся к состоянию до этого изменения. Запущенные сборки получат изменения после закрытия. Продолжить?",
   "sharedHistoryRestored": "Общие настройки восстановлены.",
   "sharedHistoryFailed": "Не удалось восстановить общие настройки.",
-  "sharedHistoryCount": "Изменений: {count}",
+  "sharedHistoryCount": "Записано изменений: {count}",
   "sharedHistory_profile": "Клавиши и параметры",
   "sharedHistory_servers": "Серверы",
   "sharedHistory_prefs": "Предпочтения",

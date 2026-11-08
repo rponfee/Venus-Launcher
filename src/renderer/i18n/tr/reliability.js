@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Paylaşılan ayarlar bu değişiklikten önceki duruma dönecek. Açık örnekler değişikliği kapandıktan sonra alacak. Devam edilsin mi?",
   "sharedHistoryRestored": "Paylaşılan ayarlar geri yüklendi.",
   "sharedHistoryFailed": "Paylaşılan ayarlar geri yüklenemedi.",
-  "sharedHistoryCount": "{count} değişiklik",
+  "sharedHistoryCount": "Kaydedilen değişiklikler: {count}",
   "sharedHistory_profile": "Tuşlar ve seçenekler",
   "sharedHistory_servers": "Sunucular",
   "sharedHistory_prefs": "Tercihler",

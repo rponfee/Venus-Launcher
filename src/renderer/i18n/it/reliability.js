@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Le impostazioni condivise torneranno allo stato precedente. Le istanze aperte riceveranno la modifica alla chiusura. Continuare?",
   "sharedHistoryRestored": "Impostazioni condivise ripristinate.",
   "sharedHistoryFailed": "Impossibile ripristinare le impostazioni condivise.",
-  "sharedHistoryCount": "{count} modifiche",
+  "sharedHistoryCount": "Modifiche registrate: {count}",
   "sharedHistory_profile": "Tasti e opzioni",
   "sharedHistory_servers": "Server",
   "sharedHistory_prefs": "Preferenze",

@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Die gemeinsamen Einstellungen werden auf den Zustand vor dieser Änderung zurückgesetzt. Laufende Instanzen erhalten sie nach dem Schließen. Fortfahren?",
   "sharedHistoryRestored": "Gemeinsame Einstellungen wiederhergestellt.",
   "sharedHistoryFailed": "Gemeinsame Einstellungen konnten nicht wiederhergestellt werden.",
-  "sharedHistoryCount": "{count} Änderungen",
+  "sharedHistoryCount": "Erfasste Änderungen: {count}",
   "sharedHistory_profile": "Tasten und Optionen",
   "sharedHistory_servers": "Server",
   "sharedHistory_prefs": "Einstellungen",

@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Przywróci to wspólne ustawienia sprzed tej zmiany. Uruchomione instancje otrzymają zmianę po zamknięciu. Kontynuować?",
   "sharedHistoryRestored": "Wspólne ustawienia przywrócono.",
   "sharedHistoryFailed": "Nie udało się przywrócić wspólnych ustawień.",
-  "sharedHistoryCount": "{count} zmian",
+  "sharedHistoryCount": "Zapisane zmiany: {count}",
   "sharedHistory_profile": "Klawisze i opcje",
   "sharedHistory_servers": "Serwery",
   "sharedHistory_prefs": "Preferencje",

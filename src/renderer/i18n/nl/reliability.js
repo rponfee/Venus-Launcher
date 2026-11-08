@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Hiermee worden gedeelde instellingen hersteld naar vóór deze wijziging. Actieve instanties ontvangen de wijziging na afsluiten. Doorgaan?",
   "sharedHistoryRestored": "Gedeelde instellingen hersteld.",
   "sharedHistoryFailed": "Gedeelde instellingen konden niet worden hersteld.",
-  "sharedHistoryCount": "{count} wijzigingen",
+  "sharedHistoryCount": "Vastgelegde wijzigingen: {count}",
   "sharedHistory_profile": "Toetsen en opties",
   "sharedHistory_servers": "Servers",
   "sharedHistory_prefs": "Voorkeuren",

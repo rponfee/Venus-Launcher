@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "共有設定をこの変更前の状態に戻します。実行中のインスタンスには終了後に反映されます。続行しますか？",
   "sharedHistoryRestored": "共有設定を復元しました。",
   "sharedHistoryFailed": "共有設定を復元できませんでした。",
-  "sharedHistoryCount": "{count}件の変更",
+  "sharedHistoryCount": "記録された変更: {count}",
   "sharedHistory_profile": "キーとオプション",
   "sharedHistory_servers": "サーバー",
   "sharedHistory_prefs": "設定",

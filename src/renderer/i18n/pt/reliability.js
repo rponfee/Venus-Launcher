@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Isso restaura as configurações compartilhadas para antes desta alteração. Instâncias abertas receberão a mudança ao fechar. Continuar?",
   "sharedHistoryRestored": "Configurações compartilhadas restauradas.",
   "sharedHistoryFailed": "Não foi possível restaurar as configurações compartilhadas.",
-  "sharedHistoryCount": "{count} alterações",
+  "sharedHistoryCount": "Alterações registradas: {count}",
   "sharedHistory_profile": "Teclas e opções",
   "sharedHistory_servers": "Servidores",
   "sharedHistory_prefs": "Preferências",

@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Se restaurará el estado compartido anterior a este cambio. Las instancias abiertas recibirán el cambio al cerrarse. ¿Continuar?",
   "sharedHistoryRestored": "Se restauraron los ajustes compartidos.",
   "sharedHistoryFailed": "No se pudieron restaurar los ajustes compartidos.",
-  "sharedHistoryCount": "{count} cambios",
+  "sharedHistoryCount": "Cambios registrados: {count}",
   "sharedHistory_profile": "Teclas y opciones",
   "sharedHistory_servers": "Servidores",
   "sharedHistory_prefs": "Preferencias",

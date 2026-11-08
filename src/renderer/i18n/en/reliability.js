@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "This restores shared settings to their state before this change. Running instances receive the change after closing. Continue?",
   "sharedHistoryRestored": "Shared settings were restored.",
   "sharedHistoryFailed": "Could not restore shared settings.",
-  "sharedHistoryCount": "{count} changes",
+  "sharedHistoryCount": "Recorded changes: {count}",
   "sharedHistory_profile": "Keys and options",
   "sharedHistory_servers": "Servers",
   "sharedHistory_prefs": "Preferences",

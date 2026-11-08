@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "공유 설정을 이 변경 전 상태로 되돌립니다. 실행 중인 인스턴스에는 종료 후 적용됩니다. 계속할까요?",
   "sharedHistoryRestored": "공유 설정을 복원했습니다.",
   "sharedHistoryFailed": "공유 설정을 복원하지 못했습니다.",
-  "sharedHistoryCount": "변경 {count}개",
+  "sharedHistoryCount": "기록된 변경 사항: {count}",
   "sharedHistory_profile": "키와 옵션",
   "sharedHistory_servers": "서버",
   "sharedHistory_prefs": "환경 설정",

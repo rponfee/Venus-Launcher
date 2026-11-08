@@ -27,7 +27,7 @@ export default {
   "sharedHistoryConfirm": "Спільні налаштування повернуться до стану перед цією зміною. Запущені збірки отримають зміни після закриття. Продовжити?",
   "sharedHistoryRestored": "Спільні налаштування відновлено.",
   "sharedHistoryFailed": "Не вдалося відновити спільні налаштування.",
-  "sharedHistoryCount": "Змін: {count}",
+  "sharedHistoryCount": "Записано змін: {count}",
   "sharedHistory_profile": "Клавіші та параметри",
   "sharedHistory_servers": "Сервери",
   "sharedHistory_prefs": "Уподобання",
