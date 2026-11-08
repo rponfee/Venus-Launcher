@@ -56,7 +56,16 @@ export function sharedOptionsCard(ctx) {
 
   const saveFrom = async (btn) => {
     const p = data.profile;
-    if (p.saved && !(await confirmDialog(t('instancetools.sharedReplaceTitle'), t('instancetools.sharedReplaceText', { name: p.source?.name || '?' }), { okText: t('instancetools.sharedReplaceOk') }))) return;
+    let preview;
+    try {
+      preview = await api.invoke('sharedoptions:previewFrom', ctx.id);
+    } catch (err) {
+      fail(t('instancetools.sharedSaveFailed'), errorText(err));
+      return;
+    }
+    if (p.saved && !(await confirmDialog(t('instancetools.sharedReplaceTitle'),
+      `${t('instancetools.sharedReplaceText', { name: p.source?.name || '?' })} ${t('reliability.sharedPreviewCount', { count: preview.count })}`,
+      { okText: t('instancetools.sharedReplaceOk') }))) return;
     const release = setBusy(btn);
     try {
       data.profile = await api.invoke('sharedoptions:saveFrom', ctx.id);

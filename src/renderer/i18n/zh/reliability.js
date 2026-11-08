@@ -31,5 +31,6 @@ export default {
   "sharedHistory_profile": "按键与选项",
   "sharedHistory_servers": "服务器",
   "sharedHistory_prefs": "偏好设置",
-  "sharedHistory_undo": "恢复"
+  "sharedHistory_undo": "恢复",
+  "sharedPreviewCount": "这将更改 {count} 项共享设置。"
 };

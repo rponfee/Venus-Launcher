@@ -45,6 +45,8 @@ test('antes de jugar se escribe y al cerrar vuelve al perfil', async () => {
     await launch(target);
     assert.match(read(target), /fov:0\.0/);
 
+    const preview = await shared.previewFromInstance(source.id);
+    assert.ok(preview.count >= 2);
     const summary = await shared.saveFromInstance(source.id);
     assert.equal(summary.saved, true);
     assert.equal(summary.source.name, 'Origen');

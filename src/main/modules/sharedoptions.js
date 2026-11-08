@@ -221,6 +221,18 @@ async function status(instanceId) {
   return { profile, instance: { enabled: inst.sharedOptions !== false, format: logic.effectiveFormat(inst.mcVersion, doc), hasOptions: exists, running: Boolean(game.status()[instanceId]) } };
 }
 
+async function previewFromInstance(instanceId) {
+  const inst = await instances.get(instanceId);
+  if (game.status()[inst.id]) throw codeError('running');
+  const { exists, doc } = await readDoc(inst.dir);
+  if (!exists) throw codeError('noOptions');
+  const data = logic.extract(doc, { mcVersion: inst.mcVersion });
+  const before = await readProfile();
+  const after = logic.saveFrom(before, data, { source: { id: inst.id, name: inst.name, mcVersion: inst.mcVersion } });
+  const changed = profileChanges(before, after);
+  return { changed, count: changed.length };
+}
+
 async function saveFromInstance(instanceId) {
   const inst = await instances.get(instanceId);
   if (game.status()[inst.id]) throw codeError('running');
@@ -276,6 +288,7 @@ async function undoHistory(id) {
 async function register({ handle }) {
   handle('sharedoptions:get', status);
   handle('sharedoptions:saveFrom', saveFromInstance);
+  handle('sharedoptions:previewFrom', previewFromInstance);
   handle('sharedoptions:setPrefs', setPrefs);
   handle('sharedoptions:history', listHistory);
   handle('sharedoptions:undo', undoHistory);
@@ -288,4 +301,4 @@ async function register({ handle }) {
   });
 }
 
-module.exports = { register, beforeLaunch, afterSession, applyToDir, readProfile, saveFromInstance, setPrefs, status, syncServersFrom, initializeServers, listHistory, undoHistory };
+module.exports = { register, beforeLaunch, afterSession, applyToDir, readProfile, saveFromInstance, setPrefs, status, syncServersFrom, initializeServers, listHistory, undoHistory, previewFromInstance };

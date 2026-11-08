@@ -31,5 +31,6 @@ export default {
   "sharedHistory_profile": "Tasten und Optionen",
   "sharedHistory_servers": "Server",
   "sharedHistory_prefs": "Einstellungen",
-  "sharedHistory_undo": "Wiederherstellung"
+  "sharedHistory_undo": "Wiederherstellung",
+  "sharedPreviewCount": "Dadurch werden {count} gemeinsame Einstellungen geändert."
 };

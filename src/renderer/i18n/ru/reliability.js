@@ -31,5 +31,6 @@ export default {
   "sharedHistory_profile": "Клавиши и параметры",
   "sharedHistory_servers": "Серверы",
   "sharedHistory_prefs": "Предпочтения",
-  "sharedHistory_undo": "Восстановление"
+  "sharedHistory_undo": "Восстановление",
+  "sharedPreviewCount": "Будет изменено общих настроек: {count}."
 };

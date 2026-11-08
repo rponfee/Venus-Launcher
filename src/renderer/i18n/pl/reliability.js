@@ -31,5 +31,6 @@ export default {
   "sharedHistory_profile": "Klawisze i opcje",
   "sharedHistory_servers": "Serwery",
   "sharedHistory_prefs": "Preferencje",
-  "sharedHistory_undo": "Przywrócenie"
+  "sharedHistory_undo": "Przywrócenie",
+  "sharedPreviewCount": "Zmieni to {count} wspólnych ustawień."
 };

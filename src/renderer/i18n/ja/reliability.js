@@ -31,5 +31,6 @@ export default {
   "sharedHistory_profile": "キーとオプション",
   "sharedHistory_servers": "サーバー",
   "sharedHistory_prefs": "設定",
-  "sharedHistory_undo": "復元"
+  "sharedHistory_undo": "復元",
+  "sharedPreviewCount": "共有設定が{count}件変更されます。"
 };

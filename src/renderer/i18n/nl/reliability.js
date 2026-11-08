@@ -31,5 +31,6 @@ export default {
   "sharedHistory_profile": "Toetsen en opties",
   "sharedHistory_servers": "Servers",
   "sharedHistory_prefs": "Voorkeuren",
-  "sharedHistory_undo": "Herstel"
+  "sharedHistory_undo": "Herstel",
+  "sharedPreviewCount": "Dit wijzigt {count} gedeelde instellingen."
 };

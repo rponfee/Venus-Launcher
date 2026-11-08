@@ -31,5 +31,6 @@ export default {
   "sharedHistory_profile": "Клавіші та параметри",
   "sharedHistory_servers": "Сервери",
   "sharedHistory_prefs": "Уподобання",
-  "sharedHistory_undo": "Відновлення"
+  "sharedHistory_undo": "Відновлення",
+  "sharedPreviewCount": "Буде змінено спільних налаштувань: {count}."
 };

@@ -31,5 +31,6 @@ export default {
   "sharedHistory_profile": "Tuşlar ve seçenekler",
   "sharedHistory_servers": "Sunucular",
   "sharedHistory_prefs": "Tercihler",
-  "sharedHistory_undo": "Geri yükleme"
+  "sharedHistory_undo": "Geri yükleme",
+  "sharedPreviewCount": "Bu işlem {count} paylaşılan ayarı değiştirecek."
 };

@@ -31,5 +31,6 @@ export default {
   "sharedHistory_profile": "키와 옵션",
   "sharedHistory_servers": "서버",
   "sharedHistory_prefs": "환경 설정",
-  "sharedHistory_undo": "복원"
+  "sharedHistory_undo": "복원",
+  "sharedPreviewCount": "공유 설정 {count}개가 변경됩니다."
 };
