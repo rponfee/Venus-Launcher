@@ -1,13 +1,13 @@
 // Edge Function "ai-assistant": la IA del launcher pasa por acá cuando el usuario usa su cuenta de Venus.
 // - Verifica la sesión (JWT de Supabase) y aplica el plan, la cuota por modelo y el presupuesto
 //   (funciones SQL de 0007_ai.sql, 0008_ai_plans.sql y 0011_ai_providers.sql).
-// - Llama a Claude con la clave del servidor. El id del modelo sale de public.ai_models, nunca del cliente.
-// - Si Anthropic falla por un problema del proveedor (saturación, caída, límites, crédito, configuración),
-//   pasa el pedido a OpenAI (proveedor secundario) cuando OPENAI_API_KEY está cargada (handler.ts, openai.ts).
+// - El proveedor y el modelo salen de la configuración del servidor, nunca del cliente.
+// - OpenAI usa la clave cifrada en Vault; mientras no se aplique 0049, Anthropic
+//   sigue como proveedor primario (handler.ts, openai.ts).
 // - Antepone la política fija del servidor (policy.ts) y solo deja pasar las herramientas del launcher.
 // - No registra el contenido de las conversaciones.
-// Desplegar: supabase functions deploy ai-assistant · Secretos: ANTHROPIC_API_KEY (principal) y OPENAI_API_KEY
-// (secundario, opcional). Ver docs/backend-ia.md.
+// Desplegar: supabase functions deploy ai-assistant. OPENAI_API_KEY es un respaldo
+// opcional de servidor si Vault no está configurado. Ver docs/backend-ia.md.
 import Anthropic from 'npm:@anthropic-ai/sdk@^1.3.0';
 import { betaJSONSchemaOutputFormat } from 'npm:@anthropic-ai/sdk@^1.3.0/helpers/beta/json-schema';
 import OpenAI from 'npm:openai@^7.38.0';
@@ -26,7 +26,7 @@ const SUPABASE_URL = env('SUPABASE_URL');
 const SUPABASE_ANON_KEY = env('SUPABASE_ANON_KEY');
 const SUPABASE_SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY');
 const ANTHROPIC_API_KEY = env('ANTHROPIC_API_KEY');
-// Opcional: proveedor secundario (respaldo). Sin esta clave, solo Anthropic, exactamente como antes.
+// Respaldo opcional de servidor; la clave principal de OpenAI vive en Vault.
 const OPENAI_API_KEY = env('OPENAI_API_KEY');
 const TIMEOUT_MS = parseTimeoutMs(env('AI_UPSTREAM_TIMEOUT_MS'));
 // Opcional: exigir el email confirmado para usar la IA.
@@ -192,3 +192,4 @@ Deno.serve(
     describeOpenAIError,
   }),
 );
+

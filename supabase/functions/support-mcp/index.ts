@@ -1,10 +1,7 @@
 // MCP de solo lectura para el asistente de soporte. Se llama desde OpenAI con
-// el JWT del usuario; no recibe ni devuelve claves de proveedores.
-import { createClient } from 'npm:@supabase/supabase-js@2';
+// la clave pública del proyecto; nunca recibe el JWT del usuario ni claves privadas.
 
-const url = Deno.env.get('SUPABASE_URL') || '';
 const anon = Deno.env.get('SUPABASE_ANON_KEY') || '';
-const auth = url && anon ? createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
 const HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
 const TOPICS: Record<string, string> = {
   instances: 'Instances have their own Minecraft files and mods. Instance Groups share the saved server list and keybind configuration by default. Changes made in the launcher propagate to idle instances; in-game keybind changes propagate when that game session ends.',
@@ -24,11 +21,9 @@ function error(id: unknown, code: number, message: string) { return json(200, { 
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'method' });
-  if (!auth) return json(503, { error: 'unavailable' });
+  if (!anon) return json(503, { error: 'unavailable' });
   const token = /^Bearer\s+(.+)$/i.exec(req.headers.get('authorization') || '')?.[1];
-  if (!token) return json(401, { error: 'auth' });
-  const { data, error: authError } = await auth.auth.getUser(token);
-  if (authError || !data?.user || data.user.is_anonymous) return json(401, { error: 'auth' });
+  if (token !== anon) return json(401, { error: 'auth' });
   const raw = await req.text();
   if (raw.length > 4096) return json(413, { error: 'size' });
   let body: Record<string, unknown>;
@@ -53,3 +48,4 @@ Deno.serve(async (req) => {
   }
   return error(id, -32601, 'Method not found');
 });
+

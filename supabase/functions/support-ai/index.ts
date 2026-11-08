@@ -58,7 +58,8 @@ Deno.serve(async (req) => {
     } as const;
     let response;
     try {
-      response = await client.responses.create({ ...request, tools: [{ type: 'mcp', server_label: 'venus_support', server_url: `${url}/functions/v1/support-mcp`, authorization: token, allowed_tools: ['venus_help'], require_approval: 'never' }] });
+      // El MCP solo devuelve ayuda pública. Nunca enviar a OpenAI el JWT de sesión del usuario.
+      response = await client.responses.create({ ...request, tools: [{ type: 'mcp', server_label: 'venus_support', server_url: `${url}/functions/v1/support-mcp`, authorization: anon, allowed_tools: ['venus_help'], require_approval: 'never' }] });
     } catch {
       // El soporte sigue disponible si el servicio MCP está temporalmente caído.
       response = await client.responses.create({ ...request, instructions: request.instructions.replace('Use venus_help MCP for relevant launcher facts before answering. ', '') });
@@ -68,3 +69,4 @@ Deno.serve(async (req) => {
     return reply(503, { error: 'upstream' });
   }
 });
+
