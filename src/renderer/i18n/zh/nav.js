@@ -45,6 +45,4 @@ export default {
   resetMenu: "重置",
   done: "完成",
   menuSaveFailed: "无法保存菜单",
-  clans: "战队",
-  communities: "社区",
 };

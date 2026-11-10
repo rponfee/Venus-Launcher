@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  menuAbout: "À propos de {app}",
+  menuHide: "Masquer {app}",
+  menuHideOthers: "Masquer les autres",
+  menuShowAll: "Tout afficher",
+  menuQuit: "Quitter {app}",
+  menuEdit: "Édition",
+  menuUndo: "Annuler",
+  menuRedo: "Rétablir",
+  menuCut: "Couper",
+  menuCopy: "Copier",
+  menuPaste: "Coller",
+  menuPasteMatch: "Coller en adaptant le style",
+  menuDelete: "Supprimer",
+  menuSelectAll: "Tout sélectionner",
+  menuWindow: "Fenêtre",
+  menuMinimize: "Placer dans le Dock",
+  menuZoom: "Réduire/agrandir",
+  menuFront: "Tout ramener au premier plan",
+};

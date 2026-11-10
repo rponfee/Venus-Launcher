@@ -59,4 +59,6 @@ export default {
   noticeTitle: "Venus {version}을(를) 사용할 수 있습니다",
   noticeText: "포터블 버전은 자동으로 업데이트되지 않습니다. 데이터를 유지하려면 새 .exe를 내려받아 같은 폴더에 저장하세요.",
   noticeLater: "나중에",
+  macNote: "Mac에서는 Venus가 자동으로 업데이트되지 않습니다. 여기에서 새 버전을 확인할 수 있으며, 개인정보 보호에서 자동 확인을 켜 두면 알아서 알려 줍니다. 새 .dmg를 내려받아 Venus Launcher를 응용 프로그램 폴더로 끌어다 놓아 기존 앱을 교체하세요. 인스턴스와 계정은 그대로 유지됩니다.",
+  noticeTextMac: "Mac에서는 Venus가 자동으로 업데이트되지 않습니다. 새 .dmg를 내려받아 Venus Launcher를 응용 프로그램 폴더로 끌어다 놓아 기존 앱을 교체하세요. 인스턴스와 계정은 그대로 유지됩니다.",
 };

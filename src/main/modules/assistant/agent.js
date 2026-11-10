@@ -19,15 +19,17 @@ const config = require('./config');
 const undo = require('./undo');
 const { validate, ToolError } = require('./guards');
 const { currentRedactor } = require('./redact');
-const { modelOptions, fitChoice, normalizeModel, normalizeEffort } = require('./models');
+const { modelOptions, fitChoice, normalizeModel, normalizeEffort, planTier } = require('./models');
 
 const MAX_ROUNDS = 24;
 const MAX_TOKENS = 16000;
-const PLAN_TOKEN_LIMITS = Object.freeze({ basic: 12000, go: 16000, pro: 24000, max: 36000 });
+// Tope de tokens por respuesta por nivel (igual en Claude y en ChatGPT); manda el de la cuota si lo trae.
+const PLAN_TOKEN_LIMITS = Object.freeze({ basic: 12000, go: 32000, pro: 44000, max: 78000, ultra: 128000 });
+const TOKEN_CEILING = 128000;
 function responseTokenLimit() {
   const quota = deps.ai?.cachedQuota?.();
-  const limit = quota?.maxTokensPerRequest ?? PLAN_TOKEN_LIMITS[quota?.plan];
-  return Number.isInteger(limit) && limit > 0 ? Math.min(limit, 36000) : MAX_TOKENS;
+  const limit = quota?.maxTokensPerRequest ?? PLAN_TOKEN_LIMITS[planTier(quota)];
+  return Number.isInteger(limit) && limit > 0 ? Math.min(limit, TOKEN_CEILING) : MAX_TOKENS;
 }
 const EFFORT = 'medium';
 const MAX_INPUT = 8000;
@@ -273,7 +275,7 @@ function classify(err) {
   else if (is('ai.errSession')) code = 'session';
   else if (is('ai.errNoPlan')) code = 'noplan';
   else if (is('ai.errPlan', 'ai.errPlanModel', 'ai.errPlanEffort')) code = 'plan';
-  else if (is('ai.errQuota', 'ai.errQuotaDaily', 'ai.errQuotaWeekly', 'ai.errQuotaBudget', 'ai.errQuotaTurn')) code = 'quota';
+  else if (is('ai.errQuota', 'ai.errQuotaDaily', 'ai.errQuotaWeekly', 'ai.errQuotaBudget', 'ai.errQuotaTurn', 'ai.errBudgetOut')) code = 'quota';
   else if (is('ai.errBackendMissing')) code = 'backend';
   else if (is('ai.errRefused')) code = 'refused';
   else if (is('ai.errNetwork')) code = 'network';
@@ -460,11 +462,53 @@ async function executeBatch(conv, turn, uses, redact) {
 }
 
 // ---------- Turno ----------
+// El servidor paso al otro saldo (planes de Claude y de ChatGPT): una linea en la conversacion, una vez por cambio
+// (modules/ai ya descarta los repetidos; aca, uno por turno). Se guarda para verla al volver a abrir el chat.
+const SWITCH_FAMILIES = ['anthropic', 'openai'];
+function noteSwitched(conv, turn, sw) {
+  if (!sw || typeof sw !== 'object' || turn.switched) return;
+  if (!SWITCH_FAMILIES.includes(sw.from) || !SWITCH_FAMILIES.includes(sw.to) || sw.from === sw.to) return;
+  turn.switched = true;
+  turn.refit = true;
+  emit(conv, { type: 'switched', turnId: turn.id, from: sw.from, to: sw.to, reason: sw.reason === 'noplan' ? 'noplan' : 'budget' });
+}
+
+// Plan en uso segun la ultima cuota conocida (modules/ai la guarda en cada respuesta, tambien en los errores).
+function currentPlan() {
+  try {
+    const plan = deps.ai?.cachedQuota?.()?.plan;
+    return typeof plan === 'string' && plan ? plan : null;
+  } catch {
+    return null;
+  }
+}
+
+// Si el plan en uso cambio a mitad del turno (cambio de saldo automatico o el selector del chat), las llamadas
+// siguientes piden el modelo y el esfuerzo que permite el plan nuevo: los mismos que eligio el servidor en la
+// llamada del cambio (el modelo pedido si el plan lo tiene, si no el primero; el esfuerzo permitido mas alto por
+// debajo). Sin esto la ronda siguiente pide el modelo del plan anterior y el servidor responde 403 plan.
+// Se compara el plan y no solo switched: modules/ai descarta los avisos repetidos y puede no traerlo.
+async function refitTurn(conv, turn) {
+  const plan = currentPlan();
+  if (plan && (turn.refit || (turn.plan && plan !== turn.plan))) {
+    const fit = await fitToPlan({ model: turn.model, effort: turn.effort || EFFORT });
+    turn.model = fit.model;
+    turn.effort = fit.effort;
+    conv.model = fit.model;
+    conv.effort = fit.effort;
+  }
+  if (plan) {
+    turn.plan = plan;
+    turn.refit = false;
+  }
+}
+
 async function runTurn(conv, turn) {
   const signal = turn.controller.signal;
   let rounds = 0;
   let outcome = 'end_turn';
   let stripRetried = false;
+  turn.plan = currentPlan();
   try {
     const redact = await currentRedactor();
     const inst = turn.instanceId ? await instances.get(turn.instanceId).catch(() => null) : null;
@@ -482,9 +526,14 @@ async function runTurn(conv, turn) {
       let res;
       try {
         const defs = await getDefs(conv);
-        // El mismo modelo y esfuerzo en todas las llamadas del turno (model undefined = el primero del plan)
+        // El mismo modelo y esfuerzo en todas las llamadas del turno (model undefined = el primero del plan),
+        // salvo que el plan en uso cambie a mitad del turno: ahi se ajustan al plan nuevo (refitTurn)
+        await refitTurn(conv, turn);
         res = await deps.ai.messages({ system: defs.system, messages: requestView(conv), tools: defs.tools, turnId: turn.id, maxTokens: responseTokenLimit(), model: turn.model || undefined, effort: turn.effort || EFFORT, signal });
       } catch (err) {
+        // Primero el aviso de cambio de saldo: el servidor lo manda una sola vez (en la llamada que cambia) y
+        // modules/ai ya lo dio por avisado, asi que no se puede perder en el reintento ni en el corte
+        noteSwitched(conv, turn, err?.switched);
         if (signal.aborted) {
           outcome = 'cancelled';
           break;
@@ -503,9 +552,13 @@ async function runTurn(conv, turn) {
         break;
       }
       if (typeof res.model === 'string' && res.model) turn.servedBy = res.model;
-      // Respondio el proveedor de respaldo (OpenAI) porque el principal fallo: la interfaz lo avisa con una nota
+      // Respondio el proveedor de respaldo porque el principal fallo: la interfaz lo avisa con una nota
       const failover = res.served_by?.failover === true;
-      if (failover) turn.failover = true;
+      if (failover) {
+        turn.failover = true;
+        if (typeof res.served_by.provider === 'string') turn.failoverProvider = res.served_by.provider;
+      }
+      noteSwitched(conv, turn, res.switched);
       if (res.quota) emit(conv, { type: 'quota', quota: res.quota }, { persist: false });
       const u = res.usage || {};
       conv.usage.input += Number(u.input_tokens) || 0;
@@ -523,7 +576,7 @@ async function runTurn(conv, turn) {
         .join('\n\n')
         .trim();
       const cut = res.stop_reason === 'max_tokens' || res.stop_reason === 'model_context_window_exceeded';
-      if (text) emit(conv, { type: 'text', turnId: turn.id, text, truncated: cut && !uses.length, ...(failover ? { failover: true } : {}) });
+      if (text) emit(conv, { type: 'text', turnId: turn.id, text, truncated: cut && !uses.length, ...(failover ? { failover: true, failoverProvider: turn.failoverProvider || null } : {}) });
 
       if (uses.length) {
         let results;
@@ -584,7 +637,7 @@ async function runTurn(conv, turn) {
   } finally {
     for (const [, c] of confirms) if (c.convId === conv.id) c.resolve('cancelled');
     conv.lastTurn = { id: turn.id, state: outcome, at: Date.now() };
-    emit(conv, { type: 'done', turnId: turn.id, stopReason: outcome, rounds, model: turn.model, effort: turn.effort, servedBy: turn.servedBy || null, failover: turn.failover === true });
+    emit(conv, { type: 'done', turnId: turn.id, stopReason: outcome, rounds, model: turn.model, effort: turn.effort, servedBy: turn.servedBy || null, failover: turn.failover === true, ...(turn.failoverProvider ? { failoverProvider: turn.failoverProvider } : {}) });
     await flush(conv);
   }
   return outcome;

@@ -2,6 +2,8 @@
 // base en memoria (tests/fake-db.ts, que replica 0008 y 0011). Cubre la tabla de decisión (qué fallas pasan al
 // otro proveedor y cuáles no), las claves que faltan, el orden de los proveedores, el costo con el precio del
 // modelo que respondió, la pregunta contada en el modelo de Venus y un ciclo de herramientas entre proveedores.
+// Usa la base de antes de 0056 (sin `provider` en ai_register_turn): el principal sale de ai_provider_settings, el
+// camino que la función conserva por compatibilidad. El contrato de 0056 está en dual-engines.test.ts.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MIN_FAILOVER_MS } from '../config.ts';
@@ -270,7 +272,9 @@ test('sin ANTHROPIC_API_KEY: un pedido inválido para OpenAI llega como 400 (no 
   assert.ok(!rec.rpc.some((r) => r.name === 'ai_release_turn'), 'como con Anthropic: un pedido inválido no devuelve la pregunta');
 });
 
-test('sin ANTHROPIC_API_KEY y con el respaldo apagado (o sin not_configured): 503 not_configured sin gastar una pregunta', async () => {
+// 6.1: el proveedor se sabe recién con ai_register_turn (el del saldo). Si no puede atender, la pregunta que se abrió se
+// devuelve y la llamada se cierra: el usuario no gasta nada, aunque la base se haya consultado.
+test('sin ANTHROPIC_API_KEY y con el respaldo apagado (o sin not_configured): 503 not_configured y la pregunta se devuelve', async () => {
   for (const change of [
     (db: FakeDb) => ((db.providerConfig as { failoverEnabled: boolean }).failoverEnabled = false),
     (db: FakeDb) => ((db.providerConfig as { failoverOn: string[] }).failoverOn = ['overloaded']),
@@ -283,8 +287,10 @@ test('sin ANTHROPIC_API_KEY y con el respaldo apagado (o sin not_configured): 50
     const res = await call(deps, post(v2Body()));
     assert.equal(res.status, 503);
     assert.equal(res.body.code, 'not_configured');
-    assert.deepEqual(rec.rpc.map((r) => r.name), ['ai_provider_settings'], 'no toca la cuota');
-    assert.equal(db.turns.size, 0);
+    assert.deepEqual(rec.rpc.map((r) => r.name), ['ai_register_turn', 'ai_provider_settings', 'ai_release_turn', 'ai_end_call']);
+    assert.equal(db.turns.size, 0, 'la pregunta se devolvió');
+    assert.equal(db.inflight(USER), 0, 'la llamada quedó cerrada');
+    assert.equal(res.body.provider, 'anthropic', 'dice qué proveedor falta');
   }
   // Sin ninguna de las dos claves: 503 enseguida (ni siquiera lee el cuerpo).
   const none = makeDeps({}, { modelReady: false, openaiReady: false });
@@ -294,8 +300,7 @@ test('sin ANTHROPIC_API_KEY y con el respaldo apagado (o sin not_configured): 50
   assert.equal(none.rec.rpc.length, 0);
 });
 
-test('sin ANTHROPIC_API_KEY y sin modelo de OpenAI para esa pregunta: 503 sin gastar la pregunta', async () => {
-  // Modelo pedido por el launcher: se sabe antes de tocar la cuota.
+test('sin ANTHROPIC_API_KEY y sin modelo de OpenAI para esa pregunta: 503 y la pregunta se devuelve', async () => {
   const db = new FakeDb();
   db.subscribe(USER, 'pro');
   db.tierFallbacks.delete('sonnet');
@@ -303,17 +308,18 @@ test('sin ANTHROPIC_API_KEY y sin modelo de OpenAI para esa pregunta: 503 sin ga
   const explicit = await call(a.deps, post(v2Body({ turn_id: 'sin-modelo-1' })));
   assert.equal(explicit.status, 503);
   assert.equal(explicit.body.code, 'not_configured');
-  assert.deepEqual(a.rec.rpc.map((r) => r.name), ['ai_provider_settings']);
+  assert.deepEqual(a.rec.rpc.map((r) => r.name), ['ai_register_turn', 'ai_provider_settings', 'ai_release_turn', 'ai_end_call']);
+  assert.equal(db.turns.size, 0);
   // Modelo que elige la base (el primero del plan, Haiku): la pregunta se abre y se devuelve.
   db.tierFallbacks.delete('haiku');
   const b = makeDeps({ db }, { modelReady: false });
   const resolved = await call(b.deps, post(v2Body({ model: null, turn_id: 'sin-modelo-2' })));
   assert.equal(resolved.status, 503);
   assert.equal(resolved.body.code, 'not_configured');
-  assert.deepEqual(b.rec.rpc.map((r) => r.name), ['ai_provider_settings', 'ai_register_turn', 'ai_release_turn', 'ai_end_call']);
+  assert.deepEqual(b.rec.rpc.map((r) => r.name), ['ai_register_turn', 'ai_provider_settings', 'ai_release_turn', 'ai_end_call']);
   assert.equal(db.inflight(USER), 0, 'la llamada quedó cerrada');
   assert.deepEqual(modelQuota(resolved.body, 'haiku').daily, { used: 0, limit: 25 });
-  assert.ok(lines(b.rec).some((l) => l.includes('ningún proveedor puede atender el modelo haiku')));
+  assert.ok(lines(b.rec).some((l) => l.includes('no puede atender el modelo haiku')));
 });
 
 // ---------- Si los dos fallan ----------

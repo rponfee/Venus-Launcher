@@ -30,6 +30,10 @@ Todas las claves son opcionales; cualquier otra clave hace que el tema sea invá
 
 `applyTheme(theme)` escribe en `settings.appearance` solo las claves del tema (`accent`, `customColor`, `tint`, `background`, `wallpaperId`, `bgDim`, `bgBlur`) con `store.setSettings`. `appearance.js` escucha los ajustes y redibuja color, tinte y fondo al instante. La imagen propia (`bgFile`), la música y la marca no se tocan, así que **Volver al anterior** restaura exactamente lo que había (también un fondo propio). Si el tema trae un fondo de la galería que esta versión no tiene, se usan las estrellas y se avisa.
 
+### Looks (`VENUS-LOOK:`) y el estilo de la interfaz (6.1)
+
+Un tema no es un look. El look (Ajustes → Apariencia → Mis looks, `features/themes/looks.js`) guarda toda la `settings.appearance` normalizada más la marca. El código es `VENUS-LOOK:` + base64 de `{ v: 1, name, appearance, branding }`. Desde la 6.1 `appearance` también trae el estilo de la interfaz: `uiFont` (`outfit`, `pixel`, `system`, `rounded` o `mono`), `uiText` (`normal`, `small` o `large`), `uiCards` (`glass`, `solid` u `outline`), `uiSide` (`left` o `right`), además de `uiRadius`, `uiDensity`, `uiSidebar` y `uiGlass`, que ya estaban. No viajan `lite`, `liteOverlay`, `seasonalBackup`, `startPage` ni `titlebar` (`SKIP_KEYS`): son del equipo o costumbres, no aspecto. Un look o un código de antes de la 6.1 no trae los campos nuevos, así que se aplican los de fábrica. Un valor desconocido también vuelve al de fábrica (`normalizeAppearance` de `a11y/appearance-logic.js`). Pruebas: `features/themes/test/style.test.js`.
+
 ### Comunidad (servidor)
 
 RPC de `0022_temas.sql` (solo con sesión de Venus):

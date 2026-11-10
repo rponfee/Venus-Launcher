@@ -85,6 +85,8 @@ function register({ getWindow }) {
     devshot: Boolean(process.env.VENUS_DEVSHOT),
     skipOnboarding: process.env.VENUS_SKIP_ONBOARDING === '1',
     locale: app.getLocale(),
+    // Funciones que existen en esta plataforma (core/platform.js): { overlay, nowplaying, capture, ... }
+    capabilities: require('./core/platform').capabilities(),
   }));
   handle('app:window', (action) => {
     const w = win();

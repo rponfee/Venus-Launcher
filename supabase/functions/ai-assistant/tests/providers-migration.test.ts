@@ -13,7 +13,8 @@ import { FakeDb } from './fake-db.ts';
 import { OPENAI_PRICES, TIER_FALLBACKS } from './owner-plans.ts';
 
 function load(name: string): string {
-  const raw = readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), 'utf8');
+  // Con finales de línea de Unix: en el runner de Windows de GitHub el checkout deja los .sql con CRLF.
+  const raw = readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
   // Sin comentarios (ningún texto entre comillas de estas migraciones tiene "--").
   return raw.replace(/--[^\n]*/g, '');
 }

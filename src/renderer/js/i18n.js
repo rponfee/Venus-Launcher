@@ -4,6 +4,8 @@
 // (app.js carga los espacios de nombres de la pagina antes de llamar a render)
 // Plurales: t('stats.sessions', { count: n }) busca 'sessions_one' / 'sessions_other' segun el idioma.
 
+import { keyLabel } from './platform.js';
+
 const api = window.venus;
 
 export const LANGUAGES = [
@@ -104,8 +106,11 @@ export function onLanguageChange(fn) {
   return () => changeListeners.delete(fn);
 }
 
+// En macOS los atajos del texto se muestran como en las apps de Mac ("Ctrl+K" -> "⌘K"; js/platform.js). Se cambia la
+// plantilla, nunca lo que llega en vars.
 function format(text, vars) {
-  if (!vars) return String(text);
+  text = keyLabel(String(text));
+  if (!vars) return text;
   return String(text).replace(/\{(\w+)\}/g, (m, name) => (vars[name] === undefined || vars[name] === null ? m : String(vars[name])));
 }
 

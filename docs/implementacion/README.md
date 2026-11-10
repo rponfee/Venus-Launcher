@@ -10,9 +10,10 @@ Documentación permanente de los doce frentes. Conserva sus tablas de archivos, 
 | [Servidores: control remoto, Discord y reseñas](servidores.md) | Contratos, uso, datos y límites |
 | [Mensajes y voz: stickers, traducción, soundboard y efectos](mensajes-voz.md) | Contratos, uso, datos y límites |
 | [Estudio de clips: montaje, timelapse, subida y galería](clips.md) | Contratos, uso, datos y límites |
-| [Clanes y comunidades](clanes-comunidades.md) | Comunidades (con la ampliación de la 4.6: roles, permisos por canal, GIFs con aprobación, bienvenida y despedida). Clanes se retiró |
+| [Clanes y comunidades](clanes-comunidades.md) | Comunidades (con la ampliación de la 4.6: roles, permisos por canal, GIFs con aprobación, bienvenida y despedida). Clanes se retiró en la 4.6 y Comunidades en la 6.1: queda como antecedente |
 | [Insignia y FPS del mod](../insignia.md) | Las capas de Venus se retiraron en el mod 1.3.0; la insignia y los FPS se conservan |
 | [App para celular: PWA, mensajes, clips y avisos](app-celular.md) | Contratos, uso, datos y límites |
+| [Venus IA con dos motores: planes de Claude y de ChatGPT](ia-dos-motores.md) | Contrato de la 6.1: planes, saldos por motor, cambio automático y orden para publicar |
 
 Los doce borradores de funciones y el informe SQL se reconciliaron con estas referencias el 3 de noviembre de 2026. Después de revisar los cambios se retiró `docs/wip/`, con un respaldo temporal indicado en el estado de integración. Las guías de usuario y los comentarios de fuentes apuntan a estas rutas permanentes.
 

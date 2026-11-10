@@ -13,8 +13,6 @@ export default {
   perk_effectsText: "Adın için parıltı, gökkuşağı ve ateş; mağazadan satın almadan.",
   perk_frame: "Özel çerçeveler ve Supporter unvanı",
   perk_frameText: "Yalnızca Premium ile gelen hareketli avatar çerçeveleri ve adının yanında Supporter unvanı.",
-  perk_replay: "5 dakikalık anında tekrar",
-  perk_replayText: "Oyununun son 60 saniyesi yerine son 5 dakikasını kaydet.",
   perk_ai: "Venus AI",
   perk_aiText: "Planının modelleri ve sorularıyla asistan, her zamanki gibi.",
   note: "Premium, planın sürdüğü kadar sürer. İptal edersen Venus Points ile satın aldığın her şey sende kalır.",

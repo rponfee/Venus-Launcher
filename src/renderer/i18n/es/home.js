@@ -260,4 +260,7 @@ export default {
   blockNarrow: 'Volver {block} al ancho normal',
   blockHiddenTag: 'Oculto',
   blockEmptyTag: 'Sin datos por ahora',
+  heroSize: "Tamaño de la tarjeta principal",
+  heroSize_large: "Grande",
+  heroSize_compact: "Compacta",
 };

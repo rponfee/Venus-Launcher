@@ -59,4 +59,6 @@ export default {
   noticeTitle: "Venus {version} jest już dostępny",
   noticeText: "Wersja przenośna nie aktualizuje się sama. Pobierz nowy plik .exe i zapisz go w tym samym folderze, aby zachować dane.",
   noticeLater: "Później",
+  macNote: "Na Macu Venus nie aktualizuje się sam: tutaj możesz sprawdzić, czy są nowe wersje, a jeśli włączysz automatyczne sprawdzanie w Prywatności, sam Cię powiadomi. Pobierz nowy plik .dmg i przeciągnij Venus Launcher do folderu Aplikacje, zastępując starą wersję. Twoje instancje i konta pozostaną bez zmian.",
+  noticeTextMac: "Na Macu Venus nie aktualizuje się sam. Pobierz nowy plik .dmg i przeciągnij Venus Launcher do folderu Aplikacje, zastępując starą wersję. Twoje instancje i konta pozostaną bez zmian.",
 };

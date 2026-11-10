@@ -182,4 +182,12 @@ export default {
   ex3: "Daha fazla FPS için örneğimi optimize et",
   ex4: "Sodium ve Iris'i yükle",
   ex5: "Bana hafif gölgelendiriciler bul",
+  effort_max: "Maksimum",
+  walletLabel: "Bakiye",
+  walletHint: "Bir sonraki sorunun hangi bakiyeyi kullanacağı: Claude veya ChatGPT.",
+  walletOption: "{family} · {left} kaldı",
+  walletLine: "{family} bakiyesi: {limit} içinden {left} kaldı",
+  failoverNoteOf: "Yedek yanıtladı ({provider})",
+  quotaBudgetTitle: "Bakiyen bitti",
+  quotaBudgetOut: "{family} bakiyen ({plan} planı) bitti ve {other} bakiyen de kalmadı. Planlar bölümünden daha fazla {family} bakiyesi satın al veya bir {other} planı dene.",
 };

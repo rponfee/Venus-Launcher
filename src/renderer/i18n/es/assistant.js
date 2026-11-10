@@ -199,4 +199,13 @@ export default {
   ex3: 'Optimizá mi instancia para tener más FPS',
   ex4: 'Instalá Sodium y Iris',
   ex5: 'Buscame shaders livianos',
+  // Planes de Claude y de ChatGPT (6.1)
+  effort_max: 'Máximo',
+  walletLabel: 'Saldo',
+  walletHint: 'Qué saldo usa tu próxima pregunta: el de Claude o el de ChatGPT.',
+  walletOption: '{family} · quedan {left}',
+  walletLine: 'Saldo de {family}: quedan {left} de {limit}',
+  failoverNoteOf: 'Respondió el respaldo ({provider})',
+  quotaBudgetTitle: 'Se terminó tu saldo',
+  quotaBudgetOut: 'Se terminó tu saldo de {family} (plan {plan}) y no te queda saldo de {other}. Comprá más saldo de {family} o probá un plan de {other} en Planes.',
 };

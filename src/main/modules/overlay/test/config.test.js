@@ -4,9 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const config = require('../config');
 
-test('sin ajustes: todo prendido, atajo por defecto y las posiciones de fabrica', () => {
+test('sin ajustes: overlay apagado (6.1), widgets prendidos, atajo por defecto y las posiciones de fabrica', () => {
   const c = config.normalize(undefined);
-  assert.equal(c.enabled, true);
+  assert.equal(c.enabled, false);
   assert.equal(c.shortcut, config.DEFAULT_SHORTCUT);
   assert.deepEqual(Object.keys(c.widgets), config.WIDGETS);
   for (const id of config.WIDGETS) {
@@ -32,7 +32,7 @@ test('valores fuera de rango o raros se corrigen', () => {
       music: { scale: 1.23, opacity: 0.555, show: 'change' },
     },
   });
-  assert.equal(c.enabled, true);
+  assert.equal(c.enabled, false, 'algo que no es si o no vale lo de fabrica: apagado');
   const v = c.widgets.voice;
   assert.equal(v.scale, 1.6);
   assert.equal(v.opacity, 0.3);
@@ -99,9 +99,9 @@ test('atajos: dos escritos distinto son el mismo si tienen las mismas teclas', (
 test('ajustes viejos: un atajo de panel igual al principal queda sin atajo y no se registra dos veces', () => {
   const c = config.normalize({ shortcut: 'Alt+Shift+R', panelShortcuts: { recipes: 'Alt+Shift+R', assistant: 'Shift+Alt+R' } });
   assert.equal(c.shortcut, 'Alt+Shift+R');
-  assert.deepEqual(c.panelShortcuts, { recipes: '', assistant: '' });
+  assert.deepEqual(c.panelShortcuts, { recipes: '', assistant: '', dnd: 'Alt+Shift+N' });
   const d = config.normalize({ shortcut: 'Alt+Shift+O', panelShortcuts: { recipes: 'Alt+Shift+A', assistant: 'Alt+Shift+A' } });
-  assert.deepEqual(d.panelShortcuts, { recipes: 'Alt+Shift+A', assistant: '' });
+  assert.deepEqual(d.panelShortcuts, { recipes: 'Alt+Shift+A', assistant: '', dnd: 'Alt+Shift+N' });
   // Lo que no es de este modulo no se toca: valores raros en los widgets viejos vuelven a los de fabrica
   const e = config.normalize({ widgets: { voice: { scale: '1.2', opacity: 'x', x: null, anchor: 5 }, perf: { show: 'fps' }, counters: null } });
   assert.equal(e.widgets.voice.scale, 1.2);

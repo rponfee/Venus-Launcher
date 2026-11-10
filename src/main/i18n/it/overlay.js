@@ -10,4 +10,12 @@ module.exports = {
   taskDoneTitle: "Attività completata",
   taskFailedTitle: "Impossibile completare un'attività",
   errOffline: "L'assistente ha bisogno di una connessione a internet per rispondere. Controlla la connessione e riprova.",
+  errBadPreset: "Quel layout dell'overlay non esiste.",
+  errBadDnd: "Scegli per quanto tempo attivare «Non disturbare».",
+  dndOnTitle: "Non disturbare attivato",
+  dndOnBody: "Gli avvisi e i messaggi non vengono mostrati finché non chiudi il gioco.",
+  dndOffTitle: "Non disturbare disattivato",
+  dndEndedTitle: "«Non disturbare» è terminato",
+  dndEndedBody_one: "Nel frattempo è arrivato {count} avviso o messaggio.",
+  dndEndedBody_other: "Nel frattempo sono arrivati {count} avvisi o messaggi.",
 };

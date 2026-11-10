@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  menuAbout: "关于 {app}",
+  menuHide: "隐藏 {app}",
+  menuHideOthers: "隐藏其他",
+  menuShowAll: "全部显示",
+  menuQuit: "退出 {app}",
+  menuEdit: "编辑",
+  menuUndo: "撤销",
+  menuRedo: "重做",
+  menuCut: "剪切",
+  menuCopy: "拷贝",
+  menuPaste: "粘贴",
+  menuPasteMatch: "粘贴并匹配样式",
+  menuDelete: "删除",
+  menuSelectAll: "全选",
+  menuWindow: "窗口",
+  menuMinimize: "最小化",
+  menuZoom: "缩放",
+  menuFront: "前置全部窗口",
+};

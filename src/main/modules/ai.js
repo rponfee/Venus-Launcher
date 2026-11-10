@@ -11,22 +11,39 @@
 //     const datos = await ai.json({ system, prompt, schema, model: 'haiku', effort: 'low' }); // schema = JSON Schema (type: 'object')
 //     const msg = await ai.messages({ system, messages, tools, turnId, model, effort });      // bajo nivel (asistente con herramientas)
 //   }
-// model: 'haiku' | 'sonnet' | 'opus' (tambien acepta el id completo, por ejemplo 'claude-haiku-5-5').
-// Sin model, text/json usan Haiku y el asistente el primer modelo del plan. effort: 'low' | 'medium' | 'high'
-// (por defecto 'medium'; si el plan no lo permite, las tareas internas se reintentan con el mas parecido).
-// Cada respuesta trae served_by: { provider: 'anthropic' | 'openai', model, failover } (respaldo en OpenAI).
+// model: 'haiku' (rapido) | 'sonnet' (avanzado) (tambien acepta el id completo, por ejemplo 'claude-haiku-5-5' o
+// 'gpt-6-luna'); el modelo real lo decide la familia del plan en uso (Claude u OpenAI). Sin model, text/json usan
+// Haiku y el asistente el primer modelo del plan. effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max' (por defecto
+// 'medium'; si el plan no lo permite, las tareas internas se reintentan con el mas parecido).
+// Cada respuesta trae served_by: { provider: 'anthropic' | 'openai', model, failover } y switched ({ from, to,
+// reason } o null) si en esa llamada el servidor paso al otro saldo (planes de Claude y de ChatGPT, 6.1).
 const secure = require('../core/secure');
 const settings = require('../core/settings');
 const { t } = require('../core/i18n');
 
 const SESSION_KEY = 'ui:sb.venus-auth'; // sesion de Supabase que guarda cloud.js (cifrada)
 const FUNCTION = 'ai-assistant';
-// Alias del protocolo 2 -> id del modelo (para mostrarlo y compararlo con lo que manda el backend)
-const MODEL_ALIASES = { haiku: 'gpt-6-luna', sonnet: 'gpt-6-luna', opus: 'gpt-6-luna' };
+// Dos familias de planes (6.1, docs/implementacion/ia-dos-motores.md): cada plan es de una y da saldo de esa API.
+// Una cuota vieja (sin provider) es de OpenAI, el unico proveedor de la 6.0.
+const FAMILIES = ['anthropic', 'openai'];
+const FAMILY_NAMES = { anthropic: 'Claude', openai: 'ChatGPT' }; // marcas: no se traducen
+const TIERS = ['basic', 'go', 'pro', 'max', 'ultra'];
+// Clave del protocolo (haiku = rapido, sonnet = avanzado) -> id real segun la familia del plan. Es solo el
+// respaldo: la cuota trae el suyo en models[].model y el nombre para mostrar en models[].label.
+const FAMILY_MODELS = Object.freeze({
+  anthropic: Object.freeze({ haiku: 'claude-haiku-5-5', sonnet: 'claude-sonnet-5-5', opus: 'claude-opus-5-5' }),
+  openai: Object.freeze({ haiku: 'gpt-6-luna', sonnet: 'gpt-5.6-sol' }),
+});
+const ALIASES = ['haiku', 'sonnet', 'opus'];
+const MODEL_ALIASES = FAMILY_MODELS.openai; // compatibilidad: ids de la 6.0
 const MODELS = [
-  { id: 'gpt-6-luna', alias: 'haiku', label: 'GPT-6 Luna' },
+  { id: 'claude-haiku-5-5', alias: 'haiku', provider: 'anthropic', label: 'Haiku 5.5' },
+  { id: 'claude-sonnet-5-5', alias: 'sonnet', provider: 'anthropic', label: 'Sonnet 5.5' },
+  { id: 'gpt-6-luna', alias: 'haiku', provider: 'openai', label: 'GPT-6 Luna' },
+  { id: 'gpt-5.6-sol', alias: 'sonnet', provider: 'openai', label: 'GPT-5.6 Sol' },
 ];
-const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
+const SWITCH_REPEAT_MS = 2 * 60 * 1000; // el mismo cambio de saldo informado por llamadas simultaneas se avisa una vez
 const TASK_MODEL = 'haiku'; // tareas internas (text/json) si no piden otro modelo
 const CLIENT = { app: 'venus-launcher', protocol: 2 };
 const CATALOG_TTL = 5 * 60 * 1000; // el GET (cuota + catalogo de planes) se repite como mucho cada 5 min
@@ -37,31 +54,64 @@ let lastGetAt = 0;
 let getting = null; // GET en curso (se comparte entre llamadas simultaneas a status)
 let cacheOwner = null; // usuario de Supabase al que pertenece lastQuota
 const turnSubst = new Map(); // turnId -> { model, effort, to } (reemplazo despues de un 403 plan)
+let lastSwitch = null; // { key: 'from>to', at } ultimo cambio de saldo avisado
 let sendToUi = () => {};
+
+// ---------- Familia y nivel del plan ----------
+
+// 'anthropic' | 'openai' de una cuota, un saldo o un plan del catalogo ({ provider, plan|id }) o de un id de plan.
+// null si no hay plan. Los planes de Claude tienen id claude_*; los de ChatGPT conservan los de la 6.0.
+function planFamily(q) {
+  if (q && typeof q === 'object' && FAMILIES.includes(q.provider)) return q.provider;
+  const plan = String((q && typeof q === 'object' ? q.plan ?? q.id : q) || '').toLowerCase();
+  if (!plan) return null;
+  return plan.startsWith('claude_') ? 'anthropic' : 'openai';
+}
+
+// 'basic' | 'go' | 'pro' | 'max' | 'ultra' (el nivel, igual en las dos familias) o null si no se sabe.
+function planTier(q) {
+  if (q && typeof q === 'object' && TIERS.includes(q.tier)) return q.tier;
+  const plan = String((q && typeof q === 'object' ? q.plan ?? q.id : q) || '').toLowerCase().replace(/^claude_/, '');
+  return TIERS.includes(plan) ? plan : null;
+}
+
+// "Claude Pro" / "ChatGPT Pro" para los mensajes; con una cuota vieja (sin provider), solo el nombre del plan.
+function planDisplayName(q) {
+  const name = q?.planName || q?.plan || '';
+  if (!name || !q || !FAMILIES.includes(q.provider)) return name;
+  return `${FAMILY_NAMES[q.provider]} ${name}`;
+}
 
 // ---------- Modelos y esfuerzo ----------
 
-// 'haiku' | 'sonnet' | 'opus' a partir de un alias o un id completo; null si no es ninguno.
+// 'haiku' | 'sonnet' | 'opus' a partir de un alias o un id completo (de cualquier familia); null si no es ninguno.
 function modelAlias(m) {
   if (typeof m !== 'string') return null;
   const s = m.trim().toLowerCase();
-  if (Object.prototype.hasOwnProperty.call(MODEL_ALIASES, s)) return s;
-  return MODELS.find((x) => x.id === s)?.alias || null;
+  if (ALIASES.includes(s)) return s;
+  for (const f of FAMILIES) {
+    const hit = Object.entries(FAMILY_MODELS[f]).find(([, id]) => id === s);
+    if (hit) return hit[0];
+  }
+  return null;
 }
 
-function modelId(m) {
+// Id real de una clave en la familia del plan (por defecto, la de la ultima cuota).
+function modelId(m, family = planFamily(lastQuota) || 'openai') {
   const alias = modelAlias(m);
-  return alias ? MODEL_ALIASES[alias] : null;
+  if (!alias) return null;
+  return FAMILY_MODELS[family]?.[alias] || FAMILY_MODELS.anthropic[alias] || null;
 }
 
-// Nombre para mostrar: el que manda el backend en la cuota o el de la lista local.
+// Nombre para mostrar: el que manda el backend en la cuota (label). Sin eso, el del id real de esa familia.
 function modelLabel(m, quota = lastQuota) {
   if (!m) return '';
   const alias = modelAlias(m);
   const list = Array.isArray(quota?.models) ? quota.models : [];
   const hit = list.find((x) => x && (x.id === m || x.model === m || (alias && (modelAlias(x.id) || modelAlias(x.model)) === alias)));
   if (typeof hit?.label === 'string' && hit.label) return hit.label;
-  return MODELS.find((x) => x.alias === alias)?.label || String(m);
+  const id = (typeof hit?.providerModel === 'string' && hit.providerModel) || modelId(alias, planFamily(quota) || 'openai');
+  return MODELS.find((x) => x.id === id)?.label || MODELS.find((x) => x.id === String(m).toLowerCase())?.label || String(m);
 }
 
 function normalizeEffort(e) {
@@ -93,10 +143,42 @@ function firstPlanModel(q) {
   return null;
 }
 
-// Id del modelo que se muestra con el backend: el ultimo usado o el primero del plan.
+// Id del modelo que se muestra con el backend: el ultimo usado o el primero del plan (el de la cuota si lo trae).
 function quotaModelId(q) {
   if (!q) return null;
-  return modelId(q.lastModel) || modelId(firstPlanModel(q)?.alias) || (typeof q.model === 'string' ? q.model : null);
+  const family = planFamily(q) || 'openai';
+  const fromQuota = (alias) => {
+    const m = (Array.isArray(q.models) ? q.models : []).find((x) => x && (modelAlias(x.id) || modelAlias(x.model)) === alias);
+    // providerModel = id real del motor; model sigue siendo el id de Claude de la clave (servidor de la 6.1)
+    return (typeof m?.providerModel === 'string' && m.providerModel) || (family === 'anthropic' && typeof m?.model === 'string' && m.model) || modelId(alias, family);
+  };
+  const alias = modelAlias(q.lastModel) || firstPlanModel(q)?.alias;
+  return (alias && fromQuota(alias)) || (typeof q.model === 'string' ? q.model : null);
+}
+
+// ---------- Cambio de saldo (switched) ----------
+
+// { from, to, reason } valido o null.
+function switchedOf(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const from = FAMILIES.includes(raw.from) ? raw.from : null;
+  const to = FAMILIES.includes(raw.to) ? raw.to : null;
+  if (!from || !to || from === to) return null;
+  return { from, to, reason: raw.reason === 'noplan' ? 'noplan' : 'budget' };
+}
+
+// El servidor paso solo al otro saldo en esta llamada. Se avisa una vez por cambio: llamadas simultaneas que traen
+// el mismo cambio no repiten el aviso. El asistente lo muestra en su chat (vuelve en la respuesta); el resto de las
+// funciones con IA, con un aviso de la interfaz (ai:switched).
+function noteSwitched(raw, task) {
+  const s = switchedOf(raw);
+  if (!s) return null;
+  const key = `${s.from}>${s.to}`;
+  const now = Date.now();
+  if (lastSwitch && lastSwitch.key === key && now - lastSwitch.at < SWITCH_REPEAT_MS) return null;
+  lastSwitch = { key, at: now };
+  if (task !== 'assistant') sendToUi('ai:switched', { ...s, task: task || 'text' });
+  return s;
 }
 
 // ---------- Configuracion ----------
@@ -124,6 +206,7 @@ function syncOwner(session) {
   cacheOwner = owner;
   lastQuota = null;
   lastGetAt = 0;
+  lastSwitch = null;
   turnSubst.clear();
 }
 
@@ -211,15 +294,24 @@ function quotaError(data, q, plan, ctx) {
   let msg = null;
   if (reset && reason === 'daily' && label) msg = t('ai.errQuotaDaily', { model: label, plan, reset });
   else if (reset && reason === 'weekly' && label) msg = t('ai.errQuotaWeekly', { model: label, plan, reset });
-  else if (reason === 'budget' || reason === 'monthly') msg = t('ai.errSupportBudget', { plan });
+  else if (reason === 'budget' || reason === 'monthly') msg = budgetMessage(q, plan);
   return coded('quota', msg || t('ai.errQuota', { plan }), { ...extra, resetAt });
+}
+
+// Sin saldo. Con el servidor de la 6.1 (cuota con provider) "budget" quiere decir que ningun saldo alcanza: se
+// ofrece comprar mas del mismo motor o un plan del otro. Con una cuota vieja, el texto de siempre.
+function budgetMessage(q, plan) {
+  if (!FAMILIES.includes(q?.provider)) return t('ai.errSupportBudget', { plan });
+  const family = q.provider;
+  const other = FAMILIES.find((f) => f !== family);
+  return t('ai.errBudgetOut', { plan, family: FAMILY_NAMES[family], other: FAMILY_NAMES[other] });
 }
 
 // Respuestas de error de la Edge Function (ver supabase/functions/ai-assistant y docs/backend-ia.md).
 // ctx = { model, effort } que se pidieron (para nombrarlos en el mensaje).
 function backendError(status, data, ctx = {}) {
   const q = data.quota && typeof data.quota === 'object' ? data.quota : lastQuota || {};
-  const plan = q.planName || q.plan || '?';
+  const plan = planDisplayName(q) || '?';
   if (status === 401) return coded('session', t('ai.errSession'));
   if (status === 402 || data.error === 'noplan') {
     setCatalog(data.plans);
@@ -291,8 +383,14 @@ async function backendFetch(method, body, signal, ctx) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) data = {};
   setQuota(data.quota);
   if (Array.isArray(data.plans)) setCatalog(data.plans);
-  if (!res.ok) throw backendError(res.status, data, ctx);
-  return data;
+  // switched llega en la respuesta y tambien en los errores con cuota (ver ia-dos-motores.md §4)
+  const switched = method === 'POST' ? noteSwitched(data.switched, ctx?.task) : null;
+  if (!res.ok) {
+    const err = backendError(res.status, data, ctx);
+    if (switched) err.switched = switched;
+    throw err;
+  }
+  return { ...data, switched };
 }
 
 function rememberSubst(turnId, from, to) {
@@ -317,12 +415,12 @@ async function backendPost(base, choice, { task, turnId, signal }) {
   const memo = task !== 'assistant' && turnId ? turnSubst.get(turnId) : null;
   const first = memo && memo.model === choice.model && memo.effort === choice.effort ? memo.to : choice;
   try {
-    return await backendFetch('POST', { ...base, model: first.model, effort: first.effort }, signal, first);
+    return await backendFetch('POST', { ...base, model: first.model, effort: first.effort }, signal, { ...first, task });
   } catch (err) {
     if (task === 'assistant' || err?.code !== 'plan' || signal?.aborted) throw err;
     const alt = planFallback(lastQuota, first);
     if (!alt) throw err;
-    const data = await backendFetch('POST', { ...base, model: alt.model, effort: alt.effort }, signal, alt);
+    const data = await backendFetch('POST', { ...base, model: alt.model, effort: alt.effort }, signal, { ...alt, task });
     if (turnId) rememberSubst(turnId, choice, alt);
     return data;
   }
@@ -340,7 +438,7 @@ async function request({ task = 'text', system, prompt, messages, tools, schema,
   const choice = { model: modelAlias(model) || (task === 'assistant' ? undefined : TASK_MODEL), effort: normalizeEffort(effort) || 'medium' };
   const base = { task, system, messages: msgs, tools: tools || undefined, schema: schema || undefined, max_tokens: maxTokens, turn_id: turnId || undefined, client: CLIENT };
   const data = await backendPost(base, choice, { task, turnId, signal });
-  const out = { ...data.message, parsed: data.parsed ?? null, quota: data.quota || null, via };
+  const out = { ...data.message, parsed: data.parsed ?? null, quota: data.quota || null, switched: data.switched || null, via };
   if (out.stop_reason === 'refusal') throw coded('refused', t('ai.errRefused'));
   return out;
 }
@@ -396,6 +494,7 @@ async function status({ refresh = false } = {}) {
       await getting;
     }
   }
+  const q = via === 'backend' ? lastQuota : null;
   return {
     provider: via, // 'backend' | null
     enabled: s.ai?.enabled !== false,
@@ -405,14 +504,50 @@ async function status({ refresh = false } = {}) {
     model: via === 'backend' ? quotaModelId(lastQuota) : null,
     models: MODELS,
     efforts: EFFORTS,
-    quota: via === 'backend' ? lastQuota : null, // QuotaV2
+    quota: q, // QuotaV2 (QuotaV3 con el servidor de la 6.1: provider, tier y wallets)
+    planFamily: q && q.plan ? planFamily(q) : null, // familia del saldo en uso: 'anthropic' | 'openai'
+    planTier: q ? planTier(q) : null, // nivel del plan en uso: 'basic' ... 'ultra'
     plans: catalog ? catalog.plans : null, // catalogo de planes del backend
   };
+}
+
+// Elige que saldo usar (RPC ai_use_wallet con la sesion del usuario). Devuelve la cuota nueva.
+async function useWallet(family) {
+  if (!FAMILIES.includes(family)) throw coded('error', t('ai.errWallet'));
+  const cfg = await cloudConfig();
+  if (!cfg.configured) throw coded('unavailable', t('ai.errNoCloud'));
+  const session = await freshSession();
+  syncOwner(session);
+  let res;
+  try {
+    res = await fetch(`${cfg.url}/rest/v1/rpc/ai_use_wallet`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: cfg.anonKey },
+      body: JSON.stringify({ p_provider: family }),
+    });
+  } catch {
+    throw coded('network', t('ai.errNetwork'));
+  }
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    if (res.status === 401) throw coded('session', t('ai.errSession'));
+    if (res.status === 404 || data?.code === 'PGRST202') throw coded('backend', t('ai.errBackendMissing'));
+    throw coded('error', t('ai.errWallet'));
+  }
+  lastSwitch = null;
+  if (data && typeof data === 'object' && !Array.isArray(data) && Array.isArray(data.models)) {
+    lastGetAt = Date.now();
+    setQuota(data);
+  } else {
+    await status({ refresh: true });
+  }
+  return lastQuota;
 }
 
 function register({ handle, send }) {
   sendToUi = send;
   handle('ai:status', (opts) => status(opts || {}));
+  handle('ai:useWallet', (family) => useWallet(String(family || '')));
   handle('ai:test', async () => {
     const reply = await text({ prompt: 'Respond with the single word OK.', maxTokens: 2000, effort: 'low' });
     return { ok: /ok/i.test(reply), reply: reply.slice(0, 200) };
@@ -430,12 +565,21 @@ module.exports = {
   status,
   textOf,
   cachedQuota,
+  useWallet,
   modelAlias,
   modelId,
   modelLabel,
   normalizeEffort,
   bestEffort,
+  planFamily,
+  planTier,
+  planDisplayName,
+  switchedOf,
   MODELS,
   MODEL_ALIASES,
+  FAMILY_MODELS,
+  FAMILIES,
+  FAMILY_NAMES,
+  TIERS,
   EFFORTS,
 };

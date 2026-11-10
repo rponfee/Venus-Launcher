@@ -3,8 +3,9 @@
 // de Ajustes (features/overlay.js), con los mismos estilos (styles/overlay.css, clases .ovl-).
 //   const view = new OverlayView(root, { tr, preview, onMove, onTweak, onReset, onDone, onSelect, isReduced })
 //   view.setLayout(layout)  -> { widgets, accent, motion, editing, mode } (lo arma el proceso principal)
-//   view.handle(evento)     -> evento ya validado por el proceso principal (overlay/events.js), o { kind: 'shown', shown }
-//                              (la ventana se muestra o se esconde: oculta no hace falta ningun temporizador)
+//   view.handle(evento)     -> evento ya validado por el proceso principal (overlay/events.js), { kind: 'shown', shown }
+//                              (la ventana se muestra o se esconde: oculta no hace falta ningun temporizador) o
+//                              { kind: 'dnd', on } ("No molestar": al prenderlo se vacian los avisos y los mensajes)
 //   view.select(id)         -> en la vista previa, marca un widget (el que se esta personalizando)
 //   view.destroy()
 // En el modo edicion (y siempre en la vista previa) los widgets se arrastran con el mouse o se mueven con el
@@ -288,6 +289,18 @@ export class OverlayView {
         clearTimeout(this.timer);
         this.timer = null;
       } else this.tick();
+      return;
+    }
+    if (ev.kind === 'dnd') {
+      // "No molestar" recien prendido: lo que estaba en pantalla se va (avisos, su cola y mensajes)
+      if (ev.on) {
+        d.alerts = [];
+        d.queue = [];
+        d.messages = [];
+        this.safeRender('alerts');
+        this.safeRender('messages');
+        this.schedule();
+      }
       return;
     }
     if (ev.kind === 'voice') {

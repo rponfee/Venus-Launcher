@@ -1,7 +1,7 @@
 # Compila Venus Launcher desde el código fuente en un runner de GitHub, sube los ejecutables como artefacto y,
 # cuando SignPath está configurado, los manda a firmar. Corre al subir un tag v* (por ejemplo v1.0.13),
-# al cambiar package.json en main o a mano desde Actions. El cambio a 6.0.0 en main crea el tag y publica la
-# release después de superar los chequeos. Con un tag también publica la release con VenusLauncher-Setup.exe,
+# al cambiar package.json en main o a mano desde Actions. Si la versión de package.json tiene sus notas en
+# docs/release-<versión>.md, el cambio en main crea el tag y publica la release después de superar los chequeos. Con un tag también publica la release con VenusLauncher-Setup.exe,
 # VenusLauncher-Portable.exe y latest.yml (nombres fijos: los links releases/latest/download/… bajan siempre
 # la última versión y los launchers instalados se actualizan solos). El tag tiene que coincidir con la
 # versión de package.json.
@@ -30,6 +30,12 @@
 #
 # Claves que no van al repositorio: cargá en Settings > Secrets and variables > Actions el secreto
 # VENUS_CURSEFORGE_API_KEY es un respaldo opcional de builds anteriores. La configuración central se carga en Administración > Integraciones.
+#
+# macOS (job "mac", guía en docs/macos.md): después del de Windows compila en macos-latest la app universal (Intel y
+# Apple Silicon) con firma ad hoc (sin cuenta de desarrollador de Apple: sin Developer ID ni notarización), la abre de
+# verdad, saca capturas y, con un tag, sube VenusLauncher-mac.dmg, VenusLauncher-mac.zip y latest-mac.yml a la release
+# que creó el job de Windows. Si falla, la release de Windows ya salió igual. Para probarlo sin publicar nada: subí una
+# rama mac-* (mac-test.yml llama a este workflow con solo_mac: corre los chequeos y el job de Mac, sin Windows ni release).
 name: Build
 
 on:
@@ -41,6 +47,12 @@ on:
     paths:
       - package.json
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      solo_mac:
+        description: 'Solo el job de macOS, sin Windows ni release'
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -53,6 +65,7 @@ jobs:
 
   build:
     needs: mod
+    if: ${{ !inputs.solo_mac }}
     # SignPath solo firma lo que se compiló en runners alojados por GitHub.
     runs-on: windows-latest
     steps:
@@ -88,7 +101,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { Write-Output '::error title=check.js::Hay errores de sintaxis (ver node scripts/check.js).'; exit 1 }
           node scripts/contracts-check.js
           if ($LASTEXITCODE -ne 0) { Write-Output '::error title=contracts-check.js::Hay canales de la interfaz sin handler.'; exit 1 }
-          node --test --test-concurrency=4 "src/main/core/test/*.test.js" "src/main/modules/billing/test/*.test.js" "src/main/modules/capture/test/*.test.js" "src/main/modules/clipstudio/test/*.test.js" "src/main/modules/clipupload/test/*.test.js" "src/main/modules/curseforge/test/*.test.js" "src/main/modules/deeplink/test/*.test.js" "src/main/modules/downloadschedule/test/*.test.js" "src/main/modules/family/test/*.test.js" "src/main/modules/ingame/test/*.test.js" "src/main/modules/instancemeta/test/*.test.js" "src/main/modules/mapviewer/test/*.test.js" "src/main/modules/mcimport/test/*.test.js" "src/main/modules/mcnews/test/*.test.js" "src/main/modules/modchangelog/test/*.test.js" "src/main/modules/modsets/test/*.test.js" "src/main/modules/nowplaying/test/*.test.js" "src/main/modules/overlay/test/*.test.js" "src/main/modules/perfhistory/test/*.test.js" "src/main/modules/portability/test/*.test.js" "src/main/modules/profilemusic/test/*.test.js" "src/main/modules/recap/test/*.test.js" "src/main/modules/recipes/test/*.test.js" "src/main/modules/rewards/test/*.test.js" "src/main/modules/serverdiscord/test/*.test.js" "src/main/modules/serverremote/test/*.test.js" "src/main/modules/sharedoptions/test/*.test.js" "src/main/modules/shortcuts/test/*.test.js" "src/main/modules/skinai/test/*.test.js" "src/main/modules/skins/test/*.test.js" "src/main/modules/smartsearch/test/*.test.js" "src/main/modules/socialplus/test/*.test.js" "src/main/modules/soundboard/test/*.test.js" "src/main/modules/support/test/*.test.js" "src/main/modules/svcstatus/test/*.test.js" "src/main/modules/updater/test/*.test.js" "src/main/modules/wallpapers/test/*.test.js" "src/main/modules/worldbackups/test/*.test.js" "src/renderer/js/a11y/test/*.test.js" "src/renderer/js/features/clipstudio/test/*.test.js" "src/renderer/js/features/cosmic-art/test/*.test.js" "src/renderer/js/features/datatools/test/*.test.js" "src/renderer/js/features/decor/test/*.test.js" "src/renderer/js/features/instancelook/test/*.test.js" "src/renderer/js/features/navcustom/test/*.test.js" "src/renderer/js/features/party/test/*.test.js" "src/renderer/js/features/playcare/test/*.test.js" "src/renderer/js/features/profile-editor/test/*.test.js" "src/renderer/js/features/retired/test/*.test.js" "src/renderer/js/features/serverreviews/test/*.test.js" "src/renderer/js/features/support/test/*.test.js" "src/renderer/js/features/themes/test/*.test.js" "src/renderer/js/pages/achievements/test/*.test.js" "src/renderer/js/pages/admin/test/*.test.js" "src/renderer/js/pages/clips/test/*.test.js" "src/renderer/js/pages/communities/test/*.test.js" "src/renderer/js/pages/home/test/*.test.js" "src/renderer/js/pages/modrinth/test/*.test.js" "src/renderer/js/pages/pass/test/*.test.js" "src/renderer/js/pages/performance/test/*.test.js" "src/renderer/js/pages/skins/editor/test/*.test.js" "src/renderer/js/pages/versions/test/*.test.js" "src/renderer/js/social/test/*.test.js" "src/renderer/js/voice/test/*.test.js" "supabase/functions/badge/tests/*.test.ts" "supabase/functions/curseforge/tests/*.test.ts" "supabase/functions/payments/tests/*.test.ts" "supabase/functions/push-notify/tests/*.test.ts" "supabase/functions/tiktok-token/tests/*.test.ts" "supabase/functions/voice-turn/tests/*.test.ts" "web/app/test/*.test.js" --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=test-results.tap
+          node --test --test-concurrency=4 "src/main/core/test/*.test.js" "src/main/modules/admin/test/*.test.js" "src/main/modules/billing/test/*.test.js" "src/main/modules/capture/test/*.test.js" "src/main/modules/clipstudio/test/*.test.js" "src/main/modules/clipupload/test/*.test.js" "src/main/modules/curseforge/test/*.test.js" "src/main/modules/deeplink/test/*.test.js" "src/main/modules/discord/test/*.test.js" "src/main/modules/downloadschedule/test/*.test.js" "src/main/modules/family/test/*.test.js" "src/main/modules/ingame/test/*.test.js" "src/main/modules/instancemeta/test/*.test.js" "src/main/modules/mapviewer/test/*.test.js" "src/main/modules/mcimport/test/*.test.js" "src/main/modules/mcnews/test/*.test.js" "src/main/modules/modchangelog/test/*.test.js" "src/main/modules/modsets/test/*.test.js" "src/main/modules/nowplaying/test/*.test.js" "src/main/modules/overlay/test/*.test.js" "src/main/modules/perfhistory/test/*.test.js" "src/main/modules/portability/test/*.test.js" "src/main/modules/profilemusic/test/*.test.js" "src/main/modules/recap/test/*.test.js" "src/main/modules/recipes/test/*.test.js" "src/main/modules/rewards/test/*.test.js" "src/main/modules/serverdiscord/test/*.test.js" "src/main/modules/serverremote/test/*.test.js" "src/main/modules/sharedoptions/test/*.test.js" "src/main/modules/shortcuts/test/*.test.js" "src/main/modules/skinai/test/*.test.js" "src/main/modules/skins/test/*.test.js" "src/main/modules/smartsearch/test/*.test.js" "src/main/modules/socialplus/test/*.test.js" "src/main/modules/soundboard/test/*.test.js" "src/main/modules/support/test/*.test.js" "src/main/modules/svcstatus/test/*.test.js" "src/main/modules/updater/test/*.test.js" "src/main/modules/wallpapers/test/*.test.js" "src/main/modules/worldbackups/test/*.test.js" "src/renderer/js/a11y/test/*.test.js" "src/renderer/js/features/clipstudio/test/*.test.js" "src/renderer/js/features/cosmic-art/test/*.test.js" "src/renderer/js/features/datatools/test/*.test.js" "src/renderer/js/features/decor/test/*.test.js" "src/renderer/js/features/instancelook/test/*.test.js" "src/renderer/js/features/navcustom/test/*.test.js" "src/renderer/js/features/party/test/*.test.js" "src/renderer/js/features/plans/test/*.test.js" "src/renderer/js/features/playcare/test/*.test.js" "src/renderer/js/features/profile-editor/test/*.test.js" "src/renderer/js/features/retired/test/*.test.js" "src/renderer/js/features/serverreviews/test/*.test.js" "src/renderer/js/features/support/test/*.test.js" "src/renderer/js/features/themes/test/*.test.js" "src/renderer/js/pages/achievements/test/*.test.js" "src/renderer/js/pages/admin/test/*.test.js" "src/renderer/js/pages/clips/test/*.test.js" "src/renderer/js/pages/home/test/*.test.js" "src/renderer/js/pages/modrinth/test/*.test.js" "src/renderer/js/pages/pass/test/*.test.js" "src/renderer/js/pages/performance/test/*.test.js" "src/renderer/js/pages/skins/editor/test/*.test.js" "src/renderer/js/pages/versions/test/*.test.js" "src/renderer/js/platform/test/*.test.js" "src/renderer/js/social/test/*.test.js" "src/renderer/js/voice/test/*.test.js" "supabase/functions/admin/tests/*.test.ts" "supabase/functions/ai-assistant/tests/*.test.ts" "supabase/functions/badge/tests/*.test.ts" "supabase/functions/curseforge/tests/*.test.ts" "supabase/functions/payments/tests/*.test.ts" "supabase/functions/push-notify/tests/*.test.ts" "supabase/functions/tiktok-token/tests/*.test.ts" "supabase/functions/voice-turn/tests/*.test.ts" "web/app/test/*.test.js" --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=test-results.tap
           $code = $LASTEXITCODE
           if ($code -ne 0) { node scripts/ci-annotate.js test-results.tap; exit $code }
 
@@ -196,7 +209,9 @@ jobs:
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           if ($env:GITHUB_REF_TYPE -eq 'branch') {
-            if ($version -ne '6.0.0') { Write-Output 'El build de main no publica esta versión.'; exit 0 }
+            # main solo publica una versión que tenga sus notas (docs/release-<versión>.md): así un cambio cualquiera de
+            # package.json no saca una release.
+            if (-not (Test-Path "docs/release-$version.md")) { Write-Output 'El build de main no publica esta versión (falta docs/release-<versión>.md).'; exit 0 }
             $env:TAG = "v$version"
             $tagSha = gh api "repos/$env:REPO/git/ref/tags/$env:TAG" --jq '.object.sha' 2>$null
             if ($LASTEXITCODE -eq 0 -and $tagSha.Trim() -ne $env:GITHUB_SHA) { throw "El tag $env:TAG ya apunta a otro commit" }
@@ -215,7 +230,7 @@ jobs:
             "- [Privacy policy](https://github.com/$env:REPO#privacy-policy)",
             "- [Funciones y guía](https://github.com/$env:REPO#readme)"
           ) -join "`n"
-          if ($version -eq '6.0.0') { $notas = Get-Content docs/release-6.0.0.md -Raw }
+          if (Test-Path "docs/release-$version.md") { $notas = Get-Content "docs/release-$version.md" -Raw }
           gh release view $env:TAG --repo $env:REPO 2>$null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $env:TAG $archivos --repo $env:REPO --clobber
@@ -224,3 +239,127 @@ jobs:
             gh release create $env:TAG $archivos --repo $env:REPO --title "Venus Launcher $version" --notes $notas @opciones
           }
           if ($LASTEXITCODE -ne 0) { throw "No se pudo publicar la release" }
+
+  # macOS: app universal (Intel + Apple Silicon) sin firma de Apple (ad hoc). Corre después de Windows: si falla, la
+  # release de Windows ya está publicada. Con solo_mac (ramas mac-*, ver mac-test.yml) corre sin el job de Windows.
+  mac:
+    needs: [mod, build]
+    if: ${{ !cancelled() && needs.mod.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
+    runs-on: macos-latest
+    env:
+      # Sin certificados de Apple: que electron-builder no busque uno en el llavero (firma ad hoc, identity "-")
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Bajar el mod de la insignia
+        uses: actions/download-artifact@v7
+        with:
+          name: venus-badge-mod
+          path: src/main/modules/ingame/mods
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Revisar que estén todos los .jar de la insignia
+        run: |
+          node -e "const fs=require('fs'),m=require('./src/main/modules/ingame/badgemod');const f=m.BUILDS.map((b)=>b.jar).filter((j)=>!fs.existsSync('src/main/modules/ingame/mods/'+j));if(f.length){console.error('Faltan: '+f.join(', '));process.exit(1)}" \
+            || { echo '::error title=Mod Venus Badge::Falta un .jar de la insignia (BUILDS en badgemod.js).'; exit 1; }
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Sintaxis, canales y las pruebas que dependen de la plataforma (núcleo, plataforma, Java, nativos, lanzamiento,
+      # actualizaciones, Discord y los módulos con partes de Windows), corridas en una Mac de verdad.
+      - name: Chequeos en macOS
+        run: |
+          node scripts/check.js
+          node scripts/contracts-check.js
+          node --test --test-concurrency=4 "src/main/core/test/*.test.js" "src/main/modules/updater/test/*.test.js" "src/main/modules/discord/test/*.test.js" "src/main/modules/deeplink/test/*.test.js" "src/main/modules/ingame/test/*.test.js" "src/main/modules/shortcuts/test/*.test.js" "src/renderer/js/platform/test/*.test.js" --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=test-results.tap \
+            || { node scripts/ci-annotate.js test-results.tap; exit 1; }
+
+      - name: Cargar las claves que no van al repositorio
+        env:
+          VENUS_CURSEFORGE_API_KEY: ${{ secrets.VENUS_CURSEFORGE_API_KEY }}
+          VENUS_YOUTUBE_CLIENT_ID: ${{ secrets.VENUS_YOUTUBE_CLIENT_ID }}
+          VENUS_TIKTOK_CLIENT_KEY: ${{ secrets.VENUS_TIKTOK_CLIENT_KEY }}
+        run: node scripts/write-build-config.js
+
+      - name: Compilar la app universal (DMG y zip)
+        run: npx electron-builder --mac --universal --publish never
+
+      - name: Revisar el paquete, la firma y abrir la app empaquetada
+        run: |
+          app="dist/mac-universal/Venus Launcher.app"
+          node scripts/check-package.js "$app/Contents/Resources/app.asar"
+          codesign -dv --verbose=2 "$app"
+          # El mod de la insignia va adentro igual que en Windows
+          node -e "const a=require('@electron/asar');const n=a.listPackage(process.argv[1],{isPack:false}).filter((f)=>/ingame[\\/]mods[\\/]venus-badge-mc.*\.jar$/.test(f)).length;console.log(n+' .jar de la insignia en el paquete');process.exit(n?0:1)" "$app/Contents/Resources/app.asar" \
+            || { echo '::error title=Paquete de macOS::Falta el mod de la insignia dentro del app.asar.'; exit 1; }
+          node scripts/smoke-packaged.js
+          for f in dist/VenusLauncher-mac.dmg dist/VenusLauncher-mac.zip; do
+            [ -f "$f" ] || { echo "::error title=Paquete de macOS::Falta $f"; exit 1; }
+          done
+          ls -l dist
+
+      # La parte Intel de la app universal, si el runner tiene Rosetta 2 (macos-latest es Apple Silicon).
+      - name: Abrir la parte Intel con Rosetta
+        run: |
+          if arch -x86_64 /usr/bin/true 2>/dev/null; then
+            node scripts/smoke-packaged.js --x64
+          else
+            echo '::notice title=Prueba Intel::Este runner no tiene Rosetta 2: la parte Intel no se abrió.'
+          fi
+
+      # Capturas de la interfaz en macOS (scripts/devshot.js corre sin empaquetar: el paquete no trae scripts/).
+      - name: Capturas de la interfaz
+        env:
+          VENUS_DATA_DIR: ${{ runner.temp }}/venus-shots-data
+          VENUS_DEVSHOT: ${{ github.workspace }}/mac-shots
+          VENUS_SKIP_ONBOARDING: '1'
+          VENUS_DEVSHOT_SIZE: 1300x820
+          VENUS_DEVSHOT_FIRST: '6000'
+          VENUS_DEVSHOT_WAIT: '3500'
+          VENUS_DEVSHOT_ROUTES: 'home;;versions;;music;;settings'
+        run: |
+          # El binario de Electron directo (no el envoltorio de npm), así el límite de tiempo de perl lo corta de verdad
+          perl -e 'alarm shift; exec @ARGV' 240 ./node_modules/electron/dist/Electron.app/Contents/MacOS/Electron . || true
+          ls -l mac-shots || true
+          [ -f mac-shots/console.log ] || { echo '::error title=Capturas de macOS::No se generaron las capturas.'; exit 1; }
+          if grep -E '^\[(3|error)\]' mac-shots/console.log; then echo '::warning title=Capturas de macOS::La consola tiene errores (ver mac-shots/console.log).'; fi
+
+      - name: Subir el artefacto de macOS
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: VenusLauncher-mac
+          path: |
+            dist/VenusLauncher-mac.dmg
+            dist/VenusLauncher-mac.zip
+            dist/latest-mac.yml
+            mac-shots/
+          if-no-files-found: warn
+
+      # Con un tag (o el build de main que publicó la release): suma los archivos de Mac a la release de Windows. Nunca
+      # crea la release: si el job de Windows no la publicó, no hay nada que completar. latest-mac.yml es el que lee el
+      # launcher de Mac para avisar que hay versión nueva (modules/updater/controller.js).
+      - name: Sumar macOS a la release
+        if: ${{ !inputs.solo_mac && (startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && github.event_name == 'push')) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then tag="$GITHUB_REF_NAME"; else tag="v$version"; fi
+          [ "$tag" = "v$version" ] || { echo "::error::El tag $tag no coincide con la versión $version de package.json"; exit 1; }
+          if ! gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
+            echo "No hay release $tag publicada: no se sube macOS."; exit 0
+          fi
+          if [ "$GITHUB_REF_TYPE" = "branch" ]; then
+            sha=$(gh api "repos/$REPO/git/ref/tags/$tag" --jq '.object.sha' 2>/dev/null || true)
+            [ "$sha" = "$GITHUB_SHA" ] || { echo "La release $tag no es de este commit: no se sube macOS."; exit 0; }
+          fi
+          [ -f dist/latest-mac.yml ] || printf 'version: %s\n' "$version" > dist/latest-mac.yml
+          gh release upload "$tag" dist/VenusLauncher-mac.dmg dist/VenusLauncher-mac.zip dist/latest-mac.yml --repo "$REPO" --clobber

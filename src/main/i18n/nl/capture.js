@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "Clips en screenshots",
   errReplayNoRoom: "Directe herhaling gepauzeerd: niet genoeg schijfruimte.",
   autoLimitReached: "Het maximum van {count} automatische clips voor dit spel is bereikt. Directe herhaling werkt nog steeds met de sneltoets.",
+  errReplayNoRoomNeed: "Directe herhaling gepauzeerd: niet genoeg schijfruimte (er is {need} nodig en daarna moet er nog 1 GB vrij blijven). Kies minder tijd of een lagere kwaliteit.",
+  replaySaveTight: "Directe herhaling loopt, maar als de buffer vol is, is er geen ruimte meer om de hele clip op te slaan (er moet nog {need} extra vrij zijn). Maak ruimte vrij of kies minder tijd of een lagere kwaliteit.",
+  errRecordNoRoom: "Niet genoeg schijfruimte om op te nemen (er moet meer dan 1 GB vrij blijven).",
+  recordLimitReached: "De opname heeft de maximale lengte ({minutes} min) bereikt en is opgeslagen.",
+  recordStoppedDisk: "De opname is vanzelf gestopt omdat de schijf bijna vol was. Wat er is opgenomen, is opgeslagen.",
+  degraded: "Je pc kon de gekozen kwaliteit niet bijhouden: er wordt nu opgenomen op {quality} en {fps} fps.",
+  degradedAfterRecording: "Je pc kon de gekozen kwaliteit niet bijhouden: na deze opname wordt er opgenomen op {quality} en {fps} fps.",
+  native: "originele resolutie",
+  errPlatform: "Opnemen is op dit systeem nog niet beschikbaar.",
 };

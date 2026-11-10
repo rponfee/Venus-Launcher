@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "Médio",
   effort_high: "Alto",
   effort_xhigh: "Extra",
+  effort_max: "Máximo",
+  errBudgetOut: "Seu saldo do {family} (plano {plan}) acabou e você não tem mais saldo do {other}. Para continuar, compre mais saldo do {family} ou um plano do {other} em Planos.",
+  errWallet: "Não foi possível trocar o saldo que a IA usa. Tente novamente daqui a pouco.",
 };

@@ -45,6 +45,4 @@ export default {
   resetMenu: "Sıfırla",
   done: "Tamam",
   menuSaveFailed: "Menü kaydedilemedi",
-  clans: "Klanlar",
-  communities: "Topluluklar",
 };

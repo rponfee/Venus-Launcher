@@ -3,9 +3,11 @@
 // ai_add_usage (el uso de OpenAI va a la fila de su modelo y cierra la llamada), ai_end_call y
 // ai_provider_settings. Sigue el SQL paso a paso para probar el protocolo de punta a punta sin Postgres (planes,
 // modelos, esfuerzos, cupos por día y por semana, presupuesto con su tope, llamadas en curso, preguntas atadas a su
-// modelo, costos y proveedores). NO prueba el SQL: si cambiás una función SQL, cambiá esta réplica también (y al revés).
+// modelo, costos y proveedores). FakeDb.dual() replica además el contrato de 0056_ia_dos_motores.sql (diez planes de
+// dos motores, un saldo por motor, cambio automático de saldo con `switched`, max_tokens recortado al saldo y el
+// proveedor de cada llamada). NO prueba el SQL: si cambiás una función SQL, cambiá esta réplica también (y al revés).
 import { DEFAULT_FAILOVER_ON } from '../config.ts';
-import { MODEL_PRICES, OPENAI_PRICES, OWNER_PLANS, TIER_FALLBACKS } from './owner-plans.ts';
+import { DUAL_MODELS, DUAL_PLANS, DUAL_TIERS, MODEL_PRICES, OPENAI_PRICES, OWNER_PLANS, TIER_FALLBACKS } from './owner-plans.ts';
 import type { Effort, ModelPrice, OwnerPlan, OwnerPlanModel, Tier, TierFallback } from './owner-plans.ts';
 
 export const TIMEZONE = 'America/Argentina/Buenos_Aires';
@@ -244,7 +246,9 @@ export class FakeDb {
         return this.catalog();
       case 'ai_register_turn':
         // Dos versiones (PostgREST elige por los nombres de los argumentos).
-        if (keys === 'p_effort,p_model,p_turn,p_user') {
+        // 0056: dos parámetros opcionales al final (la firma de cuatro sigue sirviendo).
+        if (keys === 'p_effort,p_model,p_turn,p_user' || keys === 'p_effort,p_input_bytes,p_max_tokens,p_model,p_turn,p_user') {
+          if (this.dual) return this.registerDual(args);
           return this.registerTurn(args.p_user, args.p_turn, args.p_model ?? null, args.p_effort ?? null);
         }
         if (keys === 'p_turn,p_user') return this.legacyRegister(String(args.p_user));
@@ -252,11 +256,15 @@ export class FakeDb {
       case 'ai_release_turn':
         return this.releaseTurn(args.p_user, args.p_turn);
       case 'ai_add_usage':
-        return this.addUsage(args.p_user, args.p_model, args.p_usage);
+        return this.addUsage(args.p_user, args.p_model, args.p_usage, args.p_call ?? null);
       case 'ai_end_call':
-        return this.endCall(args.p_user);
+        return this.endCall(args.p_user, args.p_call ?? null);
       case 'ai_provider_settings':
         return this.providerSettings();
+      case 'ai_anthropic_key':
+        return this.vault.anthropic;
+      case 'ai_openai_key':
+        return this.vault.openai;
       default:
         throw sqlError('PGRST202');
     }
@@ -342,6 +350,7 @@ export class FakeDb {
 
   /** ai_quota_status. */
   quotaStatus(user: string): Json {
+    if (this.dual) return this.quotaDual(user);
     const today = this.today();
     const week = weekStart(today);
     const month = monthStart(today);
@@ -400,6 +409,7 @@ export class FakeDb {
 
   /** ai_catalog. */
   catalog(): Json[] {
+    if (this.dual) return this.catalogDual();
     return [...this.plans.values()]
       .filter((p) => p.active)
       .sort((a, b) => a.sort - b.sort || (a.id < b.id ? -1 : 1))
@@ -580,9 +590,10 @@ export class FakeDb {
   }
 
   /** ai_end_call (0013): cierra una llamada sin respuesta. */
-  endCall(userArg: unknown): Json {
+  endCall(userArg: unknown, callArg: unknown = null): Json {
     if (typeof userArg !== 'string' || !userArg) throw sqlError('22023');
     this.closeCall(userArg);
+    if (this.dual) this.settleReservation(userArg, 0, callArg);
     return this.quotaStatus(userArg);
   }
 
@@ -591,7 +602,7 @@ export class FakeDb {
    * del modelo que lo corrió; los de Anthropic (y los sin precio) quedan en la fila del modelo de la pregunta y los
    * de OpenAI en la de su modelo.
    */
-  addUsage(userArg: unknown, modelArg: unknown, usageArg: unknown): Json {
+  addUsage(userArg: unknown, modelArg: unknown, usageArg: unknown, callArg: unknown = null): Json {
     if (typeof userArg !== 'string' || typeof modelArg !== 'string') throw sqlError('22023');
     if (!Array.isArray(usageArg) || usageArg.length > 50) throw sqlError('22023');
     const base = this.models.get(modelArg);
@@ -638,6 +649,453 @@ export class FakeDb {
       row.costMicros += roundUnits(bucket.units, 10000);
       row.updatedAt = ++this.tick;
     }
+    // 0056: el costo va al saldo que reservó la llamada (el del proveedor que la atendió).
+    if (this.dual) this.settleReservation(userArg, roundUnits(units, 10000), callArg);
     return { quota: this.quotaStatus(userArg), costUsd: roundUnits(units, 10000) / 1e6, unpriced };
   }
+
+  // ---------- 0056 (6.1): dos motores, un saldo por motor ----------
+  // Réplica de ai_register_turn, ai_quota_status, ai_catalog y ai_wallets de 0056_ia_dos_motores.sql, simplificada:
+  // un saldo es un plan pagado de un motor con su presupuesto y lo gastado (ai_paid_periods). Sin planes dados a mano.
+
+  /** true: FakeDb.dual() (contrato de 0056). false: las funciones de 0008/0011/0013 de siempre. */
+  dual = false;
+  /** Saldos por usuario y motor (ai_wallets + ai_paid_periods). */
+  wallets = new Map<string, Map<Provider, WalletRow>>();
+  /** Saldo en uso de cada usuario (ai_subscriptions). */
+  activeWallet = new Map<string, Provider>();
+  /** Reservas de las llamadas en curso (ai_call_reservations), en orden: las cierra ai_add_usage o ai_end_call. */
+  reservations = new Map<string, { id: string; provider: Provider; micros: number }[]>();
+  /** Claves en Vault (ai_anthropic_key / ai_openai_key). */
+  vault: Record<Provider, string | null> = { anthropic: null, openai: null };
+  /** private.ai_provider_ready: motores con la clave cargada. Uno sin clave no se vende ni se elige solo al cambiar de saldo. */
+  ready: Record<Provider, boolean> = { anthropic: true, openai: true };
+  /** Pedidos a ai_register_turn tal como llegaron (para revisar p_max_tokens y p_input_bytes). */
+  registerArgs: Json[] = [];
+
+  /** Base con el contrato de 0056: los diez planes, los modelos de los dos motores y el respaldo apagado. */
+  static dual(): FakeDb {
+    const db = new FakeDb();
+    db.dual = true;
+    db.models = new Map(DUAL_MODELS.map((m) => [m.id, { ...m, long: m.long ? { ...m.long } : null }]));
+    db.tierFallbacks = new Map(DUAL_TIERS.map((f) => [f.tier, { ...f, efforts: { ...f.efforts }, active: true }]));
+    db.plans = new Map(DUAL_PLANS.map((p) => [p.id, { ...p, active: true, models: p.models.map((m) => ({ ...m, efforts: [...m.efforts] })) }]));
+    db.providerConfig = { primary: 'openai', secondary: null, failoverEnabled: false, failoverOn: [] };
+    return db;
+  }
+
+  /** Para preparar escenarios: una compra (pagada) de `plan`; si ya había saldo de ese motor, suma lo que quedaba. */
+  buy(user: string, plan: string, opts: { spentUsd?: number; activate?: boolean } = {}): void {
+    const row = this.plans.get(plan) as (PlanRow & { provider: Provider }) | undefined;
+    if (!row) throw new Error(`plan desconocido: ${plan}`);
+    let list = this.wallets.get(user);
+    if (!list) {
+      list = new Map();
+      this.wallets.set(user, list);
+    }
+    const before = list.get(row.provider);
+    const carry = before && before.valid ? Math.max(before.budgetMicros - before.spentMicros, 0) : 0;
+    list.set(row.provider, {
+      plan,
+      budgetMicros: Math.round(row.budgetUsd * 1e6) + carry,
+      spentMicros: Math.round((opts.spentUsd ?? 0) * 1e6),
+      valid: true,
+    });
+    if (opts.activate !== false || !this.activeWallet.has(user)) this.activeWallet.set(user, row.provider);
+  }
+
+  /** Para preparar escenarios: el saldo de un motor deja de valer (por ejemplo, una devolución). */
+  refund(user: string, provider: Provider): void {
+    const w = this.wallets.get(user)?.get(provider);
+    if (w) w.valid = false;
+  }
+
+  wallet(user: string, provider: Provider): WalletRow | undefined {
+    return this.wallets.get(user)?.get(provider);
+  }
+
+  private planRow(id: string | null | undefined): (PlanRow & { provider: Provider; tier: string }) | null {
+    const p = id ? this.plans.get(id) : undefined;
+    return p && p.active ? (p as PlanRow & { provider: Provider; tier: string }) : null;
+  }
+
+  /** private.ai_wallet_plan: el plan del saldo si vale. */
+  private walletPlan(user: string, provider: Provider): string | null {
+    const w = this.wallet(user, provider);
+    return w && w.valid && this.planRow(w.plan) ? w.plan : null;
+  }
+
+  private reservedMicros(user: string, provider: Provider): number {
+    return (this.reservations.get(user) ?? []).filter((r) => r.provider === provider).reduce((a, r) => a + r.micros, 0);
+  }
+
+  /** private.ai_wallet_left, en millonésimas. */
+  private walletLeft(user: string, provider: Provider): number {
+    const w = this.wallet(user, provider);
+    if (!w || !this.walletPlan(user, provider)) return 0;
+    return Math.max(0, w.budgetMicros - w.spentMicros - this.reservedMicros(user, provider));
+  }
+
+  /** ai_effective_plan con saldos: el plan del saldo en uso, si vale. */
+  private dualPlan(user: string): string | null {
+    const active = this.activeWallet.get(user);
+    return active ? this.walletPlan(user, active) : null;
+  }
+
+  /** private.ai_model_for: la fila (precio e id de la API) del modelo real de una clave en un motor. */
+  modelFor(provider: Provider, key: string): ModelPrice | null {
+    if (provider === 'anthropic') {
+      const m = this.models.get(key);
+      return m && m.active && m.provider === 'anthropic' ? m : null;
+    }
+    const f = this.tierFallbacks.get(key);
+    const m = f?.active ? this.models.get(f.model) : undefined;
+    return m && m.provider === 'openai' ? m : null;
+  }
+
+  /** private.ai_reserve_usd, en millonésimas (redondeo hacia arriba como el ceil del SQL). */
+  reserveMicros(provider: Provider, key: string, maxTokens: number, inputTokens: number): number | null {
+    const m = this.modelFor(provider, key);
+    if (!m) return null;
+    const long = m.long && inputTokens > m.long.threshold ? m.long : null;
+    const inRate = long ? Math.max(long.input, long.cacheWrite) : Math.max(m.input, m.cacheWrite);
+    const outRate = long ? long.output : m.output;
+    return Math.ceil((inputTokens * rate(inRate) + Math.max(maxTokens, 0) * rate(outRate)) / 10000);
+  }
+
+  /** private.ai_afford_tokens: la salida que se puede conceder con lo que queda (0 si no llega al mínimo de 2.048). */
+  affordTokens(provider: Provider, key: string, want: number, inputTokens: number, leftMicros: number): number {
+    const fixed = this.reserveMicros(provider, key, 0, inputTokens);
+    if (fixed === null) return 0;
+    const one = ((this.reserveMicros(provider, key, 1000000, inputTokens) as number) - fixed) / 1000000;
+    const min = Math.min(Math.max(want, 1), MIN_GRANT_TOKENS);
+    if (leftMicros - fixed - 2 <= 0) return 0;
+    const afford = one <= 0 ? want : Math.floor((leftMicros - fixed - 2) / one);
+    if (afford < min) return 0;
+    return Math.min(Math.max(want, 1), afford);
+  }
+
+  /** private.ai_plan_key: la clave pedida si el plan la tiene (y su motor la ofrece); si no, la primera del plan. */
+  private planKey(planId: string, key: string | null): string | null {
+    const plan = this.planRow(planId);
+    if (!plan) return null;
+    const offered = this.planModels(planId).filter((pm) => this.modelFor(plan.provider, pm.model));
+    return (offered.find((pm) => pm.model === key) ?? offered[0])?.model ?? null;
+  }
+
+  /** ai_register_turn de 0056, paso por paso. */
+  registerDual(args: Json): Json {
+    this.registerArgs.push(args);
+    const userArg = args.p_user;
+    const turnArg = args.p_turn;
+    const maxArg = args.p_max_tokens ?? null;
+    const bytesArg = args.p_input_bytes ?? null;
+    if (typeof userArg !== 'string' || !userArg || typeof turnArg !== 'string' || turnArg.length < 1 || turnArg.length > 100) throw sqlError('22023');
+    const modelArg = args.p_model ?? null;
+    const effortArg = args.p_effort ?? null;
+    if (modelArg !== null && (typeof modelArg !== 'string' || modelArg.length < 1 || modelArg.length > 32)) throw sqlError('22023');
+    if (effortArg !== null && !DUAL_EFFORTS.includes(effortArg as Effort)) throw sqlError('22023');
+    if (maxArg !== null && (!Number.isInteger(maxArg) || (maxArg as number) < 1 || (maxArg as number) > 1000000)) throw sqlError('22023');
+    if (bytesArg !== null && (!Number.isInteger(bytesArg) || (bytesArg as number) < 0 || (bytesArg as number) > 100000000)) throw sqlError('22023');
+    const user = userArg;
+    const turn = turnArg;
+    const inputTokens = Math.min(bytesArg === null ? 500000 : (bytesArg as number) + 8000, 500000);
+    const today = this.today();
+    const week = weekStart(today);
+
+    let turnDay: string | null = null;
+    let turnRow: TurnRow | null = null;
+    for (const day of [today, addDays(today, -1)]) {
+      const row = this.turnRow(user, turn, day);
+      if (row) {
+        turnDay = day;
+        turnRow = row;
+        break;
+      }
+    }
+    let model = (modelArg as string | null) ?? turnRow?.model ?? null;
+    let effort = effortArg as Effort | null;
+    let reason: string | null = null;
+    let switched: Json | null = null;
+    let moved = false;
+    let refit = false;
+    let counted = false;
+    let grant = 0;
+    let reserved = 0;
+    let inflight = 0;
+    let pm: OwnerPlanModel | null = null;
+    let info: ModelPrice | null = null;
+
+    // 1) Plan vigente; si el saldo en uso dejó de valer y hay otro con fondos, pasa a ese (noplan).
+    let planId = this.dualPlan(user);
+    if (!planId) {
+      const candidates = PROVIDER_LIST.filter((p) => this.ready[p] && this.walletLeft(user, p) > 0).sort((a, b) => this.walletLeft(user, b) - this.walletLeft(user, a));
+      const to = candidates[0];
+      if (to) {
+        const from = this.activeWallet.get(user) ?? null;
+        this.activeWallet.set(user, to);
+        planId = this.dualPlan(user);
+        moved = planId !== null;
+        if (moved && from && from !== to) switched = { from, to, reason: 'noplan' };
+      }
+    }
+    if (!planId) reason = 'noplan';
+
+    let plan = this.planRow(planId);
+    for (let pass = 1; reason === null && plan && planId; pass++) {
+      // 2) Modelo. Una pregunta abierta cuyo modelo pedido no está en el plan en uso (otra llamada pasó al otro saldo)
+      //    se ajusta a ese plan en vez de rechazarse.
+      if (turnRow && !moved && model !== null && this.planKey(planId, model) !== model) {
+        refit = true;
+        model = this.planKey(planId, turnRow.model ?? model);
+      } else if (model === null || moved) model = this.planKey(planId, model);
+      pm = model === null ? null : this.planModels(planId).find((x) => x.model === model) ?? null;
+      const real = pm && model ? this.modelFor(plan.provider, model) : null;
+      if (!pm || !real) {
+        reason = 'model';
+        break;
+      }
+      info = this.models.get(pm.model) ?? null;
+      // 3) Esfuerzo.
+      if (effort === null) effort = dualDefaultEffort(pm.efforts);
+      else if (moved || turnRow) effort = fitEffort(pm.efforts, effort);
+      if (effort === null || !pm.efforts.includes(effort)) {
+        reason = 'effort';
+        break;
+      }
+      if (pass === 1) {
+        // 4) La pregunta abierta sigue con su modelo.
+        if (turnRow && turnRow.model !== null && turnRow.model !== model && !moved && !refit) {
+          reason = 'turn_model';
+          break;
+        }
+        // 5) Ráfaga y llamadas en curso.
+        const nowMs = this.now.getTime();
+        const r = this.rate.get(user);
+        let calls: number;
+        if (!r) {
+          this.rate.set(user, { windowStart: nowMs, calls: 1 });
+          calls = 1;
+        } else if (r.windowStart > nowMs - 60000) {
+          calls = ++r.calls;
+        } else {
+          r.windowStart = nowMs;
+          r.calls = 1;
+          calls = 1;
+        }
+        inflight = (this.reservations.get(user) ?? []).length;
+        if (calls > plan.rpm || inflight >= MAX_INFLIGHT) {
+          reason = 'rate';
+          break;
+        }
+      }
+      // 6) Saldo: la reserva es el costo máximo de ESTA llamada; si no alcanza, se concede menos salida o se
+      //    prueba el otro saldo.
+      const want = Math.min(plan.maxTokens, (maxArg as number | null) ?? plan.maxTokens);
+      const w = this.wallet(user, plan.provider) as WalletRow;
+      reserved = this.reservedMicros(user, plan.provider);
+      grant = this.affordTokens(plan.provider, model as string, want, inputTokens, w.budgetMicros - w.spentMicros - reserved);
+      if (grant > 0) break;
+      if (pass === 1 && !moved) {
+        const to = otherOf(plan.provider);
+        const toPlan = this.walletPlan(user, to);
+        const toKey = toPlan ? this.planKey(toPlan, model) : null;
+        const toRow = this.planRow(toPlan);
+        if (toPlan && toKey && toRow && this.ready[to]
+          && this.affordTokens(to, toKey, Math.min(toRow.maxTokens, (maxArg as number | null) ?? 2147483647), inputTokens, this.walletLeft(user, to)) > 0) {
+          switched = { from: plan.provider, to, reason: 'budget' };
+          this.activeWallet.set(user, to);
+          moved = true;
+          planId = toPlan;
+          plan = toRow;
+          continue;
+        }
+      }
+      reason = reserved > 0 ? 'rate' : 'budget';
+    }
+
+    // 7) y 8) La pregunta: abierta (una llamada más) o nueva (con su cupo).
+    if (reason === null && plan && pm && model) {
+      if (turnRow && turnDay) {
+        if (turnRow.calls >= plan.maxCallsPerTurn) reason = 'turn';
+        else {
+          turnRow.calls += 1;
+          turnRow.model = moved || refit ? model : turnRow.model ?? model;
+        }
+      } else {
+        this.turns.set(`${user}|${turn}|${today}`, { model, calls: 1 });
+        let weekBefore = 0;
+        for (const [key, row] of this.usage) {
+          const [u, day, m] = key.split('|');
+          if (u === user && m === model && day >= week && day < today) weekBefore += row.questions;
+        }
+        const existing = this.usageRow(user, today, model);
+        if (pm.daily <= 0) reason = 'daily';
+        else if (weekBefore >= pm.weekly) reason = 'weekly';
+        else if (!existing || (existing.questions < pm.daily && existing.questions + weekBefore < pm.weekly)) {
+          const row = this.ensureUsage(user, today, model);
+          row.questions += 1;
+          row.updatedAt = ++this.tick;
+          counted = true;
+        } else reason = existing.questions >= pm.daily ? 'daily' : 'weekly';
+        if (reason) this.turns.delete(`${user}|${turn}|${today}`);
+      }
+    }
+
+    const fb = reason === null && model ? this.tierFallbacks.get(model) : undefined;
+    let callId: string | null = null;
+    if (reason === null && plan && model) {
+      const micros = Math.max(this.reserveMicros(plan.provider, model, grant, inputTokens) ?? 0, 1);
+      const list = this.reservations.get(user) ?? [];
+      // El id de la reserva es un uuid, como en la base (ai_call_reservations.id).
+      callId = `00000000-0000-4000-8000-${String(++this.tick).padStart(12, '0')}`;
+      list.push({ id: callId, provider: plan.provider, micros });
+      this.reservations.set(user, list);
+    }
+    return {
+      allowed: reason === null,
+      callId,
+      reason,
+      model,
+      provider: plan?.provider ?? null,
+      modelId: reason === null && info ? info.modelId : null,
+      models: reason === null && model
+        ? { anthropic: info?.provider === 'anthropic' ? info.modelId : null, openai: this.modelFor('openai', model)?.modelId ?? null }
+        : null,
+      openaiEffort: reason === null && effort ? (fb?.active ? (fb.efforts as Record<string, string | null | undefined>)[effort] ?? null : null) : null,
+      fallback: false,
+      effort,
+      counted,
+      maxTokensPerRequest: reason === null ? grant : plan?.maxTokens ?? 0,
+      switched,
+      quota: this.quotaDual(user),
+    };
+  }
+
+  /** ai_quota_status de 0056. */
+  quotaDual(user: string): Json {
+    const today = this.today();
+    const week = weekStart(today);
+    const planId = this.dualPlan(user);
+    const plan = this.planRow(planId);
+    let models: Json[] = [];
+    let lastModel: string | null = null;
+    if (plan && planId) {
+      const offered = this.planModels(planId).filter((pm) => this.modelFor(plan.provider, pm.model));
+      models = offered.map((pm) => {
+        const key = this.models.get(pm.model) as ModelPrice;
+        const real = this.modelFor(plan.provider, pm.model) as ModelPrice;
+        let usedToday = 0;
+        let usedWeek = 0;
+        for (const [k, row] of this.usage) {
+          const [u, day, m] = k.split('|');
+          if (u !== user || m !== pm.model || day < week) continue;
+          usedWeek += row.questions;
+          if (day === today) usedToday += row.questions;
+        }
+        return {
+          id: pm.model, model: key.modelId, providerModel: real.modelId, label: real.label, efforts: dualEffortList(pm.efforts),
+          daily: { used: usedToday, limit: pm.daily }, weekly: { used: usedWeek, limit: pm.weekly },
+        };
+      });
+      const ids = new Set(offered.map((pm) => pm.model));
+      let best: { day: string; updatedAt: number; model: string } | null = null;
+      for (const [k, row] of this.usage) {
+        const [u, day, m] = k.split('|');
+        if (u !== user || !ids.has(m) || !row.questions) continue;
+        if (!best || day > best.day || (day === best.day && row.updatedAt > best.updatedAt)) best = { day, updatedAt: row.updatedAt, model: m };
+      }
+      lastModel = best?.model ?? null;
+    }
+    const active = plan ? this.wallet(user, plan.provider) : undefined;
+    const wallets = PROVIDER_LIST.filter((p) => this.walletPlan(user, p)).map((p) => {
+      const w = this.wallet(user, p) as WalletRow;
+      const wp = this.planRow(w.plan) as PlanRow & { tier: string };
+      return {
+        provider: p, plan: w.plan, planName: wp.name, tier: wp.tier, usedUsd: w.spentMicros / 1e6, limitUsd: w.budgetMicros / 1e6,
+        remainingUsd: Math.max(0, w.budgetMicros - w.spentMicros) / 1e6, active: this.activeWallet.get(user) === p,
+      };
+    });
+    return {
+      plan: planId,
+      planName: plan?.name ?? null,
+      priceUsd: plan ? plan.priceUsd : null,
+      provider: plan?.provider ?? null,
+      tier: plan?.tier ?? null,
+      maxTokensPerRequest: plan?.maxTokens ?? null,
+      status: plan ? 'active' : 'none',
+      models,
+      budget: { usedUsd: active ? active.spentMicros / 1e6 : 0, limitUsd: active ? active.budgetMicros / 1e6 : 0 },
+      wallets,
+      resets: { daily: localMidnightIso(addDays(today, 1)), weekly: localMidnightIso(addDays(week, 7)), monthly: null },
+      timezone: TIMEZONE,
+      lastModel,
+    };
+  }
+
+  /** ai_catalog de 0056: solo los planes con nivel, con su motor y las etiquetas de sus modelos reales. */
+  catalogDual(): Json[] {
+    return [...this.plans.values()]
+      .filter((p) => p.active && (p as PlanRow & { tier?: string }).tier)
+      .sort((a, b) => a.sort - b.sort || (a.id < b.id ? -1 : 1))
+      .map((p) => {
+        const plan = p as PlanRow & { provider: Provider; tier: string };
+        return {
+          id: plan.id, name: plan.name, provider: plan.provider, tier: plan.tier, available: this.ready[plan.provider], priceUsd: plan.priceUsd,
+          budgetUsd: plan.budgetUsd, maxTokensPerRequest: plan.maxTokens,
+          models: this.planModels(plan.id).filter((pm) => this.modelFor(plan.provider, pm.model)).map((pm) => ({
+            id: pm.model, label: (this.modelFor(plan.provider, pm.model) as ModelPrice).label, efforts: dualEffortList(pm.efforts), daily: pm.daily, weekly: pm.weekly,
+          })),
+        };
+      });
+  }
+
+  /**
+   * Cierra una reserva del usuario y cobra `micros` al saldo que la reservó (ai_add_usage / ai_end_call): la
+   * indicada (p_call) o, sin ella, la más vieja.
+   */
+  private settleReservation(user: string, micros: number, callArg: unknown = null): void {
+    const list = this.reservations.get(user);
+    if (!list?.length) return;
+    const at = typeof callArg === 'string' && callArg ? list.findIndex((c) => c.id === callArg) : 0;
+    if (at < 0) return;
+    const [call] = list.splice(at, 1);
+    if (!call) return;
+    const w = this.wallet(user, call.provider);
+    if (w) w.spentMicros += micros;
+  }
+}
+
+/** Fila de un saldo (ai_wallets + su ai_paid_periods), en millonésimas de dólar. */
+export interface WalletRow {
+  plan: string;
+  budgetMicros: number;
+  spentMicros: number;
+  valid: boolean;
+}
+
+type Provider = 'anthropic' | 'openai';
+const PROVIDER_LIST: Provider[] = ['anthropic', 'openai'];
+const DUAL_EFFORTS: Effort[] = ['low', 'medium', 'high', 'xhigh', 'max'];
+/** 0056 (ai_afford_tokens): mínimo de tokens de salida que se concede cuando el saldo no alcanza para todo el pedido. */
+export const MIN_GRANT_TOKENS = 2048;
+
+function otherOf(p: Provider): Provider {
+  return p === 'anthropic' ? 'openai' : 'anthropic';
+}
+
+function dualEffortList(efforts: Effort[]): Effort[] {
+  return DUAL_EFFORTS.filter((e) => efforts.includes(e));
+}
+
+/** ai_default_effort de 0056: medium, low, high, xhigh, max (el primero que el plan permita). */
+function dualDefaultEffort(efforts: Effort[]): Effort | null {
+  return (['medium', 'low', 'high', 'xhigh', 'max'] as Effort[]).find((e) => efforts.includes(e)) ?? null;
+}
+
+/** private.ai_fit_effort: el pedido o el permitido más alto por debajo; si no hay, el más bajo permitido. */
+function fitEffort(efforts: Effort[], effort: Effort): Effort | null {
+  const want = DUAL_EFFORTS.indexOf(effort);
+  const allowed = dualEffortList(efforts);
+  return [...allowed].reverse().find((e) => DUAL_EFFORTS.indexOf(e) <= want) ?? allowed[0] ?? null;
 }

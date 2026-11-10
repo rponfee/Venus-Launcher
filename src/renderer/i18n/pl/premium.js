@@ -13,8 +13,6 @@ export default {
   perk_effectsText: "Blask, tęcza i ogień dla Twojej nazwy, bez kupowania ich w sklepie.",
   perk_frame: "Ekskluzywne ramki i tytuł Supporter",
   perk_frameText: "Animowane ramki awatara dostępne tylko z Premium oraz tytuł Supporter obok Twojej nazwy.",
-  perk_replay: "Natychmiastowa powtórka 5 minut",
-  perk_replayText: "Zapisuj ostatnie 5 minut gry zamiast 60 sekund.",
   perk_ai: "Venus AI",
   perk_aiText: "Asystent z modelami i pytaniami z Twojego planu, jak zawsze.",
   note: "Premium trwa tak długo jak Twój plan. Jeśli go anulujesz, zachowasz wszystko, co kupiono za Venus Points.",

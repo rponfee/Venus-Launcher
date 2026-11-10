@@ -59,4 +59,6 @@ export default {
   noticeTitle: "Venus {version} is available",
   noticeText: "The portable version does not update itself. Download the new .exe and save it in this same folder to keep your data.",
   noticeLater: "Later",
+  macNote: "On Mac, Venus does not update itself: you can check for new versions here and, if you turned on automatic checks in Privacy, it tells you on its own. Download the new .dmg and drag Venus Launcher to Applications, replacing the old one. Your instances and accounts stay as they are.",
+  noticeTextMac: "On Mac, Venus does not update itself. Download the new .dmg and drag Venus Launcher to Applications, replacing the old one. Your instances and accounts stay as they are.",
 };

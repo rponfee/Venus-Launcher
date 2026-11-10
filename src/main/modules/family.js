@@ -79,15 +79,19 @@ async function newRecovery() {
 
 // ---------- Cerrar el juego ----------
 // Primero se le pide a la ventana que se cierre, asi Minecraft guarda el mundo; game.stop corta del todo a los 10 s.
-function closeGame(id) {
+// platform se inyecta solo en las pruebas (el motor llama closeGame(id, motivo)).
+function closeGame(id, _reason, platform = process.platform) {
   if (st.closing.has(id)) return;
   const entry = game.status()[id];
-  if (!entry?.pid || process.platform !== 'win32') {
+  if (!entry?.pid) {
     game.stop(id);
     return;
   }
+  // Windows: taskkill sin /F (la ventana se cierra y el juego sale con 0). macOS y Linux: SIGTERM al grupo del juego
+  // con game.stop, que lo marca como cerrado por el launcher: Java sale con 143 y no tiene que contar como crash.
   try {
-    require('child_process').spawn('taskkill', ['/pid', String(entry.pid), '/T'], { windowsHide: true, stdio: 'ignore' }).on('error', () => {});
+    if (platform === 'win32') require('../core/platform').stopProcess({ pid: entry.pid, force: false });
+    else game.stop(id, { force: false });
   } catch {
     /* se corta abajo */
   }
@@ -113,7 +117,7 @@ function notify(ev) {
   const text = noticeText(ev);
   if (!text) return;
   try {
-    require('./overlay').push({ kind: 'alert', icon: 'info', title: text.title, body: text.body, ttl: 12 });
+    require('./overlay').push({ kind: 'alert', icon: 'info', title: text.title, body: text.body, ttl: 12 }, { direct: true });
   } catch {
     /* sin overlay */
   }
@@ -257,4 +261,4 @@ function register({ handle, send, getWindow, onQuit }) {
   onQuit?.(() => st.engine.stop());
 }
 
-module.exports = { register, status };
+module.exports = { register, status, closeGame };

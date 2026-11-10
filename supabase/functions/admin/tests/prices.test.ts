@@ -188,11 +188,38 @@ test('plans.update: valida y pasa solo los cambios; el precio no se puede cambia
   assert.equal(price.status, 400);
   assert.match(String(price.body.message), /Cambiar precio/);
   assert.equal((await call('plans.update', { planId: 'pro', patch: {} })).status, 400);
-  assert.equal((await call('plans.update', { planId: 'pro', patch: { maxTokensPerRequest: 50000 } })).status, 400);
+  assert.equal((await call('plans.update', { planId: 'pro', patch: { maxTokensPerRequest: 128001 } })).status, 400);
+  assert.equal((await call('plans.update', { planId: 'pro', patch: { models: [{ id: 'haiku', efforts: ['ultra'], daily: 1, weekly: 1 }] } })).status, 400);
+  assert.equal((await call('plans.update', { planId: 'pro', patch: { models: [{ id: 'haiku', efforts: ['low'], daily: 100001, weekly: 1 }] } })).status, 400);
   assert.equal((await call('plans.update', { planId: 'pro', patch: { monthlyBudgetUsd: 1.234 } })).status, 400);
   assert.equal((await call('plans.update', { planId: 'pro', patch: { models: [{ id: 'gpt', efforts: ['low'], daily: 1, weekly: 1 }] } })).status, 400);
   assert.equal((await call('plans.update', { planId: 'pro', patch: { models: [{ id: 'haiku', efforts: [], daily: 1, weekly: 1 }] } })).status, 400);
   assert.equal((await call('plans.update', { planId: 'nada', patch: { active: false } })).status, 400);
+});
+
+test('plans.update (6.1): hasta 128.000 tokens, esfuerzos xhigh y max, preguntas sin límite e ids de las dos familias', async () => {
+  const { call, db } = setup();
+  const res = await call('plans.update', {
+    planId: 'pro',
+    patch: {
+      maxTokensPerRequest: 128000,
+      models: [{ id: 'haiku', efforts: ['max', 'low', 'xhigh'], daily: 2147483647, weekly: 2147483647 }],
+    },
+  });
+  assert.equal(res.status, 200, res.text);
+  assert.deepEqual(db.callsTo('admin_update_plan')[0], {
+    p_plan: 'pro',
+    p_patch: {
+      max_tokens_per_request: 128000,
+      models: [{ model_id: 'haiku', efforts: ['low', 'xhigh', 'max'], daily_questions: 2147483647, weekly_questions: 2147483647 }],
+    },
+  });
+  // Los ids nuevos tienen la forma válida: el rechazo es porque el plan no está en la base de prueba, no por el id.
+  for (const planId of ['claude_ultra', 'claude_basic', 'ultra']) {
+    const r = await call('plans.update', { planId, patch: { active: true } });
+    assert.equal(r.status, 400);
+    assert.match(String(r.body.message), /no existe/, planId);
+  }
 });
 
 test('plans.list: planes, modelos y el estado de Stripe', async () => {

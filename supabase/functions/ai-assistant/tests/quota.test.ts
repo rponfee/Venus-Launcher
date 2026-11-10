@@ -21,6 +21,7 @@ import {
   newTurnId,
   normalizeCatalog,
   normalizeQuota,
+  parseSwitched,
   parseTurnCheck,
   parseUsageResult,
   usageLines,
@@ -92,9 +93,9 @@ test('parseTimeoutMs usa el valor por defecto y respeta el rango', () => {
   assert.equal(parseTimeoutMs('9999999'), MAX_TIMEOUT_MS);
 });
 
-test('clampMaxTokens nunca pasa el tope del plan ni 36000', () => {
+test('clampMaxTokens nunca pasa el tope de la llamada ni 128000', () => {
   assert.equal(clampMaxTokens(null, 8000), 8000);
-  assert.equal(clampMaxTokens(undefined, undefined), 36000);
+  assert.equal(clampMaxTokens(undefined, undefined), 128000);
   assert.equal(clampMaxTokens(2000, 8000), 2000);
   assert.equal(clampMaxTokens(9000, 8000), 8000);
   assert.equal(clampMaxTokens(20000, 0), 20000);
@@ -206,7 +207,7 @@ test('normalizeQuota corrige o descarta datos raros', () => {
     extra: true,
   });
   assert.deepEqual(odd?.models.map((m) => m.id), ['haiku'], 'modelos desconocidos o con un id de Anthropic inválido se omiten');
-  assert.deepEqual(odd?.models[0].efforts, ['low', 'high']);
+  assert.deepEqual(odd?.models[0].efforts, ['low', 'high', 'max']);
   assert.deepEqual(odd?.models[0].daily, { used: 4, limit: 25 });
   assert.equal(odd?.priceUsd, 36.5);
   assert.equal(odd?.status, 'active', 'un plan vigente siempre es active o trialing');
@@ -239,7 +240,10 @@ test('normalizeCatalog deja la forma exacta del catálogo', () => {
 
 test('parseTurnCheck: llamada permitida, con el modelo de la base y fallbacks solo en Opus y Sonnet 5.5', () => {
   const allowed = parseTurnCheck({ allowed: true, reason: null, model: 'opus', modelId: 'claude-opus-5-5', fallback: true, effort: 'medium', counted: true, maxTokensPerRequest: 16000, quota });
-  assert.deepEqual(allowed, { allowed: true, reason: null, model: 'opus', modelId: 'claude-opus-5-5', fallback: true, effort: 'medium', counted: true, maxTokensPerRequest: 16000, quota });
+  assert.deepEqual(allowed, {
+    allowed: true, reason: null, model: 'opus', provider: null, modelId: 'claude-opus-5-5', models: { anthropic: 'claude-opus-5-5', openai: null },
+    switched: null, callId: null, fallback: true, effort: 'medium', counted: true, maxTokensPerRequest: 16000, quota,
+  });
   // La base dice que Haiku tiene fallback: el código no lo usa igual.
   const haiku = parseTurnCheck({ allowed: true, reason: null, model: 'haiku', modelId: 'claude-haiku-5-5', fallback: true, effort: 'low', counted: false, maxTokensPerRequest: 8000, quota });
   assert.equal(haiku?.fallback, false);
@@ -250,7 +254,7 @@ test('parseTurnCheck: llamada permitida, con el modelo de la base y fallbacks so
     { model: 'gpt' },
     { modelId: 'gpt-5' },
     { modelId: null },
-    { effort: 'max' },
+    { effort: 'ultra' },
     { effort: null },
     { quota: { plan: 'free' } },
   ]) {
@@ -336,4 +340,90 @@ test('newTurnId genera ids válidos y distintos', () => {
   assert.match(a, TURN_ID_PATTERN);
   assert.ok(a.startsWith('srv-'));
   assert.notEqual(a, b);
+});
+
+// ---------- 0056: dos motores ----------
+
+test('normalizeQuota y normalizeCatalog dejan pasar los campos de 0056 (QuotaV3)', () => {
+  const raw = {
+    ...quota,
+    plan: 'pro',
+    provider: 'openai',
+    tier: 'pro',
+    maxTokensPerRequest: '44000',
+    models: [{ ...quota.models[0], providerModel: 'gpt-6-luna', label: 'GPT-6 Luna', efforts: ['max', 'low'] }, { id: 'sonnet', model: 'gpt-5.6-sol', label: 'x', efforts: [], daily: {}, weekly: {} }],
+    wallets: [
+      { provider: 'anthropic', plan: 'claude_pro', planName: 'Pro', tier: 'pro', usedUsd: 1.23456, limitUsd: 12.5, remainingUsd: '11.26544', active: false },
+      { provider: 'openai', plan: 'pro', planName: 'Pro', tier: 'pro', usedUsd: 0, limitUsd: 12.5, remainingUsd: 12.5, active: true },
+      { provider: 'gemini', plan: 'x' },
+      null,
+    ],
+  };
+  const q = normalizeQuota(raw)!;
+  assert.equal(q.provider, 'openai');
+  assert.equal(q.tier, 'pro');
+  assert.equal(q.maxTokensPerRequest, 44000);
+  assert.deepEqual(q.models.map((m) => m.id), ['haiku'], 'model tiene que ser el id de Claude de la clave');
+  assert.equal(q.models[0].providerModel, 'gpt-6-luna');
+  assert.equal(q.models[0].label, 'GPT-6 Luna');
+  assert.deepEqual(q.models[0].efforts, ['low', 'max']);
+  assert.deepEqual(q.wallets, [
+    { provider: 'anthropic', plan: 'claude_pro', planName: 'Pro', tier: 'pro', usedUsd: 1.2346, limitUsd: 12.5, remainingUsd: 11.2654, active: false },
+    { provider: 'openai', plan: 'pro', planName: 'Pro', tier: 'pro', usedUsd: 0, limitUsd: 12.5, remainingUsd: 12.5, active: true },
+  ]);
+  // Sin los campos (base anterior): la forma de siempre, sin agregar nada.
+  const old = normalizeQuota(quota)!;
+  for (const key of ['provider', 'tier', 'maxTokensPerRequest', 'wallets']) assert.ok(!(key in old), key);
+  // Sin plan: provider y tier null aunque la base mande algo.
+  const none = normalizeQuota({ ...raw, plan: null })!;
+  assert.equal(none.provider, null);
+  assert.deepEqual(none.models, []);
+
+  const catalog = normalizeCatalog([
+    { id: 'claude_pro', name: 'Pro', provider: 'anthropic', tier: 'pro', priceUsd: 18, budgetUsd: 12.5, maxTokensPerRequest: 44000, models: [{ id: 'sonnet', label: 'Sonnet 5.5', efforts: ['low'], daily: 2147483647, weekly: 2147483647 }] },
+    { id: 'raro', name: 'Raro', provider: 'gemini', tier: 'Ultra Plus', priceUsd: 1, budgetUsd: 1, models: [] },
+  ]);
+  assert.deepEqual(catalog[0], { id: 'claude_pro', name: 'Pro', provider: 'anthropic', tier: 'pro', maxTokensPerRequest: 44000, priceUsd: 18, budgetUsd: 12.5, models: [{ id: 'sonnet', label: 'Sonnet 5.5', efforts: ['low'], daily: 2147483647, weekly: 2147483647 }] });
+  assert.equal(catalog[1].provider, null);
+  assert.equal(catalog[1].tier, null);
+});
+
+test('parseTurnCheck (0056): proveedor de la llamada, ids de los dos motores, openaiEffort y switched', () => {
+  const base = {
+    allowed: true, reason: null, model: 'sonnet', provider: 'openai', modelId: 'claude-sonnet-5-5',
+    models: { anthropic: 'claude-sonnet-5-5', openai: 'gpt-5.6-sol' }, openaiEffort: 'high', effort: 'high', counted: true,
+    fallback: false, maxTokensPerRequest: 30000, switched: { from: 'anthropic', to: 'openai', reason: 'budget' }, quota,
+  };
+  const check = parseTurnCheck(base)!;
+  assert.equal(check.provider, 'openai');
+  assert.equal(check.modelId, 'claude-sonnet-5-5', 'modelId sigue siendo el de Claude');
+  assert.deepEqual(check.models, { anthropic: 'claude-sonnet-5-5', openai: 'gpt-5.6-sol' });
+  assert.equal(check.openaiEffort, 'high');
+  assert.deepEqual(check.switched, { from: 'anthropic', to: 'openai', reason: 'budget' });
+  assert.equal(check.maxTokensPerRequest, 30000);
+  // openaiEffort null = no mandar reasoning; sin el campo, queda sin definir.
+  assert.equal(parseTurnCheck({ ...base, openaiEffort: null })!.openaiEffort, null);
+  const { openaiEffort: _drop, ...noEffort } = base;
+  assert.ok(!('openaiEffort' in parseTurnCheck(noEffort)!));
+  // Un motor que no ofrece la clave: models.openai null.
+  assert.deepEqual(parseTurnCheck({ ...base, models: { anthropic: 'claude-sonnet-5-5', openai: null } })!.models.openai, null);
+  // Ids con la forma equivocada se descartan; un proveedor desconocido o un modelId que no es de Claude invalidan.
+  assert.deepEqual(parseTurnCheck({ ...base, models: { anthropic: 'gpt-6', openai: 'claude-x' } })!.models, { anthropic: null, openai: null });
+  assert.equal(parseTurnCheck({ ...base, provider: 'gemini' }), null);
+  assert.equal(parseTurnCheck({ ...base, modelId: 'gpt-5.6-sol' }), null);
+  // Un switched raro se ignora.
+  assert.equal(parseTurnCheck({ ...base, switched: { from: 'openai', to: 'openai', reason: 'budget' } })!.switched, null);
+  // Rechazo con cambio de saldo: denialResponse lo avisa.
+  const denied = parseTurnCheck({ ...base, allowed: false, reason: 'effort', switched: { from: 'anthropic', to: 'openai', reason: 'noplan' } })!;
+  const res = denialResponse(denied);
+  assert.equal(res.status, 403);
+  assert.deepEqual(res.body.switched, { from: 'anthropic', to: 'openai', reason: 'noplan' });
+  assert.ok(!('switched' in denialResponse(parseTurnCheck({ ...base, allowed: false, reason: 'rate', switched: null })!).body));
+});
+
+test('parseSwitched: solo la forma del contrato', () => {
+  assert.deepEqual(parseSwitched({ from: 'openai', to: 'anthropic', reason: 'noplan' }), { from: 'openai', to: 'anthropic', reason: 'noplan' });
+  for (const bad of [null, 'x', {}, { from: 'openai', to: 'anthropic', reason: 'otro' }, { from: 'openai', to: 'gemini', reason: 'budget' }]) {
+    assert.equal(parseSwitched(bad), null, JSON.stringify(bad));
+  }
 });

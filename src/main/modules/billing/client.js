@@ -5,19 +5,34 @@
 // Sin Electron: ../billing.js le pasa las dependencias reales y las pruebas, dobles.
 
 const PLAN_ID = /^[a-z][a-z0-9_-]{1,31}$/;
-// Planes de clan (0044): se compran por el mismo camino que los de IA, para UNA comunidad (los paga su dueño).
-const CLAN_PLAN = /^clan_(go|pro|max|ultra)$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PROVIDERS = new Set(['mercado_pago', 'paypal']);
 const TERMINAL = new Set(['paid', 'failed', 'cancelled', 'expired', 'refunded']);
 
 // Lista fija para cuando no se puede leer el catálogo del servidor (sin nube o sin red). Precios de lista en centavos.
+// Dos familias (6.1): Claude (anthropic, ids claude_*) y ChatGPT (openai, los ids de la 6.0), cinco niveles cada una.
+const FAMILIES = ['anthropic', 'openai'];
+const TIERS = ['basic', 'go', 'pro', 'max', 'ultra'];
 const STATIC_PLANS = Object.freeze([
-  { id: 'basic', name: 'Basic', sort: 10, amount: 400 },
-  { id: 'go', name: 'Go', sort: 20, amount: 800 },
-  { id: 'pro', name: 'Pro', sort: 30, amount: 1500 },
-  { id: 'max', name: 'Max', sort: 40, amount: 3500 },
-]);
+  { id: 'claude_basic', name: 'Basic', provider: 'anthropic', tier: 'basic', sort: 10, amount: 600 },
+  { id: 'claude_go', name: 'Go', provider: 'anthropic', tier: 'go', sort: 20, amount: 1000 },
+  { id: 'claude_pro', name: 'Pro', provider: 'anthropic', tier: 'pro', sort: 30, amount: 1800 },
+  { id: 'claude_max', name: 'Max', provider: 'anthropic', tier: 'max', sort: 40, amount: 3200 },
+  { id: 'claude_ultra', name: 'Ultra', provider: 'anthropic', tier: 'ultra', sort: 50, amount: 4000 },
+  { id: 'basic', name: 'Basic', provider: 'openai', tier: 'basic', sort: 110, amount: 600 },
+  { id: 'go', name: 'Go', provider: 'openai', tier: 'go', sort: 120, amount: 1000 },
+  { id: 'pro', name: 'Pro', provider: 'openai', tier: 'pro', sort: 130, amount: 1800 },
+  { id: 'max', name: 'Max', provider: 'openai', tier: 'max', sort: 140, amount: 3200 },
+  { id: 'ultra', name: 'Ultra', provider: 'openai', tier: 'ultra', sort: 150, amount: 4000 },
+].map((p) => Object.freeze(p)));
+
+// Familia y nivel de un plan del catálogo: los manda el servidor de la 6.1; uno viejo (6.0) no, y era de OpenAI.
+const familyOf = (p) => (FAMILIES.includes(p?.provider) ? p.provider : String(p?.id || '').startsWith('claude_') ? 'anthropic' : 'openai');
+const tierOf = (p) => {
+  if (TIERS.includes(p?.tier)) return p.tier;
+  const id = String(p?.id || '').replace(/^claude_/, '');
+  return TIERS.includes(id) ? id : null;
+};
 
 const REQUEST_TIMEOUT_MS = 30000;
 const WATCH_EVERY_MS = 5000;
@@ -87,6 +102,10 @@ function normalizeCatalog(data) {
     plans.push({
       id: p.id,
       name: str(p.name) || p.id,
+      provider: familyOf(p),
+      tier: tierOf(p),
+      // false: el motor del plan todavía no tiene su clave cargada en el servidor (no se vende).
+      available: p.available !== false,
       priceUsd: num(p.priceUsd),
       budgetUsd: num(p.budgetUsd),
       maxTokensPerRequest: num(p.maxTokensPerRequest),
@@ -94,25 +113,6 @@ function normalizeCatalog(data) {
       prices: { mercado_pago: normalizeQuote(prices.mercado_pago), paypal: normalizeQuote(prices.paypal) },
     });
   }
-  // Planes de clan (0044): precio, período y límites de cada uno.
-  const clans = (Array.isArray(d.clans) ? d.clans : [])
-    .filter((x) => x && typeof x === 'object' && CLAN_PLAN.test(String(x.id)))
-    .map((x) => {
-      const prices = x.prices && typeof x.prices === 'object' ? x.prices : {};
-      const lim = x.limits && typeof x.limits === 'object' ? x.limits : {};
-      return {
-        id: x.id,
-        tier: String(x.id).slice(5),
-        name: str(x.name) || x.id,
-        priceUsd: num(x.priceUsd),
-        periodDays: num(x.periodDays) ?? 30,
-        limits: {
-          media: num(lim.media) ?? 0, backdrops: num(lim.backdrops) ?? 0, stages: num(lim.stages) ?? 0, animated: lim.animated === true,
-          members: num(lim.members) ?? 0, channels: num(lim.channels) ?? 0, roles: num(lim.roles) ?? 0, priority: lim.priority === true,
-        },
-        prices: { mercado_pago: normalizeQuote(prices.mercado_pago), paypal: normalizeQuote(prices.paypal) },
-      };
-    });
   return {
     source: 'backend',
     providers: {
@@ -122,7 +122,6 @@ function normalizeCatalog(data) {
     arsPerUsd: num(d.arsPerUsd),
     rateUpdatedAt: str(d.rateUpdatedAt),
     plans,
-    clans,
   };
 }
 
@@ -132,8 +131,7 @@ function staticCatalog() {
     providers: { mercado_pago: false, paypal: false },
     arsPerUsd: null,
     rateUpdatedAt: null,
-    plans: STATIC_PLANS.map((p) => ({ id: p.id, name: p.name, priceUsd: p.amount / 100, budgetUsd: null, maxTokensPerRequest: null, models: [], prices: { mercado_pago: null, paypal: null } })),
-    clans: [],
+    plans: STATIC_PLANS.map((p) => ({ id: p.id, name: p.name, provider: p.provider, tier: p.tier, priceUsd: p.amount / 100, budgetUsd: null, maxTokensPerRequest: null, models: [], prices: { mercado_pago: null, paypal: null } })),
   };
 }
 
@@ -144,7 +142,6 @@ function normalizeOrder(o) {
     id: o.id,
     plan: str(o.plan),
     planName: str(o.planName),
-    communityId: typeof o.communityId === 'string' && UUID.test(o.communityId) ? o.communityId : null,
     provider: PROVIDERS.has(o.provider) ? o.provider : null,
     currency: o.currency === 'ARS' || o.currency === 'USD' ? o.currency : null,
     amount: num(o.amount),
@@ -210,8 +207,6 @@ function createBillingClient(deps) {
     if (res.status === 401 || error === 'unauthorized') throw coded('noSession', res.status === 403 ? t('billing.errSignIn') : t('billing.errSession'));
     const known = {
       unknown_plan: ['unknownPlan', 'billing.errUnknownPlan'],
-      unknown_community: ['unknownCommunity', 'billing.errUnknownCommunity'],
-      not_owner: ['notOwner', 'billing.errNotOwner'],
       provider_disabled: ['providerDisabled', 'billing.errProviderDisabled'],
       too_many: ['busy', 'billing.errTooMany'],
       busy: ['busy', 'billing.errBusy'],
@@ -252,10 +247,8 @@ function createBillingClient(deps) {
   function emitOrder(order) {
     deps.send?.('billing:order', order);
     if (order.status === 'paid') {
-      const clan = CLAN_PLAN.test(String(order.plan));
-      deps.send?.('billing:changed', { reason: 'paid', kind: clan ? 'clan' : 'order', plan: order.plan, community: clan ? order.communityId : null });
-      // Un plan de clan no toca el saldo de IA.
-      if (!clan) deps.aiStatus?.({ refresh: true })?.catch?.(() => {});
+      deps.send?.('billing:changed', { reason: 'paid', kind: 'order', plan: order.plan });
+      deps.aiStatus?.({ refresh: true })?.catch?.(() => {});
     }
   }
 
@@ -294,17 +287,14 @@ function createBillingClient(deps) {
     w.timer = timers.setTimeout(tick, WATCH_EVERY_MS);
   }
 
-  // { plan, provider, community? } -> abre el pago en el navegador y devuelve { order, url }. Un plan de clan pide la comunidad.
+  // { plan, provider } -> abre el pago en el navegador y devuelve { order, url }.
   async function checkout(input) {
     const plan = typeof input?.plan === 'string' ? input.plan.trim().toLowerCase() : '';
     const provider = typeof input?.provider === 'string' ? input.provider : '';
-    const clan = CLAN_PLAN.test(plan);
-    if (!STATIC_PLANS.some((p) => p.id === plan) && !clan) throw coded('unknownPlan', t('billing.errUnknownPlan'));
+    if (!STATIC_PLANS.some((p) => p.id === plan)) throw coded('unknownPlan', t('billing.errUnknownPlan'));
     if (!PROVIDERS.has(provider)) throw coded('providerDisabled', t('billing.errProviderDisabled'));
-    const community = typeof input?.community === 'string' ? input.community : '';
-    if (clan && !UUID.test(community)) throw coded('unknownCommunity', t('billing.errUnknownCommunity'));
     const owner = deps.sessionUser ? await deps.sessionUser() : null;
-    const result = await payments('checkout', clan ? { plan, provider, community } : { plan, provider });
+    const result = await payments('checkout', { plan, provider });
     const o = normalizeOrder(result?.order);
     const url = typeof result?.url === 'string' && /^https:\/\/[^\s]+$/.test(result.url) ? result.url : null;
     if (!o || !url) throw coded('server', t('billing.errBadUrl'));

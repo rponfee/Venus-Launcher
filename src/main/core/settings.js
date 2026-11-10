@@ -3,6 +3,7 @@
 const os = require('os');
 const paths = require('./paths');
 const { readJson, writeJson } = require('./util');
+const overlayConfig = require('../modules/overlay/config');
 
 const FILE = () => paths.data('settings.json');
 
@@ -53,6 +54,8 @@ function defaults() {
     // Las actualizaciones de GitHub vienen activas en instalaciones nuevas; las demás conexiones opcionales siguen
     // apagadas. Un valor guardado por el usuario prevalece. Ver README > Privacy policy.
     privacy: { decided: false, autoUpdates: true, news: false, featuredServers: false, playerHeads: false },
+    // Overlay del juego (modules/overlay/config.js): apagado hasta que el usuario lo prende (6.1).
+    overlay: { enabled: false },
   };
 }
 
@@ -77,7 +80,8 @@ async function get() {
   if (!loading) {
     loading = readJson(FILE(), {}).then(saved => {
       // Share initialization: an older disk read cannot overwrite a newly committed cache.
-      cache = deepMerge(defaults(), saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {});
+      // upgradeSaved: quien actualiza y usaba el overlay prendido por defecto recibe un aviso (modules/overlay/config.js)
+      cache = deepMerge(defaults(), saved && typeof saved === 'object' && !Array.isArray(saved) ? overlayConfig.upgradeSaved(saved) : {});
       return cache;
     }).finally(() => { loading = null; });
   }

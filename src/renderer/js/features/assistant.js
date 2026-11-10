@@ -5,11 +5,14 @@
 //   createChat(opts) / transparencyPanel() / getStatus() / quotaInfo()  para la pagina del asistente
 // El chat tiene el selector de modelo y esfuerzo (solo lo que incluye el plan, con las preguntas que quedan), avisa
 // cuando respondio el proveedor de respaldo y, sin plan o con la cuota agotada, lleva a los planes (features/plans.js).
+// Con saldo de Claude y de ChatGPT deja elegir cual usar; cuando el servidor pasa solo al otro saldo lo avisa con una
+// linea en la conversacion (evento 'switched') o, para el resto de las funciones con IA, con un aviso (ai:switched).
 import { h, icon, mount, clear, fail, ok, modal, ensureCss, copyText, fmtNumber } from '../ui.js';
 import { store, api } from '../store.js';
 import { t, loadNs, locale, onLanguageChange } from '../i18n.js';
+import { modKey } from '../platform.js';
 import { navigate, setNavBadge } from '../app.js';
-import { openPlans, preparePlans, fmtUsd } from './plans.js';
+import { openPlans, preparePlans, fmtUsd, switchedText, notifySwitched, useWallet, familyName, planDisplayName } from './plans.js';
 
 const TOOL_ICONS = {
   list_instances: 'layers',
@@ -137,13 +140,14 @@ export function quotaInfo(st) {
   if (opts.length && opts.every((o) => o.blocked)) {
     const resetAt = opts.map((o) => o.resetAt).filter(Boolean).sort()[0] || null;
     const reason = opts.some((o) => o.blocked === 'budget') ? 'budget' : opts[0].blocked;
-    return { blocked: 'quota', quota: q, planName: q?.planName || q?.plan || '', reason, resetAt };
+    // La familia solo con una cuota de la 6.1 (con provider): con una vieja, el texto de siempre (como budgetMessage en ai.js)
+    return { blocked: 'quota', quota: q, planName: q?.plan ? planDisplayName(q) : '', family: familyName(q?.provider) ? q.provider : null, reason, resetAt };
   }
   return { blocked: null, quota: q };
 }
 
 // Esfuerzo permitido mas parecido al pedido (el mismo, o el mas alto por debajo, o el mas bajo permitido)
-const EFFORT_ORDER = ['low', 'medium', 'high', 'xhigh'];
+const EFFORT_ORDER = ['low', 'medium', 'high', 'xhigh', 'max'];
 function fitEffort(wanted, allowed) {
   const list = EFFORT_ORDER.filter((e) => Array.isArray(allowed) && allowed.includes(e));
   if (!list.length) return null;
@@ -385,14 +389,18 @@ export function createChat(opts = {}) {
   // Modelo y esfuerzo: solo los que incluye el plan (assistant:status -> modelOptions)
   const modelSelect = h('select', { class: 'as-ctx-select as-model-select', 'aria-label': t('assistant.modelLabel'), title: t('assistant.modelHint') });
   const effortSelect = h('select', { class: 'as-ctx-select as-effort-select', 'aria-label': t('assistant.effortLabel'), title: t('assistant.effortHint') });
+  // Saldo (Claude o ChatGPT): solo con dos saldos que tienen plata
+  const walletSelect = h('select', { class: 'as-ctx-select as-wallet-select', 'aria-label': t('assistant.walletLabel'), title: t('assistant.walletHint') });
+  const walletLabel = h('span', { class: 'as-ctx-label as-wallet-label' }, t('assistant.walletLabel'));
+  const walletPair = h('span', { class: 'as-ctx-pair', hidden: true }, walletLabel, walletSelect);
   const modelBox = h(
     'div',
     { class: 'as-ctx-group as-model-box hidden' },
     icon('cpu'),
-    h('span', { class: 'as-ctx-label' }, t('assistant.modelLabel')),
-    modelSelect,
-    h('span', { class: 'as-ctx-label' }, t('assistant.effortLabel')),
-    effortSelect,
+    // Cada etiqueta va pegada a su selector: si los tres no entran en una línea, bajan enteros en vez de achicarse
+    walletPair,
+    h('span', { class: 'as-ctx-pair' }, h('span', { class: 'as-ctx-label' }, t('assistant.modelLabel')), modelSelect),
+    h('span', { class: 'as-ctx-pair' }, h('span', { class: 'as-ctx-label' }, t('assistant.effortLabel')), effortSelect),
   );
   const usageLine = h('div', { class: 'as-usage-line hidden' });
   // "Enter para enviar": en la fila de los selectores o, con el selector de modelo, a la derecha del uso del plan
@@ -455,10 +463,24 @@ export function createChat(opts = {}) {
     );
     effortSelect.value = effort;
     st.choice = { model: opt.id, effort };
+    // Saldos: con dos que tienen saldo se elige cual usar; el selector muestra el que esta en uso
+    const wallets = (Array.isArray(s.wallets) ? s.wallets : []).filter((w) => w.active || w.remainingUsd > 0);
+    const pickWallet = wallets.length > 1;
+    walletSelect.hidden = !pickWallet;
+    walletLabel.hidden = !pickWallet;
+    walletPair.hidden = !pickWallet;
+    if (pickWallet) {
+      mount(walletSelect, wallets.map((w) => h('option', { value: w.provider, selected: w.active }, t('assistant.walletOption', { family: familyName(w.provider), left: fmtUsd(w.remainingUsd ?? 0) }))));
+      walletSelect.value = wallets.find((w) => w.active)?.provider || wallets[0].provider;
+      // Con una respuesta en curso no se cambia de saldo: la pregunta abierta ya quedó atada al modelo de ese plan
+      walletSelect.disabled = st.running;
+    }
     // Preguntas de la semana del modelo elegido y presupuesto del mes (las de hoy van en el selector)
     const parts = [];
     if (opt.weekly && Number.isFinite(opt.weekly.remaining) && opt.weekly.limit !== null) parts.push(h('span', { class: 'as-usage-stat num' }, t('assistant.weekLeft', { count: opt.weekly.remaining, limit: fmtNumber(opt.weekly.limit) })));
-    if (s.budget && s.budget.limitUsd) parts.push(h('span', { class: 'as-usage-stat num' }, t('assistant.budgetLine', { used: fmtUsd(s.budget.usedUsd), limit: fmtUsd(s.budget.limitUsd) })));
+    const inUse = (Array.isArray(s.wallets) ? s.wallets : []).find((w) => w.active);
+    if (inUse && inUse.limitUsd) parts.push(h('span', { class: 'as-usage-stat num' }, t('assistant.walletLine', { family: familyName(inUse.provider), left: fmtUsd(inUse.remainingUsd ?? 0), limit: fmtUsd(inUse.limitUsd) })));
+    else if (s.budget && s.budget.limitUsd) parts.push(h('span', { class: 'as-usage-stat num' }, t('assistant.budgetLine', { used: fmtUsd(s.budget.usedUsd), limit: fmtUsd(s.budget.limitUsd) })));
     mount(usageLine, parts, enterHint);
     usageLine.classList.remove('hidden');
   }
@@ -468,6 +490,21 @@ export function createChat(opts = {}) {
   });
   effortSelect.addEventListener('change', () => {
     st.choice = { model: modelSelect.value, effort: effortSelect.value };
+  });
+  walletSelect.addEventListener('change', async () => {
+    if (st.running) {
+      drawModels(S.status);
+      return;
+    }
+    const family = walletSelect.value;
+    walletSelect.disabled = true;
+    const next = await useWallet(family);
+    if (next) {
+      // El estado nuevo trae los modelos del otro motor (otros nombres y esfuerzos)
+      S.status = next;
+      S.statusAt = Date.now();
+      for (const fn of S.statusListeners) fn(S.status);
+    } else drawModels(S.status);
   });
 
   // ----- Composer -----
@@ -492,6 +529,7 @@ export function createChat(opts = {}) {
     sendBtn.classList.toggle('hidden', on);
     stopBtn.classList.toggle('hidden', !on);
     el.classList.toggle('busy', on);
+    walletSelect.disabled = on;
     if (!on) typing.remove();
   }
 
@@ -581,9 +619,12 @@ export function createChat(opts = {}) {
       title = t('assistant.planNeededTitle');
       text = t('assistant.planNeededText');
     } else if (info.blocked === 'quota') {
-      title = t('assistant.quotaTitle');
+      title = t(info.reason === 'budget' && info.family ? 'assistant.quotaBudgetTitle' : 'assistant.quotaTitle');
       const plan = info.planName || '?';
-      if (info.reason === 'budget') text = t('assistant.quotaBudgetText', { plan });
+      if (info.reason === 'budget' && info.family) {
+        const other = info.family === 'anthropic' ? 'openai' : 'anthropic';
+        text = t('assistant.quotaBudgetOut', { plan, family: familyName(info.family), other: familyName(other) });
+      } else if (info.reason === 'budget') text = t('assistant.quotaBudgetText', { plan });
       else if (!info.resetAt) text = t('assistant.quotaTextNoDate', { plan });
       else text = t('assistant.quotaAllText', { plan, when: fmtIn(info.resetAt) });
     } else {
@@ -892,6 +933,11 @@ export function createChat(opts = {}) {
         // Aviso del turno
         groupFor(ev.turnId).append(h('div', { class: 'as-note as-notice', title: (ev.details || []).map((d) => `${d.name}: ${d.error}`).join('\n') || null }, icon('info'), ev.text));
         break;
+      case 'switched':
+        // El servidor paso al otro saldo (se termino el de esta familia): una linea de sistema en la conversacion
+        groupFor(ev.turnId).append(h('div', { class: 'as-note as-switched', role: 'status' }, icon('refresh'), switchedText(ev)));
+        if (live) getStatus(true);
+        break;
       case 'undo': {
         const card = st.undoCards.get(ev.undoId);
         st.undoStates[ev.undoId] = ev.state;
@@ -909,7 +955,8 @@ export function createChat(opts = {}) {
         // Respondio el proveedor de respaldo (OpenAI) porque el principal fallo: una nota discreta
         if (ev.failover && !st.noted.has(ev.turnId)) {
           st.noted.add(ev.turnId);
-          groupFor(ev.turnId).append(h('div', { class: 'as-note as-failover' }, icon('info'), t('assistant.failoverNote')));
+          const who = familyName(ev.failoverProvider);
+          groupFor(ev.turnId).append(h('div', { class: 'as-note as-failover' }, icon('info'), who ? t('assistant.failoverNoteOf', { provider: who }) : t('assistant.failoverNote')));
         }
         const body = st.groups.get(ev.turnId);
         if (body && !body.childNodes.length) body.closest('.as-turn')?.remove();
@@ -1232,7 +1279,7 @@ export async function startup() {
   await ready();
   titlebarButton();
   window.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey && e.key.toLowerCase() === 'j') {
+    if (modKey(e) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'j') { // Ctrl+J (Cmd+J en Mac)
       if (document.body.classList.contains('onboarding')) return;
       e.preventDefault();
       toggleDrawer();
@@ -1252,6 +1299,11 @@ export async function startup() {
   });
   api.on('assistant:settingsChanged', () => store.refreshSettings().catch(() => {}));
   api.on('ai:quota', () => refreshStatusSoon());
+  // Explicar crashes, buscador, traducir mods...: el servidor paso al otro saldo (una vez por cambio, lo filtra modules/ai)
+  api.on('ai:switched', (sw) => {
+    notifySwitched(sw).catch((err) => console.warn('[assistant] aviso de saldo', err));
+    getStatus(true);
+  });
   // Pago confirmado o suscripcion cambiada: el plan nuevo (modelos, preguntas) se lee del servidor
   api.on('billing:changed', () => getStatus(true));
   api.on('assistant:event', (convId, ev) => {

@@ -27,7 +27,7 @@ export default {
   desc_cloud: 'Your Minecraft accounts and your Venus account.',
   desc_privacy: 'What you share with friends and what is stored on your PC or in the cloud.',
   desc_ai: "Venus AI helps in the assistant, with crashes and with translations.",
-  desc_plan: 'Venus AI plans: what each one includes, your current plan and your subscription.',
+  desc_plan: 'Venus AI plans for Claude and ChatGPT: what each one includes, your balances and your payments.',
   desc_java: 'The Java that Minecraft uses and the Java you already have on your PC.',
   desc_storage: 'How files are downloaded and how much space everything takes.',
   desc_data: 'Where everything is stored, how much space it takes and the cache.',
@@ -245,7 +245,7 @@ export default {
   aiOffText: 'AI features are turned off. The launcher works the same, just without the smart helpers.',
   aiSignedOutText: 'Sign in with your Venus account to use the AI with your plan.',
   aiNoPlanText: 'Your account does not have a Venus AI plan yet. Choose one to use the assistant and the other AI features.',
-  aiViaPlan: 'The AI works with your Venus account and your plan limits. You pick the model and the effort in the Assistant.',
+  aiViaPlan: 'The AI works with your Venus account and your plan balance (Claude or ChatGPT). You pick the model, the effort and, if you have both, the balance in the Assistant.',
   aiGoAccount: 'Sign in',
   aiGoPlans: 'See plans',
   aiSeePlan: 'See your plan',
@@ -276,7 +276,7 @@ export default {
   aiWhatMods: 'Mod texts',
   aiWhatModsSub: 'The texts of the mods you ask to translate.',
   aiNeverSent: 'Your passwords, your Minecraft accounts and your world files are never sent.',
-  aiRouteText: 'Requests go through the Venus server, which only keeps how much you used (questions and cost), never the content. If the main provider fails, the backup one (OpenAI) may answer.',
+  aiRouteText: 'Requests go through the Venus server, which only keeps how much you used (questions and cost), never the content. Your plan engine (Claude or ChatGPT) answers; if it fails, the other one may answer as a backup.',
 
   // Downloads & storage
   storageDownloads: 'Downloads',

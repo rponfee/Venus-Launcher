@@ -14,8 +14,6 @@ export default {
   perk_effectsText: "Glanz, Regenbogen und Feuer für deinen Namen, ohne sie im Shop zu kaufen.",
   perk_frame: "Exklusive Rahmen und Supporter-Titel",
   perk_frameText: "Animierte Avatarrahmen, die es nur mit Premium gibt, und den Supporter-Titel neben deinem Namen.",
-  perk_replay: "5 Minuten Sofortwiederholung",
-  perk_replayText: "Speichere die letzten 5 Minuten deiner Runde statt 60 Sekunden.",
   perk_ai: "Venus KI",
   perk_aiText: "Der Assistent mit den Modellen und Fragen deines Abos, wie immer.",
   note: "Premium gilt, solange dein Abo läuft. Wenn du kündigst, behältst du alles, was du mit Venus Points gekauft hast.",

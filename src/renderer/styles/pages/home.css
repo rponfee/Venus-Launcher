@@ -528,7 +528,7 @@
 }
 .hm-ed-grip { display: grid; place-items: center; color: var(--accent-hi); opacity: 0.8; flex-shrink: 0; }
 .hm-ed-grip svg { width: 16px; height: 16px; }
-.hm-ed-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); font-weight: 600; color: var(--cream); }
+.hm-ed-name { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--sp-2); font-size: var(--fs-sm); font-weight: 600; color: var(--cream); }
 .hm-ed-tag { flex-shrink: 0; font-size: var(--fs-xs); font-weight: 600; padding: 1px 6px; border-radius: var(--radius-xs); background: var(--surface-4); color: var(--muted); }
 .hm-ed-acts { display: flex; gap: 2px; flex-shrink: 0; }
 .hm-ed-acts .icon-btn { width: 26px; height: 26px; border-radius: 6px; border-color: transparent; background: none; color: var(--text-2); }
@@ -550,3 +550,21 @@
 }
 body.reduce-motion .hm-tip-progress { display: none; }
 body.reduce-motion :is(.hm-qa:hover, .hm-qa:active, .hm-world:not(.hm-world-skel):hover, .hm-nf:hover, .hm-shot:hover .hm-shot-img, .hm-more:hover svg, .hm-nf:hover .hm-nf-read svg) { transform: none; }
+
+/* ---------- Tarjeta principal compacta (settings.home.hero, 6.1; se elige en Organizar) ----------
+   Va al final para ganarle a las reglas del heroe y del contenedor angosto. */
+.hm-hero.hm-hero-compact { min-height: 0; padding: var(--sp-5) var(--sp-6); }
+.hm-hero.hm-hero-compact .hero-planet { width: 210px; height: 210px; right: -56px; opacity: 0.7; }
+.hm-hero.hm-hero-compact .hm-hero-content { gap: var(--sp-2); max-width: calc(100% - 150px); }
+.hm-hero.hm-hero-compact .hero-greet { font-size: var(--fs-sm); }
+.hm-hero.hm-hero-compact .hero-title { font-size: 28px; }
+.hm-hero.hm-hero-compact .hero-actions { gap: var(--sp-2); margin-top: 2px; }
+.hm-hero.hm-hero-compact .play-btn { height: 50px; padding: 0 var(--sp-6); gap: var(--sp-2); font-size: 20px; }
+.hm-hero.hm-hero-compact .play-btn.is-busy { font-size: 17px; }
+.hm-hero.hm-hero-compact .play-btn svg { width: 20px; height: 20px; }
+.hm-hero-size button { white-space: nowrap; }
+.hm-head-actions { flex-wrap: wrap; justify-content: flex-end; }
+/* Texto grande o letras anchas (Apariencia > Estilo): los accesos rapidos pasan antes a 4 columnas para no cortar palabras */
+@container hm (max-width: 820px) {
+  html:is([data-ui-text='large'], [data-ui-font='pixel'], [data-ui-font='mono']) .hm-qa-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

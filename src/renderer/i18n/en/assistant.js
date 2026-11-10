@@ -199,4 +199,13 @@ export default {
   ex3: 'Optimize my instance to get more FPS',
   ex4: 'Install Sodium and Iris',
   ex5: 'Find me light shaders',
+  // Claude and ChatGPT plans (6.1)
+  effort_max: 'Max',
+  walletLabel: 'Balance',
+  walletHint: 'Which balance your next question uses: Claude or ChatGPT.',
+  walletOption: '{family} · {left} left',
+  walletLine: '{family} balance: {left} left of {limit}',
+  failoverNoteOf: 'Answered by the backup ({provider})',
+  quotaBudgetTitle: 'Your balance ran out',
+  quotaBudgetOut: 'Your {family} balance ({plan} plan) ran out and you have no {other} balance left. Buy more {family} balance or try a {other} plan in Plans.',
 };

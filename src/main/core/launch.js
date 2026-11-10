@@ -9,6 +9,7 @@ const minecraft = require('./minecraft');
 const { t } = require('./i18n');
 const { flattenArgs, substitute } = require('./rules');
 const { CP_SEP, exists } = require('./util');
+const platformInfo = require('./platform');
 
 const AIKAR_FLAGS = [
   '-XX:+UseG1GC',
@@ -100,11 +101,16 @@ function gcArgs(preset, javaMajor, resolved, features, maxMb) {
   }
 }
 
-function legacyJvmArgs() {
+// Argumentos de JVM para los JSON viejos (sin "arguments", 1.12.2 y anteriores, o loaders que no los traen).
+// En macOS -XstartOnFirstThread solo va con LWJGL 3: con LWJGL 2 la ventana del juego se cuelga.
+function legacyJvmArgs(resolved, { platform = process.platform, arch = process.arch } = {}) {
   const a = [];
-  if (process.platform === 'win32') a.push('-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump');
-  if (process.platform === 'darwin') a.push('-XstartOnFirstThread');
-  if (process.arch === 'ia32') a.push('-Xss1M');
+  if (platform === 'win32') a.push('-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump');
+  if (platform === 'darwin') {
+    if (platformInfo.usesLwjgl3(resolved?.libraries)) a.push('-XstartOnFirstThread');
+    a.push('-Xdock:name=Minecraft');
+  }
+  if (arch === 'ia32') a.push('-Xss1M');
   a.push(
     '-Djava.library.path=${natives_directory}',
     '-Dminecraft.launcher.brand=${launcher_name}',
@@ -182,7 +188,7 @@ async function buildCommand(opts) {
   };
 
   let jvm = flattenArgs(resolved.arguments.jvm, features);
-  if (!jvm.some((a) => a.includes('${classpath}'))) jvm = [...legacyJvmArgs(), ...jvm];
+  if (!jvm.some((a) => a.includes('${classpath}'))) jvm = [...legacyJvmArgs(resolved), ...jvm];
   jvm = jvm.map((a) => substitute(a, vars));
 
   const mem = opts.memory || {};
@@ -207,6 +213,7 @@ async function buildCommand(opts) {
 
   return {
     java: opts.javaPath,
+    javaMajor: opts.javaMajor || null,
     args: [...jvm, ...extra, resolved.mainClass, ...game],
     cwd: gameDir,
   };
@@ -286,10 +293,13 @@ function spawnGame(cmd, { onLine, onExit } = {}) {
   );
   child.on('exit', (code, signal) => finish(code, signal));
   child.on('error', (err) => {
-    if (onLine) onLine({ level: 'ERROR', text: t('java.spawnFailed', { error: err.message }) });
+    // Java x64 en una Mac con Apple Silicon sin Rosetta 2: se explica qué instalar. Solo en macOS (en Windows siempre
+    // se muestra el error real).
+    const text = platformInfo.isMac() && platformInfo.isBadCpuType(err) ? t('java.errRosetta', { major: cmd.javaMajor || '' }) : t('java.spawnFailed', { error: err.message });
+    if (onLine) onLine({ level: 'ERROR', text });
     finish(-1, null);
   });
   return child;
 }
 
-module.exports = { buildCommand, spawnGame, splitArgs, LogParser, AIKAR_FLAGS, CONSOLE_UTF8, VANILLA_G1, gcArgs, sanitizeForJava };
+module.exports = { buildCommand, spawnGame, splitArgs, LogParser, AIKAR_FLAGS, CONSOLE_UTF8, VANILLA_G1, gcArgs, sanitizeForJava, legacyJvmArgs };

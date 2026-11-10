@@ -1,7 +1,9 @@
 'use strict';
 // Ajustes del overlay (settings.overlay) con sus valores por defecto. Sin Electron: lo usan el modulo, la
 // pagina (le llega ya normalizado) y las pruebas.
-//   overlay: { enabled, shortcut, panelShortcuts: { recipes, assistant }, widgets: { voice, messages, alerts, captures, music, perf, counters } }
+//   overlay: { enabled, shortcut, panelShortcuts: { recipes, assistant, dnd }, widgets: { voice, messages, alerts, captures, music, perf, counters } }
+// Desde la 6.1 el overlay viene apagado (enabled: false) hasta que el usuario lo prende (Ajustes o la bienvenida); quien
+// actualiza: ver upgradeSaved.
 // Cada widget: { enabled, anchor ('tl'...'br' de la grilla de 3x3 o 'free'), x, y (posicion libre, fracciones
 // de 0 a 1 del espacio que queda dentro del juego), scale (0.6 a 1.6), opacity (0.3 a 1), theme ('dark',
 // 'light' o 'accent') } y lo propio de cada uno (ver DEFAULTS).
@@ -17,12 +19,16 @@ const COUNTER_METRICS = ['deaths', 'mined', 'session'];
 const DEFAULT_SHORTCUT = 'Alt+Shift+O';
 // Paneles que se abren en el modo interactivo (recetas y asistente), con su atajo.
 const PANELS = ['recipes', 'assistant'];
-const PANEL_SHORTCUTS = Object.freeze({ recipes: 'Alt+Shift+R', assistant: 'Alt+Shift+A' });
+// Atajos que se arman como los de los paneles (solo con el juego adelante): los dos paneles y "No molestar".
+const SHORTCUT_IDS = [...PANELS, 'dnd'];
+const PANEL_SHORTCUTS = Object.freeze({ recipes: 'Alt+Shift+R', assistant: 'Alt+Shift+A', dnd: 'Alt+Shift+N' });
+// "No molestar": minutos que dura (o 'game' = hasta cerrar el juego, ver dndPlan)
+const DND_MINUTES = [15, 60];
 
 const base = (anchor, x, y) => ({ enabled: true, anchor, x, y, scale: 1, opacity: 0.94, theme: 'dark' });
 
 const DEFAULTS = Object.freeze({
-  enabled: true,
+  enabled: false,
   shortcut: DEFAULT_SHORTCUT,
   panelShortcuts: { ...PANEL_SHORTCUTS },
   widgets: {
@@ -151,7 +157,7 @@ function normalize(raw) {
   const ps = r.panelShortcuts && typeof r.panelShortcuts === 'object' ? r.panelShortcuts : {};
   // Dos atajos iguales no pueden convivir (el segundo no se registraria): gana el de arriba, el otro queda sin atajo
   const taken = new Set([canonAccelerator(shortcut)].filter(Boolean));
-  const panelShortcuts = Object.fromEntries(PANELS.map((id) => {
+  const panelShortcuts = Object.fromEntries(SHORTCUT_IDS.map((id) => {
     let value = '';
     if (ps[id] === '' || ps[id] === null) value = '';
     else value = validAccelerator(ps[id]) ? ps[id].trim() : PANEL_SHORTCUTS[id];
@@ -195,6 +201,53 @@ function tweakPatch(id, patch) {
   return Object.keys(out).length ? { [id]: out } : null;
 }
 
+// ---------- Disenos listos ----------
+// Tres puntos de partida de un clic. Solo prenden o apagan widgets y tocan un par de opciones: la posicion, el tamano y el
+// tema de cada uno no cambian (el usuario los ajusta despues).
+//   minimal      la voz (solo quien habla) y los avisos, cortos
+//   full         todos los widgets
+//   performance  solo el rendimiento (FPS, RAM, CPU, ping y sesion)
+const PRESET_IDS = ['minimal', 'full', 'performance'];
+const off = { enabled: false };
+const PRESETS = Object.freeze({
+  minimal: { voice: { enabled: true, show: 'speaking' }, messages: off, alerts: { enabled: true, duration: 4 }, captures: off, music: off, perf: off, counters: off },
+  full: { voice: { enabled: true, show: 'all' }, messages: { enabled: true }, alerts: { enabled: true, duration: 6 }, captures: { enabled: true }, music: { enabled: true }, perf: { enabled: true }, counters: { enabled: true } },
+  performance: { voice: off, messages: off, alerts: off, captures: off, music: off, perf: { enabled: true, show: { fps: true, ram: true, cpu: true, ping: true, session: true } }, counters: off },
+});
+
+// Diseno -> parche para settings.overlay.widgets (null si no existe)
+function presetPatch(id) {
+  return PRESET_IDS.includes(id) ? JSON.parse(JSON.stringify(PRESETS[id])) : null;
+}
+
+// ---------- No molestar ----------
+// Modo pedido (15, 60 o 'game') -> { until (epoch ms; 0 si es hasta cerrar el juego), game }; null si no vale.
+function dndPlan(mode, now = Date.now()) {
+  if (mode === 'game') return { until: 0, game: true };
+  const min = Number(mode);
+  return DND_MINUTES.includes(min) ? { until: now + min * 60000, game: false } : null;
+}
+
+// Lo que se calla con "No molestar": los avisos y los mensajes. La voz, la musica, las capturas propias, el rendimiento y
+// los contadores siguen (no interrumpen). Tampoco se callan los avisos de las capturas (un clip que no se pudo guardar) ni
+// los de la musica (el volumen que cambio el jugador con su atajo): son respuesta a algo que hizo el. Los demas avisos
+// directos o criticos los marca quien los manda (push(ev, { direct: true }) en overlay.js).
+const DND_KEEP_ICONS = ['capture', 'music'];
+const dndSilences = (ev) => ev?.kind === 'message' || (ev?.kind === 'alert' && !DND_KEEP_ICONS.includes(ev.icon));
+
+// ---------- Actualizacion a la 6.1 ----------
+// El overlay venia prendido por defecto y ahora viene apagado. core/settings.js lo llama con lo que lee del disco, antes de
+// mezclarlo con los valores por defecto (asi se distingue "nunca lo toco" de "lo apago a mano"):
+//   - quien ya habia terminado la bienvenida (onboarded) y nunca guardo overlay.enabled lo usaba con el valor por defecto:
+//     queda apagado como todos y con offNotice: 'pending' (la interfaz muestra un aviso unico y lo pasa a 'seen').
+//   - quien lo prendio o lo apago a mano conserva su eleccion; una instalacion nueva no tiene nada que avisar.
+function upgradeSaved(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.onboarded !== true) return raw;
+  const ov = raw.overlay && typeof raw.overlay === 'object' && !Array.isArray(raw.overlay) ? raw.overlay : null;
+  if (typeof ov?.enabled === 'boolean' || ov?.offNotice) return raw;
+  return { ...raw, overlay: { ...(ov || {}), enabled: false, offNotice: 'pending' } };
+}
+
 // Parche que vuelve todas las posiciones a las de fabrica (Restablecer).
 function resetPatch() {
   return Object.fromEntries(WIDGETS.map((id) => {
@@ -203,4 +256,4 @@ function resetPatch() {
   }));
 }
 
-module.exports = { WIDGETS, ANCHORS, THEMES, ALERT_GROUPS, PERF_METRICS, COUNTER_METRICS, PANELS, PANEL_SHORTCUTS, DEFAULTS, DEFAULT_SHORTCUT, normalize, normalizeWidget, positionPatch, tweakPatch, resetPatch, validAccelerator, canonAccelerator, shortcutIssue, findConflict };
+module.exports = { WIDGETS, ANCHORS, THEMES, ALERT_GROUPS, PERF_METRICS, COUNTER_METRICS, PANELS, SHORTCUT_IDS, PANEL_SHORTCUTS, DND_MINUTES, PRESET_IDS, PRESETS, DEFAULTS, DEFAULT_SHORTCUT, presetPatch, dndPlan, dndSilences, upgradeSaved, normalize, normalizeWidget, positionPatch, tweakPatch, resetPatch, validAccelerator, canonAccelerator, shortcutIssue, findConflict };

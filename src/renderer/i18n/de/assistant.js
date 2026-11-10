@@ -182,4 +182,12 @@ export default {
   ex3: "Optimiere meine Instanz für mehr FPS",
   ex4: "Installiere Sodium und Iris",
   ex5: "Finde leichte Shader für mich",
+  effort_max: "Maximal",
+  walletLabel: "Guthaben",
+  walletHint: "Welches Guthaben deine nächste Frage verwendet: das von Claude oder das von ChatGPT.",
+  walletOption: "{family} · {left} übrig",
+  walletLine: "{family}-Guthaben: {left} von {limit} übrig",
+  failoverNoteOf: "Das Ersatzsystem ({provider}) hat geantwortet",
+  quotaBudgetTitle: "Dein Guthaben ist aufgebraucht",
+  quotaBudgetOut: "Dein {family}-Guthaben (Tarif {plan}) ist aufgebraucht und du hast kein {other}-Guthaben mehr. Kaufe mehr {family}-Guthaben oder teste unter Tarife einen {other}-Tarif.",
 };

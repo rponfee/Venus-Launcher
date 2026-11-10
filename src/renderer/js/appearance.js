@@ -6,9 +6,11 @@
 // 3.1: looks guardados (settings.looks), editor de colores (appearance.palette), tema claro (appearance.scheme),
 // temas de temporada (appearance.seasonal), fondos rotativos (appearance.rotation) y boton Jugar a gusto
 // (appearance.playButton). La logica pura esta en a11y/appearance-logic.js y features/themes/looks.js.
+// 6.1: tarjeta "Estilo" (letra, tamaño del texto, tarjetas, esquinas, densidad y menú lateral, con vista previa),
+// página de inicio (appearance.startPage, la usa app.js con startRoute()) y reloj o instancia en la barra de título.
 import { h, icon, mount, ensureCss, switchEl, modal, confirmDialog, promptDialog, fail, ok, toast, skeleton, setBusy, copyText, fmtNumber, fmtDate } from './ui.js';
 import { store, api } from './store.js';
-import { t, loadNs, has, onLanguageChange } from './i18n.js';
+import { t, loadNs, has, onLanguageChange, locale } from './i18n.js';
 import * as engine from './a11y/engine.js';
 import { parseColor, toHsl, toHex, contrast } from './a11y/color.js';
 import { registerCommands } from './a11y/palette.js';
@@ -40,6 +42,16 @@ import {
   legiblePalette,
   paletteActive,
   cleanLabel,
+  UI_FONTS,
+  UI_TEXT,
+  UI_CARDS,
+  UI_RADIUS,
+  UI_DENSITY,
+  UI_SIDES,
+  UI_SIDEBAR,
+  START_PAGES,
+  styleDefaults,
+  startRouteFor,
 } from './a11y/appearance-logic.js';
 import * as looksCodec from './features/themes/looks.js';
 import { mergeLook } from './features/instancelook/logic.js';
@@ -711,14 +723,118 @@ function applyInterface() {
   root.dataset.uiDensity = ap.uiDensity;
   root.dataset.uiSidebar = ap.uiSidebar;
   root.dataset.uiFont = ap.uiFont;
+  root.dataset.uiText = ap.uiText;
+  root.dataset.uiCards = ap.uiCards;
+  root.dataset.uiSide = ap.uiSide;
   root.style.setProperty('--ui-glass', String(ap.uiGlass / 100));
   root.toggleAttribute('data-ui-glassy', ap.uiGlass < 100);
   root.toggleAttribute('data-ui-lite', ap.lite);
   if (ap.uiFont === 'rounded') ensureCss('features/profile-fonts'); // Fredoka viene con las tipografias del perfil
 }
 
+// ---------- Barra de título: reloj e instancia elegida (6.1) ----------
+// Van al lado del título (index.html no se toca). El reloj se actualiza al cambiar el minuto; la instancia, con los
+// ajustes y la lista de instancias. Se esconden en el modo mini y en la bienvenida (main.css).
+const tb = { el: null, clock: null, inst: null, timer: 0, fmt: null, fmtLocale: '' };
+
+function clockText() {
+  const loc = locale();
+  if (!tb.fmt || tb.fmtLocale !== loc) {
+    try {
+      tb.fmt = new Intl.DateTimeFormat(loc, { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      tb.fmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
+    tb.fmtLocale = loc;
+  }
+  return tb.fmt.format(new Date());
+}
+
+function tickClock() {
+  clearTimeout(tb.timer);
+  tb.timer = 0;
+  if (!tb.clock) return;
+  tb.clock.textContent = clockText();
+  const now = new Date();
+  tb.timer = setTimeout(tickClock, (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 50);
+}
+
+function applyTitlebar() {
+  const bar = document.querySelector('.titlebar');
+  const want = ap.titlebar;
+  if (!bar || (!want.clock && !want.instance)) {
+    tb.el?.remove();
+    tb.el = tb.clock = tb.inst = null;
+    clearTimeout(tb.timer);
+    tb.timer = 0;
+    return;
+  }
+  if (!tb.el) {
+    tb.el = h('div', { class: 'ap-tb-extra' });
+    const title = bar.querySelector('.tb-title');
+    if (title) title.after(tb.el);
+    else bar.prepend(tb.el);
+  }
+  const inst = want.instance ? store.selectedInstance?.() : null;
+  if (inst) {
+    if (!tb.inst) {
+      tb.inst = h('button', { type: 'button', class: 'ap-tb-inst' });
+      tb.inst.addEventListener('dblclick', (e) => e.stopPropagation());
+      tb.inst.addEventListener('click', () => {
+        const id = tb.inst?.dataset.id;
+        if (id) navigate(`instance/${encodeURIComponent(id)}`);
+      });
+    }
+    tb.inst.dataset.id = inst.id;
+    const name = String(inst.name || '');
+    tb.inst.title = t('appearance.tbInstanceTitle', { name });
+    tb.inst.setAttribute('aria-label', tb.inst.title);
+    mount(tb.inst, icon('box'), h('span', {}, name));
+  } else {
+    tb.inst?.remove();
+    tb.inst = null;
+  }
+  if (want.clock && !tb.clock) {
+    tb.clock = h('span', { class: 'ap-tb-clock' });
+    tickClock();
+  } else if (!want.clock && tb.clock) {
+    tb.clock.remove();
+    tb.clock = null;
+    tickClock();
+  }
+  mount(tb.el, tb.inst, tb.clock);
+}
+
+// ---------- Página de inicio (6.1) ----------
+// La última página visitada se recuerda en este equipo (localStorage: es un dato de la PC, no viaja).
+const LAST_ROUTE_KEY = 'venus.lastRoute';
+
+function rememberRoute() {
+  const route = location.hash.replace(/^#\/?/, '').split('/')[0];
+  if (!route || route === 'welcome' || document.body.classList.contains('onboarding')) return;
+  try {
+    localStorage.setItem(LAST_ROUTE_KEY, route);
+  } catch {
+    /* sin almacenamiento: se arranca en el Inicio */
+  }
+}
+
+// Ruta con la que arranca el launcher (app.js la usa si se abre sin ruta y comprueba que la página exista)
+export function startRoute() {
+  let last = '';
+  if (ap.startPage === 'last') {
+    try {
+      last = localStorage.getItem(LAST_ROUTE_KEY) || '';
+    } catch {
+      last = '';
+    }
+  }
+  return startRouteFor(ap.startPage, last);
+}
+
 function applyAll() {
   applyInterface();
+  applyTitlebar();
   applyTheme();
   applyBackground();
   applyBranding();
@@ -784,6 +900,10 @@ export async function startup() {
     updateMusic();
     updateVideo();
   });
+  // Barra de título: la instancia elegida cambia con los ajustes (selectedInstance) o al renombrarla
+  store.on('settings', applyTitlebar);
+  store.on('instances', applyTitlebar);
+  window.addEventListener('hashchange', rememberRoute);
   document.addEventListener('visibilitychange', updateVideo);
   new MutationObserver(updateVideo).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   try {
@@ -800,7 +920,11 @@ export async function startup() {
   const brand = document.querySelector('.brand');
   if (brand && 'ResizeObserver' in window) new ResizeObserver(() => fitName(document.querySelector('.brand .brand-name'))).observe(brand);
   // los textos del panel se recargan solos (setLanguage); solo hay que refrescar los comandos y el panel abierto
-  onLanguageChange(() => emit());
+  onLanguageChange(() => {
+    applyTitlebar();
+    if (tb.clock) tickClock();
+    emit();
+  });
 }
 
 // ---------- Comandos de la paleta ----------
@@ -823,6 +947,30 @@ function appearanceCommands() {
   }
   for (const id of ['dark', 'light', 'auto']) {
     cmds.push({ id: `ap:scheme:${id}`, group: 'appearance', title: t('appearance.cmdScheme', { name: t(`appearance.scheme_${id}`) }), icon: id === 'light' ? 'sun' : id === 'dark' ? 'moon' : 'clock', state: ap.scheme === id, radio: true, keywords: t('appearance.kwScheme'), run: () => save({ appearance: { scheme: id } }) });
+  }
+  // 6.1: estilo de la interfaz (una opción por valor, como los colores) y extras de la barra de título
+  const styleCmd = (key, values, iconName) => {
+    for (const v of values) {
+      cmds.push({ id: `ap:${key}:${v}`, group: 'appearance', title: t('appearance.cmdStyle', { what: t(`appearance.ui_${key}`), name: t(`appearance.ui_${key}_${v}`) }), icon: iconName, state: ap[key] === v, radio: true, keywords: t('appearance.kwStyle'), run: () => save({ appearance: { [key]: v } }) });
+    }
+  };
+  styleCmd('uiFont', UI_FONTS, 'type');
+  styleCmd('uiText', UI_TEXT, 'type');
+  styleCmd('uiCards', UI_CARDS, 'layers');
+  styleCmd('uiRadius', UI_RADIUS, 'sliders');
+  styleCmd('uiDensity', UI_DENSITY, 'sliders');
+  styleCmd('uiSide', UI_SIDES, 'sliders');
+  styleCmd('uiSidebar', UI_SIDEBAR, 'sliders');
+  for (const v of START_PAGES) {
+    cmds.push({ id: `ap:start:${v}`, group: 'appearance', title: t('appearance.cmdStartPage', { name: t(`appearance.start_${v}`) }), icon: 'home', state: ap.startPage === v, radio: true, keywords: t('appearance.kwStartPage'), run: () => save({ appearance: { startPage: v } }) });
+  }
+  // Tarjeta principal del Inicio (settings.home.hero, pages/home/layout.js)
+  const hero = store.settings?.home?.hero === 'compact' ? 'compact' : 'large';
+  for (const v of ['large', 'compact']) {
+    cmds.push({ id: `ap:hero:${v}`, group: 'appearance', title: t(`appearance.cmdHero_${v}`), icon: 'home', state: hero === v, radio: true, keywords: t('appearance.kwHero'), run: () => store.setSettings({ home: { hero: v } }).catch((err) => fail(t('appearance.saveFailed'), err)) });
+  }
+  for (const k of ['clock', 'instance']) {
+    cmds.push({ id: `ap:tb:${k}`, group: 'appearance', title: t(`appearance.cmdTitlebar_${k}`), icon: k === 'clock' ? 'clock' : 'box', state: ap.titlebar[k], keywords: t('appearance.kwTitlebar'), run: () => save({ appearance: { titlebar: { ...ap.titlebar, [k]: !ap.titlebar[k] } } }) });
   }
   if (ap.rotation.enabled && ap.rotation.ids.length) cmds.push({ id: 'ap:rotate', group: 'appearance', title: t('appearance.cmdRotate'), icon: 'refresh', keywords: t('appearance.kwBackground'), run: () => rotateWallpaper() });
   for (const look of looks) {
@@ -1040,6 +1188,7 @@ export function validServer(address) {
 
 export function appearancePanel() {
   ensureCss('a11y');
+  ensureCss('features/themes'); // tarjeta Estilo (6.1)
   const root = h('div', { class: 'ax-panel ap-panel' });
   if (has('appearance.panelColor')) buildPanel(root);
   else {
@@ -1821,7 +1970,8 @@ function buildPanel(root) {
         music.userPaused = false;
         bgError = false;
         const { server } = br;
-        save({ appearance: appearanceDefaults(), branding: { ...BRANDING_DEFAULTS, server } });
+        // la página de inicio y la barra de título son costumbres, no aspecto: se mantienen
+        save({ appearance: { ...appearanceDefaults(), startPage: ap.startPage, titlebar: ap.titlebar }, branding: { ...BRANDING_DEFAULTS, server } });
         nameInput.value = '';
         subInput.value = BRANDING_DEFAULTS.subtitle;
       },
@@ -1830,37 +1980,109 @@ function buildPanel(root) {
     t('appearance.reset'),
   );
 
-  // Interfaz: bordes, densidad, menu lateral, tipografia y transparencia
-  const uiRow = (key, options) => {
-    const seg = h('div', { class: 'segmented', role: 'group', 'aria-label': t(`appearance.ui_${key}`) });
-    const draw = () =>
-      mount(
-        seg,
-        options.map((o) => h('button', { type: 'button', class: ap[key] === o ? 'active' : '', 'aria-pressed': String(ap[key] === o), onclick: () => (save({ appearance: { [key]: o } }), draw()) }, t(`appearance.ui_${key}_${o}`))),
-      );
+  // Estilo (6.1): letra, tamaño del texto, tarjetas, esquinas, densidad y menú lateral, con vista previa y
+  // "Restablecer". Cada fila es un grupo de botones con su ayuda; se redibuja en sync() (Ctrl+K, looks, sincronizar).
+  const rowDraws = [];
+  const uiRow = (key, options, { order = options, get = () => ap[key], set = (o) => save({ appearance: { [key]: o } }), label = t(`appearance.ui_${key}`), optLabel = (o) => t(`appearance.ui_${key}_${o}`), hint = t(`appearance.ui_${key}_hint`) } = {}) => {
+    const hintId = fieldId('hint');
+    const seg = h('div', { class: 'segmented ap-sty-seg', role: 'group', 'aria-label': label, 'aria-describedby': hintId });
+    // Los botones se crean una sola vez y draw() solo cambia el estado: si se rearmaran en cada sync() (que corre en
+    // cada aviso, hasta 4 veces por segundo mientras baja un fondo animado), un clic a medias quedaría sin efecto
+    const btns = order.map((o) => h('button', { type: 'button', dataset: { v: o }, onclick: () => { set(o); draw(); } }, optLabel(o)));
+    seg.append(...btns);
+    const draw = () => {
+      const cur = get();
+      btns.forEach((b, i) => {
+        const on = order[i] === cur;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+    };
     draw();
-    return h('div', { class: 'ap-ui-row' }, h('span', { class: 'ap-ui-label' }, t(`appearance.ui_${key}`)), seg);
+    rowDraws.push(draw);
+    return h('div', { class: 'ap-sty-row' }, h('div', { class: 'ap-sty-text' }, h('span', { class: 'ap-ui-label' }, label), h('span', { class: 'ap-sty-hint', id: hintId }, hint)), seg);
   };
   const glass = rangeField(t('appearance.ui_uiGlass'), { min: 40, max: 100, step: 5, value: ap.uiGlass, format: (v) => `${v} %`, onInput: (v) => save({ appearance: { uiGlass: v } }, 200) });
-  const lite = toggleRow(t('appearance.liteTitle'), t('appearance.liteSub'), ap.lite, setLite);
-  const uiCard = card(
-    'sliders',
-    t('appearance.panelInterface'),
-    t('appearance.panelInterfaceSub'),
-    lite.el,
-    uiRow('uiRadius', ['sharp', 'normal', 'round']),
-    uiRow('uiDensity', ['compact', 'normal', 'spacious']),
-    uiRow('uiSidebar', ['full', 'icons']),
-    uiRow('uiFont', ['outfit', 'system', 'rounded', 'mono']),
-    glass.el || glass,
+  // Vista previa: una ventana en miniatura con las mismas clases y tokens que el launcher (lo que cambia se ve acá)
+  const pvSide = h(
+    'div',
+    { class: 'ap-sty-pv-side' },
+    h('span', { class: 'ap-sty-pv-logo' }),
+    ...['home', 'layers', 'globe'].map((ic, i) => h('span', { class: ['ap-sty-pv-item', i === 0 && 'active'] }, icon(ic), h('span', { class: 'ap-sty-pv-label' }, t(`appearance.stylePreviewNav${i}`)))),
   );
+  const pvMain = h(
+    'div',
+    { class: 'ap-sty-pv-main' },
+    h(
+      'div',
+      { class: 'card ap-sty-pv-card' },
+      h('div', { class: 'ap-sty-pv-title' }, t('appearance.stylePreviewTitle')),
+      h('div', { class: 'ap-sty-pv-text' }, t('appearance.stylePreviewText')),
+      h('div', { class: 'ap-sty-pv-acts' }, h('span', { class: 'btn primary sm' }, t('appearance.stylePreviewPlay')), h('span', { class: 'btn sm' }, t('appearance.stylePreviewMore'))),
+    ),
+  );
+  const preview = h('div', { class: 'ap-sty-pv', role: 'img', 'aria-label': t('appearance.stylePreviewLabel') }, pvSide, pvMain);
+  const syncPreview = () => {
+    preview.dataset.side = ap.uiSide;
+    preview.dataset.sidebar = ap.uiSidebar;
+  };
+  const styleReset = h(
+    'button',
+    {
+      type: 'button',
+      class: 'btn ghost sm',
+      onclick: () => {
+        save({ appearance: styleDefaults() });
+        ok(t('appearance.styleResetDone'));
+      },
+    },
+    icon('undo'),
+    t('appearance.styleReset'),
+  );
+  const styleCard = card(
+    'type',
+    t('appearance.panelStyle'),
+    t('appearance.panelStyleSub'),
+    h(
+      'div',
+      { class: 'ap-sty' },
+      h(
+        'div',
+        { class: 'ap-sty-rows' },
+        uiRow('uiFont', UI_FONTS),
+        uiRow('uiText', UI_TEXT, { order: ['small', 'normal', 'large'] }),
+        uiRow('uiCards', UI_CARDS),
+        uiRow('uiRadius', UI_RADIUS, { order: ['sharp', 'normal', 'round'] }),
+        uiRow('uiDensity', UI_DENSITY, { order: ['compact', 'normal', 'spacious'] }),
+        uiRow('uiSide', UI_SIDES),
+        uiRow('uiSidebar', UI_SIDEBAR),
+        glass.el,
+      ),
+      h('div', { class: 'ap-sty-aside' }, preview, h('p', { class: 'ax-hint' }, t('appearance.stylePreviewHint')), styleReset),
+    ),
+  );
+  // Interfaz: modo liviano, con qué página arranca el launcher y extras de la barra de título
+  const lite = toggleRow(t('appearance.liteTitle'), t('appearance.liteSub'), ap.lite, setLite);
+  const startRow = uiRow('startPage', START_PAGES, { label: t('appearance.startPage'), optLabel: (o) => t(`appearance.start_${o}`), hint: t('appearance.startPageHint') });
+  const tbClock = toggleRow(t('appearance.tbClock'), t('appearance.tbClockSub'), ap.titlebar.clock, (v) => save({ appearance: { titlebar: { ...ap.titlebar, clock: v } } }));
+  const tbInst = toggleRow(t('appearance.tbInstance'), t('appearance.tbInstanceSub'), ap.titlebar.instance, (v) => save({ appearance: { titlebar: { ...ap.titlebar, instance: v } } }));
+  const uiCard = card('sliders', t('appearance.panelInterface'), t('appearance.panelInterfaceSub'), lite.el, startRow, h('div', { class: 'ax-toggles' }, tbClock.el, tbInst.el));
+  const syncStyle = () => {
+    rowDraws.forEach((d) => d());
+    glass.set(ap.uiGlass);
+    syncPreview();
+    lite.set(ap.lite);
+    tbClock.set(ap.titlebar.clock);
+    tbInst.set(ap.titlebar.instance);
+  };
 
   const extra = extraCards.map((fn) => { try { return fn(); } catch (err) { console.warn('[appearance] tarjeta', err?.message || err); return null; } }).filter(Boolean);
-  mount(root, looksC.el, colorCard, paletteC.el, schemeC.el, bgCard, rotationC.el, uiCard, ...extra, brandCard, playC.el, musicCard, h('div', { class: 'ax-panel-foot' }, h('span', { class: 'ax-hint' }, t('appearance.liveNote')), resetBtn));
+  mount(root, looksC.el, colorCard, paletteC.el, schemeC.el, bgCard, rotationC.el, styleCard, uiCard, ...extra, brandCard, playC.el, musicCard, h('div', { class: 'ax-panel-foot' }, h('span', { class: 'ax-hint' }, t('appearance.liveNote')), resetBtn));
 
   // --- Sincronizar ---
   const sync = () => {
     syncVisuals();
+    syncStyle();
     looksC.sync();
     paletteC.sync();
     schemeC.sync();

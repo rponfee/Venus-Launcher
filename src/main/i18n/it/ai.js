@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "Medio",
   effort_high: "Alto",
   effort_xhigh: "Extra",
+  effort_max: "Massimo",
+  errBudgetOut: "Il tuo saldo di {family} (piano {plan}) è esaurito e non hai saldo di {other}. Per continuare, compra altro saldo di {family} o un piano di {other} in Piani.",
+  errWallet: "Impossibile cambiare il saldo usato dall'IA. Riprova tra un po'.",
 };

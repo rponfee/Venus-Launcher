@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "Klipy i zrzuty",
   errReplayNoRoom: "Natychmiastowa powtórka wstrzymana: brak miejsca na dysku.",
   autoLimitReached: "Osiągnięto maksimum {count} automatycznych klipów w tej grze. Natychmiastowa powtórka nadal działa po naciśnięciu skrótu.",
+  errReplayNoRoomNeed: "Natychmiastowa powtórka wstrzymana: za mało miejsca na dysku (potrzeba {need} i jeszcze 1 GB wolnego). Wybierz krótszy czas lub niższą jakość.",
+  replaySaveTight: "Natychmiastowa powtórka działa, ale gdy bufor się zapełni, zabraknie miejsca na zapisanie całego klipu (potrzeba kolejnych {need} wolnego miejsca). Zwolnij miejsce albo wybierz krótszy czas lub niższą jakość.",
+  errRecordNoRoom: "Za mało miejsca na dysku, aby nagrywać (musi zostać ponad 1 GB wolnego).",
+  recordLimitReached: "Nagranie osiągnęło maksymalną długość ({minutes} min) i zostało zapisane.",
+  recordStoppedDisk: "Nagrywanie zakończyło się samo, bo na dysku kończyło się miejsce. To, co nagrano, zostało zapisane.",
+  degraded: "Twój komputer nie nadążał z wybraną jakością, więc nagrywanie przełączono na: {quality}, {fps} kl./s.",
+  degradedAfterRecording: "Twój komputer nie nadążał z wybraną jakością. Po zakończeniu nagrania ustawienia zmienią się na: {quality}, {fps} kl./s.",
+  native: "natywna",
+  errPlatform: "Nagrywanie nie jest jeszcze dostępne w tym systemie.",
 };

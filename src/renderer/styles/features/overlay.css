@@ -405,3 +405,198 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* 6.1: apagado por defecto, que hace falta para verlo, disenos listos y "No molestar" */
+.ovp-offbox {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--radius);
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-line);
+}
+.ovp-offbox-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+.ovp-offbox-text strong {
+  color: var(--text);
+  font-size: var(--fs-md);
+}
+.ovp-reqs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.ovp-req-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ovp-req {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+.ovp-req-icon {
+  display: inline-grid;
+  place-items: center;
+}
+.ovp-req-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.ovp-req.is-ok {
+  border-color: var(--good-line);
+  color: var(--good-text);
+}
+.ovp-req.is-warn {
+  border-color: var(--warn-line);
+  color: var(--warn-text);
+}
+.ovp-req.is-todo .ovp-req-icon {
+  color: var(--muted);
+}
+.ovp-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(240px, 2fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+@media (max-width: 1180px) {
+  .ovp-duo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ovp-presets-box,
+.ovp-dnd {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.ovp-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+.ovp-preset {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card-bg-flat);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out);
+}
+.ovp-preset:hover {
+  border-color: var(--border-3);
+}
+.ovp-preset:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+.ovp-preset.active {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+}
+.ovp-preset-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--radius-s);
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.ovp-preset.active .ovp-preset-icon {
+  background: var(--accent-wash);
+  color: var(--accent-hi);
+}
+.ovp-preset-icon svg {
+  width: 15px;
+  height: 15px;
+}
+.ovp-preset-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ovp-preset-name {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+.ovp-preset-sub {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+}
+@media (max-width: 900px) {
+  .ovp-presets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ovp-title-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.ovp-title-icon svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-hi);
+}
+.ovp-dnd-state {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+.ovp-dnd .ovp-panel-key {
+  margin-top: var(--sp-1);
+}
+/* Vista previa quieta (bienvenida): sin arrastrar ni elegir, sin las guias ni los bordes del modo edicion */
+.ovp-preview-still .ovl-guides {
+  display: none;
+}
+.ovp-preview-still .ovl-root.ovl-editing .ovl-w {
+  outline: none;
+  cursor: default;
+}
+/* Aviso de la 6.1 ("ahora viene apagado") con su boton */
+.ovp-toast .ovp-toast-body {
+  flex: 1;
+}
+.ovp-toast-actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.ovp-toast-actions .btn svg,
+.ovp-toast .ovp-toast-x svg {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+.ovp-toast .ovp-toast-x {
+  margin: -4px -6px 0 0;
+}

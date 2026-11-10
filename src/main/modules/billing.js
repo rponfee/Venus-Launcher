@@ -4,7 +4,9 @@
 //
 // Canales:
 //   billing:state()                 -> estado del plan de la cuenta
-//   billing:catalog()               -> { source, providers, arsPerUsd, plans: [{ id, name, priceUsd, prices: { mercado_pago, paypal } }] }
+//   billing:catalog()               -> { source, providers, arsPerUsd, plans: [{ id, name, provider, tier, priceUsd, budgetUsd,
+//                                      maxTokensPerRequest, models, prices: { mercado_pago, paypal } }] } (provider: 'anthropic' = Claude,
+//                                      'openai' = ChatGPT; tier: 'basic' ... 'ultra')
 //   billing:checkout({ plan, provider }) -> { order, url } (abre el pago en el navegador y lo sigue)
 //   billing:order(orderId)          -> orden actualizada (consulta al proveedor si sigue pendiente)
 //   billing:orders()                -> últimos pagos de la cuenta

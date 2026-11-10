@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "Clip e screenshot",
   errReplayNoRoom: "Replay istantaneo in pausa: spazio su disco insufficiente.",
   autoLimitReached: "Raggiunto il massimo di {count} clip automatiche in questa partita. Il replay istantaneo funziona ancora con la scorciatoia.",
+  errReplayNoRoomNeed: "Replay istantaneo in pausa: spazio su disco insufficiente (servono {need} più 1 GB da lasciare libero). Scegli meno tempo o una qualità inferiore.",
+  replaySaveTight: "Il replay istantaneo è attivo, ma quando il buffer sarà pieno non ci sarà spazio per salvare tutta la clip (servono altri {need} liberi). Libera spazio o scegli meno tempo o una qualità inferiore.",
+  errRecordNoRoom: "Non c'è spazio sul disco per registrare (deve restare libero più di 1 GB).",
+  recordLimitReached: "La registrazione ha raggiunto la durata massima ({minutes} min) ed è stata salvata.",
+  recordStoppedDisk: "La registrazione si è fermata da sola perché lo spazio sul disco stava finendo. Ciò che è stato registrato è salvato.",
+  degraded: "Il tuo PC non riusciva a stare al passo con la qualità scelta: ora registra a {quality} e {fps} fps.",
+  degradedAfterRecording: "Il tuo PC non riusciva a stare al passo con la qualità scelta: finita la registrazione, registrerà a {quality} e {fps} fps.",
+  native: "nativa",
+  errPlatform: "La registrazione non è ancora disponibile su questo sistema.",
 };

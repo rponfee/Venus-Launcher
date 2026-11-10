@@ -2,11 +2,63 @@
 
 La IA del launcher (asistente con herramientas, explicación de crashes, buscador inteligente, etc.) va
 siempre por el **backend**: la Edge Function `ai-assistant` de Supabase, que guarda las claves de los
-proveedores, aplica el plan del usuario (modelos, esfuerzos, preguntas
-por día y por semana y presupuesto mensual) y llama a **Claude** (Anthropic, el proveedor principal). Si
-Anthropic falla por un problema del proveedor (saturación, caída, límites, sin crédito, configuración), el
-mismo pedido pasa a **ChatGPT** (OpenAI, el proveedor secundario) y la respuesta vuelve con la forma de
-siempre, marcada con `served_by` (sección 12).
+proveedores, aplica el plan del usuario (modelos, esfuerzos y saldo) y llama al proveedor del saldo que paga
+cada llamada: **Claude** (Anthropic) para los planes de Claude y **ChatGPT** (OpenAI) para los planes de ChatGPT.
+
+## 0. Venus IA 6.1: dos motores (lo vigente)
+
+> El contrato completo está en [docs/implementacion/ia-dos-motores.md](implementacion/ia-dos-motores.md) y la
+> base, en `supabase/migrations/0056_ia_dos_motores.sql`. Esta sección manda sobre el resto del documento: las
+> secciones 2, 3 y 12 describen los planes, el presupuesto mensual y el respaldo de antes de 0056 y quedan como
+> referencia del funcionamiento interno (cupos, reservas, costo por intento, traducción a OpenAI).
+
+- **Dos familias de planes**: `anthropic` (se muestra "Claude") y `openai` ("ChatGPT"). Cada compra da **saldo
+  en dólares de esa API**, que no vence. Una cuenta puede tener un saldo por familia; uno está **en uso**.
+- **Proveedor de cada llamada** = `provider` de `ai_register_turn` (la familia del saldo que paga). La Edge
+  Function llama a ese proveedor con el id de `models[provider]`. Ya no sale de `ai_provider_settings().primary`.
+- **Cambio automático de saldo**: si el saldo en uso no alcanza (o su plan dejó de valer) y el otro sí, la base
+  pasa al otro y la respuesta trae `switched` (sección 4).
+- **Claves** de Anthropic y de OpenAI en **Vault**, cargadas desde Administración → Integraciones (secretos
+  `venus_anthropic_key` y `venus_openai_key`). La función las lee con `ai_anthropic_key()` y `ai_openai_key()`
+  (solo `service_role`) y las guarda 60 s en memoria (nunca en los logs). `ANTHROPIC_API_KEY` y `OPENAI_API_KEY`
+  quedan como respaldo opcional. Si el proveedor de la llamada no tiene clave: `503 not_configured` con
+  `provider`, la pregunta se devuelve y la llamada se cierra sin cobrar nada.
+- **Respaldo entre proveedores por una caída** (`ai_provider_config`, sección 12): sigue en el código pero
+  **apagado**. Si se activa, el principal es el proveedor de la llamada y el secundario el otro, con el modelo de
+  `models` (el costo se registra con el precio del modelo que respondió).
+
+| Plan (`id`) | Familia | Precio USD | Saldo USD | Tokens por respuesta | Modelos | Esfuerzos |
+|---|---|---|---|---|---|---|
+| `claude_basic` | Claude | 6 | 3,50 | 12.000 | Haiku 5.5 | low, medium |
+| `claude_go` | Claude | 10 | 6,75 | 32.000 | Haiku 5.5 | low, medium, high |
+| `claude_pro` | Claude | 18 | 12,50 | 44.000 | Haiku 5.5, Sonnet 5.5 | low, medium, high |
+| `claude_max` | Claude | 32 | 26 | 78.000 | Haiku 5.5, Sonnet 5.5 | low, medium, high, xhigh |
+| `claude_ultra` | Claude | 40 | 32 | 128.000 | Haiku 5.5, Sonnet 5.5 | low, medium, high, xhigh, max |
+| `basic` | ChatGPT | 6 | 3,50 | 12.000 | GPT-6 Luna | low |
+| `go` | ChatGPT | 10 | 6,75 | 32.000 | GPT-6 Luna | low, medium, high |
+| `pro` | ChatGPT | 18 | 12,50 | 44.000 | GPT-6 Luna | low, medium, high |
+| `max` | ChatGPT | 32 | 26 | 78.000 | GPT-6 Luna, GPT-5.6 Sol | low, medium, high |
+| `ultra` | ChatGPT | 40 | 28 | 128.000 | GPT-6 Luna, GPT-5.6 Sol | low, medium, high |
+
+El protocolo sigue usando las claves `haiku` (modelo rápido: `claude-haiku-5-5` o `gpt-6-luna`) y `sonnet`
+(avanzado: `claude-sonnet-5-5` o `gpt-5.6-sol`); el modelo real lo decide la familia del plan. Preguntas sin
+límite (2147483647). Los planes de clan se retiraron con las Comunidades: `payments` solo vende estos diez.
+
+**Lo nuevo del protocolo** (detalle en la sección 4):
+
+- Esfuerzo `max` (además de `low`, `medium`, `high` y `xhigh`). En Claude va en `output_config.effort`; en
+  OpenAI, el `reasoning.effort` que decide la base (`openaiEffort`, `null` = no se manda).
+- `max_tokens` hasta 128.000. La función manda a `ai_register_turn` dos parámetros nuevos: `p_max_tokens` (el
+  pedido ya recortado a 128.000, o `null` si el launcher no mandó) y `p_input_bytes` (el tamaño del cuerpo en
+  bytes). La base reserva según el pedido real y, si el saldo no alcanza para todo el `max_tokens`, **lo baja**
+  hasta lo que alcanza (mínimo 2.048) en vez de rechazar. `maxTokensPerRequest` de la respuesta es el tope de
+  **esa** llamada.
+- `switched`: en la respuesta `200` y en los errores con `quota`, en el nivel superior, cuando en esa llamada el
+  servidor pasó al otro saldo: `{ "from": "anthropic", "to": "openai", "reason": "budget" | "noplan" }`.
+- La cuota (QuotaV3) suma `provider`, `tier`, `maxTokensPerRequest` y `wallets` (los saldos válidos, el que está
+  en uso con `active: true`); en `models`, `model` sigue siendo el id de Claude de la clave y `providerModel` el id
+  real del motor del plan; `label` es la del modelo real. El catálogo suma `provider`, `tier` y
+  `maxTokensPerRequest`. `budget` (429) ahora significa que **ningún** saldo alcanza.
 
 Archivos:
 
@@ -15,6 +67,7 @@ Archivos:
 | `supabase/migrations/0007_ai.sql` | Base: planes, suscripciones, preguntas abiertas y límite por minuto. |
 | `supabase/migrations/0008_ai_plans.sql` | Los planes reales: modelos y precios, modelos de cada plan, uso y costo por modelo, presupuesto y las funciones de cuota nuevas. Se aplica **después** de 0007. |
 | `supabase/migrations/0011_ai_providers.sql` | Proveedor secundario (OpenAI): precios de sus modelos, el modelo de OpenAI de cada modelo de Venus, la configuración de proveedores y el costo de OpenAI en `ai_add_usage`. Se aplica **después** de 0008. |
+| `supabase/migrations/0056_ia_dos_motores.sql` | **6.1**: planes de Claude y de ChatGPT, un saldo por familia (`ai_wallets`), proveedor por llamada, cambio automático de saldo, clave de Anthropic en Vault y esfuerzo `max` (sección 0). |
 | `supabase/migrations/0013_ai_budget.sql` | El presupuesto sin agujeros: llamadas en curso (hasta 3 a la vez, con su costo máximo reservado), `ai_end_call` y el tope prorrateado al cambiar de plan en medio del período de Stripe (`billing_apply_subscription`). Se aplica **después** de 0009 y 0011. |
 | `supabase/functions/ai-assistant/` | La Edge Function (ver `supabase/functions/README.md`). |
 | `src/main/modules/ai.js` | El lado del launcher (cliente del protocolo; no es parte de este módulo). |
@@ -157,10 +210,18 @@ cerrarla, vence sola a los 150 s.
 
 Si ningún proveedor pudo atender el pedido (saturados o caídos: 429, 529, 5xx) la pregunta nueva se devuelve
 (`ai_release_turn`). Si se venció el plazo, el launcher canceló o se cortó la conexión, la pregunta no se devuelve
-y además se cobra una **estimación del peor caso** con `ai_add_usage`, porque el proveedor pudo haber procesado (y
-facturado) el pedido: todo el cuerpo del pedido como escritura de caché (unos 3 caracteres por token) y la salida
-entera (`max_tokens`), con el precio del modelo del intento. Así repetir pedidos que se cortan con el mismo
-`turn_id` ya no gasta fuera del presupuesto.
+y además se cobra una **estimación** con `ai_add_usage`, porque el proveedor pudo haber procesado (y facturado) el
+pedido: todo el cuerpo del pedido como escritura de caché (unos 3 caracteres por token) y, de salida, lo que pudo
+generar en lo que duró **ese intento** a `ESTIMATE_OUTPUT_TOKENS_PER_SECOND` (400 tokens por segundo, `config.ts`,
+holgado a propósito), nunca más que `max_tokens`; con el precio del modelo del intento. Así repetir pedidos que se
+cortan con el mismo `turn_id` ya no gasta fuera del presupuesto, y cancelar a los pocos segundos cuesta centavos
+(no la salida entera: en la 6.1, con 128.000 tokens y GPT-5.6 Sol, eran unos US$ 2,56). Un plazo vencido de 140 s
+se cobra como mucho 56.000 tokens (o `max_tokens`, si es menor). Si el proveedor siguiera generando después del
+corte, la diferencia la paga Venus.
+
+Si el launcher canceló **antes** de que el pedido saliera hacia un proveedor (por ejemplo, mientras la base
+registraba la pregunta), nadie lo procesó: no se cobra nada, la pregunta se devuelve (`ai_release_turn`), la
+llamada se cierra con su `callId` (`ai_end_call`) y la respuesta es la misma `503 aborted` de siempre.
 
 **Tarifa de contexto largo de Haiku 5.5**: si la entrada total de un pedido (entrada + lectura + escritura de
 caché) pasa los 100.000 tokens, todo ese pedido se cobra a US$ 0,50 / 2,50 por millón (en lugar de 0,10 / 0,50).
@@ -178,13 +239,13 @@ volvé a ejecutar solo esa función; el día, la semana y el mes en curso pasan 
 | Campo | Tipo | Notas |
 |---|---|---|
 | `task` | `'assistant' \| 'text' \| 'json'` | Obligatorio. |
-| `model` | `'haiku' \| 'sonnet' \| 'opus'` | Solo protocolo 2 y opcional. Sin valor: el de la pregunta abierta (`turn_id`) o el primero del plan (Haiku). El id real de Anthropic sale de `ai_models`, nunca de este texto. |
-| `effort` | `'low' \| 'medium' \| 'high'` | Opcional. Sin valor: `medium` si el plan lo permite con ese modelo; si no, el más alto permitido por debajo. |
+| `model` | `'haiku' \| 'sonnet' \| 'opus'` | Solo protocolo 2 y opcional. Sin valor: el de la pregunta abierta (`turn_id`) o el primero del plan (Haiku). El id real (de Anthropic o de OpenAI, según la familia del plan) sale de la base, nunca de este texto. |
+| `effort` | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max'` | Opcional. Sin valor: `medium` si el plan lo permite con ese modelo; si no, el permitido más cercano. |
 | `system` | texto | Opcional, hasta 20 KB. Va **después** de la política del servidor. |
 | `messages` | lista de mensajes | Obligatorio. Roles `user` y `assistant` (el primero y el último, `user`). Se reenvían **intactos**. |
 | `tools` | lista | Solo con `task: 'assistant'`. Las canónicas del launcher (hasta 80, esquemas de hasta 64 KB en total) y, además, hasta 48 de servidores MCP que el usuario agregó en el launcher: nombre `mcp__<servidor>__<herramienta>` (servidor `[a-z0-9-]`, hasta 20; en total hasta 64 caracteres), sin `strict` y hasta 128 KB entre todas. Nunca herramientas del servidor (`type` distinto de `custom`). |
 | `schema` | JSON Schema `type: 'object'` | Obligatorio con `task: 'json'` y prohibido en las otras. Hasta 20 KB. |
-| `max_tokens` | entero | Se recorta al tope del plan (8000 en Go, 16000 en el resto) y nunca pasa de 16000. Sin valor, el tope del plan. |
+| `max_tokens` | entero | Se recorta a 128.000 antes de la base y después al tope de la llamada que concede `ai_register_turn` (el del plan, o menos si el saldo no alcanza). Sin valor, el tope que concede la base. |
 | `turn_id` | texto | Una por pregunta del usuario (letras, números y `_ . : -`, hasta 100): agrupa las llamadas de su ciclo de herramientas y las ata a un modelo. Sin valor, cada llamada es una pregunta nueva. |
 | `client` | `{ app: 'venus-launcher', protocol: 1 \| 2 }` | Obligatorio. |
 
@@ -211,9 +272,14 @@ Respuesta `200`:
     "served_by": { "provider": "anthropic", "model": "claude-sonnet-5-5", "failover": false }
   },
   "parsed": { ... },
-  "quota": { ... }
+  "quota": { ... },
+  "switched": { "from": "anthropic", "to": "openai", "reason": "budget" }
 }
 ```
+
+`switched` (0056) viene solo si en esta llamada el servidor pasó al otro saldo (`budget`: el saldo en uso no
+alcanzaba; `noplan`: su plan dejó de valer); el launcher muestra el aviso una vez. Los errores con `quota`
+(402, 403, 429, 400 `turn_model`, 422 y 502/503) también lo traen si lo hubo.
 
 `parsed` viene solo con `task: 'json'` (o `null` si la respuesta quedó cortada). `message.model` es el
 modelo que respondió (puede ser el de respaldo si hubo reintento en otro modelo, o un modelo de OpenAI).
@@ -224,7 +290,7 @@ modelo que respondió (puede ser el de respaldo si hubo reintento en otro modelo
 |---|---|
 | `provider` | `anthropic` u `openai`. |
 | `model` | Modelo que respondió, el mismo que `message.model` (por ejemplo `claude-sonnet-5-5`, `claude-opus-5` si Anthropic reintentó en otro modelo, o `gpt-6.1-sol`). |
-| `failover` | `true` si respondió el proveedor secundario porque el principal falló o no está configurado. |
+| `failover` | `true` si respondió el otro proveedor (respaldo, sección 12) porque el de la llamada falló o no está configurado. |
 
 Cuando responde OpenAI, el resto de `message` tiene la misma forma que con Anthropic: `content` con bloques
 `text` y `tool_use` (`id` = el `call_id` de OpenAI, `name`, `input`), `stop_reason` `end_turn`, `tool_use` o
@@ -291,7 +357,7 @@ launcher los traduzca.
 | 403 | `{ error: 'unauthorized', code: 'anonymous' \| 'unconfirmed', message }` | Usuario anónimo, o email sin confirmar si se activó `AI_REQUIRE_CONFIRMED_EMAIL`. |
 | 402 | `{ error: 'noplan', message, quota, plans }` | Sin suscripción vigente. `plans` es el catálogo. |
 | 403 | `{ error: 'plan', reason: 'model' \| 'effort', model, message, quota }` | El plan no incluye ese modelo, o no permite ese esfuerzo con ese modelo. |
-| 429 | `{ error: 'quota', reason, model?, message, quota }` | `reason`: `daily` / `weekly` (preguntas del modelo), `budget` (presupuesto del mes), `turn` (llamadas de la pregunta), `rate` (llamadas por minuto, 3 llamadas en curso, o las llamadas en curso podrían pasar el presupuesto: hay que esperar). |
+| 429 | `{ error: 'quota', reason, model?, message, quota }` | `reason`: `daily` / `weekly` (preguntas del modelo), `budget` (ningún saldo alcanza para la llamada), `turn` (llamadas de la pregunta), `rate` (llamadas por minuto, 3 llamadas en curso, o las llamadas en curso podrían pasar el presupuesto: hay que esperar). |
 | 400 | `{ error: 'bad_request', code, message, quota? }` | `code`: `invalid_request` (pedido mal armado), `turn_model` (cambio de modelo en medio de una pregunta; trae `quota`) o `upstream_invalid_request` (la API de Anthropic rechazó el formato). 405 usa `method_not_allowed`. |
 | 422 | `{ error: 'refusal', quota }` | La IA (y su modelo de respaldo, si tiene) rechazó el pedido. Un rechazo nunca pasa al otro proveedor. |
 | 502 / 503 | `{ error: 'upstream', message, code, quota? }` | Falla del proveedor de IA (Anthropic, y OpenAI si también se probó), de Auth o de la base. |
@@ -303,8 +369,8 @@ Códigos de `upstream`: `upstream_rate_limited` y `upstream_overloaded` (proveed
 `upstream_unavailable`, `upstream_timeout`, `upstream_network`, `upstream_billing` (sin crédito en la
 cuenta del proveedor), `upstream_auth` / `upstream_permission` / `upstream_config` (clave, betas o parámetros
 mal configurados), `upstream_model` (el modelo no existe), `auth_unavailable`, `quota_unavailable`,
-`backend_not_ready` (faltan las migraciones 0007 u 0008), `not_configured` (no hay ninguna clave de IA, o
-ningún proveedor puede atender ese modelo), `aborted` e `internal`. Si los dos proveedores fallan, el código es
+`backend_not_ready` (faltan las migraciones: con esta función, también 0056), `not_configured` (el proveedor de
+la llamada no tiene clave en Vault ni en el entorno: el cuerpo trae `provider`, y la pregunta se devuelve), `aborted` e `internal`. Si los dos proveedores fallan, el código es
 el del último que se probó (OpenAI), salvo que OpenAI haya rechazado el pedido traducido (400): ahí es el de
 Anthropic (sección 12).
 
@@ -356,6 +422,21 @@ DEFINER` con `search_path` vacío y ejecutables solo por la service role (salvo 
 
 ## 6. Despliegue
 
+**6.1 (dos motores)**, en este orden (ver [ia-dos-motores.md](implementacion/ia-dos-motores.md), sección 6):
+
+1. Aplicá `supabase/migrations/0056_ia_dos_motores.sql`. La firma nueva de `ai_register_turn` tiene los dos
+   parámetros nuevos opcionales: la función ya desplegada (que manda cuatro) sigue andando mientras tanto.
+2. Desplegá `ai-assistant` y `payments` (y `admin`, que acepta 128.000 tokens y el esfuerzo `max`). La función
+   nueva sin 0056 responde `backend_not_ready` (manda `p_max_tokens` y `p_input_bytes`).
+3. Cargá la clave de Claude en **Administración → Integraciones** (Vault). Hasta entonces los planes de Claude se
+   pueden comprar pero responden `503 not_configured` con `provider: "anthropic"` (sin cobrar nada).
+4. Publicá el launcher 6.1.
+
+No hace falta `supabase secrets set` para las claves de la IA: `ANTHROPIC_API_KEY` y `OPENAI_API_KEY` son solo un
+respaldo si Vault no tiene una. La clave nueva se usa a más tardar 60 s después de cargarla.
+
+Lo que sigue es el despliegue original (0007 a 0013):
+
 1. Aplicá **en orden** `supabase/migrations/0007_ai.sql`, `supabase/migrations/0008_ai_plans.sql`,
    `supabase/migrations/0011_ai_providers.sql` y `supabase/migrations/0013_ai_budget.sql` (SQL Editor del panel o
    `supabase db push`; 0013 necesita también 0009, la de pagos).
@@ -374,8 +455,10 @@ DEFINER` con `search_path` vacío y ejecutables solo por la service role (salvo 
 6. Probá con `curl` (en el README de las funciones) o desde el launcher: Ajustes → Inteligencia artificial. Para
    probar el respaldo, ver la sección 12.
 
-Los pedidos a Opus 5.5 y Sonnet 5.5 usan el beta de reintento automático en otro modelo
-(`server-side-fallback-2026-07-01`, con `fallbacks: "default"`); Haiku 5.5 no lo tiene y nunca lo manda. Las
+Los pedidos a Opus 5.5 y Sonnet 5.5 pueden usar el beta de reintento automático en otro modelo
+(`server-side-fallback-2026-07-01`, con `fallbacks: "default"`) solo si la base lo habilita (`fallback`; 0056 lo
+deja en `false`); Haiku 5.5 no lo tiene y nunca lo manda. Los pedidos no usan streaming: con `max_tokens` grande
+el SDK de Anthropic (1.3.0) exige un `timeout` explícito, que la función pasa siempre (`AI_UPSTREAM_TIMEOUT_MS`). Las
 tareas `json` usan el de salidas estructuradas que agrega el SDK. Si la organización de Anthropic no tuviera
 alguno disponible, la API responde 400 y la función devuelve `upstream_config` (queda en el log). Ningún pedido
 manda `thinking` ni `temperature` (los tres modelos piensan solos; la profundidad se controla con `effort`).
@@ -622,7 +705,8 @@ Palancas, de la más barata a la más cara de aplicar:
 - **Sin streaming**: Supabase corta una respuesta que tarda más de 150 s. El plazo por defecto es 140 s
   (`AI_UPSTREAM_TIMEOUT_MS`); respuestas muy largas con esfuerzo `high` pueden no llegar a tiempo y
   devuelven `upstream_timeout`. En ese caso (y si el launcher cancela o se corta la conexión) se cobra una
-  estimación del peor caso, que puede ser más de lo que facturó el proveedor (sección 3).
+  estimación: la entrada entera y la salida que pudo generar en lo que duró el intento (400 tokens por segundo, sin
+  pasar `max_tokens`). Puede ser más o menos de lo que facturó el proveedor (sección 3).
 - **El presupuesto se revisa antes de cada llamada**: la última llamada del mes puede pasarlo por lo que
   cueste esa sola llamada. Las llamadas simultáneas reservan su costo máximo con el modelo de la llamada que
   entra; si se mezclan modelos (por ejemplo Haiku mientras corren dos de Opus) el exceso queda acotado por las 3
@@ -662,6 +746,12 @@ Palancas, de la más barata a la más cara de aplicar:
     Flex o Fast, corregí los precios en `ai_models`.
 
 ## 12. Proveedores: Anthropic (principal) y OpenAI (respaldo)
+
+> **Desde 0056 (6.1)** el proveedor de cada llamada lo decide el saldo (sección 0) y este respaldo está **apagado**
+> (`failover_enabled = false`). Si se activa, todo lo que sigue vale con un cambio: el "principal" es el proveedor
+> de la llamada (el de su saldo, no `primary_provider`) y el "secundario" es el otro, con el modelo de `models` de
+> `ai_register_turn`. Con una base anterior a 0056 (sin `provider` en la respuesta) la función usa
+> `ai_provider_settings().primary`, como antes.
 
 ### Cómo funciona
 
@@ -797,6 +887,17 @@ cargar la clave buena.
 node --test "supabase/functions/ai-assistant/tests/*.test.ts"
 ```
 
+**6.1 (dos motores)**: `tests/dual-engines.test.ts` usa `FakeDb.dual()` (la réplica del contrato de 0056 en
+`tests/fake-db.ts`, con la tabla de `tests/owner-plans.ts`) y prueba el proveedor por llamada (Claude y ChatGPT),
+los dos saldos, el cambio automático con `switched` por `budget` y por `noplan` (también en los rechazos y en el
+503), el recorte de `max_tokens` según el saldo (mínimo 2.048), `p_max_tokens` y `p_input_bytes`, `not_configured`
+por proveedor (la pregunta se devuelve y no se cobra), el esfuerzo `max`, el respaldo si se activa y el `GET` con
+saldos y catálogo. `tests/quota.test.ts` cubre la QuotaV3 y la respuesta nueva de `ai_register_turn`, y
+`tests/index.e2e.test.ts` las claves desde Vault (una lectura por minuto, nunca en los logs), `max_tokens` de
+128.000 con el SDK real de Anthropic (que sin `timeout` explícito exigiría streaming) y un plan de ChatGPT con la
+clave de Vault. Las pruebas de antes (`handler`, `failover`) siguen con la base de antes de 0056: el camino sin
+`provider` que la función conserva.
+
 Cubren la validación (protocolos 1 y 2, modelo y esfuerzo), la cuota (QuotaV2, catálogo, respuestas de
 `ai_register_turn`, uso por intento), el mapeo de errores, la política y el flujo HTTP completo con dobles de
 Supabase, de Anthropic y de OpenAI. El doble de la base (`tests/fake-db.ts`) replica paso a paso las funciones
@@ -809,7 +910,8 @@ los 150 s), `ai_end_call` y el tope del presupuesto al cambiar de plan. `tests/m
 ejecutarlo: que la carga sea exactamente la tabla de planes y precios (y los precios y el mapeo de OpenAI), RLS,
 `search_path` y permisos, que el JSON del SQL tenga las claves que lee la función y que las funciones que 0013
 reemplaza conserven todo lo anterior. La estimación de los pedidos cortados (plazo, cancelación, conexión) está en
-`tests/handler.test.ts`; el cálculo del tope, en `supabase/functions/billing/tests/budget-cap.test.ts`.
+`tests/handler.test.ts` (con un reloj de prueba) y, para un plan Ultra con el modelo avanzado, en
+`tests/dual-engines.test.ts`; el cálculo del tope, en `supabase/functions/billing/tests/budget-cap.test.ts`.
 
 Del respaldo: `tests/openai.test.ts` prueba la traducción en los dos sentidos (mensajes, ciclos de
 herramientas, llamadas en paralelo, imágenes, esquemas estrictos, salida estructurada, uso y errores),

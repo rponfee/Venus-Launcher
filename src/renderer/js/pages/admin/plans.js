@@ -1,13 +1,15 @@
 // Configuración de límites y modelos. Los pagos se confirman en Soporte.
+// 6.1: los planes van agrupados por familia (Claude y ChatGPT). Las claves de modelo (haiku, sonnet) se muestran con el
+// nombre del modelo real de esa familia.
 import { h, icon, mount, setBusy, ok, confirmDialog, emptyState, selectEl, switchEl } from '../../ui.js';
 import { T, call, fmtUsd, fmtInt, card, errorBox, skeletonRows, field } from './parts.js';
-import { currentPlans } from '../../features/plans-catalog.js';
+import { currentPlans, FAMILIES, MODEL_LABELS, familyName } from '../../features/plans-catalog.js';
 
 const UNLIMITED = 2147483647;
-const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 const LIMITS = {
   monthlyBudgetUsd: [0, 1000],
-  maxTokensPerRequest: [1000, 36000],
+  maxTokensPerRequest: [1000, 128000],
   maxCallsPerTurn: [1, 200],
   requestsPerMinute: [1, 600],
   daily: [0, 100000],
@@ -20,8 +22,13 @@ function numInput(value, [min, max], { step = '1', label }) {
   return h('input', { class: 'input num', type: 'number', min: String(min), max: String(max), step, value: String(value ?? ''), 'aria-label': label });
 }
 
-function planCard(original, models, onSaved) {
+// Nombre del modelo de una clave en la familia del plan ("Haiku 5.5" o "GPT-6 Luna"); sin familia, el del servidor.
+const labelIn = (family, m) => MODEL_LABELS[family]?.[m.id] || m.label || m.id;
+
+function planCard(original, allModels, onSaved) {
+  const models = allModels.map((m) => ({ ...m, label: labelIn(original.family, m) }));
   let plan = clone(original);
+  plan.models = plan.models.map((m) => ({ ...m, label: labelIn(original.family, m) }));
   const errors = h('div', { class: 'notice bad', role: 'alert', hidden: true });
   const dirtyNote = h('span', { class: 'small adm-dirty', hidden: true }, icon('edit'), T('unsaved'));
   const saveBtn = h('button', { class: 'btn', type: 'button', disabled: true }, icon('save'), T('savePlan'));
@@ -168,6 +175,7 @@ function planCard(original, models, onSaved) {
 
   discardBtn.addEventListener('click', () => {
     plan = clone(original);
+    plan.models = plan.models.map((m) => ({ ...m, label: labelIn(original.family, m) }));
     errors.hidden = true;
     draw();
   });
@@ -197,7 +205,7 @@ function planCard(original, models, onSaved) {
     {
       icon: 'layers',
       title: plan.name,
-      sub: h('span', { class: 'row wrap' }, h('span', { class: 'badge mono' }, plan.id), h('span', { class: ['pill', original.active ? 'good' : 'warn'] }, original.active ? T('p_onSale') : T('p_offSale')), h('span', { class: 'small muted' }, T('subscribers', { count: original.subscribers || 0, value: fmtInt(original.subscribers || 0) }))),
+      sub: h('span', { class: 'row wrap' }, h('span', { class: 'badge accent' }, familyName(plan.family)), h('span', { class: 'badge mono' }, plan.id), h('span', { class: ['pill', original.active ? 'good' : 'warn'] }, original.active ? T('p_onSale') : T('p_offSale')), h('span', { class: 'small muted' }, T('subscribers', { count: original.subscribers || 0, value: fmtInt(original.subscribers || 0) }))),
       cls: 'adm-plan',
     },
     body,
@@ -225,7 +233,13 @@ export function render(root, ctx = {}) {
       root,
       h('div', { class: 'notice info' }, icon('info'), h('div', {}, T('plansNote'))),
       h('div', { class: 'notice info' }, icon('message'), T('supportPaymentsNote')),
-      h('div', { class: 'adm-plans' }, plans.map((p) => planCard(p, (data.models || []).filter((m) => ['haiku', 'sonnet'].includes(m.id)), load))),
+      FAMILIES.map((f) => {
+        const list = plans.filter((p) => p.family === f.id);
+        if (!list.length) return null;
+        return h('section', { class: 'adm-plan-family', 'aria-label': T('planFamily', { family: f.name }) },
+          h('h3', { class: 'section-title' }, h('span', { class: 'st-text' }, T('planFamily', { family: f.name })), h('span', { class: 'st-line', 'aria-hidden': 'true' })),
+          h('div', { class: 'adm-plans' }, list.map((p) => planCard(p, (data.models || []).filter((m) => ['haiku', 'sonnet'].includes(m.id)), load))));
+      }),
     );
   }
   load();

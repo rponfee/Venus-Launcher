@@ -76,6 +76,7 @@ export function appendUpdates(body, ctx) {
     error.textContent = actionError;
     hint.hidden = name !== 'ready';
     portableNote.hidden = !state?.portable;
+    portableNote.textContent = t(state?.edition === 'mac' ? 'updates.macNote' : 'updates.portableNote');
     download.hidden = name !== 'available' || !state?.downloadUrl;
     download.disabled = opening;
     check.classList.toggle('primary', name !== 'available');

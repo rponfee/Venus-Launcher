@@ -10,7 +10,7 @@
 // stripeNotConfigured, stripe, server, network, error.
 //
 // Modo de prueba para capturas (VENUS_DEVSHOT + VENUS_ADMIN_FAKE=1, nunca en la app empaquetada): datos de ejemplo
-// locales (admin/fake.js). No habla con ningún servidor, así que no puede dar permisos reales de admin.
+// locales (admin/fake.js y admin/fake-team.js). No habla con ningún servidor, así que no puede dar permisos reales de admin.
 const secure = require('../core/secure');
 const i18n = require('../core/i18n');
 const { createAdminClient, coded } = require('./admin/client');
@@ -87,7 +87,8 @@ function getClient() {
       accessToken,
       session,
       t,
-      fake: fakeMode() ? require('./admin/fake').createFakeAdmin() : null,
+      // VENUS_ADMIN_FAKE_ROLE=admin: el panel de ejemplo visto por un admin común (no el dueño).
+      fake: fakeMode() ? require('./admin/fake').createFakeAdmin({ owner: process.env.VENUS_ADMIN_FAKE_ROLE !== 'admin' }) : null,
     });
   }
   return client;

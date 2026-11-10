@@ -306,7 +306,7 @@ export function validateRequest(body: unknown): ValidationResult {
   let effort: Effort | null = null;
   if (body.effort !== undefined && body.effort !== null) {
     if (typeof body.effort !== 'string' || !(EFFORTS as readonly string[]).includes(body.effort)) {
-      return fail('effort tiene que ser "low", "medium", "high" o "xhigh".');
+      return fail('effort tiene que ser "low", "medium", "high", "xhigh" o "max".');
     }
     effort = body.effort as Effort;
   }

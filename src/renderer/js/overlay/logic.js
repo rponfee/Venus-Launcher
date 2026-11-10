@@ -1,5 +1,6 @@
 // Logica sin DOM ni imports de features/overlay.js (la prueban src/main/modules/overlay/test/logic.test.js):
-// limite de frecuencia, foto del Voice Chat para el overlay, deteccion de cambios y atajos de teclado.
+// limite de frecuencia, foto del Voice Chat para el overlay, deteccion de cambios y atajos de teclado. Desde la 6.1 tambien
+// los disenos listos, "No molestar" y lo que guarda el paso del overlay de la bienvenida (pages/welcome.js).
 
 // Junta pedidos y llama a flush como mucho una vez cada `interval` ms (la voz: 200 ms, unas 5 veces por segundo).
 // Un pedido suelto se atiende en la proxima vuelta del bucle; los que llegan mientras espera se juntan en uno.
@@ -131,4 +132,48 @@ export function pickVoiceRows(members, max) {
       .map((x) => x[1]),
   );
   return list.filter((m, i) => chosen.has(i));
+}
+
+// ---------- Disenos listos, "No molestar" y la bienvenida (6.1) ----------
+// Los disenos los define el proceso principal (overlay/config.js PRESETS) y llegan en overlay:status.presets.
+
+// Que diseno coincide con los widgets prendidos ahora: su id o null (personalizado). Solo cuenta que widgets estan prendidos.
+export function matchPreset(widgets, presets) {
+  if (!widgets || !presets) return null;
+  for (const [id, preset] of Object.entries(presets)) {
+    const ids = Object.keys(preset || {});
+    if (ids.length && ids.every((w) => Boolean(widgets[w]?.enabled) === Boolean(preset[w]?.enabled))) return id;
+  }
+  return null;
+}
+
+// Widgets para una vista previa estatica (la bienvenida): los de ahora con el diseno encima y solo los prendidos (un
+// widget que falta no se dibuja; en la vista previa los apagados se verian como fantasmas).
+export function previewWidgets(widgets, preset) {
+  const out = {};
+  for (const [id, w] of Object.entries(widgets || {})) {
+    const merged = { ...w, ...(preset?.[id] || {}) };
+    if (merged.enabled) out[id] = merged;
+  }
+  return out;
+}
+
+// Estado de "No molestar" (overlay:status.dnd) -> { key, minutes? } para el texto de Ajustes
+export function dndLabel(dnd, now = Date.now()) {
+  if (!dnd?.on) return { key: 'dndStateOff' };
+  if (dnd.game) return { key: 'dndStateGame' };
+  return { key: 'dndStateUntil', minutes: Math.max(1, Math.ceil((Number(dnd.until) - now) / 60000)) };
+}
+
+// Aviso unico de la 6.1 ("el overlay ahora viene apagado"): solo para quien actualizo y no en la bienvenida
+export function offNoticeDue(settings, { onboarding = false } = {}) {
+  return !onboarding && settings?.overlay?.offNotice === 'pending';
+}
+
+// Lo que la bienvenida guarda al terminar. on: el interruptor; preset: el diseno elegido; picked: si lo eligio a mano;
+// wasOn: si ya estaba prendido al entrar (al volver a abrir la bienvenida no se pisan los widgets personalizados).
+export function welcomeOverlayPatch({ on, preset, picked = false, wasOn = false, presets }) {
+  if (!on) return { enabled: false };
+  const widgets = (picked || !wasOn) && presets?.[preset] ? JSON.parse(JSON.stringify(presets[preset])) : null;
+  return widgets ? { enabled: true, widgets } : { enabled: true };
 }

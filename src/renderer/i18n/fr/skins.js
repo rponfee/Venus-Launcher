@@ -169,5 +169,4 @@ export default {
   saveToLibraryFailed: 'Impossible de garder le skin dans votre bibliothèque',
   reasonCatalogDamaged: 'Le fichier de ce skin est manquant ou endommagé. Réinstallez Venus Launcher pour le récupérer.',
   exploreCatalog: 'Parcourir le catalogue',
-  venusCape: "Cape Venus",
 };

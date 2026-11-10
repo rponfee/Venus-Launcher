@@ -236,4 +236,7 @@ export default {
   blockNarrow: "Riporta {block} alla larghezza normale",
   blockHiddenTag: "Nascosto",
   blockEmptyTag: "Ancora nessun dato",
+  heroSize: "Dimensione della scheda principale",
+  heroSize_large: "Grande",
+  heroSize_compact: "Compatta",
 };

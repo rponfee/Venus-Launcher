@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "Clips & Screenshots",
   errReplayNoRoom: "Sofortwiederholung pausiert: nicht genug Speicherplatz.",
   autoLimitReached: "Das Maximum von {count} automatischen Clips für dieses Spiel wurde erreicht. Die Sofortwiederholung funktioniert weiterhin mit dem Tastenkürzel.",
+  errReplayNoRoomNeed: "Sofortwiederholung pausiert: nicht genug Speicherplatz (es werden {need} gebraucht, und 1 GB muss frei bleiben). Wähle weniger Zeit oder eine geringere Qualität.",
+  replaySaveTight: "Die Sofortwiederholung läuft, aber sobald der Puffer voll ist, reicht der Platz nicht, um den ganzen Clip zu speichern (es werden weitere {need} frei gebraucht). Gib Speicherplatz frei oder wähle weniger Zeit oder eine geringere Qualität.",
+  errRecordNoRoom: "Nicht genug Speicherplatz für eine Aufnahme (mehr als 1 GB muss frei bleiben).",
+  recordLimitReached: "Die Aufnahme hat ihre maximale Länge ({minutes} min) erreicht und wurde gespeichert.",
+  recordStoppedDisk: "Die Aufnahme wurde automatisch beendet, weil der Speicherplatz knapp wurde. Das bisher Aufgenommene wurde gespeichert.",
+  degraded: "Dein PC kam mit der gewählten Qualität nicht hinterher: Jetzt wird mit {quality} und {fps} fps aufgenommen.",
+  degradedAfterRecording: "Dein PC kam mit der gewählten Qualität nicht hinterher: Nach dieser Aufnahme wird mit {quality} und {fps} fps aufgenommen.",
+  native: "nativ",
+  errPlatform: "Aufnahmen sind auf diesem System noch nicht verfügbar.",
 };

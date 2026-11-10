@@ -12,4 +12,5 @@ module.exports = {
   warnTooOld: "Minecraft {mc} 需要 Java {required} 或更高版本，但这个实例使用的是 Java {current}（手动选择的）。它将无法启动：请在实例设置中改回自动 Java。",
   warnLegacyModded: "带模组的 Minecraft {mc} 是为 Java 8 设计的，但这个实例使用的是 Java {current}。如果无法启动，请在实例设置中改回自动 Java。",
   spawnFailed: "无法启动 Java：{error}",
+  errRosetta: "此版本的 Minecraft 没有 Apple Silicon 版本：它需要通过 Rosetta 2 使用 Intel 版 Java {major} 运行，而这台 Mac 尚未安装 Rosetta 2。请打开“终端”，运行 softwareupdate --install-rosetta --agree-to-license，然后重新开始游戏。",
 };

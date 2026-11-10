@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "Clipes e capturas",
   errReplayNoRoom: "Replay instantâneo pausado: sem espaço suficiente no disco.",
   autoLimitReached: "Atingido o máximo de {count} clipes automáticos nesta partida. O replay instantâneo continua funcionando com o atalho.",
+  errReplayNoRoomNeed: "Replay instantâneo pausado: sem espaço suficiente no disco (são necessários {need} e mais 1 GB livre). Escolha menos tempo ou menos qualidade.",
+  replaySaveTight: "O replay instantâneo está funcionando, mas com o buffer cheio não vai sobrar espaço para salvar o clipe inteiro (são necessários outros {need} livres). Libere espaço ou escolha menos tempo ou menos qualidade.",
+  errRecordNoRoom: "Não há espaço no disco para gravar (precisa sobrar mais de 1 GB livre).",
+  recordLimitReached: "A gravação atingiu a duração máxima ({minutes} min) e foi salva.",
+  recordStoppedDisk: "A gravação terminou sozinha porque o disco estava ficando sem espaço. O que foi gravado está salvo.",
+  degraded: "Seu PC não deu conta da qualidade escolhida: agora grava em {quality} e {fps} fps.",
+  degradedAfterRecording: "Seu PC não deu conta da qualidade escolhida: quando a gravação terminar, vai gravar em {quality} e {fps} fps.",
+  native: "nativa",
+  errPlatform: "A gravação ainda não está disponível neste sistema.",
 };

@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  menuAbout: "{app}에 관하여",
+  menuHide: "{app} 가리기",
+  menuHideOthers: "기타 가리기",
+  menuShowAll: "모두 보기",
+  menuQuit: "{app} 종료",
+  menuEdit: "편집",
+  menuUndo: "실행 취소",
+  menuRedo: "실행 복귀",
+  menuCut: "오려두기",
+  menuCopy: "복사하기",
+  menuPaste: "붙여넣기",
+  menuPasteMatch: "붙여넣고 스타일 일치시킴",
+  menuDelete: "삭제",
+  menuSelectAll: "전체 선택",
+  menuWindow: "윈도우",
+  menuMinimize: "최소화",
+  menuZoom: "확대/축소",
+  menuFront: "모두 앞으로 가져오기",
+};

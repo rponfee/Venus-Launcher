@@ -12,4 +12,5 @@ module.exports = {
   warnTooOld: "Minecraft {mc} nécessite Java {required} ou plus récent, mais cette instance utilise Java {current} (choisi manuellement). Elle ne pourra pas démarrer : dans les paramètres de l'instance, revenez à Java automatique.",
   warnLegacyModded: "Minecraft {mc} avec des mods est conçu pour Java 8, mais cette instance utilise Java {current}. Si elle ne démarre pas, revenez à Java automatique dans les paramètres de l'instance.",
   spawnFailed: "Impossible de démarrer Java : {error}",
+  errRosetta: "Cette version de Minecraft n’existe pas pour Apple Silicon : elle s’exécute avec Java {major} pour Intel via Rosetta 2, qui n’est pas installé sur ce Mac. Ouvrez Terminal, exécutez softwareupdate --install-rosetta --agree-to-license et relancez le jeu.",
 };

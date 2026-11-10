@@ -51,7 +51,7 @@ import {
   gameModeKey,
 } from './home/logic.js';
 // Inicio armable (settings.home.layout): orden, ocultos y bloques a lo ancho (logica pura en ./home/layout.js)
-import { BLOCKS, ALWAYS_WIDE, normalizeLayout, buildRows, isWide, moveBlock, reorder, toggleIn, sameLayout } from './home/layout.js';
+import { BLOCKS, ALWAYS_WIDE, normalizeLayout, buildRows, isWide, moveBlock, reorder, toggleIn, sameLayout, HERO_SIZES, normalizeHero } from './home/layout.js';
 
 registerIcons({
   hmBulb: '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
@@ -287,6 +287,19 @@ export default {
     // esqueleto (asi el resto no salta cuando llegan los datos) y se ocultan solos si no hay nada que mostrar.
     const avail = { quick: true, worlds: store.instances.length > 0, featured: false, screenshots: false, news: true, server: false, friends: true, stats: true, tips: true };
     let layout = normalizeLayout(store.settings?.home);
+    // Tamaño de la tarjeta principal (settings.home.hero, 6.1): grande (la de siempre) o compacta
+    let heroSize = normalizeHero(store.settings?.home);
+    const applyHeroSize = () => heroEl.classList.toggle('hm-hero-compact', heroSize === 'compact');
+    applyHeroSize();
+    function setHeroSize(size) {
+      if (!HERO_SIZES.includes(size) || size === heroSize) return;
+      heroSize = size;
+      applyHeroSize();
+      const hadFocus = headEl.contains(document.activeElement);
+      drawHead();
+      if (hadFocus) headEl.querySelector(`[data-hs="${size}"]`)?.focus({ preventScroll: true });
+      store.setSettings({ home: { hero: size } }).catch((err) => fail(t('home.customizeSaveFailed'), err));
+    }
     let editing = false;
     let savingLayout = false; // hay un guardado pendiente o en curso: no se pisa el layout con los ajustes viejos
     let rowsSig = '';
@@ -372,7 +385,12 @@ export default {
               h(
                 'div',
                 { class: 'hm-head-actions' },
-                h('button', { class: 'btn ghost sm', onclick: () => setLayout(normalizeLayout({})) }, icon('undo'), t('home.organizeReset')),
+                h(
+                  'div',
+                  { class: 'segmented hm-hero-size', role: 'group', 'aria-label': t('home.heroSize') },
+                  HERO_SIZES.map((s) => h('button', { type: 'button', class: heroSize === s ? 'active' : '', 'aria-pressed': String(heroSize === s), dataset: { hs: s }, onclick: () => setHeroSize(s) }, t(`home.heroSize_${s}`))),
+                ),
+                h('button', { class: 'btn ghost sm', onclick: () => (setLayout(normalizeLayout({})), setHeroSize('large')) }, icon('undo'), t('home.organizeReset')),
                 h('button', { class: 'btn tonal sm', onclick: () => setEditing(false) }, icon('check'), t('home.organizeDone')),
               ),
             ]
@@ -1905,6 +1923,12 @@ export default {
         if (!editing && !savingLayout) {
           const next = normalizeLayout(store.settings?.home);
           if (!sameLayout(next, layout)) layout = next;
+        }
+        const nextHero = normalizeHero(store.settings?.home);
+        if (nextHero !== heroSize) {
+          heroSize = nextHero;
+          applyHeroSize();
+          if (editing) drawHead();
         }
         applyVisibility();
         const addr = branding().address;

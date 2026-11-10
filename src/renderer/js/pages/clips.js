@@ -14,6 +14,7 @@ import { TABS, RANGES, REASONS, filterItems, countByTab, instancesOf, reasonOf, 
 import { TAB_ICON, isMissingHandler, kbd, clock, reasonBadge } from './clips/common.js';
 import { openViewer, closeViewer } from './clips/viewer.js';
 import { openEditor } from './clips/editor.js';
+import { fmtLength } from '../features/capture.js';
 
 // Filtros mientras dure la sesion (volver a la pagina los recuerda)
 const memo = { tab: 'screenshots', instanceId: '', range: 'all', query: '', reason: '' };
@@ -95,7 +96,7 @@ function renderClips(root) {
     else if (replayOn && cap.replay.error) sub = t('clips.liveReplayNoDisk');
     else if (replayOn && !cap.replay.active) sub = t('clips.liveReplayStarting');
     else if (replayOn) {
-      sub = t('clips.liveReplayDisk', { seconds: cap.replay.buffered, max: cap.replaySeconds, disk: fmtBytes(cap.replay.disk || 0) });
+      sub = t('clips.liveReplayBuffer', { buffered: clock(cap.replay.buffered), length: fmtLength(cap.replaySeconds), disk: fmtBytes(cap.replay.disk || 0) });
       if (cap.settings?.auto?.enabled) sub += ` · ${t('clips.liveAuto', { count: cap.auto?.saved || 0, limit: cap.auto?.limit || 0 })}`;
     }
     return {
@@ -145,7 +146,7 @@ function renderClips(root) {
       recording ? t('clips.stopRecording') : t('clips.startRecording'),
     );
     const replayBtn = replayOn
-      ? h('button', { class: 'btn sm tonal', type: 'button', 'data-live-action': 'replay', disabled: !cap.replay.active, title: shortcutOf('replay') || '', onclick: (e) => act(e.currentTarget, () => api.invoke('capture:saveReplay')) }, icon('history'), t('clips.saveReplay', { seconds: cap.replaySeconds }))
+      ? h('button', { class: 'btn sm tonal', type: 'button', 'data-live-action': 'replay', disabled: !cap.replay.active, title: shortcutOf('replay') || '', onclick: (e) => act(e.currentTarget, () => api.invoke('capture:saveReplay')) }, icon('history'), t('clips.saveReplayLen', { length: fmtLength(cap.replaySeconds) }))
       : h('button', { class: 'btn sm ghost', type: 'button', onclick: () => navigate('settings/ingame/capture') }, icon('history'), t('clips.enableReplay'));
     const tx = liveTexts();
     liveTitle = h('strong', {}, tx.title);
@@ -351,7 +352,7 @@ function renderClips(root) {
     return {
       icon: 'woFilm',
       title: t('clips.emptyClips'),
-      text: replayOff ? t('clips.emptyClipsOffText', { seconds: cap?.replaySeconds || 60 }) : t('clips.emptyClipsText', { key: key('replay'), seconds: cap?.replaySeconds || 60 }),
+      text: replayOff ? t('clips.emptyClipsOffTextLen', { length: fmtLength(cap?.replaySeconds || 60) }) : t('clips.emptyClipsTextLen', { key: key('replay'), length: fmtLength(cap?.replaySeconds || 60) }),
       action: replayOff ? h('button', { class: 'btn', type: 'button', onclick: () => navigate('settings/ingame/capture') }, icon('history'), t('clips.enableReplay')) : null,
     };
   }

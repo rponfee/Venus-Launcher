@@ -6,9 +6,10 @@ La **4.6.0 está publicada** (tag `v4.6.0`) e incluye lo preparado para la 4.5.0
 |---|---|---|
 | [../README.md](../README.md) | Dueño y colaboradores | Qué es Venus Launcher, lista de funciones, requisitos, comandos (`npm start`, `npm run dist`, `npm run check`), scripts, dónde se guardan los datos e idiomas. |
 | [funciones.md](funciones.md) | Usuarios | Guía de cada función del launcher: cómo se usa y qué necesita (cuenta de Venus, IA, Discord...). |
-| [retirada-funciones.md](retirada-funciones.md) | Dueño y desarrolladores | Retiros de la 4.5.0 y la 4.6 (Clanes, modo streamer y OBS, Extensiones, visor de semillas, Competir, Herramientas y capas); Comunidades y datos conservados. |
+| [retirada-funciones.md](retirada-funciones.md) | Dueño y desarrolladores | Retiros de la 4.5.0, la 4.6 y la 6.1 (Clanes, modo streamer y OBS, Extensiones, visor de semillas, Competir, Herramientas, capas y Comunidades) y datos conservados. |
 | [venus-pass.md](venus-pass.md) | Dueño y desarrolladores | Venus Pass permanente por tiempo jugado: 380 niveles, premios, servidor y administración. |
 | [login-microsoft.md](login-microsoft.md) | Dueño | Cómo pasar el inicio de sesión de Microsoft a una app propia de Azure, con la aprobación de Mojang. |
+| [macos.md](macos.md) | Dueño y desarrolladores | Versión de macOS (6.1): qué se adaptó (Java y nativos de Apple Silicon con Rosetta, menú, Cmd, micrófono, Discord, links), qué no está, cómo se compila y se prueba en GitHub Actions, firma ad hoc y límites conocidos. |
 | [arquitectura.md](arquitectura.md) | Desarrolladores | Documento vivo con la arquitectura y las reglas para programar: módulos, canales IPC, contratos entre módulos, rutas, ajustes, archivos de datos y cómo verificar. |
 | [../design-system/venus-launcher/MASTER.md](../design-system/venus-launcher/MASTER.md) | Desarrolladores y diseño | Sistema de diseño: identidad, tokens (color, tipografía, espaciado, movimiento), componentes, layout de página, accesibilidad y checklist antes de entregar una pantalla. |
 | [supabase.md](supabase.md) | Dueño (quien administra la nube) | Qué crea cada migración (0001–0047 aplicadas en producción y la 0048 sin aplicar), Auth, Realtime, Storage y configuración pendiente de servicios. |

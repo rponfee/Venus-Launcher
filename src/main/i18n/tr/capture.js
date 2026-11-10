@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "Klipler ve ekran görüntüleri",
   errReplayNoRoom: "Anında tekrar duraklatıldı: yeterli disk alanı yok.",
   autoLimitReached: "Bu oyun için en fazla {count} otomatik klip sınırına ulaşıldı. Anında tekrar kısayolla çalışmaya devam eder.",
+  errReplayNoRoomNeed: "Anında tekrar duraklatıldı: diskte yeterli yer yok ({need} ve ayrıca 1 GB boş alan gerekiyor). Daha kısa süre veya daha düşük kalite seç.",
+  replaySaveTight: "Anında tekrar çalışıyor, ama arabellek dolduğunda klibin tamamını kaydetmek için yer kalmayacak ({need} daha boş alan gerekiyor). Yer aç veya daha kısa süre ya da daha düşük kalite seç.",
+  errRecordNoRoom: "Kayıt için diskte yeterli yer yok (1 GB'tan fazla boş alan kalmalı).",
+  recordLimitReached: "Kayıt en fazla uzunluğuna ({minutes} dk) ulaştı ve kaydedildi.",
+  recordStoppedDisk: "Diskte yer azaldığı için kayıt kendiliğinden bitti. Kaydedilen kısım saklandı.",
+  degraded: "Bilgisayarın seçilen kaliteye yetişemedi: artık {quality} ve {fps} fps ile kaydediyor.",
+  degradedAfterRecording: "Bilgisayarın seçilen kaliteye yetişemedi: kayıt bitince {quality} ve {fps} fps ile kaydedecek.",
+  native: "yerel",
+  errPlatform: "Kayıt bu sistemde henüz kullanılamıyor.",
 };

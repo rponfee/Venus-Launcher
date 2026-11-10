@@ -188,4 +188,12 @@ export default {
   ex3: "Оптимизируйте мой экземпляр, чтобы было больше FPS",
   ex4: "Установите Sodium и Iris",
   ex5: "Найдите мне лёгкие шейдеры",
+  effort_max: "Предельная",
+  walletLabel: "Баланс",
+  walletHint: "Какой баланс будет использован для следующего вопроса: Claude или ChatGPT.",
+  walletOption: "{family} · осталось {left}",
+  walletLine: "Баланс {family}: осталось {left} из {limit}",
+  failoverNoteOf: "Ответил резервный сервис ({provider})",
+  quotaBudgetTitle: "Ваш баланс закончился",
+  quotaBudgetOut: "Ваш баланс {family} (тариф {plan}) закончился, а баланса {other} у вас не осталось. Пополните баланс {family} или попробуйте тариф {other} в разделе «Тарифы».",
 };

@@ -7,6 +7,11 @@
 @font-face { font-family: 'Pixelify Sans'; font-weight: 500; font-display: swap; src: url('../assets/fonts/pixelify-sans-latin-500-normal.woff2') format('woff2'); }
 @font-face { font-family: 'Pixelify Sans'; font-weight: 600; font-display: swap; src: url('../assets/fonts/pixelify-sans-latin-600-normal.woff2') format('woff2'); }
 @font-face { font-family: 'Pixelify Sans'; font-weight: 700; font-display: swap; src: url('../assets/fonts/pixelify-sans-latin-700-normal.woff2') format('woff2'); }
+/* Letra "Pixel" de toda la interfaz (Ajustes > Apariencia > Estilo, 6.1): Pixelify Sans sin los números, que en tamaño
+   de texto se confunden (5 y S, 3 y 8); los números salen en Outfit. Mismos archivos, sin descargas. */
+@font-face { font-family: 'Venus Pixel UI'; font-weight: 400 500; font-display: swap; src: url('../assets/fonts/pixelify-sans-latin-500-normal.woff2') format('woff2'); unicode-range: U+0000-002F, U+003A-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Venus Pixel UI'; font-weight: 600; font-display: swap; src: url('../assets/fonts/pixelify-sans-latin-600-normal.woff2') format('woff2'); unicode-range: U+0000-002F, U+003A-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Venus Pixel UI'; font-weight: 700 900; font-display: swap; src: url('../assets/fonts/pixelify-sans-latin-700-normal.woff2') format('woff2'); unicode-range: U+0000-002F, U+003A-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: 'Outfit'; font-weight: 400; font-display: swap; src: url('../assets/fonts/outfit-latin-400-normal.woff2') format('woff2'); }
 @font-face { font-family: 'Outfit'; font-weight: 500; font-display: swap; src: url('../assets/fonts/outfit-latin-500-normal.woff2') format('woff2'); }
 @font-face { font-family: 'Outfit'; font-weight: 600; font-display: swap; src: url('../assets/fonts/outfit-latin-600-normal.woff2') format('woff2'); }
@@ -930,10 +935,44 @@ html[data-ui-radius='sharp'] { --radius-xs: 2px; --radius-s: 3px; --radius: 4px;
 html[data-ui-radius='round'] { --radius-xs: 10px; --radius-s: 13px; --radius: 18px; --radius-l: 26px; --radius-xl: 34px; }
 html[data-ui-density='compact'] { --sp-2: 6px; --sp-3: 9px; --sp-4: 12px; --sp-5: 15px; --sp-6: 18px; --sp-7: 24px; --sp-8: 36px; }
 html[data-ui-density='spacious'] { --sp-2: 10px; --sp-3: 15px; --sp-4: 20px; --sp-5: 26px; --sp-6: 30px; --sp-7: 40px; --sp-8: 56px; }
-html[data-ui-font='system'] { --font: 'Segoe UI', system-ui, sans-serif; }
-html[data-ui-font='rounded'] { --font: 'Fredoka', ui-rounded, 'Arial Rounded MT Bold', 'Segoe UI', sans-serif; }
-html[data-ui-font='mono'] { --font: 'Cascadia Mono', Consolas, ui-monospace, monospace; }
+/* Letras: solo fuentes que trae el launcher o pilas del sistema que existen en Windows y en macOS */
+html[data-ui-font='system'] { --font: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif; }
+html[data-ui-font='rounded'] { --font: 'Fredoka', ui-rounded, 'SF Pro Rounded', 'Arial Rounded MT Bold', 'Segoe UI', sans-serif; }
+html[data-ui-font='mono'] { --font: 'Cascadia Mono', Consolas, ui-monospace, 'SF Mono', Menlo, monospace; }
+html[data-ui-font='pixel'] { --font: 'Venus Pixel UI', 'Outfit', system-ui, sans-serif; }
+/* Tamaño del texto (6.1): solo la escala --fs-*; la de Accesibilidad agranda todo y se suma a esta */
+html[data-ui-text='small'] { --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 15px; --fs-xl: 17px; --fs-2xl: 19px; --fs-title: 28px; }
+html[data-ui-text='large'] { --fs-xs: 13px; --fs-sm: 14px; --fs-md: 15px; --fs-lg: 17px; --fs-xl: 19px; --fs-2xl: 22px; --fs-title: 32px; }
 html[data-ui-glassy] .card { background: color-mix(in srgb, var(--surface) calc(var(--ui-glass, 1) * 100%), transparent); }
+/* Estilo de las tarjetas (6.1). Los colores del tema van en línea sobre <html> (a11y/engine.js), así que los tokens
+   --card-bg* se redefinen en <body>: lo heredan todas las páginas y siguen al tema (claro, paleta propia). Con alto
+   contraste quedan las de siempre. 'glass' es el de siempre. */
+html[data-ui-cards='solid']:not(.ax-hc) body { --card-bg: linear-gradient(180deg, var(--surface-2), var(--surface)); --card-bg-flat: var(--surface); }
+html[data-ui-cards='solid']:not(.ax-hc) .card { backdrop-filter: none; }
+html[data-ui-cards='outline']:not(.ax-hc) body { --card-bg: color-mix(in srgb, var(--surface) 55%, transparent); --card-bg-flat: color-mix(in srgb, var(--surface) 45%, transparent); }
+html[data-ui-cards='outline']:not(.ax-hc) .card { border-color: var(--border-3); box-shadow: none; }
+/* Menú lateral a la derecha (6.1): la barra de título sigue arriba de todo; el modo mini y la bienvenida no cambian */
+html[data-ui-side='right']:not([data-mini]) body:not(.onboarding) .app { grid-template-columns: 1fr var(--sidebar-w); }
+html[data-ui-side='right']:not([data-mini]) body:not(.onboarding) .sidebar { grid-column: 2; grid-row: 2; border-right: 0; border-left: 1px solid var(--border); }
+html[data-ui-side='right']:not([data-mini]) body:not(.onboarding) .main { grid-column: 1; grid-row: 2; }
+html[data-ui-side='right'] .nav-item.active::before { left: auto; right: -10px; border-radius: 3px 0 0 3px; }
+/* Avisos y tareas al costado del menú. Sin multiplicar por la escala: ya llevan su propio zoom (a11y.css). Con el panel
+   del asistente abierto mandan las reglas de assistant.css, que los corren al costado del panel (tapa el menú) */
+html[data-ui-side='right']:not([data-mini]) body:not(.onboarding):not(.as-drawer-open) :is(.toasts, .tasks-dock) { right: calc(var(--sidebar-w) + 18px); }
+html[data-ui-side='right'] .ax-hintbar { left: 0; right: calc(var(--sidebar-w) * var(--ax-zoom, 1)); }
+html[data-ui-side='right'] body.onboarding .ax-hintbar, html[data-ui-side='right'] body:has(.modal-backdrop) .ax-hintbar, html[data-ui-side='right'] body:has(.ax-palette-backdrop) .ax-hintbar { right: 0; }
+/* Extras de la barra de título (6.1): reloj y nombre de la instancia elegida (appearance.js) */
+.titlebar .ap-tb-extra { display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 0; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+.titlebar .ap-tb-clock { font-variant-numeric: tabular-nums; }
+.titlebar .ap-tb-inst {
+  -webkit-app-region: no-drag; display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 220px; height: 22px; padding: 0 8px;
+  border: 1px solid transparent; border-radius: var(--radius-xs); background: none; color: var(--text-2); font-size: var(--fs-xs); cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.titlebar .ap-tb-inst:hover { border-color: var(--border-2); color: var(--text); }
+.titlebar .ap-tb-inst svg { width: 12px; height: 12px; flex-shrink: 0; color: var(--accent-hi); }
+.titlebar .ap-tb-inst > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+html[data-mini] .titlebar .ap-tb-extra, body.onboarding .titlebar .ap-tb-extra { display: none; }
 html[data-ui-sidebar='icons'] { --sidebar-w: 72px; }
 html[data-ui-sidebar='icons'] .brand { justify-content: center; padding: 14px 0 10px; }
 html[data-ui-sidebar='icons'] .brand > :not(img):not(.brand-logo) { display: none; }

@@ -13,8 +13,6 @@ export default {
   perk_effectsText: "Éclat, arc-en-ciel et feu pour votre pseudo, sans les acheter dans la boutique.",
   perk_frame: "Cadres exclusifs et titre Supporter",
   perk_frameText: "Des cadres d’avatar animés réservés au Premium, et le titre Supporter à côté de votre nom.",
-  perk_replay: "Relecture instantanée de 5 minutes",
-  perk_replayText: "Enregistrez les 5 dernières minutes de votre partie au lieu de 60 secondes.",
   perk_ai: "Venus IA",
   perk_aiText: "L’assistant avec les modèles et les questions de votre forfait, comme toujours.",
   note: "Premium dure aussi longtemps que votre forfait. Si vous l’annulez, vous conservez tout ce que vous avez acheté avec des Venus Points.",

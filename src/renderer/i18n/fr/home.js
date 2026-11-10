@@ -236,4 +236,7 @@ export default {
   blockNarrow: "Remettre {block} en largeur normale",
   blockHiddenTag: "Masqué",
   blockEmptyTag: "Pas encore de données",
+  heroSize: "Taille de la carte principale",
+  heroSize_large: "Grande",
+  heroSize_compact: "Compacte",
 };

@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "Mittel",
   effort_high: "Hoch",
   effort_xhigh: "Extra",
+  effort_max: "Maximal",
+  errBudgetOut: "Dein {family}-Guthaben (Tarif {plan}) ist aufgebraucht und du hast kein {other}-Guthaben mehr. Um weiterzumachen, kaufe mehr {family}-Guthaben oder einen {other}-Tarif unter Tarife.",
+  errWallet: "Das Guthaben, das die KI verwendet, konnte nicht gewechselt werden. Versuche es in Kürze erneut.",
 };

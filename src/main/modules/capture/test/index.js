@@ -10,3 +10,4 @@ require('./autoclip.test');
 require('./window-find.test');
 require('./clips.test');
 require('./describe.test');
+require('./capture.test');

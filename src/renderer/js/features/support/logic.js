@@ -34,7 +34,7 @@ export const DETAIL_FIELDS = {
   bug: [sel('area', ['launcher', 'install', 'update', 'account', 'social', 'other'], true), sel('frequency', ['always', 'sometimes', 'once']), { id: 'steps', kind: 'area', max: 600 }],
   game: [{ id: 'mcVersion', kind: 'text', max: 24, required: true }, sel('loader', ['vanilla', 'fabric', 'quilt', 'forge', 'neoforge', 'other']), sel('moment', ['launch', 'loading', 'playing', 'closing'], true), sel('modsChanged', ['yes', 'no', 'unknown']), { id: 'steps', kind: 'area', max: 600 }],
   payments: [sel('topic', ['login', 'profile', 'sanction', 'payment', 'refund', 'other'], true), sel('method', ['mercado_pago', 'paypal', 'other']), { id: 'paidOn', kind: 'date', max: 10 }, { id: 'orderRef', kind: 'text', max: 80 }],
-  assistant: [sel('plan', ['none', 'basic', 'go', 'pro', 'max']), sel('issue', ['noreply', 'limit', 'wrong', 'billing', 'other'], true)],
+  assistant: [sel('plan', ['none', 'claude_basic', 'claude_go', 'claude_pro', 'claude_max', 'claude_ultra', 'basic', 'go', 'pro', 'max', 'ultra']), sel('issue', ['noreply', 'limit', 'wrong', 'billing', 'other'], true)],
   suggestion: [sel('area', ['launcher', 'play', 'social', 'ai', 'other'], true), { id: 'benefit', kind: 'area', max: 400 }],
   other: [], general: [], account: [],
 };

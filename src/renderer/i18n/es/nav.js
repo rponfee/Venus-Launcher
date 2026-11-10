@@ -15,7 +15,6 @@ export default {
   music: 'Música',
   rewards: 'Venus Points',
   pass: 'Venus Pass',
-  communities: 'Comunidades',
   modrinth: 'Contenidos',
   smartsearch: 'Buscador inteligente',
   multiplayer: 'Multijugador',

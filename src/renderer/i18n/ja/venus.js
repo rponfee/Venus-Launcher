@@ -103,7 +103,7 @@ export default {
   q_help: "困ったときはどうすればいいですか?",
   a_help: "ランチャー内のサポート、またはDiscordからどうぞ。プログラムの不具合はGitHubでも報告できます。",
   q_platforms: "MacやLinuxでも使えますか?",
-  a_platforms: "今のところ、64ビット版のWindows 10と11のみ対応しています。",
+  a_platforms: "64ビット版のWindows 10と11、およびmacOS 12以降(Apple SiliconとIntel)に対応しています。Macでは、ゲーム内オーバーレイ、音楽、クリップは利用できません。",
   helpTitle: "まだ疑問がありますか?",
   helpText: "サポートからご連絡いただくか、Discordで質問してください。",
   goSupport: "サポートへ",

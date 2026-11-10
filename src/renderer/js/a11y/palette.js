@@ -3,6 +3,7 @@
 // sumar los suyos con registerCommands(() => [{ id, title, run, ... }]).
 import { h, icon } from '../ui.js';
 import { t } from '../i18n.js';
+import { keyLabel, keyName } from '../platform.js';
 
 const RECENT_KEY = 'venus.a11y.palette.recent';
 const MAX_RESULTS = 60;
@@ -235,7 +236,7 @@ function render() {
         h('span', { class: 'ax-pal-icon' }, iconEl(c)),
         h('span', { class: 'ax-pal-text' }, h('span', { class: 'ax-pal-title', title: c.title }, highlight(c.title, r.hits)), c.sub ? h('span', { class: 'ax-pal-sub', title: c.sub }, c.sub) : null),
         stateEl(c),
-        c.hint ? h('span', { class: 'kbd ax-pal-kbd' }, c.hint) : !grouped ? h('span', { class: 'ax-pal-tag' }, groupLabel(r.group)) : null,
+        c.hint ? h('span', { class: 'kbd ax-pal-kbd' }, keyLabel(c.hint)) : !grouped ? h('span', { class: 'ax-pal-tag' }, groupLabel(r.group)) : null,
       ),
     );
   });
@@ -340,7 +341,7 @@ export function open(initial = '') {
       h('span', {}, h('span', { class: 'kbd' }, 'Enter'), t('a11y.palRun')),
       h('span', {}, h('span', { class: 'kbd' }, 'Esc'), t('a11y.palClose')),
       h('span', { class: 'spacer' }),
-      h('span', { class: 'ax-pal-brand' }, h('span', { class: 'kbd' }, 'Ctrl'), h('span', { class: 'kbd' }, 'K')),
+      h('span', { class: 'ax-pal-brand' }, h('span', { class: 'kbd' }, keyName('Ctrl')), h('span', { class: 'kbd' }, 'K')),
     ),
   );
   const backdrop = h('div', { class: 'ax-palette-backdrop' }, box);

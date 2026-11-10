@@ -140,7 +140,7 @@ test(
 );
 
 test(
-  '5 minutos con premium: cambiar el largo agranda lo que se guarda desde ahi',
+  'cambiar el largo de la repeticion (60 s a 5 minutos) agranda lo que se guarda desde ahi',
   withDir(async (dir) => {
     const { frames } = framesOf({ seconds: 400, audio: false, size: 20 });
     const ring = new ReplayRing({ dir, seconds: 60 });

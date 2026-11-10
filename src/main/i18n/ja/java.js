@@ -12,4 +12,5 @@ module.exports = {
   warnTooOld: "Minecraft {mc}にはJava {required}以降が必要ですが、このインスタンスはJava {current}（手動で選択）を使用しています。起動できません。インスタンスの設定で、自動Javaに戻してください。",
   warnLegacyModded: "Modを入れたMinecraft {mc}はJava 8向けですが、このインスタンスはJava {current}を使用しています。起動しない場合は、インスタンスの設定で自動Javaに戻してください。",
   spawnFailed: "Javaを起動できませんでした：{error}",
+  errRosetta: "このバージョンのMinecraftにはApple Silicon版がないため、Intel用のJava {major}をRosetta 2経由で実行しますが、このMacにはRosetta 2がインストールされていません。ターミナルを開いて softwareupdate --install-rosetta --agree-to-license を実行し、もう一度プレイしてください。",
 };

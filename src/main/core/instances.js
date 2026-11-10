@@ -10,6 +10,7 @@ const AdmZip = require('adm-zip');
 const paths = require('./paths');
 const minecraft = require('./minecraft');
 const java = require('./java');
+const platformInfo = require('./platform');
 const fabric = require('./loaders/fabric');
 const forge = require('./loaders/forge');
 const optifine = require('./loaders/optifine');
@@ -443,16 +444,20 @@ async function installLoader(inst, task) {
 }
 
 // Java: el elegido para la instancia, el que ya se uso con esta version (arranque rapido) o el runtime oficial.
+// En una Mac con Apple Silicon, las versiones sin nativos arm64 (antes de 1.19) usan el Java x64 con Rosetta 2
+// (core/platform.js gameArch); javaArch queda en prepared.json para que el arranque rapido no mezcle los dos.
 async function resolveJava(inst, resolved, task, cached) {
   const custom = inst.java?.path;
   if (custom && (await exists(custom))) return { javaPath: custom, auto: false };
   const component = resolved.javaVersion?.component || 'jre-legacy';
-  if (cached?.javaPath && cached.javaComponent === component && (await exists(cached.javaPath))) {
-    return { javaPath: cached.javaPath, auto: true, component };
+  const arch = platformInfo.gameArch(resolved);
+  const javaArch = arch !== process.arch ? arch : null;
+  if (cached?.javaPath && cached.javaComponent === component && (cached.javaArch || null) === javaArch && (await exists(cached.javaPath))) {
+    return { javaPath: cached.javaPath, auto: true, component, javaArch };
   }
   task?.update({ detail: t('instances.checkingJava'), progress: null });
-  const javaPath = await java.ensureRuntime(component, resolved.javaVersion?.majorVersion, task);
-  return { javaPath, auto: true, component };
+  const javaPath = await java.ensureRuntime(component, resolved.javaVersion?.majorVersion, task, javaArch ? { arch: javaArch } : undefined);
+  return { javaPath, auto: true, component, javaArch };
 }
 
 // Instala el loader (si hace falta) y todos los archivos del juego. Devuelve lo necesario para lanzar.
@@ -500,11 +505,12 @@ async function prepare(id, task, { verify = 'size' } = {}) {
         verifiedAt: Date.now(),
         javaPath: javaInfo.auto ? javaInfo.javaPath : null,
         javaComponent: javaInfo.auto ? javaInfo.component : null,
+        javaArch: javaInfo.auto ? javaInfo.javaArch || null : null,
       });
     }
   } else if (javaInfo.auto && javaInfo.javaPath !== marker.javaPath) {
     const { v: _v, ...rest } = marker;
-    await writePrepared(id, { ...rest, javaPath: javaInfo.javaPath, javaComponent: javaInfo.component });
+    await writePrepared(id, { ...rest, javaPath: javaInfo.javaPath, javaComponent: javaInfo.component, javaArch: javaInfo.javaArch || null });
   }
 
   if (!inst.installed) {

@@ -169,6 +169,16 @@
 .wn-t3 { left: 116px; top: 38px; transform: rotate(8deg); --wn-c: var(--good); background: linear-gradient(160deg, color-mix(in srgb, var(--good) 26%, var(--surface-2)), var(--bg-0)); }
 .wn-code { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); padding: 6px 12px; border-radius: 8px; background: var(--field-bg); border: 1px dashed var(--accent-line); font-family: var(--mono); font-size: var(--fs-sm); color: var(--accent-hi); white-space: nowrap; }
 
+/* Venus IA: los dos motores, una respuesta y el saldo */
+.wn-ai { width: 290px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.wn-ai-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.wn-ai-chip { padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border-2); background: var(--field-bg); font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.wn-ai-chip.wn-on { color: var(--text); }
+.wn-ai-swap { display: grid; place-items: center; color: var(--text-3); }
+.wn-ai-swap svg { width: 16px; height: 16px; }
+.wn-ai-bar { height: 8px; border-radius: 99px; overflow: hidden; background: color-mix(in srgb, var(--text) 14%, transparent); }
+.wn-ai-bar .wn-fill { width: 62%; height: 100%; border-radius: inherit; background: var(--accent); }
+
 /* Editor de skins */
 .wn-grid { display: grid; grid-template-columns: repeat(8, 18px); gap: 2px; padding: 12px; }
 .wn-px { width: 18px; height: 18px; border-radius: 2px; }

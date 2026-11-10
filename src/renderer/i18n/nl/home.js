@@ -236,4 +236,7 @@ export default {
   blockNarrow: "{block} terug naar de normale breedte",
   blockHiddenTag: "Verborgen",
   blockEmptyTag: "Nog geen gegevens",
+  heroSize: "Grootte van de hoofdkaart",
+  heroSize_large: "Groot",
+  heroSize_compact: "Compact",
 };

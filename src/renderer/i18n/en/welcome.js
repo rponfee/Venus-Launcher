@@ -337,4 +337,18 @@ export default {
   bgModsFailed_other: '{count} mods could not be installed',
   allSteps: "Set up everything",
   quickNote: "Everything else keeps the recommended values. You can change it anytime in Settings.",
+  // In-game overlay step (6.1)
+  step_overlay: 'Overlay',
+  t_overlay: 'In-game overlay',
+  s_overlay: 'Optional. It starts off: turn it on if you want to see info on top of the game while you play.',
+  ovToggle: 'Turn on the in-game overlay',
+  ovWhat: 'Shows who is talking in Voice Chat, alerts and whatever you choose on top of Minecraft, without touching the game.',
+  ovNeeds: 'It shows up when you play windowed or borderless; Windows does not allow it in exclusive fullscreen.',
+  ovPreviewLabel: 'Overlay preview with the {name} layout',
+  ovPresetsLabel: 'What do you want to see',
+  ovAfter: 'You can move and adjust each part later in Settings → In game.',
+  ovLater: 'If you do not turn it on now, you can do it any time in Settings → In game.',
+  ovLite: 'Lite mode is on, and it keeps the overlay off. Once you turn lite mode off you can turn the overlay on in Settings → In game.',
+  ovSumOn: 'On · {name}',
+  sumOverlay: 'In-game overlay',
 };

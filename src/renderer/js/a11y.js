@@ -5,6 +5,7 @@
 import { h, icon, mount, ensureCss, switchEl, modal, confirmDialog, toast, ok, fail, emptyState, skeleton, setBusy, instanceIcon, loaderBadge, instanceLoaderKey } from './ui.js';
 import { store, api } from './store.js';
 import { t, loadNs, has, onLanguageChange } from './i18n.js';
+import { keyName } from './platform.js';
 import { navigate, launchInstance, openAccounts } from './app.js';
 import * as engine from './a11y/engine.js';
 import { initAria, relabel, topDialog } from './a11y/aria.js';
@@ -426,12 +427,12 @@ function buildPanel(root) {
       { class: 'ax-palette-promo' },
       h('div', { class: 'ax-promo-icon' }, icon('search')),
       h('div', { class: 'ax-promo-text' }, h('div', { class: 'ax-promo-title' }, t('a11y.paletteTitle')), h('div', { class: 'ax-hint' }, t('a11y.paletteText'))),
-      h('button', { type: 'button', class: 'btn sm', onclick: () => openCommandPalette() }, h('span', { class: 'kbd' }, 'Ctrl'), h('span', { class: 'kbd' }, 'K'), t('a11y.paletteOpen')),
+      h('button', { type: 'button', class: 'btn sm', onclick: () => openCommandPalette() }, h('span', { class: 'kbd' }, keyName('Ctrl')), h('span', { class: 'kbd' }, 'K'), t('a11y.paletteOpen')),
     ),
     h(
       'dl',
       { class: 'ax-keys' },
-      shortcuts.map(([keys, label]) => h('div', { class: 'ax-key' }, h('dt', {}, keys.map((k) => h('span', { class: 'kbd' }, k))), h('dd', {}, label))),
+      shortcuts.map(([keys, label]) => h('div', { class: 'ax-key' }, h('dt', {}, keys.map((k) => h('span', { class: 'kbd' }, keyName(k)))), h('dd', {}, label))),
     ),
     h('div', { class: 'ax-hint ax-sr-note' }, icon('info'), t('a11y.screenReaderNote')),
   );

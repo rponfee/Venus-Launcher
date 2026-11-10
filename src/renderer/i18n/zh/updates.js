@@ -59,4 +59,6 @@ export default {
   noticeTitle: "Venus {version} 现已推出",
   noticeText: "便携版不会自动更新。请下载新的 .exe 并保存到同一文件夹，以保留你的数据。",
   noticeLater: "稍后",
+  macNote: "在 Mac 上，Venus 不会自动更新：你可以在这里检查新版本；如果在“隐私”中开启了自动检查，它会主动提醒你。请下载新的 .dmg，并将 Venus Launcher 拖到“应用程序”中，替换旧版本。你的实例和账号保持不变。",
+  noticeTextMac: "在 Mac 上，Venus 不会自动更新。请下载新的 .dmg，并将 Venus Launcher 拖到“应用程序”中，替换旧版本。你的实例和账号保持不变。",
 };

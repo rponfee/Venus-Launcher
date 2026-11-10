@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "剪辑与截图",
   errReplayNoRoom: "即时回放已暂停：磁盘空间不足。",
   autoLimitReached: "本局游戏已达到 {count} 段自动剪辑的上限。你仍可用快捷键使用即时回放。",
+  errReplayNoRoomNeed: "即时回放已暂停：磁盘空间不足（需要 {need}，并且还要保留 1 GB 可用空间）。请缩短时长或降低画质。",
+  replaySaveTight: "即时回放正在运行，但缓存写满后将没有足够空间保存整段剪辑（还需要另外 {need} 可用空间）。请释放空间，或缩短时长、降低画质。",
+  errRecordNoRoom: "磁盘空间不足，无法录制（必须保留超过 1 GB 的可用空间）。",
+  recordLimitReached: "录像已达到最长时长（{minutes} 分钟），已自动保存。",
+  recordStoppedDisk: "磁盘空间即将用完，录制已自动结束。已录制的内容已保存。",
+  degraded: "你的电脑跟不上所选画质：现在改为以 {quality}、{fps} fps 录制。",
+  degradedAfterRecording: "你的电脑跟不上所选画质：本次录制结束后将改为以 {quality}、{fps} fps 录制。",
+  native: "原生",
+  errPlatform: "此系统暂不支持录制。",
 };

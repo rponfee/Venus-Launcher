@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  menuAbout: "{app} Hakkında",
+  menuHide: "{app} Uygulamasını Gizle",
+  menuHideOthers: "Diğerlerini Gizle",
+  menuShowAll: "Tümünü Göster",
+  menuQuit: "{app} Uygulamasından Çık",
+  menuEdit: "Düzen",
+  menuUndo: "Geri Al",
+  menuRedo: "Yinele",
+  menuCut: "Kes",
+  menuCopy: "Kopyala",
+  menuPaste: "Yapıştır",
+  menuPasteMatch: "Yapıştır ve Stili Eşleştir",
+  menuDelete: "Sil",
+  menuSelectAll: "Tümünü Seç",
+  menuWindow: "Pencere",
+  menuMinimize: "Simge Durumuna Küçült",
+  menuZoom: "Büyüt",
+  menuFront: "Tümünü Öne Getir",
+};

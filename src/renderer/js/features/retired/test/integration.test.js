@@ -3,12 +3,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { harness, flush } from '../../communities/test/renderer-harness.js';
 import { normalizeNav, navLayout } from '../../navcustom/logic.js';
 
 const read = relative => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
 
-test('rutas, menú y arranque ignoran las funciones retiradas y conservan Comunidades y Mundos', async () => {
+test('rutas, menú y arranque ignoran las funciones retiradas y conservan Mundos, Voice Chat y Clips', async () => {
   const source = read('../../../app.js');
   const declaration = name => {
     const found = source.match(new RegExp('const ' + name + ' = [\\s\\S]*?^(?:\\];|\\};)', 'm'));
@@ -24,12 +23,12 @@ test('rutas, menú y arranque ignoran las funciones retiradas y conservan Comuni
     assert.equal(config.NAV.some(item => item.id === id), false);
     assert.equal(id in config.PAGES, false);
   }
-  for (const id of ['communities', 'worlds', 'voice', 'clips']) assert.equal(typeof config.PAGES[id], 'function');
+  for (const id of ['worlds', 'voice', 'messages', 'clips']) assert.equal(typeof config.PAGES[id], 'function');
   await Promise.all(config.STARTUP.map(load => load()));
   assert.equal(loaded.some(name => /\/(clans|extensions|streamer|compete|tools)\.js$/.test(name)), false);
   const prefs = normalizeNav({ order: ['clans', 'communities', 'seeds', 'compete'], pinned: ['extensions', 'communities', 'tools'], hidden: ['seeds'] }, config.NAV.map(item => item.id).filter(Boolean));
   const ids = navLayout(config.NAV, prefs).map(item => item.id).filter(Boolean);
-  assert.ok(ids.includes('communities') && ids.includes('worlds'));
+  assert.ok(ids.includes('worlds') && !ids.includes('communities'));
   assert.equal(ids.some(id => ['clans', 'extensions', 'seeds', 'compete', 'tools'].includes(id)), false);
   assert.doesNotMatch(read('../../../pages/home.js'), /import\(['"][^'"]*features\/extensions\.js['"]\)/);
 });
@@ -49,63 +48,6 @@ test('Acerca de abre la web oficial mediante app.openExternal', async () => {
   assert.ok(button.children.includes('settings.link_website'));
   await button.props.onclick();
   assert.deepEqual(urls, ['https://venuslauncher.fun/']);
-});
-
-function adminRig() {
-  const ui = harness(), calls = [];
-  const group = { id: 'fixture-community', name: 'Comunidad de prueba', memberCount: 1, isPublic: true, createdAt: '2026-11-04', owner: { username: 'owner' } };
-  const b = { rpc: async (name, args) => {
-    calls.push([name, args]);
-    if (name === 'admin_groups') return [group];
-    if (name === 'admin_group_detail') return { ...group, members: [{ userId: 'member', username: 'member', role: 'member' }], channels: [{ name: 'general', kind: 'text' }] };
-    if (name === 'admin_group_reports') return [
-      { id: 'old-clan', kind: 'clan', status: 'open', snapshot: { name: 'Clan archivado' } },
-      { id: 'community-report', kind: 'community', status: 'open', snapshot: { name: 'Comunidad de prueba' } },
-      { id: 'message-report', kind: 'message', status: 'open', snapshot: { body: 'Mensaje de prueba' } },
-    ];
-    return { ok: true };
-  } };
-  const { render } = ui.load(new URL('../../../pages/admin/communities.js', import.meta.url), {
-    groupsBackend: async () => b, ensureCss() {}, debounce: fn => fn, promptDialog: async () => 'Motivo de prueba', mediaImage: () => ui.deps.h('media'),
-    modal: ({ body }) => { ui.deps.mount(ui.root, ...ui.root.children, body); return { close() {} }; },
-  }, ['render']);
-  const button = label => ui.nodes.find(node => node.isConnected && node.tag === 'button' && node.children.includes('communities.' + label));
-  return { ui, calls, render, button };
-}
-
-test('administración mantiene listar, ver y moderar comunidades sin acciones de clanes', async () => {
-  const r = adminRig();
-  await r.render(r.ui.root); await flush();
-  // La pestaña abre en la cola de GIFs; las comunidades están a un clic.
-  assert.equal(r.calls[0][0], 'admin_community_media_queue');
-  await r.button('adminTab_community').fire('click'); await flush();
-  assert.equal(r.calls[1][0], 'admin_groups');
-  assert.equal(r.calls[1][1].p_kind, 'community');
-  assert.equal(r.button('adminTab_clan'), undefined);
-  assert.ok(r.button('adminTab_community'));
-  await r.button('view').fire('click'); await flush();
-  await r.button('adminRemove').fire('click'); await flush();
-  await r.button('adminDissolve').fire('click'); await flush();
-  const actions = r.calls.filter(([name]) => ['admin_groups', 'admin_group_detail', 'admin_group_remove', 'admin_group_dissolve'].includes(name));
-  assert.ok(actions.some(([name]) => name === 'admin_group_remove'));
-  assert.ok(actions.some(([name]) => name === 'admin_group_dissolve'));
-  assert.ok(actions.every(([, args]) => args.p_kind === 'community'));
-  assert.equal(r.ui.errors.length, 0);
-});
-
-test('administración conserva denuncias de comunidades y mensajes sin ofrecer acciones sobre clanes', async () => {
-  const r = adminRig();
-  await r.render(r.ui.root); await flush();
-  await r.button('adminTab_reports').fire('click'); await flush();
-  const closeButtons = r.ui.nodes.filter(node => node.isConnected && node.tag === 'button' && node.children.includes('communities.adminReportClose'));
-  assert.equal(closeButtons.length, 2);
-  await closeButtons[0].fire('click'); await flush();
-  await r.button('adminReportRemove').fire('click'); await flush();
-  const actions = r.calls.filter(([name]) => name === 'admin_group_report_close').map(([,args]) => args);
-  assert.ok(actions.some(args => args.p_id === 'community-report' && args.p_remove === false));
-  assert.ok(actions.some(args => args.p_id === 'message-report' && args.p_remove === true));
-  assert.equal(actions.some(args => args.p_id === 'old-clan'), false);
-  assert.equal(r.ui.errors.length, 0);
 });
 
 test('Ajustes y novedades no anuncian ni reactivan las funciones retiradas', () => {

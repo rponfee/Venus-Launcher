@@ -2,14 +2,14 @@
 
 Panel del launcher para los dueños del proyecto: ver y buscar usuarios, cambiarles el plan de Venus IA, banearlos, silenciarlos, cerrarles las sesiones, reiniciarles el uso de la IA o eliminar sus cuentas; crear **cupones de descuento** para el checkout de Stripe; editar los **planes** (cupos, esfuerzos, presupuesto, si están a la venta y el precio) y revisar el **registro** de todo lo que hizo cada admin.
 
-Solo lo ve quien tiene una cuenta de Venus con un email de la lista de admins **y confirmado**, y cargada a mano en `app_admins`. Para el resto de los usuarios el launcher no muestra nada.
+Solo lo ve quien tiene una cuenta de Venus con un email de la lista de admins **y confirmado**, y su fila en `app_admins`. Desde la 6.1 el **dueño** da y quita ese acceso desde la pestaña **Equipo** (sección 1, "Equipo: dar y quitar admin"); el SQL a mano queda como último recurso. Para el resto de los usuarios el launcher no muestra nada.
 
 | Pieza | Archivo |
 |---|---|
-| Base de datos | `supabase/migrations/0012_admin.sql` |
+| Base de datos | `supabase/migrations/0012_admin.sql` (equipo: `0057_admin_equipo.sql`) |
 | Edge Function | `supabase/functions/admin/` (`index.ts`, `handler.ts`, `actions.ts`, `coupons.ts`, `prices.ts`, `validate.ts`, `errors.ts`, `stripe-admin.ts`, pruebas en `tests/`) |
-| Proceso principal | `src/main/modules/admin.js` (+ `admin/client.js`, `admin/fake.js`), textos `src/main/i18n/<es,en>/admin.js` |
-| Interfaz | `src/renderer/js/features/admin.js` (agrega el menú), `src/renderer/js/pages/admin.js` (+ `pages/admin/*.js`), `src/renderer/styles/pages/admin.css`, textos `src/renderer/i18n/<es,en>/admin.js` |
+| Proceso principal | `src/main/modules/admin.js` (+ `admin/client.js`, `admin/fake.js`, `admin/fake-team.js`), textos `src/main/i18n/<es,en>/admin.js` |
+| Interfaz | `src/renderer/js/features/admin.js` (agrega el menú), `src/renderer/js/pages/admin.js` (+ `pages/admin/*.js`; Equipo: `team.js` y la lógica sin DOM `team-logic.js`), `src/renderer/styles/pages/admin.css`, textos `src/renderer/i18n/<es,en>/admin.js` |
 
 ## 1. Cómo funciona el acceso
 
@@ -27,14 +27,14 @@ pages/admin.js ── admin:me (de nuevo) ──► si no es admin: "No autoriza
 ```
 
 - **Quién es admin.** Un usuario es admin cuando tiene su fila en `public.app_admins` **y** su email está en `public.app_admin_emails`, confirmado (`auth.users.email_confirmed_at`) y sin baneo. 0012 carga `admin@example.com` (en otro proyecto, 0014 borra ese email de la lista si esa cuenta no es admin).
-- **`app_admins` se carga a mano** (desde 0014). Antes la llenaban triggers con solo mirar el email confirmado, pero con "Confirm email" apagado cualquiera que registrara primero un email de la lista (o se lo cambiara) quedaba admin. 0014 sacó esos triggers y `admin_sync_all`; los admins que ya estaban siguen igual.
+- **`app_admins` no se llena sola** (desde 0014). Antes la llenaban triggers con solo mirar el email confirmado, pero con "Confirm email" apagado cualquiera que registrara primero un email de la lista (o se lo cambiara) quedaba admin. 0014 sacó esos triggers y `admin_sync_all`; los admins que ya estaban siguen igual. Desde 0057 la carga el dueño con **Dar acceso de administrador** (que también agrega el email a la lista).
 - **`is_admin()`** (la puede llamar cualquier usuario con sesión) responde si **quien llama** es admin. Además de estar en `app_admins`, revisa en el momento que el email siga en la lista, que esté confirmado y que la cuenta no esté baneada: sacar un email de la lista corta el acceso al instante.
 - **El servidor verifica en cada acción.** La Edge Function `admin` no confía en el launcher: en cada pedido vuelve a verificar la sesión, que la cuenta no sea anónima, que el email esté confirmado y que siga siendo admin. Un usuario común que llame a la función recibe `403` y no se toca nada.
 - **El launcher solo decide qué mostrar.** El menú y la página se ven solo si `admin:me` dice que es admin; la página vuelve a preguntar al abrirse y, si no, muestra "No autorizado".
 
 ### Rangos e integraciones (3.0)
 
-- **Rango** en la ficha de cada usuario: helper, mod o admin (`admin_set_rank`, queda en el registro de acciones). Es lo que se ve en el perfil: no da acceso a este panel. `owner` se carga a mano con SQL y no se puede cambiar desde el panel.
+- **Rango** en la ficha de cada usuario: helper o mod (`admin_set_rank`, queda en el registro de acciones). Es lo que se ve en el perfil: no da acceso a este panel. Desde 0057 **`admin` ya no se elige suelto**: va atado al acceso real (lo pone Dar acceso y lo saca Quitar acceso), y no se le puede cambiar el rango a un administrador activo (`admin_locked`). Una insignia `admin` vieja sin acceso se puede cambiar o sacar. `owner` se carga a mano con SQL y no se puede cambiar desde el panel.
 - **Integraciones**: clave de la app de KLIPY (`admin_set_klipy_key`, en el Vault). Sin clave, el buscador de GIF del perfil avisa que no está disponible.
 
 ### CurseForge desde Integraciones (4.5.0)
@@ -54,27 +54,51 @@ La validación local pasó **84 comprobaciones SQL** con Vault simulado; la prue
 
 Referencias: [API oficial de CurseForge](https://docs.curseforge.com/rest-api/) y [Supabase Vault](https://supabase.com/docs/guides/database/vault).
 
-### Agregar o quitar un admin
+### Equipo: dar y quitar admin (6.1, 0057)
 
-En el SQL Editor de Supabase (o con la service role):
+**Quién es quién.**
+
+| Rol | Qué es | Qué ve en Equipo |
+|---|---|---|
+| **Dueño** | Un administrador activo cuyo perfil tiene `rank = 'owner'`. Hay uno solo y se carga a mano (abajo). | La lista, **Dar acceso de administrador**, **Quitar acceso** (menos a sí mismo y a otra cuenta owner) y soporte. |
+| **Admin** | Fila en `app_admins` + email actual en `app_admin_emails`, confirmado y sin baneo. Usa todo el panel. | La lista en **solo lectura** (con una nota) y puede sumar o quitar personal de soporte. |
+| **Soporte** | Fila activa en `support_staff` (0016) con su email actual. Atiende tickets; no entra al panel. | No ve el panel. |
+
+**Dar acceso.** Equipo → **Dar acceso de administrador** → buscar la cuenta (el mismo buscador de Usuarios: usuario, email, código de amigo) → confirmación que explica qué va a poder hacer (ver los datos de todas las cuentas, banear y eliminar, cambiar precios, planes y claves, soporte y denuncias; no dar ni quitar admin). También desde la **ficha** del usuario, sección **Acceso al panel**. La cuenta tiene que existir, no ser de invitado, tener el **email confirmado** y no estar baneada; si no, el panel lo avisa con el motivo (`unconfirmed`, `banned`, `anonymous`, `unknown_user`). Por dentro, `admin_grant_admin` agrega su email actual (en minúsculas) a `app_admin_emails`, su fila a `app_admins`, le pone la insignia `admin` si no tenía una igual o mayor y lo anota como `admin.grant`. Si ya era admin no cambia nada.
+
+**Quitar acceso.** En la fila del admin (o en su ficha) → **Quitar acceso** → confirmación con el nombre. Se corta **al instante**: `admin_is_admin_user` se revisa en cada pedido. `admin_revoke_admin` borra su fila de `app_admins`, saca de la lista el email con el que se cargó y el actual **salvo que otra fila de `app_admins` todavía lo use** (así nunca se corta a otra cuenta), baja la insignia `admin` a sin rango y lo anota como `admin.revoke`. Nadie se puede quitar a sí mismo (`cannot_self`) ni a una cuenta owner (`owner_locked`).
+
+**Soporte.** Equipo → **Sumar a soporte** (cualquier admin) o **Quitar de soporte**. `admin_set_support_staff` respeta el índice único de `support_staff` (una fila activa por email): si otra fila activa tenía ese email (una cuenta que después se lo cambió), queda inactiva. Queda en el registro como `support.staffGranted` / `support.staffRevoked`.
+
+**Lo que muestra la lista.** Administradores: el dueño primero (**Dueño**), **Vos**, desde cuándo y la última acción registrada; **Sin acceso ahora** si tiene la fila pero no entra (cambió el email, no lo confirmó o está baneado). Soporte: desde cuándo, y **Sin acceso ahora** si cambió el email (hay que sacarlo y volver a sumarlo).
+
+**Quién decide.** El launcher solo decide qué botones mostrar. Cada función vuelve a verificar en el servidor: un admin común que llame `admin_grant_admin` a mano recibe `owner_only` y no cambia nada. Las RPC van directo con la sesión del usuario (`cloud.client.rpc`, como Integraciones), no por la Edge Function `admin`.
+
+**Abusos pensados.** Un admin común con el RPC a mano (`owner_only`); el dueño quitándose a sí mismo (`cannot_self`); una cuenta que cambia el email después de ser admin (pierde el acceso porque se compara el email actual; volver a darle acceso carga el nuevo); emails con mayúsculas (se guardan en minúsculas, como compara `admin_is_admin_user`); dos filas de `app_admins` con el mismo email (quitar a una no saca el email que usa la otra); dos clics seguidos (un candado por transacción).
+
+#### Último recurso: SQL a mano
+
+Para cargar al **dueño** (una sola vez) o si el panel no está disponible. En el SQL Editor de Supabase:
 
 ```sql
--- Agregar (en minúsculas): primero la persona crea su cuenta y confirma el email; después, el email a la lista
--- y la fila de esa cuenta (verificá con ella que la cuenta es suya antes de cargarla).
-insert into public.app_admin_emails (email, note) values ('otra.persona@example.com', 'Moderación');
+-- Dueño: primero tiene que ser admin (fila + email confirmado en la lista), después el rango.
+insert into public.app_admin_emails (email, note) values ('dueno@example.com', 'Dueño');
 insert into public.app_admins (user_id, email)
 select u.id, lower(u.email) from auth.users u
- where lower(u.email) = 'otra.persona@example.com' and u.email_confirmed_at is not null;
+ where lower(u.email) = 'dueno@example.com' and u.email_confirmed_at is not null;
+update public.profiles set rank = 'owner' where id = (select id from auth.users where lower(email) = 'dueno@example.com');
 
--- Quitar (deja de ser admin al instante; borrar el email de la lista ya alcanza)
+-- Quitar un admin a mano (deja de serlo al instante; borrar el email de la lista ya alcanza)
 delete from public.app_admin_emails where email = 'otra.persona@example.com';
 delete from public.app_admins where email = 'otra.persona@example.com';
+update public.profiles set rank = null where rank = 'admin' and id = (select id from auth.users where lower(email) = 'otra.persona@example.com');
 
--- Ver quiénes son admins ahora
-select a.user_id, a.email, a.granted_at, public.admin_is_admin_user(a.user_id) as activo from public.app_admins a;
+-- Ver quiénes son admins ahora (y quién es el dueño)
+select a.user_id, a.email, a.granted_at, public.admin_is_admin_user(a.user_id) as activo, p.rank
+  from public.app_admins a left join public.profiles p on p.id = a.user_id;
 ```
 
-Registrarse con un email de la lista ya no da acceso: hasta que no cargues su fila en `app_admins`, esa cuenta no es admin.
+Registrarse con un email de la lista no da acceso: hace falta la fila en `app_admins`.
 
 ## 2. Despliegue
 
@@ -99,9 +123,13 @@ Registrarse con un email de la lista ya no da acceso: hasta que no cargues su fi
 
 ## 3. Pestañas y acciones
 
-Ruta: `#/admin[/overview|users|coupons|plans|audit]`. `#/admin/users/<id>` abre la ficha de ese usuario.
+Ruta: `#/admin[/<pestaña>]`. `#/admin/users/<id>` abre la ficha de ese usuario.
+
+Pestañas (6.1), agrupadas por uso y separadas por una línea: **Resumen, Soporte, Usuarios, Pagos** · **Denuncias, Galería, Reseñas, Stickers** · **Planes, Integraciones, Equipo, Registro**. Flechas, Inicio y Fin recorren las pestañas; el foco se ve. Comunidades salió del panel en la 6.1 (se retiraron del launcher). Mientras queden launchers 6.0.0 o anteriores en uso, sus denuncias y GIFs pendientes se moderan con SQL: ver "Moderación mientras queden launchers viejos" en [retirada-funciones.md](retirada-funciones.md#retiros-de-la-61).
 
 ### Resumen
+
+Arriba, lo que necesita atención: un aviso rojo si **falta una clave** necesaria (ChatGPT/OpenAI, Claude/Anthropic o un medio de pago) con **Cargar ahora**, y **Para revisar**: accesos directos a tickets esperando respuesta, denuncias abiertas, clips denunciados y pagos sin confirmar (solo los que tienen algo). Abajo, **IA del mes por motor** (Claude / ChatGPT: gasto, llamadas, saldos vigentes y lo que queda, de `admin_ai_providers` de 0056; si el servidor todavía no tiene esa función, el bloque no aparece) y **Claves e integraciones** (OpenAI, Claude, pagos, CurseForge y KLIPY: Lista, Falta cargar, Sin activar en el servidor o No se pudo revisar). Cada bloque carga solo: si uno falla, el resto se ve.
 
 Usuarios totales y nuevos (7 y 30 días), suscripciones con acceso (pagan con Stripe / regaladas), **MRR estimado**, gasto de la IA del mes (dólares, preguntas, usuarios), baneados y silenciados, avisos de pagos fallidos y cancelaciones (llevan a Usuarios filtrado), suscripciones por plan y gasto por modelo.
 
@@ -110,14 +138,14 @@ Usuarios totales y nuevos (7 y 30 días), suscripciones con acceso (pagan con St
 
 ### Usuarios
 
-Búsqueda por email, usuario, nombre visible, código de amigo, nombre de Minecraft o id; filtros por plan, estado de la suscripción y moderación; orden por alta, última conexión, gasto o email; 25 por página. Se pueden elegir varios (la selección se mantiene entre páginas y se vacía al cambiar los filtros) y actuar sobre todos a la vez, o abrir la ficha de uno (clic o Enter; Espacio marca la fila; flechas para moverse).
+Búsqueda por email, usuario, nombre visible, código de amigo, nombre de Minecraft o id (con la cantidad encontrada y **Limpiar filtros** a mano cuando hay alguno); columna **Rol** (Dueño, Admin, Soporte, del Equipo); filtros por plan, estado de la suscripción y moderación; orden por alta, última conexión, gasto o email; 25 por página. Se pueden elegir varios (la selección se mantiene entre páginas y se vacía al cambiar los filtros) y actuar sobre todos a la vez, o abrir la ficha de uno (clic o Enter; Espacio marca la fila; flechas para moverse).
 
-La **ficha** muestra la cuenta (email, id, código de amigo, confirmación, alta, última conexión), el plan con los ids de Stripe (cliente, suscripción, precio), el uso de la IA de hoy, la semana y el mes por modelo con su cuota, la moderación con **notas internas** (solo las ven los admins) y las últimas 20 acciones de admins sobre esa cuenta.
+La **ficha** muestra la cuenta (email, id, código de amigo, confirmación, alta, última conexión), el plan con los ids de Stripe (cliente, suscripción, precio), el uso de la IA de hoy, la semana y el mes por modelo con su cuota, el **acceso al panel** (qué es y, para el dueño, Dar/Quitar acceso; Sumar/Quitar de soporte para cualquier admin), el **rango** (helper o mod), la moderación con **notas internas** (solo las ven los admins) y las últimas 20 acciones de admins sobre esa cuenta.
 
 | Acción | Qué hace | Sobre vos / otros admins |
 |---|---|---|
 | **Cambiar plan** | Le pone el plan elegido, `source = 'admin'`, sin vencimiento o hasta el final del día elegido, con nota opcional (queda en el registro). Deja vacías las columnas de Stripe, como un plan manual de [pagos.md](pagos.md) §13. | Sí |
-| **Quitar plan** | El plan queda `canceled` (`source = 'admin'`): se queda sin la IA del launcher (si paga con Stripe, solo hasta la próxima lectura de Stripe: ver abajo). | Sí |
+| **Quitar plan** | El plan queda `canceled` (`source = 'admin'`) y se borran sus saldos pagados de Claude y de ChatGPT (6.1, 0056; las compras quedan en el historial): se queda sin la IA del launcher (si paga con Stripe, solo hasta la próxima lectura de Stripe: ver abajo). | Sí |
 | **Reiniciar uso** | Pone en 0 las **preguntas** de hoy o de la semana (vuelve a tener el cupo de su plan) y vacía la ventana de llamadas por minuto. **No** toca el gasto en dólares del mes (es el historial real de costos, que también cuenta para el presupuesto). | Sí |
 | **Cerrar sesiones** | Borra sus sesiones y revoca sus refresh tokens: tiene que volver a iniciar sesión. Los tokens de acceso ya emitidos valen hasta que vencen (1 hora por defecto). | No |
 | **Silenciar** (1 h, 24 h, 7 días, 30 días o permanente) | Solo social: no puede mandar mensajes, reacciones, señales (invitaciones a voz, a mundos, modpacks, "escribiendo…") ni solicitudes de amistad, ni editar mensajes (sí borrarlos). Sigue jugando y usando la IA. | No |
@@ -160,6 +188,8 @@ Por cada plan: a la venta o no, presupuesto por usuario y mes, tokens por llamad
 
 ### Registro
 
+Filtros por **tipo de acción** (grupos como "Equipo (todas)" o una acción puntual) y por **admin** (aparece con dos o más). Las acciones nuevas tienen texto propio: dar y quitar admin, sumar y quitar de soporte, cambios de clave de OpenAI, Claude, CurseForge y KLIPY, rangos (de cuál a cuál), galería y stickers.
+
 Todo lo que **cambia algo** queda en `public.admin_actions`: quién (id y email del admin), qué acción, sobre qué usuario (si corresponde), los detalles (plan, duración, motivo, código, montos…) y cuándo. Una fila por usuario afectado. Las lecturas (listas, fichas, resumen) **no** se registran. De una cuenta eliminada queda el email enmascarado (`r*****e@gmail.com`) y el nombre de usuario.
 
 Si una acción falla a mitad de camino, lo que ya se hizo también queda, con `failed: true` y el código del error: por ejemplo, un borrado que canceló en Stripe y borró archivos pero no pudo borrar la cuenta (`canceledSubscriptions`, `filesRemoved`), un baneo que quedó en Auth pero no en la base (`authBan`) o las suscripciones que se cancelaron antes de que fallara otra. Una falla que no cambió nada no se registra.
@@ -190,7 +220,7 @@ El error es `P0001` con el mensaje `user_muted` o `user_banned` (como los demás
 - **Baneos y tokens.** Un baneo corta el inicio de sesión y la renovación de la sesión, y el panel cierra sus sesiones; lo social se corta al instante, pero un token de acceso ya emitido puede seguir sirviendo para otras cosas hasta que vence (1 hora por defecto).
 - **Datos de pago.** El panel nunca devuelve datos de tarjetas ni de clientes de Stripe: solo ids (`cus_`, `sub_`, `price_`), estados, montos y códigos. Los errores de Stripe llegan como código (por ejemplo `resource_missing`), nunca con su mensaje.
 - **Logs de la función:** solo códigos, ids de usuario de los accesos denegados y descripciones de errores de Stripe sin datos.
-- **Modo de capturas** (`VENUS_DEVSHOT` + `VENUS_ADMIN_FAKE=1`, nunca en la app empaquetada): el proceso principal responde con datos de ejemplo locales y no habla con ningún servidor, así que no puede dar ni usar permisos reales.
+- **Modo de capturas** (`VENUS_DEVSHOT` + `VENUS_ADMIN_FAKE=1`, nunca en la app empaquetada): el proceso principal responde con datos de ejemplo locales y no habla con ningún servidor, así que no puede dar ni usar permisos reales. Las RPC directas (Equipo, Resumen) van a un doble local (`admin/fake-team.js`, acción `rpc`) con las mismas reglas y códigos de error; `VENUS_ADMIN_FAKE_ROLE=admin` muestra el panel como un admin común.
 
 ## 6. Para quien integra: canales y protocolo
 
@@ -243,6 +273,11 @@ El error es `P0001` con el mensaje `user_muted` o `user_banned` (como los demás
 | `is_admin()` | Usuarios con sesión | ¿Quien llama es admin? |
 | `my_moderation()` | Usuarios con sesión | Su propio silencio o baneo (sin motivos). |
 | `admin_overview()`, `admin_list_users(...)`, `admin_user_detail(user)`, `admin_plans()`, `admin_list_actions(...)` | Admins con sesión y service role | Lecturas del panel (también sirven desde el SQL Editor). |
+| `admin_team()` (0057) | Admins con sesión | `{ me: { userId, isOwner }, admins: [{ userId, username, displayName, email, grantedAt, isOwner, active, lastActionAt }], staff: [{ userId, username, displayName, email, since, active }] }` |
+| `admin_grant_admin(user)`, `admin_revoke_admin(user)` (0057) | Solo el dueño (lo revisa cada función) | Dar y quitar el acceso; `{ userId, isAdmin, changed, rank }`. Errores: `owner_only`, `unknown_user`, `anonymous`, `unconfirmed`, `banned`, `bad_email`, `cannot_self`, `owner_locked`, `grant_failed`. |
+| `admin_set_support_staff(user, active)` (0057) | Admins con sesión | Soporte; `{ userId, staff, changed }`. |
+| `admin_set_rank(user, rank)` (0023, cambiada en 0057) | Admins con sesión | Solo `helper`, `mod` o sin rango (`bad_rank`, `owner_locked`, `admin_locked`). |
+| `private.admin_is_owner(user)`, `private.admin_team_blocker(user)` (0057) | Internas | Dueño = admin activo con `rank = 'owner'`; por qué una cuenta no puede recibir un rol. |
 | `admin_is_admin_user(user)`, `admin_targets(ids)`, `admin_set_plan`, `admin_remove_plan`, `admin_moderate`, `admin_revoke_sessions`, `admin_reset_usage`, `admin_log`, `admin_update_plan`, `admin_plan_json`, `admin_user_files` | Service role | Las usa la Edge Function. (`admin_sync_all` y los triggers que llenaban `app_admins` los sacó 0014.) |
 | `moderation_social_block(user)`, `private.moderation_self_block()` | Internas | Lo que consultan las funciones sociales (0014 pasó la segunda al esquema `private`, fuera de la API). |
 
@@ -251,7 +286,10 @@ El error es `P0001` con el mensaje `user_muted` o `user_banned` (como los demás
 ```bash
 node --test "supabase/functions/admin/tests/*.test.ts"
 node --test "src/main/modules/admin/test/*.test.js"
+node --test "src/renderer/js/pages/admin/test/*.test.js"
 ```
+
+Equipo (0057): `supabase/functions/admin/tests/team-migration.test.ts` revisa el SQL sin Postgres (security definer con `search_path` vacío, permisos para `authenticated` solo en lo que llama el panel y nada para `anon`, controles de dueño antes de escribir, códigos de error, que el registro no lleve el email de la cuenta afectada y que no haya emails en el archivo). `pages/admin/test/team-logic.test.js` y `team.test.js` prueban quién ve qué, el armado de las listas, las confirmaciones, los errores por código y que todos los textos existan en español e inglés; `src/main/modules/admin/test/fake-team.test.js`, el modo de ejemplo. **Contra una base de verdad** hay un guion aparte (`begin; 0057; escenarios; rollback;`) que aplica la migración en una transacción, prueba con cuentas simuladas (dueño, admin común, sin confirmar, baneada, anónima, email con mayúsculas, email compartido, cambio de email, soporte) y deshace todo.
 
 Cubren: quién entra (sin sesión, anónimo, email sin confirmar, no admin, admin sacado de la lista o baneado: en cada pedido), que un usuario común no llegue a tocar nada, no banear ni eliminar a uno mismo ni a otro admin, los pedidos exactos a Auth (duraciones), a la base y a Stripe de cada acción, borrar cancelando Stripe antes (y no borrar si no se puede), la validación de cupones y códigos y sus pedidos a Stripe (con la vuelta atrás si el código ya existe), el cambio de precio completo (idempotencia, sin precio en el modo, portal, fallas), la edición de planes, el `index.ts` real con `@supabase/supabase-js` contra un `fetch` falso (API de administración de Auth y Storage), una revisión estática del SQL (RLS, permisos, `search_path`, firmas de las funciones sociales, que la función solo llame funciones que existen; `tests/security.test.ts` revisa 0014), lo que queda en el registro cuando una acción falla a mitad de camino, los borrados de más de 1000 archivos y la clave de idempotencia de las cancelaciones, y el cliente del launcher (caché de `admin:me`, errores, modo de capturas sin red).
 
@@ -261,7 +299,7 @@ Capturas con datos de ejemplo:
 
 ```bash
 VENUS_DEVSHOT=<carpeta> VENUS_DATA_DIR=<carpeta-temporal> VENUS_SKIP_ONBOARDING=1 VENUS_ADMIN_FAKE=1 \
-  VENUS_DEVSHOT_ROUTES="home|import('./js/features/admin.js').then((m) => m.startup());;admin/overview;;admin/users;;admin/coupons;;admin/plans;;admin/audit" \
+  VENUS_DEVSHOT_ROUTES="home|import('./js/features/admin.js').then((m) => m.startup());0;;admin/overview;;admin/users;;admin/team;;admin/plans;;admin/audit" \
   ./node_modules/.bin/electron .
 ```
 

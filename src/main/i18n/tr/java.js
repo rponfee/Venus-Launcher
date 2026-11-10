@@ -12,4 +12,5 @@ module.exports = {
   warnTooOld: "Minecraft {mc}, Java {required} veya daha yenisini gerektiriyor ama bu örnek Java {current} kullanıyor (elle seçilmiş). Başlayamaz: örnek ayarlarından otomatik Java'ya dön.",
   warnLegacyModded: "Modlu Minecraft {mc}, Java 8 için tasarlanmış ama bu örnek Java {current} kullanıyor. Açılmazsa örnek ayarlarından otomatik Java'ya dön.",
   spawnFailed: "Java başlatılamadı: {error}",
+  errRosetta: "Minecraft'ın bu sürümünün Apple Silicon sürümü yok, bu yüzden Rosetta 2 üzerinden Intel için Java {major} ile çalışır; ancak Rosetta 2 bu Mac'te kurulu değil. Terminal'i aç, softwareupdate --install-rosetta --agree-to-license komutunu çalıştır ve tekrar oyna.",
 };

@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "Gemiddeld",
   effort_high: "Hoog",
   effort_xhigh: "Extra",
+  effort_max: "Maximaal",
+  errBudgetOut: "Je tegoed van {family} (pakket {plan}) is op en je hebt geen tegoed van {other} meer. Om door te gaan, koop je meer tegoed van {family} of een pakket van {other} bij Pakketten.",
+  errWallet: "Het tegoed dat de AI gebruikt, kon niet worden gewijzigd. Probeer het over een tijdje opnieuw.",
 };

@@ -14,7 +14,7 @@ const DETAILS = {
   bug: { enums: { area: ['launcher', 'install', 'update', 'account', 'social', 'other'], frequency: ['always', 'sometimes', 'once'] }, free: { steps: 600 } },
   game: { enums: { loader: ['vanilla', 'fabric', 'quilt', 'forge', 'neoforge', 'other'], moment: ['launch', 'loading', 'playing', 'closing'], modsChanged: ['yes', 'no', 'unknown'] }, free: { mcVersion: 24, steps: 600 } },
   payments: { enums: { topic: ['login', 'profile', 'sanction', 'payment', 'refund', 'other'], method: ['mercado_pago', 'paypal', 'other'] }, free: { paidOn: 10, orderRef: 80 } },
-  assistant: { enums: { plan: ['none', 'basic', 'go', 'pro', 'max'], issue: ['noreply', 'limit', 'wrong', 'billing', 'other'] }, free: {} },
+  assistant: { enums: { plan: ['none', 'claude_basic', 'claude_go', 'claude_pro', 'claude_max', 'claude_ultra', 'basic', 'go', 'pro', 'max', 'ultra'], issue: ['noreply', 'limit', 'wrong', 'billing', 'other'] }, free: {} },
   suggestion: { enums: { area: ['launcher', 'play', 'social', 'ai', 'other'] }, free: { benefit: 400 } },
   other: { enums: {}, free: {} },
   general: { enums: {}, free: {} },

@@ -88,7 +88,7 @@ test('CurseForge: guardar, reemplazar y quitar usan el contrato y muestran solo 
   assert.equal(button(card, 'curseforgeTest').disabled, true);
   input.value = '   ';
   await button(card, 'curseforgeSave').click();
-  assert.equal(r.calls.length, 3);
+  assert.equal(r.calls.length, 4, 'solo las cuatro consultas de estado');
   for (const [key, value] of [['curseforgeSave', 'test-only-key-0001'], ['curseforgeReplace', 'test-only-key-0002']]) {
     input.value = '  ' + value + '  ';
     await button(card, key).click();
@@ -306,3 +306,47 @@ for (const [code, key] of [['badkey', 'curseforgeKeyRejected'], ['forbidden', 'c
     r.api.destroy();
   });
 }
+
+// 6.1: Venus IA con dos motores. La tarjeta de Claude (Anthropic) usa los RPC propios con la misma forma que OpenAI.
+test('Claude (Anthropic): tarjeta propia entre OpenAI y KLIPY, con sus RPC y sin mostrar la clave', async () => {
+  const r = await rig(async (name, args) => name === 'admin_set_anthropic_key' ? result(Boolean(args.p_key), args.p_key.slice(-4)) : result());
+  assert.deepEqual(r.root.children.map(el => el.dataset.integration), ['openai', 'anthropic', 'klipy', 'curseforge']);
+  assert.ok(r.calls.some(c => c.name === 'admin_anthropic_status'));
+  const card = r.card('anthropic'), input = card.querySelector('input');
+  assert.equal(input.type, 'password');
+  assert.ok(card.textContent.includes(T('anthropicTitle')) && card.textContent.includes(T('anthropicOff')));
+  input.value = '  sk-ant-test-only-0001  ';
+  await button(card, 'anthropicSave').click();
+  assert.equal(r.calls.at(-1).name, 'admin_set_anthropic_key');
+  assert.equal(r.calls.at(-1).args.p_key, 'sk-ant-test-only-0001');
+  assert.equal(input.value, '');
+  assert.ok(card.textContent.includes(T('anthropicOn', { hint: '0001' })));
+  assert.equal(r.root.textContent.includes('sk-ant-test-only-0001'), false);
+  await button(card, 'anthropicRemove').click();
+  assert.equal(r.calls.at(-1).args.p_key, '');
+  assert.ok(card.textContent.includes(T('anthropicOff')));
+  r.api.destroy();
+});
+
+test('Claude (Anthropic): bad_key explica el formato sk-ant- sin reflejar el detalle', async () => {
+  const r = await rig(async name => {
+    if (name.endsWith('_status')) return result();
+    return { data: null, error: new Error('bad_key FAKE_PRIVATE_BODY') };
+  });
+  const card = r.card('anthropic'), input = card.querySelector('input');
+  input.value = 'sk-test-only-wrong';
+  await button(card, 'anthropicSave').click();
+  assert.equal(input.value, '');
+  assert.deepEqual(r.failures[0], [T('anthropicFailed'), T('anthropicBadKey')]);
+  assert.equal(JSON.stringify(r.failures).includes('FAKE_PRIVATE_BODY'), false);
+  r.api.destroy();
+});
+
+test('los textos de Claude (Anthropic) existen en es/en con las mismas variables', () => {
+  const en = readDict(path.join(ROOT, 'src/renderer/i18n/en/admin.js'));
+  const variables = value => [...value.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(',');
+  const keys = Object.keys(strings).filter(k => k.startsWith('anthropic'));
+  assert.equal(keys.length, 16);
+  for (const key of keys) assert.equal(variables(en[key]), variables(strings[key]), key);
+  assert.ok(strings.anthropicBadKey.includes('sk-ant-'));
+});

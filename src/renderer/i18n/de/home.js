@@ -236,4 +236,7 @@ export default {
   blockNarrow: "{block} zurück auf normale Breite",
   blockHiddenTag: "Ausgeblendet",
   blockEmptyTag: "Noch keine Daten",
+  heroSize: "Größe der Hauptkarte",
+  heroSize_large: "Groß",
+  heroSize_compact: "Kompakt",
 };

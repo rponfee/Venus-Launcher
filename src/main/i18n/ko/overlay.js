@@ -10,4 +10,11 @@ module.exports = {
   taskDoneTitle: "작업 완료",
   taskFailedTitle: "작업을 완료하지 못했어요",
   errOffline: "어시스턴트가 답하려면 인터넷 연결이 필요해요. 연결을 확인하고 다시 시도하세요.",
+  errBadPreset: "존재하지 않는 오버레이 레이아웃이에요.",
+  errBadDnd: "방해 금지를 얼마나 유지할지 선택하세요.",
+  dndOnTitle: "방해 금지 켜짐",
+  dndOnBody: "게임을 종료할 때까지 알림과 메시지가 표시되지 않아요.",
+  dndOffTitle: "방해 금지 꺼짐",
+  dndEndedTitle: "방해 금지가 끝났어요",
+  dndEndedBody_other: "그동안 알림 또는 메시지 {count}개가 도착했어요.",
 };

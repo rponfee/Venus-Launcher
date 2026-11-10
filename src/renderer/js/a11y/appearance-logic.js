@@ -22,6 +22,18 @@ export const PLAY_LABEL_MAX = 16;
 export const ROTATION_MAX = 40;
 export const ROTATION_PRESETS = [5, 15, 30, 60, 120];
 export const MIN_CONTRAST = 4.5;
+// 6.1: estilo de la interfaz (tarjeta "Estilo") y comportamiento (tarjeta "Interfaz"). El primero de cada lista es el de
+// fábrica; un valor desconocido vuelve a ese.
+export const UI_FONTS = ['outfit', 'pixel', 'system', 'rounded', 'mono'];
+export const UI_TEXT = ['normal', 'small', 'large'];
+export const UI_CARDS = ['glass', 'solid', 'outline'];
+export const UI_RADIUS = ['normal', 'sharp', 'round'];
+export const UI_DENSITY = ['normal', 'compact', 'spacious'];
+export const UI_SIDES = ['left', 'right'];
+export const UI_SIDEBAR = ['full', 'icons'];
+export const START_PAGES = ['home', 'versions', 'worlds', 'assistant', 'last'];
+// Lo que restablece "Restablecer" de la tarjeta Estilo
+export const STYLE_KEYS = ['uiFont', 'uiText', 'uiCards', 'uiRadius', 'uiDensity', 'uiSide', 'uiSidebar', 'uiGlass'];
 
 // Temporadas: rango [desde, hasta] inclusive como [mes, día]; la primera de la lista gana si se superponen
 // (Año Nuevo pisa a Navidad). Cada una trae su acento y un fondo recomendado de la galería.
@@ -45,8 +57,15 @@ export const APPEARANCE_DEFAULTS = {
   uiRadius: 'normal', // 'sharp' | 'normal' | 'round'
   uiDensity: 'normal', // 'compact' | 'normal' | 'spacious'
   uiSidebar: 'full', // 'full' | 'icons'
-  uiFont: 'outfit', // 'outfit' | 'system' | 'rounded' | 'mono'
+  uiFont: 'outfit', // 'outfit' | 'pixel' | 'system' | 'rounded' | 'mono'
   uiGlass: 100, // 40-100: opacidad de las tarjetas (deja ver el fondo)
+  // 6.1: tamaño del texto (aparte de la escala de Accesibilidad), estilo de las tarjetas y lado del menú lateral
+  uiText: 'normal', // 'normal' | 'small' | 'large'
+  uiCards: 'glass', // 'glass' (el de siempre) | 'solid' | 'outline'
+  uiSide: 'left', // 'left' | 'right'
+  // 6.1: qué se abre al arrancar y extras de la barra de título (no son parte del look: no viajan en Mis looks)
+  startPage: 'home', // START_PAGES; 'last' = la última página que visitaste
+  titlebar: { clock: false, instance: false },
   lite: false, // modo liviano: sin fondos animados, animaciones ni desenfoques, y con el overlay apagado
   liteOverlay: false, // el overlay estaba prendido al activar el modo liviano (vuelve a prenderse al salir)
   music: { enabled: false, file: '', volume: 35, pauseInGame: true },
@@ -147,6 +166,33 @@ export function normalizePlayButton(raw) {
   };
 }
 
+// El valor si está en la lista; si no, el primero (el de fábrica)
+export const oneOf = (v, list) => (list.includes(v) ? v : list[0]);
+
+export function normalizeTitlebar(raw) {
+  const r = obj(raw);
+  return { clock: r.clock === true, instance: r.instance === true };
+}
+
+// Estilo de fábrica (lo que pone "Restablecer" de la tarjeta Estilo)
+export function styleDefaults() {
+  const out = {};
+  for (const k of STYLE_KEYS) out[k] = APPEARANCE_DEFAULTS[k];
+  return out;
+}
+
+// Ruta en la que arranca el launcher: la elegida o, con 'last', la última página visitada (si es una ruta simple).
+// Las rutas de detalle vuelven a su página padre (una instancia a Versiones). app.js comprueba que la página exista.
+const LAST_PARENT = { instance: 'versions', server: 'servers' };
+const NEVER_START = ['welcome', 'admin', 'support-staff'];
+export function startRouteFor(startPage, last) {
+  const page = oneOf(startPage, START_PAGES);
+  if (page !== 'last') return page;
+  const name = String(last || '').replace(/^#?\/?/, '').split('/')[0];
+  if (!/^[a-z][a-z-]{0,39}$/.test(name) || NEVER_START.includes(name)) return 'home';
+  return LAST_PARENT[name] || name;
+}
+
 export function normalizeSeasonalBackup(raw) {
   const r = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : null;
   if (!r || !SEASONS.some((s) => s.id === r.season)) return null;
@@ -173,11 +219,16 @@ export function normalizeAppearance(raw = {}) {
   out.bgFile = str(out.bgFile);
   out.bgDim = intIn(out.bgDim, 0, 90, 45);
   out.bgBlur = intIn(out.bgBlur, 0, 24, 0);
-  out.uiRadius = ['sharp', 'round'].includes(out.uiRadius) ? out.uiRadius : 'normal';
-  out.uiDensity = ['compact', 'spacious'].includes(out.uiDensity) ? out.uiDensity : 'normal';
-  out.uiSidebar = out.uiSidebar === 'icons' ? 'icons' : 'full';
-  out.uiFont = ['system', 'rounded', 'mono'].includes(out.uiFont) ? out.uiFont : 'outfit';
+  out.uiRadius = oneOf(out.uiRadius, UI_RADIUS);
+  out.uiDensity = oneOf(out.uiDensity, UI_DENSITY);
+  out.uiSidebar = oneOf(out.uiSidebar, UI_SIDEBAR);
+  out.uiFont = oneOf(out.uiFont, UI_FONTS);
   out.uiGlass = intIn(out.uiGlass, 40, 100, 100);
+  out.uiText = oneOf(out.uiText, UI_TEXT);
+  out.uiCards = oneOf(out.uiCards, UI_CARDS);
+  out.uiSide = oneOf(out.uiSide, UI_SIDES);
+  out.startPage = oneOf(out.startPage, START_PAGES);
+  out.titlebar = normalizeTitlebar(out.titlebar);
   out.lite = Boolean(out.lite);
   out.liteOverlay = Boolean(out.liteOverlay);
   out.music = {

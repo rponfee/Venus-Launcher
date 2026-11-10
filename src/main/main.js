@@ -3,7 +3,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { app, BrowserWindow, shell, session, safeStorage, globalShortcut, desktopCapturer, nativeImage } = require('electron');
+const { app, BrowserWindow, Menu, shell, session, safeStorage, globalShortcut, desktopCapturer, nativeImage, systemPreferences } = require('electron');
 const paths = require('./core/paths');
 const http = require('./core/http');
 const settings = require('./core/settings');
@@ -16,12 +16,14 @@ const i18n = require('./core/i18n');
 const ipc = require('./ipc');
 const modulesLoader = require('./modules-loader');
 const { APP_ID, createWindowBranding, applyTaskbarBranding } = require('./modules/windowsIntegration/branding');
+const platformInfo = require('./core/platform');
 
 let mainWindow = null;
 let hiddenForGame = false;
 const quitHooks = [];
 
-app.setAppUserModelId(APP_ID);
+// Solo existe en Windows (en macOS app.setAppUserModelId no está definido y cortaría el arranque).
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 
 function windowBranding() {
   return createWindowBranding({ app, nativeImage });
@@ -51,7 +53,8 @@ function openLoginWindow(url, redirectPrefix) {
       width: 520,
       height: 720,
       parent: mainWindow || undefined,
-      modal: Boolean(mainWindow),
+      // En macOS una modal con padre es una hoja sin botón de cerrar: ahí va como ventana hija común.
+      modal: platformInfo.loginWindowModal(Boolean(mainWindow)),
       title: i18n.t('core.loginWindowTitle'),
       autoHideMenuBar: true,
       backgroundColor: '#ffffff',
@@ -75,6 +78,14 @@ function openLoginWindow(url, redirectPrefix) {
     w.webContents.on('did-navigate', check);
     w.webContents.on('did-redirect-navigation', check);
     w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    // macOS: Cmd+W la cierra (cuenta como cancelar). En Windows no se registra nada.
+    if (process.platform === 'darwin') {
+      w.webContents.on('before-input-event', (e, input) => {
+        if (!platformInfo.isCloseWindowShortcut(input)) return;
+        e.preventDefault();
+        if (!w.isDestroyed()) w.close();
+      });
+    }
     w.on('closed', () => {
       if (done) return;
       // Codigo estable: la interfaz detecta la cancelacion por err.code, no por el texto traducido.
@@ -199,9 +210,14 @@ if (!DEVSHOT && !app.requestSingleInstanceLock()) {
     // Solo la página del launcher recibe permisos, nunca un marco incrustado.
     const { isAppPage, isPermissionRequester } = require('./core/permissions');
     const rendererFile = path.join(__dirname, '..', 'renderer', 'index.html');
-    // Microfono para el Voice Chat; el resto de permisos se deniega.
+    // Microfono para el Voice Chat; el resto de permisos se deniega. En macOS el sistema pregunta una vez por el
+    // micrófono (NSMicrophoneUsageDescription en build.mac.extendInfo de package.json).
     const allowed = new Set(['media', 'clipboard-sanitized-write', 'notifications', 'fullscreen', 'display-capture']);
-    session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) => cb(allowed.has(permission) && isPermissionRequester(wc, details, rendererFile)));
+    session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) => {
+      const ok = allowed.has(permission) && isPermissionRequester(wc, details, rendererFile);
+      if (!ok || permission !== 'media' || process.platform !== 'darwin') return cb(ok);
+      platformInfo.requestMediaAccess(details?.mediaTypes, systemPreferences).then(cb, () => cb(false));
+    });
     session.defaultSession.setPermissionCheckHandler((wc, permission, _origin, details) => allowed.has(permission) && isPermissionRequester(wc, details, rendererFile));
     // Compartir pantalla en el Voice Chat: la pantalla principal (Electron no muestra selector propio salvo
     // el del sistema en macOS) y, en Windows, el sonido del equipo si la pagina pide audio (loopback).
@@ -241,6 +257,17 @@ if (!DEVSHOT && !app.requestSingleInstanceLock()) {
 
     const s = await settings.get();
     i18n.setLanguage(s.language || 'es');
+    // macOS: menú de la aplicación (Cmd+C/V/X/A/Z en los campos de texto y Cmd+Q), en el idioma elegido.
+    const appMenu = require('./core/app-menu');
+    const installMenu = () => appMenu.install({ Menu, getWindow: () => mainWindow, t: i18n.t, appName: 'Venus Launcher' });
+    installMenu();
+    if (process.platform === 'darwin') {
+      settings.onChange((_settings, patch) => {
+        if (typeof patch?.language !== 'string') return;
+        i18n.setLanguage(patch.language); // ipc.js también lo hace, pero después de avisar el cambio
+        installMenu();
+      });
+    }
     const { send, handle, safePath } = ipc.register({ getWindow: () => mainWindow });
     await ipc.registerModules({
       app,
@@ -277,8 +304,16 @@ if (!DEVSHOT && !app.requestSingleInstanceLock()) {
 
     createWindow();
 
+    // macOS: clic en el ícono del Dock. Vuelve a mostrar la ventana (también si se ocultó al abrir el juego).
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+      if (!mainWindow || mainWindow.isDestroyed()) {
+        createWindow();
+        return;
+      }
+      hiddenForGame = false;
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
     });
   });
 
@@ -306,7 +341,8 @@ if (!DEVSHOT && !app.requestSingleInstanceLock()) {
     globalShortcut.unregisterAll();
   });
 
+  // Igual en todas las plataformas: cerrar la ventana del launcher lo cierra (en macOS no queda abierto sin ventana).
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+    app.quit();
   });
 }

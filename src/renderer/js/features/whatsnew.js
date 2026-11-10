@@ -1,15 +1,16 @@
-// Novedades de Venus 4.5: recorrido de instancias, juego, social, clips y conexiones opcionales.
+// Novedades de Venus 6.1: Venus IA con Claude o ChatGPT, personalización, overlay opcional, clips y lo que cambió.
 // Se muestra una vez por versión, después de la bienvenida; también se abre desde Ajustes → Acerca de.
 // startup(), openWhatsNew({ start?, only? }) y whatsNewButton({ className? }).
 import { h, icon, mount, modal, ensureCss, registerIcons, reducedMotion } from '../ui.js';
 import { store } from '../store.js';
 import { t, loadNs, has } from '../i18n.js';
 import { navigate } from '../app.js';
+import { supports } from '../platform.js';
 
 const NS = 'whatsnew';
-export const TOUR_VERSION = '4.5.0';
-const FULL_TOUR_VERSION = '4.5.0'; // quien ya vio esta versión del recorrido no lo vuelve a ver entero
-const CHANGES_SLIDE = 'v45changes';
+export const TOUR_VERSION = '6.1.0';
+const FULL_TOUR_VERSION = '6.1.0'; // quien ya vio esta versión del recorrido no lo vuelve a ver entero
+const CHANGES_SLIDE = 'v61changes';
 
 registerIcons({
   wnBrush: '<path d="m14.622 17.897-10.68-2.913"/><path d="M18.376 2.622a1 1 0 1 1 3.002 3.002L17.36 9.643a.5.5 0 0 0 0 .707l.944.944a2.41 2.41 0 0 1 0 3.408l-.944.944a.5.5 0 0 1-.707 0L8.354 7.348a.5.5 0 0 1 0-.707l.944-.944a2.41 2.41 0 0 1 3.408 0l.944.944a.5.5 0 0 0 .707 0z"/><path d="M9 8c-1.804 2.71-3.97 3.46-6.583 3.948a.507.507 0 0 0-.302.819l7.32 8.883a1 1 0 0 0 1.185.204C12.735 20.405 16 16.792 16 15"/>',
@@ -34,14 +35,19 @@ async function tryOpen(candidates, fallback) {
   navigate(fallback);
 }
 
+// needs: la pantalla (o el punto) solo se muestra si la función existe en esta plataforma (platform.js).
 const SLIDES = [
   { id: 'intro', icon: 'sparkles' },
-  { id: 'v45instances', art: 'party', icon: 'layers', go: () => navigate('versions') },
-  { id: 'v45play', art: 'overlay', icon: 'gamepad', go: () => navigate('settings/ingame') },
-  { id: 'v45social', art: 'profiles', icon: 'users', go: () => navigate('communities') },
-  { id: 'v45clips', art: 'clips', icon: 'camera', go: () => navigate('clips') },
-  { id: CHANGES_SLIDE, art: 'intro', icon: 'info', bullets: [3], go: () => navigate('settings/privacy') },
+  { id: 'v61ai', art: 'ai', icon: 'sparkles', go: () => navigate('settings/plan') },
+  { id: 'v61look', art: 'themes', icon: 'palette', go: () => navigate('settings/appearance') },
+  { id: 'v61overlay', art: 'overlay', icon: 'gamepad', needs: 'overlay', go: () => navigate('settings/ingame') },
+  { id: 'v61clips', art: 'clips', icon: 'camera', needs: 'capture', go: () => navigate('settings/ingame') },
+  { id: CHANGES_SLIDE, art: 'intro', icon: 'info', bullets: () => (supports('overlay') ? [1, 2, 3] : [1, 3]), go: () => navigate('settings/about') },
 ];
+// Las pantallas que corresponden a esta plataforma (en macOS no hay overlay ni clips).
+export function tourSlides(can = supports) {
+  return SLIDES.filter((s) => !s.needs || can(s.needs));
+}
 
 // "2.0.0", "2.0.0-beta.1" o "v2.1" -> [2, 0, 0]
 function parts(v) {
@@ -73,7 +79,14 @@ const i = (cls, ...kids) => h('i', { class: cls.split(' ').filter(Boolean).map((
 function art(id) {
   const scene = (...kids) => h('div', { class: `wn-art wn-art-${id}`, 'aria-hidden': 'true' }, h('div', { class: 'wn-glow' }), ...kids);
   if (id === 'intro') {
-    return scene(i('orbit'), i('orbit orbit-2'), h('img', { class: 'wn-logo', src: 'assets/logo-256.png', alt: '' }), h('span', { class: 'wn-ver' }, '4.5'), i('spark s1'), i('spark s2'), i('spark s3'));
+    return scene(i('orbit'), i('orbit orbit-2'), h('img', { class: 'wn-logo', src: 'assets/logo-256.png', alt: '' }), h('span', { class: 'wn-ver' }, '6.1'), i('spark s1'), i('spark s2'), i('spark s3'));
+  }
+  if (id === 'ai') {
+    // Los dos motores (el que está en uso, resaltado), una respuesta y el saldo que queda.
+    return scene(h('div', { class: 'wn-mock wn-ai' },
+      h('div', { class: 'wn-ai-row' }, h('span', { class: 'wn-ai-chip wn-on' }, 'Claude'), h('span', { class: 'wn-ai-swap' }, icon('refresh')), h('span', { class: 'wn-ai-chip' }, 'ChatGPT')),
+      h('div', { class: 'wn-lines' }, i('line w80'), i('line w60 dim'), i('line w45 dim')),
+      h('div', { class: 'wn-ai-bar' }, i('fill'))));
   }
   if (id === 'music') {
     return scene(
@@ -120,7 +133,9 @@ export async function openWhatsNew({ start = 0, only = null } = {}) {
   }
   await prepare();
   if (current) return;
-  const slides = only ? SLIDES.filter((s) => s.id === only) : SLIDES;
+  const all = tourSlides();
+  const slides = only ? all.filter((s) => s.id === only) : all;
+  if (!slides.length) return;
   let index = Math.max(0, Math.min(slides.length - 1, Number(start) || 0));
   const total = slides.length;
   const slideHost = h('div', { class: 'wn-slide-host' });
@@ -151,7 +166,7 @@ export async function openWhatsNew({ start = 0, only = null } = {}) {
           Promise.resolve(s.go()).catch((err) => console.warn('[whatsnew]', err?.message || err));
         } }, t(`whatsnew.${s.id}_cta`), icon('arrowRight'))
       : null;
-    const bullets = (s.bullets || [1, 2, 3, 4]).map((k) => `whatsnew.${s.id}_b${k}`).filter((k) => has(k));
+    const bullets = ((typeof s.bullets === 'function' ? s.bullets() : s.bullets) || [1, 2, 3, 4]).map((k) => `whatsnew.${s.id}_b${k}`).filter((k) => has(k));
     return h(
       'section',
       { class: ['wn-slide', dir && !reducedMotion() && `wn-enter-${dir}`], role: 'group', 'aria-roledescription': t('whatsnew.slideRole'), 'aria-label': t('whatsnew.slideLabel', { n: index + 1, total, title: t(`whatsnew.${s.id}_title`) }) },

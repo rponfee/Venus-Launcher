@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  menuAbout: "Про {app}",
+  menuHide: "Сховати {app}",
+  menuHideOthers: "Сховати інші",
+  menuShowAll: "Показати все",
+  menuQuit: "Вийти з {app}",
+  menuEdit: "Редагування",
+  menuUndo: "Скасувати",
+  menuRedo: "Повторити",
+  menuCut: "Вирізати",
+  menuCopy: "Копіювати",
+  menuPaste: "Вставити",
+  menuPasteMatch: "Вставити і допасувати стиль",
+  menuDelete: "Видалити",
+  menuSelectAll: "Вибрати все",
+  menuWindow: "Вікно",
+  menuMinimize: "Згорнути",
+  menuZoom: "Розгорнути",
+  menuFront: "Усе на передній план",
+};

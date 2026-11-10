@@ -13,8 +13,6 @@ export default {
   perk_effectsText: "상점에서 사지 않아도 이름에 반짝임, 무지개, 불꽃 효과를 쓸 수 있어요.",
   perk_frame: "전용 테두리와 Supporter 칭호",
   perk_frameText: "Premium에서만 제공되는 애니메이션 아바타 테두리와, 이름 옆에 표시되는 Supporter 칭호예요.",
-  perk_replay: "5분 즉시 다시 보기",
-  perk_replayText: "플레이한 마지막 60초 대신 마지막 5분을 저장해요.",
   perk_ai: "Venus AI",
   perk_aiText: "언제나처럼 요금제에 포함된 모델과 질문 횟수로 어시스턴트를 사용해요.",
   note: "Premium은 요금제 기간 동안 유지돼요. 요금제를 해지해도 Venus Points로 구매한 것은 모두 그대로 남아요.",

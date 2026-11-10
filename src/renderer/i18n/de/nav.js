@@ -45,6 +45,4 @@ export default {
   resetMenu: "Zurücksetzen",
   done: "Fertig",
   menuSaveFailed: "Das Menü konnte nicht gespeichert werden",
-  clans: "Clans",
-  communities: "Communitys",
 };

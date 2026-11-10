@@ -20,6 +20,11 @@
 //   overlay:accent('#rrggbb')     -> true (color de acento del launcher para el tema "Acento")
 //   overlay:setPanelShortcut(id, accel) -> { ok, shortcut, code?, who? } (atajo del panel 'recipes' o 'assistant', mismos codigos)
 //   overlay:assistantEvent(conversacion, evento) -> la interfaz le pasa al overlay los eventos del asistente
+//   overlay:preset(id)            -> status (diseno listo 'minimal', 'full' o 'performance': prende y apaga widgets; code 'invalid')
+//   overlay:dnd(modo)             -> status ("No molestar": 15 o 60 minutos, 'game' = hasta cerrar el juego, 'off' lo apaga)
+// status suma presets (los disenos listos) y dnd: { on, until, game, missed } (avisos y mensajes que no se mostraron).
+// Apagado (lo normal desde la 6.1) no hay ventana, ayudante, medidor, contadores, lectura del registro ni atajos: solo
+// quedan escuchando los eventos del juego y de los ajustes. Plataformas: overlay/platform.js.
 // Eventos a la interfaz: overlay:state (lo mismo que status, sin config ni defaults), overlay:config (la
 // configuracion normalizada cada vez que cambia, por ejemplo al mover un widget en el modo edicion) y overlay:route
 // (un panel pidio abrir una pantalla del launcher).
@@ -32,6 +37,7 @@ const tracker = require('./overlay/tracker');
 const perf = require('./overlay/perf');
 const panels = require('./overlay/panels');
 const counters = require('./overlay/counters');
+const platform = require('./overlay/platform');
 const { GameLogReader } = require('./capture/gamelog');
 const gamelang = require('./capture/gamelang');
 
@@ -92,7 +98,8 @@ const st = {
   panelFsBlocked: null, // pid del juego que se minimizo al abrir un panel en pantalla completa
   panelTimer: null,
   panelFocusTimers: [],
-  panelKeys: Object.fromEntries(config.PANELS.map((id) => [id, { accel: null, ok: true }])),
+  panelKeys: Object.fromEntries(config.SHORTCUT_IDS.map((id) => [id, { accel: null, ok: true }])),
+  dnd: { until: 0, game: false, missed: 0, timer: null }, // "No molestar" (solo en memoria: no sobrevive a reiniciar el launcher)
   assistant: { conv: null, awaiting: false, buffer: [] },
   devHold: false, // capturas de desarrollo: la ventana no se muestra ni toma el foco
   lastLayout: '',
@@ -108,7 +115,7 @@ const st = {
   screenOff: null,
 };
 
-const supported = () => process.platform === 'win32';
+const supported = () => platform.available();
 const testing = () => Date.now() < st.testUntil;
 const wanted = () => st.devHold || st.editing || testing() || (st.cfg.enabled && supported() && st.games.size > 0);
 const alive = (w) => Boolean(w && !w.isDestroyed());
@@ -190,16 +197,18 @@ function status({ full = true } = {}) {
     shortcutOk: st.shortcut.ok,
     // Atajos guardados que le sacan teclas a Minecraft o a Windows ('minecraft', 'system', 'altgr'): la tarjeta los avisa
     shortcutIssue: st.cfg.shortcut ? config.shortcutIssue(st.cfg.shortcut) : null,
-    panelShortcutIssues: Object.fromEntries(config.PANELS.map((id) => [id, st.cfg.panelShortcuts[id] ? config.shortcutIssue(st.cfg.panelShortcuts[id]) : null])),
+    panelShortcutIssues: Object.fromEntries(config.SHORTCUT_IDS.map((id) => [id, st.cfg.panelShortcuts[id] ? config.shortcutIssue(st.cfg.panelShortcuts[id]) : null])),
     tracker: trackerState(),
     pageFailed: st.pageFailed,
     panel: st.panel,
     panelShortcuts: st.cfg.panelShortcuts,
-    panelShortcutsOk: Object.fromEntries(config.PANELS.map((id) => [id, st.panelKeys[id].ok])),
+    panelShortcutsOk: Object.fromEntries(config.SHORTCUT_IDS.map((id) => [id, st.panelKeys[id].ok])),
+    dnd: { on: dndOn(), until: dndOn() && !st.dnd.game ? st.dnd.until : null, game: dndOn() && st.dnd.game, missed: st.dnd.missed },
   };
   if (full) {
     out.config = st.cfg;
     out.defaults = config.DEFAULTS;
+    out.presets = config.PRESETS;
   }
   return out;
 }
@@ -500,7 +509,25 @@ function syncPerf() {
 }
 
 // ---------- Contadores en pantalla ----------
-// Cuentan desde que se abre el juego, este o no el widget a la vista (leer la fecha de un archivo cada 5 s no cuesta nada).
+// Con el overlay prendido cuentan desde que se abre el juego, este o no el widget a la vista (leer la fecha de un archivo
+// cada 5 s no cuesta nada). Con el overlay apagado no corren: si se prende en medio de una partida, las muertes y los
+// bloques se cuentan desde ese momento (la sesion sigue siendo desde que se abrio el juego).
+const countersWanted = () => supported() && st.cfg.enabled && !st.quitting;
+
+function syncCounters() {
+  const want = countersWanted();
+  for (const g of st.games.values()) {
+    if (want && !g.counters) startCounters(g);
+    else if (!want && g.counters) {
+      g.counters.stop();
+      g.counters = null;
+    }
+  }
+  if (!want && st.games.size) deliver({ kind: 'counters', deaths: null, mined: null, session: null, multiplayer: false });
+  // Los textos del juego (para reconocer las muertes en el registro) se leen recien cuando hacen falta
+  if (want) for (const id of st.games.keys()) ensurePlayTables(st.plays.get(id));
+}
+
 function startCounters(g) {
   const play = st.plays.get(g.id);
   g.counters = counters.createWatch({
@@ -532,7 +559,13 @@ async function loadPlayTables(play) {
 }
 
 function reloadPlayTables(play) {
+  play.tablesAsked = true;
   loadPlayTables(play).catch((err) => console.warn('[overlay] textos del juego:', err?.message || err));
+}
+
+// Solo la primera vez (despues los vuelve a leer onGameLog cuando el juego recarga los recursos)
+function ensurePlayTables(play) {
+  if (play && !play.tablesAsked) reloadPlayTables(play);
 }
 
 // Antes de lanzar: de donde salen las recetas y los textos del juego. Nada de la cuenta salvo su nombre y su uuid.
@@ -550,15 +583,17 @@ function onBeforeLaunch({ id, instance, resolved, account, quiet }) {
     lang: null,
     langTimer: null,
     recipes: null,
+    tablesAsked: false,
   };
   st.plays.set(id, play);
-  reloadPlayTables(play);
+  // Con el overlay apagado no se lee nada del disco: se lee si lo prenden durante la partida (syncCounters)
+  if (countersWanted()) reloadPlayTables(play);
 }
 
-// Muertes en vivo: el mismo lector de registro que los clips automaticos, solo para el jugador local
+// Muertes en vivo: el mismo lector de registro que los clips automaticos, solo para el jugador local. Apagado, no se lee.
 function onGameLog(id, lines) {
   const play = st.plays.get(id);
-  if (!play || !Array.isArray(lines)) return;
+  if (!play || !Array.isArray(lines) || !countersWanted()) return;
   for (const l of lines) {
     const ev = play.reader.read(l?.text);
     if (!ev) continue;
@@ -647,7 +682,7 @@ function startGame(id, pid, startedAt) {
   st.games.set(id, g);
   retryPage();
   startTracker(g);
-  startCounters(g);
+  syncCounters();
   armShortcut();
   evaluate();
 }
@@ -670,6 +705,7 @@ function stopGame(id) {
   if (!st.games.size) {
     st.userHidden = false;
     if (st.editing && st.mode === 'game') stopEdit();
+    if (st.dnd.game) setDnd('off'); // "hasta cerrar el juego"
   }
   armShortcut();
   syncPerf();
@@ -748,7 +784,7 @@ function takePanelKey(id, accel) {
 
 function armPanelShortcuts() {
   const live = shortcutsLive();
-  for (const id of config.PANELS) {
+  for (const id of config.SHORTCUT_IDS) {
     const want = live ? st.cfg.panelShortcuts[id] : '';
     const key = st.panelKeys[id];
     if (want) {
@@ -761,8 +797,42 @@ function armPanelShortcuts() {
 }
 
 function onPanelShortcut(id) {
+  if (id === 'dnd') return toggleDnd();
   if (st.panel === id) closePanel();
   else openPanel(id);
+}
+
+// ---------- No molestar ----------
+// Calla los avisos y los mensajes en pantalla un rato (15 min, 1 h o hasta cerrar el juego). Se prende desde Ajustes o con
+// su atajo en el juego (ahi es "hasta cerrar el juego"); al terminar, si se perdio algo, un aviso dice cuantos fueron.
+const dndOn = () => st.dnd.game || st.dnd.until > Date.now();
+
+function setDnd(mode) {
+  const was = st.dnd.game || st.dnd.until > 0; // prendido (o recien vencido: lo apaga su temporizador)
+  clearTimeout(st.dnd.timer);
+  st.dnd.timer = null;
+  const plan = mode === 'off' ? null : config.dndPlan(mode, Date.now());
+  if (mode !== 'off' && !plan) return false;
+  const missed = st.dnd.missed;
+  st.dnd = { until: plan?.until || 0, game: Boolean(plan?.game), missed: plan && was ? missed : 0, timer: null };
+  if (plan && !plan.game) {
+    st.dnd.timer = setTimeout(guard('no molestar', () => setDnd('off')), Math.max(0, plan.until - Date.now()));
+    st.dnd.timer.unref?.();
+  }
+  // Al prenderlo se va de la pantalla lo que estaba (la pagina vacia avisos, cola y mensajes)
+  if (plan && !was) deliver({ kind: 'dnd', on: true });
+  if (!plan && was && missed > 0 && playing()) push({ kind: 'alert', icon: 'info', title: t('overlay.dndEndedTitle'), body: t('overlay.dndEndedBody', { count: missed }) });
+  emitStatus();
+  return true;
+}
+
+function toggleDnd() {
+  const on = !dndOn();
+  setDnd(on ? 'game' : 'off');
+  // Desde el juego no se ve Ajustes: un aviso corto (que pasa aunque "No molestar" este prendido) dice como quedo
+  const ev = { kind: 'alert', icon: 'info', title: t(on ? 'overlay.dndOnTitle' : 'overlay.dndOffTitle'), ttl: 3 };
+  if (on) ev.body = t('overlay.dndOnBody');
+  dispatch(events.validate(ev), { bypass: true });
 }
 
 // Los atajos de Venus que no son del overlay (silenciar el Voice Chat, capturas y musica), para no pisarlos. Los lee de los
@@ -800,14 +870,14 @@ async function shortcutProblem(value, self) {
   if (!config.validAccelerator(value)) return { code: 'invalid' };
   const issue = config.shortcutIssue(value);
   if (issue) return { code: issue };
-  const own = [{ key: 'shortcut', accel: st.cfg.shortcut }, ...config.PANELS.map((p) => ({ key: p, accel: st.cfg.panelShortcuts[p] }))].filter((o) => o.key !== self).map((o) => ({ id: 'overlay', accel: o.accel }));
+  const own = [{ key: 'shortcut', accel: st.cfg.shortcut }, ...config.SHORTCUT_IDS.map((p) => ({ key: p, accel: st.cfg.panelShortcuts[p] }))].filter((o) => o.key !== self).map((o) => ({ id: 'overlay', accel: o.accel }));
   const hit = config.findConflict(value, [...own, ...(await venusShortcuts())]);
   return hit ? { code: 'venus', who: hit.id } : null;
 }
 
 // Prueba un atajo de panel: si se puede registrar, se guarda (y queda registrado solo si hay un juego adelante).
 async function setPanelShortcut(id, accel) {
-  if (!config.PANELS.includes(id)) return { ok: false, shortcut: '', code: 'invalid' };
+  if (!config.SHORTCUT_IDS.includes(id)) return { ok: false, shortcut: '', code: 'invalid' };
   const current = st.cfg.panelShortcuts[id];
   if (accel !== undefined && accel !== null && typeof accel !== 'string') return { ok: false, shortcut: current, code: 'invalid' };
   const value = typeof accel === 'string' ? accel.trim() : '';
@@ -885,9 +955,10 @@ function startEdit() {
   retryPage();
   if (st.panel) closePanel({ refocus: false });
   // Se pide desde Ajustes, con el launcher adelante: se minimiza para que el juego quede a la vista y el overlay
-  // pueda tomar el foco (Escape y las flechas andan sin hacer clic antes).
+  // pueda tomar el foco (Escape y las flechas andan sin hacer clic antes). Con el overlay apagado el ayudante arranca
+  // recien ahora y todavia no informo la ventana: alcanza con que haya un juego abierto.
   const main = st.ctx?.getWindow?.();
-  if (!st.editing && target() && alive(main) && main.isVisible() && !main.isMinimized()) main.minimize();
+  if (!st.editing && (target() || (supported() && st.games.size > 0)) && alive(main) && main.isVisible() && !main.isMinimized()) main.minimize();
   st.editing = true;
   clearTimeout(st.editTimer);
   st.editTimer = setTimeout(guard('edicion', stopEdit), EDIT_MAX_MS);
@@ -904,10 +975,21 @@ function stopEdit() {
   st.editTimer = null;
   flushMoves();
   setInteractive(false);
-  syncTrackers();
+  // Con el overlay apagado el ayudante solo corria para la edicion: se suelta despues de devolver el foco al juego (la
+  // orden la manda el ayudante), no antes.
+  const late = Boolean(tg && !needsTracker());
+  if (!late) syncTrackers();
   evaluate();
   sendLayout();
   if (tg) returnToGame(tg);
+  if (late) {
+    st.editTimer = setTimeout(guard('edicion', () => {
+      st.editTimer = null;
+      syncTrackers();
+      evaluate();
+    }), RETURN_RETRY_MS + 100);
+    st.editTimer.unref?.();
+  }
 }
 
 function startTest(list) {
@@ -1260,14 +1342,24 @@ function dispatch(ev, opts = {}) {
   }
   // Durante una prueba la voz y la musica reales solo se guardan (se muestran al terminar).
   if ((ev.kind === 'voice' || ev.kind === 'music') && testing()) return true;
+  // "No molestar": los avisos y los mensajes no se muestran (se cuentan, para decir cuantos fueron al terminar)
+  if (!opts.bypass && config.dndSilences(ev) && dndOn()) {
+    if (playing()) {
+      st.dnd.missed++;
+      emitStatus();
+    }
+    return true;
+  }
   deliver(ev, opts);
   return true;
 }
 
 // Contrato 1: lo llaman otros modulos del proceso principal. Nunca lanza.
-function push(ev) {
+// opts.direct: el aviso es respuesta a algo que hizo el jugador o es critico (modo familia): "No molestar" no lo calla ni
+// lo cuenta. Solo desde el proceso principal: el canal overlay:push de la interfaz no lo puede pedir.
+function push(ev, opts) {
   try {
-    return dispatch(events.validate(ev));
+    return dispatch(events.validate(ev), opts && opts.direct === true ? { bypass: true } : {});
   } catch (err) {
     console.warn('[overlay] evento descartado:', err?.field || err?.message || err);
     return false;
@@ -1309,7 +1401,8 @@ function onPageMessage(event, msg) {
 }
 
 // ---------- Avisos propios: servidores locales y tareas largas mientras se juega ----------
-const playing = () => st.cfg.enabled && st.games.size > 0;
+// Sin overlay en esta plataforma (macOS) no se juega "con overlay": ni atajos globales, ni avisos, ni avisos perdidos.
+const playing = () => supported() && st.cfg.enabled && st.games.size > 0;
 
 async function serverName(id) {
   try {
@@ -1389,6 +1482,7 @@ function register({ app, handle, send, getWindow, onQuit }) {
     .then(guard('ajustes', (s) => {
       applySettings(s);
       syncTrackers();
+      syncCounters();
       armShortcut();
       evaluate();
     }))
@@ -1400,6 +1494,7 @@ function register({ app, handle, send, getWindow, onQuit }) {
     applySettings(s, patch);
     if (JSON.stringify(st.cfg) !== before) send?.('overlay:config', st.cfg);
     syncTrackers();
+    syncCounters();
     armShortcut();
     sendLayout();
     evaluate();
@@ -1467,6 +1562,16 @@ function register({ app, handle, send, getWindow, onQuit }) {
     await settings.set({ overlay: { widgets: config.resetPatch() } });
     return status();
   });
+  handle('overlay:preset', async (id) => {
+    const widgets = config.presetPatch(id);
+    if (!widgets) throw coded('errBadPreset', 'invalid');
+    await settings.set({ overlay: { widgets } });
+    return status();
+  });
+  handle('overlay:dnd', (mode) => {
+    if (!setDnd(mode)) throw coded('errBadDnd', 'invalid');
+    return status();
+  });
   handle('overlay:setShortcut', (accel) => setShortcut(accel));
   handle('overlay:setPanelShortcut', (id, accel) => setPanelShortcut(id, accel));
   handle('overlay:assistantEvent', (convId, ev) => relayAssistant(convId, ev));
@@ -1523,6 +1628,7 @@ function register({ app, handle, send, getWindow, onQuit }) {
     clearTimeout(st.readyTimer);
     clearTimeout(st.idleTimer);
     clearPanelTimers();
+    clearTimeout(st.dnd.timer);
     st.screenOff?.();
     st.screenOff = null;
     flushMoves();
@@ -1533,7 +1639,7 @@ function register({ app, handle, send, getWindow, onQuit }) {
     st.perfSampler?.stop();
     st.perfSampler = null;
     unregisterShortcut();
-    config.PANELS.forEach(dropPanelKey);
+    config.SHORTCUT_IDS.forEach(dropPanelKey);
     closeWindow();
   });
 }

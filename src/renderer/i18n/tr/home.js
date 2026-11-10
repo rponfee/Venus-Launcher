@@ -236,4 +236,7 @@ export default {
   blockNarrow: "{block} bloğunu normal genişliğe döndür",
   blockHiddenTag: "Gizli",
   blockEmptyTag: "Şimdilik veri yok",
+  heroSize: "Ana kart boyutu",
+  heroSize_large: "Büyük",
+  heroSize_compact: "Kompakt",
 };

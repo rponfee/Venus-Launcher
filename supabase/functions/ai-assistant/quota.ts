@@ -1,8 +1,8 @@
-// Plan, cuota y uso: lectura de lo que devuelven las funciones SQL de 0008_ai_plans.sql (y 0013), recorte de
-// max_tokens, uso por intento (para cobrar cada intento con el precio del modelo que lo corrió), el uso estimado
+// Plan, cuota y uso: lectura de lo que devuelven las funciones SQL de 0008_ai_plans.sql (0013 y, desde la 6.1, 0056:
+// dos familias de planes, un saldo por familia y el proveedor de cada llamada), recorte de max_tokens, uso por intento (para cobrar cada intento con el precio del modelo que lo corrió), el uso estimado
 // de un intento cortado y las respuestas de rechazo del protocolo. Sin dependencias externas.
-import { ANTHROPIC_MODEL_PATTERN, EFFORTS, FALLBACK_MODELS, MAX_OUTPUT_TOKENS, MODEL_KEYS } from './config.ts';
-import type { Effort, ModelKey } from './config.ts';
+import { ANTHROPIC_MODEL_PATTERN, EFFORTS, FALLBACK_MODELS, MAX_OUTPUT_TOKENS, MODEL_KEYS, OPENAI_EFFORTS, OPENAI_MODEL_PATTERN, PROVIDERS, isProviderModel } from './config.ts';
+import type { Effort, ModelKey, OpenAIEffort, Provider } from './config.ts';
 
 export interface Counter {
   used: number;
@@ -12,20 +12,47 @@ export interface Counter {
 /** Un modelo del plan del usuario, con su cupo de preguntas. */
 export interface ModelQuota {
   id: ModelKey;
-  /** Id del modelo en la API de Anthropic (por ejemplo claude-haiku-5-5). */
+  /** Id de Claude de la clave (por ejemplo claude-haiku-5-5), también en los planes de ChatGPT (0056). */
   model: string;
+  /** Id real del motor del plan (por ejemplo gpt-6-luna), si la base lo manda (0056). */
+  providerModel?: string;
+  /** Nombre del modelo real ("Haiku 5.5", "GPT-6 Luna"). */
   label: string;
   efforts: Effort[];
   daily: Counter;
   weekly: Counter;
 }
 
-/** Estado del plan que recibe el launcher (QuotaV2, forma fija del protocolo). */
+/** Un saldo de la cuenta (0056: uno por familia de planes). */
+export interface Wallet {
+  provider: Provider;
+  plan: string;
+  planName: string;
+  tier: string | null;
+  usedUsd: number;
+  limitUsd: number;
+  remainingUsd: number;
+  /** El saldo en uso (el que paga las llamadas). */
+  active: boolean;
+}
+
+/**
+ * Estado del plan que recibe el launcher (QuotaV2, forma fija del protocolo). Desde 0056 (QuotaV3) suma provider,
+ * tier, maxTokensPerRequest y wallets: solo aparecen si la base los manda.
+ */
 export interface Quota {
   plan: string | null;
   planName: string | null;
   priceUsd: number | null;
   status: 'active' | 'trialing' | 'none';
+  /** Familia del plan en uso (0056). */
+  provider?: Provider | null;
+  /** Nivel del plan en uso: basic, go, pro, max o ultra (0056). */
+  tier?: string | null;
+  /** Tope de tokens por respuesta del plan en uso (0056). */
+  maxTokensPerRequest?: number;
+  /** Saldos válidos de la cuenta (0, 1 o 2), el que está en uso con active: true (0056). */
+  wallets?: Wallet[];
   models: ModelQuota[];
   budget: { usedUsd: number; limitUsd: number };
   resets: { daily: string; weekly: string; monthly: string };
@@ -37,6 +64,12 @@ export interface Quota {
 export interface CatalogPlan {
   id: string;
   name: string;
+  /** Familia del plan (0056): anthropic (Claude) u openai (ChatGPT). */
+  provider?: Provider | null;
+  tier?: string | null;
+  maxTokensPerRequest?: number;
+  /** false: el motor del plan todavía no tiene su clave cargada, así que no se vende (0056). */
+  available?: boolean;
   priceUsd: number;
   budgetUsd: number;
   models: { id: ModelKey; label: string; efforts: Effort[]; daily: number; weekly: number }[];
@@ -46,14 +79,41 @@ export interface CatalogPlan {
 export type DenyReason = 'noplan' | 'model' | 'effort' | 'turn_model' | 'rate' | 'budget' | 'turn' | 'daily' | 'weekly';
 const REASONS: ReadonlySet<string> = new Set(['noplan', 'model', 'effort', 'turn_model', 'rate', 'budget', 'turn', 'daily', 'weekly']);
 
+/** El servidor pasó al otro saldo en esta llamada (0056). */
+export interface Switched {
+  from: Provider;
+  to: Provider;
+  /** budget: el saldo en uso no alcanzaba; noplan: el plan en uso dejó de valer. */
+  reason: 'budget' | 'noplan';
+}
+
 /** Resultado de ai_register_turn. */
 export interface TurnCheck {
   allowed: boolean;
   reason: DenyReason | null;
   /** Modelo de la pregunta (ai_models.id): el pedido, el de la pregunta abierta o el primero del plan. */
   model: ModelKey | null;
-  /** Id del modelo en la API de Anthropic (solo si se permite). Sale de ai_models, nunca del cliente. */
+  /**
+   * Proveedor que atiende la llamada: la familia del saldo que la paga (0056). null con una base anterior a 0056
+   * (el handler usa entonces ai_provider_settings().primary, como antes).
+   */
+  provider: Provider | null;
+  /**
+   * Id de Claude de la clave del modelo (solo si se permite), también cuando `provider` es openai: la función de la
+   * 6.0.0 lo exige. El id real de la llamada es models[provider]. Sale de la base, nunca del cliente.
+   */
   modelId: string | null;
+  /** Id de este modelo en la API de cada proveedor (null: ese motor no ofrece la clave). */
+  models: { anthropic: string | null; openai: string | null };
+  /** reasoning.effort para OpenAI (null = no mandarlo); sin el campo si la base no lo dice (antes de 0056). */
+  openaiEffort?: OpenAIEffort | null;
+  /** El servidor pasó al otro saldo en esta llamada (o null). */
+  switched: Switched | null;
+  /**
+   * Reserva de esta llamada (0056). Se le pasa a ai_add_usage / ai_end_call para cerrar esa y no otra: con dos
+   * saldos puede haber llamadas simultáneas pagadas por saldos distintos. null con una base anterior a 0056.
+   */
+  callId: string | null;
   /** Si se manda fallbacks: "default" (la base lo permite y el modelo está en FALLBACK_MODELS). */
   fallback: boolean;
   /** Esfuerzo final (el pedido o el predeterminado del plan). */
@@ -117,7 +177,54 @@ function anthropicModel(value: unknown): string | null {
   return typeof value === 'string' && ANTHROPIC_MODEL_PATTERN.test(value) ? value : null;
 }
 
-/** Esfuerzos válidos, sin repetir y en orden fijo (low, medium, high). */
+/** Id de modelo de cualquiera de los dos proveedores (la cuota de un plan de ChatGPT trae ids de OpenAI). */
+function apiModel(value: unknown): string | null {
+  return typeof value === 'string' && (ANTHROPIC_MODEL_PATTERN.test(value) || OPENAI_MODEL_PATTERN.test(value)) ? value : null;
+}
+
+function providerOf(value: unknown): Provider | null {
+  return typeof value === 'string' && (PROVIDERS as readonly string[]).includes(value) ? (value as Provider) : null;
+}
+
+function tierOf(value: unknown): string | null {
+  return typeof value === 'string' && /^[a-z][a-z0-9_-]{0,15}$/.test(value) ? value : null;
+}
+
+function openaiEffortOf(value: unknown): OpenAIEffort | null {
+  return typeof value === 'string' && (OPENAI_EFFORTS as readonly string[]).includes(value) ? (value as OpenAIEffort) : null;
+}
+
+function planIdOf(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim().slice(0, 32) : null;
+}
+
+function wallet(raw: unknown): Wallet | null {
+  if (!isObject(raw)) return null;
+  const provider = providerOf(raw.provider);
+  const plan = planIdOf(raw.plan);
+  if (!provider || !plan) return null;
+  return {
+    provider,
+    plan,
+    planName: text(raw.planName, plan, 40),
+    tier: tierOf(raw.tier),
+    usedUsd: usd(raw.usedUsd, 4),
+    limitUsd: usd(raw.limitUsd, 2),
+    remainingUsd: usd(raw.remainingUsd, 4),
+    active: raw.active === true,
+  };
+}
+
+/** Lee `switched` de ai_register_turn (null si no hubo cambio o si no tiene la forma del contrato). */
+export function parseSwitched(raw: unknown): Switched | null {
+  if (!isObject(raw)) return null;
+  const from = providerOf(raw.from);
+  const to = providerOf(raw.to);
+  if (!from || !to || from === to || (raw.reason !== 'budget' && raw.reason !== 'noplan')) return null;
+  return { from, to, reason: raw.reason };
+}
+
+/** Esfuerzos válidos, sin repetir y en orden fijo (low, medium, high, xhigh, max). */
 function effortList(value: unknown): Effort[] {
   const list = Array.isArray(value) ? value : [];
   return EFFORTS.filter((effort) => list.includes(effort));
@@ -131,9 +238,10 @@ function counter(value: unknown): Counter {
 function modelQuota(raw: unknown): ModelQuota | null {
   if (!isObject(raw)) return null;
   const id = modelKey(raw.id);
+  // model es siempre el id de Claude de la clave (0056 lo conserva por la función de la 6.0.0); el real va en providerModel.
   const model = anthropicModel(raw.model);
   if (!id || !model) return null;
-  return {
+  const out: ModelQuota = {
     id,
     model,
     label: text(raw.label, id, 40),
@@ -141,6 +249,9 @@ function modelQuota(raw: unknown): ModelQuota | null {
     daily: counter(raw.daily),
     weekly: counter(raw.weekly),
   };
+  const real = apiModel(raw.providerModel);
+  if (real) out.providerModel = real;
+  return out;
 }
 
 /**
@@ -168,6 +279,13 @@ export function normalizeQuota(raw: unknown): Quota | null {
   };
   const last = modelKey(raw.lastModel);
   if (last && models.some((m) => m.id === last)) quota.lastModel = last;
+  // QuotaV3 (0056): pasan solo si la base los manda.
+  if ('provider' in raw) quota.provider = plan ? providerOf(raw.provider) : null;
+  if ('tier' in raw) quota.tier = plan ? tierOf(raw.tier) : null;
+  if ('maxTokensPerRequest' in raw) quota.maxTokensPerRequest = plan ? count(raw.maxTokensPerRequest) : 0;
+  if ('wallets' in raw) {
+    quota.wallets = (Array.isArray(raw.wallets) ? raw.wallets : []).map(wallet).filter((w): w is Wallet => w !== null).slice(0, 2);
+  }
   return quota;
 }
 
@@ -184,10 +302,20 @@ export function normalizeCatalog(raw: unknown): CatalogPlan[] {
       if (!isObject(m) || !key) continue;
       models.push({ id: key, label: text(m.label, key, 40), efforts: effortList(m.efforts), daily: count(m.daily), weekly: count(m.weekly) });
     }
-    plans.push({ id, name: text(item.name, id, 40), priceUsd: usd(item.priceUsd, 2), budgetUsd: usd(item.budgetUsd, 2), models });
+    const plan: CatalogPlan = { id, name: text(item.name, id, 40), priceUsd: usd(item.priceUsd, 2), budgetUsd: usd(item.budgetUsd, 2), models };
+    // 0056: familia, nivel y tope de tokens (solo si la base los manda).
+    if ('provider' in item) plan.provider = providerOf(item.provider);
+    if ('tier' in item) plan.tier = tierOf(item.tier);
+    if ('maxTokensPerRequest' in item) plan.maxTokensPerRequest = count(item.maxTokensPerRequest);
+    // 0056: false si el motor del plan todavía no tiene su clave cargada (no se vende).
+    if ('available' in item) plan.available = item.available !== false;
+    plans.push(plan);
   }
   return plans;
 }
+
+/** Id de una reserva (uuid de ai_call_reservations). Otra cosa no se manda: la base la rechazaría. */
+const CALL_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Lee el JSON de ai_register_turn. null si la respuesta no tiene la forma esperada (también si permite la
@@ -201,15 +329,36 @@ export function parseTurnCheck(raw: unknown): TurnCheck | null {
   const effort = typeof raw.effort === 'string' && (EFFORTS as readonly string[]).includes(raw.effort) ? (raw.effort as Effort) : null;
   const maxTokensPerRequest = count(raw.maxTokensPerRequest);
   const reason = typeof raw.reason === 'string' && raw.reason ? raw.reason : null;
+  const hasProvider = raw.provider !== undefined && raw.provider !== null;
+  const provider = providerOf(raw.provider);
+  // Un proveedor que el código no conoce: la base es más nueva que la función (mejor no adivinar).
+  if (hasProvider && !provider) return null;
+  const rawModels: Record<string, unknown> = isObject(raw.models) ? raw.models : {};
+  const models = {
+    anthropic: isProviderModel('anthropic', rawModels.anthropic) ? rawModels.anthropic : null,
+    openai: isProviderModel('openai', rawModels.openai) ? rawModels.openai : null,
+  };
+  const switched = parseSwitched(raw.switched);
+  const extra: Pick<TurnCheck, 'openaiEffort'> = 'openaiEffort' in raw ? { openaiEffort: openaiEffortOf(raw.openaiEffort) } : {};
+  // Solo con el contrato de 0056 (trae provider): las funciones anteriores no aceptan p_call.
+  const callId = hasProvider && typeof raw.callId === 'string' && CALL_ID.test(raw.callId) ? raw.callId : null;
 
   if (raw.allowed === true && reason === null) {
+    // Sin provider (base anterior a 0056) el modelo es de Anthropic, como siempre.
     const modelId = anthropicModel(raw.modelId);
     if (!model || !modelId || !effort) return null;
+    // Sin models (base anterior a 0056) el de Anthropic es modelId.
+    if (!models.anthropic && !isObject(raw.models)) models.anthropic = modelId;
     return {
       allowed: true,
       reason: null,
       model,
+      provider,
       modelId,
+      models,
+      ...extra,
+      switched,
+      callId,
       fallback: raw.fallback === true && FALLBACK_MODELS.has(modelId),
       effort,
       counted: raw.counted === true,
@@ -223,7 +372,11 @@ export function parseTurnCheck(raw: unknown): TurnCheck | null {
     allowed: false,
     reason: reason as DenyReason,
     model,
+    provider,
     modelId: null,
+    models,
+    switched,
+    callId: null,
     fallback: false,
     effort,
     counted: false,
@@ -243,7 +396,10 @@ export function parseUsageResult(raw: unknown): UsageResult | null {
   return { quota, costUsd: usd(raw.costUsd, 6), unpriced };
 }
 
-/** max_tokens final: lo que pidió el launcher, sin pasar el tope del plan ni MAX_OUTPUT_TOKENS. */
+/**
+ * max_tokens final: lo que pidió el launcher, sin pasar el tope de esta llamada (maxTokensPerRequest de
+ * ai_register_turn, que desde 0056 ya viene recortado al plan, al pedido y al saldo) ni MAX_OUTPUT_TOKENS.
+ */
 export function clampMaxTokens(requested: number | null | undefined, planMax: number | null | undefined): number {
   const plan = typeof planMax === 'number' && Number.isFinite(planMax) && planMax > 0 ? Math.floor(planMax) : MAX_OUTPUT_TOKENS;
   const cap = Math.min(plan, MAX_OUTPUT_TOKENS);
@@ -297,11 +453,11 @@ export function usageLines(usage: unknown, requestedModel: string, servedModel?:
 
 /**
  * Uso estimado de un intento que se cortó sin respuesta (plazo vencido, cancelación del launcher o conexión caída):
- * el proveedor pudo haberlo procesado y facturado, así que se cobra el peor caso. Todo el pedido como escritura de
- * caché (unos 3 caracteres por token, de más) y la salida entera (max_tokens).
+ * el proveedor pudo haberlo procesado y facturado. Todo el pedido como escritura de caché (unos 3 caracteres por
+ * token, de más) y `outputTokens` de salida (handler.ts la acota por lo que duró el intento, sin pasar max_tokens).
  */
-export function estimatedUsageLine(model: string, requestChars: number, maxTokens: number): UsageLine {
-  return { model, input: 0, output: count(maxTokens), cacheRead: 0, cacheWrite: Math.ceil(count(requestChars) / 3) };
+export function estimatedUsageLine(model: string, requestChars: number, outputTokens: number): UsageLine {
+  return { model, input: 0, output: count(outputTokens), cacheRead: 0, cacheWrite: Math.ceil(count(requestChars) / 3) };
 }
 
 /** Identificador de turno para pedidos que no traen turn_id (cada uno cuenta como pregunta nueva). */
@@ -316,7 +472,8 @@ export const DENIAL_MESSAGES: Readonly<Record<DenyReason, string>> = {
   effort: 'Tu plan no permite ese nivel de esfuerzo con este modelo.',
   turn_model: 'Esta pregunta empezó con otro modelo. Para cambiar de modelo, hacé una pregunta nueva.',
   rate: 'Estás haciendo demasiados pedidos seguidos. Esperá un minuto y probá de nuevo.',
-  budget: 'Se terminó el presupuesto de IA de tu plan para este mes.',
+  // 0056: ningún saldo de la cuenta (ni el de Claude ni el de ChatGPT) alcanza para esta llamada.
+  budget: 'Se terminó el saldo de IA de tus planes. Comprá un plan para seguir usando la IA.',
   turn: 'Esta pregunta llegó al máximo de pasos permitidos. Hacé una pregunta nueva para seguir.',
   daily: 'Llegaste al límite de preguntas de hoy con este modelo.',
   weekly: 'Llegaste al límite de preguntas de esta semana con este modelo.',
@@ -330,6 +487,13 @@ export const DENIAL_MESSAGES: Readonly<Record<DenyReason, string>> = {
  * - daily / weekly / budget / turn / rate: 429 { error: 'quota', reason, model?, message, quota }.
  */
 export function denialResponse(check: TurnCheck, plans: CatalogPlan[] = []): { status: number; body: Record<string, unknown> } {
+  const out = denialBody(check, plans);
+  // 0056: si en esta llamada el servidor pasó al otro saldo, el rechazo también lo avisa.
+  if (check.switched) out.body.switched = check.switched;
+  return out;
+}
+
+function denialBody(check: TurnCheck, plans: CatalogPlan[]): { status: number; body: Record<string, unknown> } {
   const reason: DenyReason = check.reason ?? 'noplan';
   const message = DENIAL_MESSAGES[reason];
   switch (reason) {

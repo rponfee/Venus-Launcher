@@ -39,7 +39,7 @@ test('rendimiento: el medidor se corta al apagar el overlay y mientras esta ocul
 
 test('apagar el overlay suelta atajos, ayudante y ventana', async (t) => {
   const { env, tr } = await boot({}, t);
-  assert.equal(env.shortcuts.size, 3);
+  assert.equal(env.shortcuts.size, 4, 'mostrar u ocultar, recetas, asistente y no molestar');
   await env.settings.set({ overlay: { enabled: false } });
   assert.equal(env.shortcuts.size, 0);
   assert.equal(tr.stopped, true);
@@ -52,15 +52,15 @@ test('apagar el overlay suelta atajos, ayudante y ventana', async (t) => {
 
 test('atajos: solo estan armados con el juego adelante, y no se le sacan a las demas aplicaciones', async (t) => {
   const { env, tr } = await boot({}, t);
-  assert.deepEqual([...env.shortcuts.keys()].sort(), ['Alt+Shift+A', 'Alt+Shift+O', 'Alt+Shift+R']);
+  assert.deepEqual([...env.shortcuts.keys()].sort(), ['Alt+Shift+A', 'Alt+Shift+N', 'Alt+Shift+O', 'Alt+Shift+R']);
   tr.update(info({ hwnd: GAME, foreground: '777' })); // el jugador se fue al navegador
   assert.equal(env.shortcuts.size, 0, 'con otra aplicacion adelante no se registra ninguno');
   tr.update(info({ hwnd: GAME, foreground: GAME }));
-  assert.equal(env.shortcuts.size, 3, 'vuelve al juego: vuelven');
+  assert.equal(env.shortcuts.size, 4, 'vuelve al juego: vuelven');
   tr.update(info({ hwnd: GAME, foreground: GAME, minimized: true }));
   assert.equal(env.shortcuts.size, 0, 'minimizado: tampoco');
   tr.update({ found: false }); // todavia no se sabe nada de la ventana: no se pierde el atajo
-  assert.equal(env.shortcuts.size, 3);
+  assert.equal(env.shortcuts.size, 4);
   env.quit();
 });
 

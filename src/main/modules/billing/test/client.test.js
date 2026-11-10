@@ -2,7 +2,7 @@
 // Pruebas del cliente de planes (sin Electron): catálogo con precios, pago con link y seguimiento de la orden.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createBillingClient, normalizeCatalog } = require('../client');
+const { createBillingClient, normalizeCatalog, STATIC_PLANS } = require('../client');
 
 const ORDER = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001';
 const t = (key) => key;
@@ -82,8 +82,21 @@ test('pago: si cambia la cuenta, deja de seguir la orden', async () => {
 test('errores del servidor y validaciones', async () => {
   const { client } = setup();
   await assert.rejects(client.checkout({ plan: 'go', provider: 'paypal' }), { code: 'providerDisabled' });
-  await assert.rejects(client.checkout({ plan: 'ultra', provider: 'mercado_pago' }), { code: 'unknownPlan' });
+  await assert.rejects(client.checkout({ plan: 'mega', provider: 'mercado_pago' }), { code: 'unknownPlan' });
   await assert.rejects(client.reopen('https://evil.example.com/pay'), { code: 'badRequest' });
   assert.equal(await client.reopen('https://www.sandbox.paypal.com/checkoutnow?token=AB12'), true);
   assert.equal(normalizeCatalog(null).plans.length, 0);
+});
+
+// 6.1: planes de Claude y de ChatGPT (docs/implementacion/ia-dos-motores.md §2)
+test('catálogo por familia: provider y tier del servidor; uno viejo (6.0) se toma como ChatGPT', () => {
+  const c = normalizeCatalog({ plans: [
+    { id: 'claude_pro', name: 'Pro', provider: 'anthropic', tier: 'pro', priceUsd: 18, budgetUsd: 12.5, maxTokensPerRequest: 44000, models: [{ id: 'haiku', label: 'Haiku 5.5', efforts: ['low', 'medium', 'high'] }] },
+    { id: 'go', name: 'Go', priceUsd: 8 },
+    { id: 'ultra', name: 'Ultra', provider: 'openai', tier: 'ultra', priceUsd: 40, budgetUsd: 28, maxTokensPerRequest: 128000 },
+  ] });
+  assert.deepEqual(c.plans.map((p) => [p.id, p.provider, p.tier, p.maxTokensPerRequest]), [['claude_pro', 'anthropic', 'pro', 44000], ['go', 'openai', 'go', null], ['ultra', 'openai', 'ultra', 128000]]);
+  assert.equal(c.plans[0].models[0].label, 'Haiku 5.5');
+  assert.deepEqual(STATIC_PLANS.map((p) => p.id), ['claude_basic', 'claude_go', 'claude_pro', 'claude_max', 'claude_ultra', 'basic', 'go', 'pro', 'max', 'ultra']);
+  assert.deepEqual(STATIC_PLANS.filter((p) => p.provider === 'anthropic').map((p) => p.amount), [600, 1000, 1800, 3200, 4000]);
 });

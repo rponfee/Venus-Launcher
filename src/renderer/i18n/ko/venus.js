@@ -103,7 +103,7 @@ export default {
   q_help: "도움은 어떻게 받나요?",
   a_help: "런처 안의 지원 메뉴나 Discord에서 받을 수 있어요. 프로그램 버그는 GitHub에도 제보할 수 있어요.",
   q_platforms: "Mac이나 Linux에서도 되나요?",
-  a_platforms: "지금은 64비트 Windows 10과 11에서만 사용할 수 있어요.",
+  a_platforms: "64비트 Windows 10 및 11, 그리고 macOS 12 이상(Apple Silicon 및 Intel)에서 사용할 수 있어요. Mac에서는 게임 내 오버레이, 음악, 클립을 사용할 수 없어요.",
   helpTitle: "아직 궁금한 점이 있나요?",
   helpText: "지원 메뉴로 문의하거나 Discord에서 물어보세요.",
   goSupport: "지원으로 이동",

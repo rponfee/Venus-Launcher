@@ -39,7 +39,11 @@ export const DURATIONS: Readonly<Record<Duration, { auth: string; ms: number }>>
   permanent: { auth: '876000h', ms: 876000 * 3600 * 1000 },
 };
 
-export const EFFORTS = ['low', 'medium', 'high'] as const;
+export const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+/** Tope de ai_plans.max_tokens_per_request (0056: hasta 128.000 en los planes Ultra). */
+export const MAX_TOKENS_PER_REQUEST = 128000;
+/** Cupo de preguntas "sin límite" (el máximo de integer de Postgres). */
+export const UNLIMITED_QUESTIONS = 2147483647;
 export const USER_STATUSES = ['active', 'inactive', 'none', 'past_due', 'canceling', 'stripe', 'manual'] as const;
 export const USER_SORTS = ['created', 'lastSignIn', 'spend', 'email'] as const;
 
@@ -163,7 +167,7 @@ export function optIsoDate(value: unknown, field: string, opts: { future?: boole
   return new Date(ms);
 }
 
-/** Esfuerzos: 1 a 3 de low, medium y high, sin repetidos y en ese orden. */
+/** Esfuerzos: al menos uno de low, medium, high, xhigh y max, sin repetidos y en ese orden. */
 export function efforts(value: unknown, field: string): string[] {
   if (!Array.isArray(value) || value.length === 0) throw badRequest('Elegí al menos un esfuerzo.', field);
   const set = new Set<string>();
@@ -229,7 +233,7 @@ export function planPatch(raw: unknown): Record<string, unknown> {
   }
   const out: Record<string, unknown> = {};
   if ('monthlyBudgetUsd' in o) out.monthly_budget_usd = money(o.monthlyBudgetUsd, 0, 1000, 'monthlyBudgetUsd');
-  if ('maxTokensPerRequest' in o) out.max_tokens_per_request = int(o.maxTokensPerRequest, 1000, 16000, 'maxTokensPerRequest');
+  if ('maxTokensPerRequest' in o) out.max_tokens_per_request = int(o.maxTokensPerRequest, 1000, MAX_TOKENS_PER_REQUEST, 'maxTokensPerRequest');
   if ('maxCallsPerTurn' in o) out.max_calls_per_turn = int(o.maxCallsPerTurn, 1, 200, 'maxCallsPerTurn');
   if ('requestsPerMinute' in o) out.requests_per_minute = int(o.requestsPerMinute, 1, 600, 'requestsPerMinute');
   if ('active' in o) {
@@ -251,8 +255,9 @@ export function planPatch(raw: unknown): Record<string, unknown> {
       const item: Record<string, unknown> = {
         model_id: m.id,
         efforts: efforts(m.efforts, `models.${i}.efforts`),
-        daily_questions: int(m.daily, 0, 100000, `models.${i}.daily`),
-        weekly_questions: int(m.weekly, 0, 1000000, `models.${i}.weekly`),
+        // UNLIMITED_QUESTIONS (el máximo de integer) = sin límite de preguntas, como en los planes de la 6.1.
+        daily_questions: int(m.daily, 0, m.daily === UNLIMITED_QUESTIONS ? UNLIMITED_QUESTIONS : 100000, `models.${i}.daily`),
+        weekly_questions: int(m.weekly, 0, m.weekly === UNLIMITED_QUESTIONS ? UNLIMITED_QUESTIONS : 1000000, `models.${i}.weekly`),
       };
       if (m.sort !== undefined) item.sort = int(m.sort, 0, 10000, `models.${i}.sort`);
       return item;

@@ -3,8 +3,15 @@
 // No requiere Electron: el controlador se prueba con un proveedor y reloj simulados.
 // La edición portable no se puede reemplazar sola (electron-updater no corre ahí): se lee latest.yml de la última
 // release, el mismo archivo que usa electron-updater, y si hay una versión nueva se avisa con el link para bajarla.
-function latestYmlUrl(repository) {
-  return `https://github.com/${repository}/releases/latest/download/latest.yml`;
+// La de macOS va igual (sin firma de Apple, electron-updater no puede instalar): lee latest-mac.yml, que solo se sube
+// si la compilación de Mac salió bien, y el link baja VenusLauncher-mac.dmg.
+function latestYmlUrl(repository, platform = 'win32') {
+  return `https://github.com/${repository}/releases/latest/download/${platform === 'darwin' ? 'latest-mac.yml' : 'latest.yml'}`;
+}
+
+// Archivo que se baja a mano. Nombres fijos: los links releases/latest/download/... siempre dan la última versión.
+function manualDownloadUrl(repository, platform = 'win32') {
+  return `https://github.com/${repository}/releases/latest/download/${platform === 'darwin' ? 'VenusLauncher-mac.dmg' : 'VenusLauncher-Portable.exe'}`;
 }
 
 function parseLatestYml(text) {
@@ -29,11 +36,14 @@ function normalizeRepository(value) {
 
 function createController({ app, updater, repository, portable = false, fetchText = null, platform = process.platform, notify = () => {}, isBusy = () => false, now = Date.now }) {
   repository = normalizeRepository(repository);
+  const mac = platform === 'darwin';
+  // Sin instalación automática (portable o macOS): solo avisa y abre la descarga.
+  const manual = Boolean(portable) || mac;
   let disabledReason = null;
   if (!app.isPackaged) disabledReason = 'development';
-  else if (platform !== 'win32') disabledReason = 'platform';
+  else if (platform !== 'win32' && !mac) disabledReason = 'platform';
   else if (!repository) disabledReason = 'unconfigured';
-  else if (portable ? !fetchText : !updater) disabledReason = 'unavailable';
+  else if (manual ? !fetchText : !updater) disabledReason = 'unavailable';
 
   let state = {
     status: disabledReason ? 'disabled' : 'idle',
@@ -44,8 +54,10 @@ function createController({ app, updater, repository, portable = false, fetchTex
     lastChecked: null,
     repository,
     releasesUrl: repository ? `https://github.com/${repository}/releases` : null,
-    portable,
-    downloadUrl: portable && repository ? `https://github.com/${repository}/releases/latest/download/VenusLauncher-Portable.exe` : null,
+    // portable: true = se actualiza a mano (la interfaz avisa y ofrece la descarga). edition dice cuál es.
+    portable: manual,
+    edition: mac ? 'mac' : portable ? 'portable' : 'installed',
+    downloadUrl: manual && repository ? manualDownloadUrl(repository, platform) : null,
     error: null,
   };
   let checking = null;
@@ -66,7 +78,7 @@ function createController({ app, updater, repository, portable = false, fetchTex
     change({ status: 'error', error: 'No se pudo buscar o descargar la actualización. Probá de nuevo más tarde.' });
   }
 
-  if (!disabledReason && !portable) {
+  if (!disabledReason && !manual) {
     updater.autoDownload = true;
     updater.autoInstallOnAppQuit = true;
     updater.autoRunAppAfterInstall = true;
@@ -85,12 +97,15 @@ function createController({ app, updater, repository, portable = false, fetchTex
 
   async function checkPortable() {
     try {
-      const version = parseLatestYml(await fetchText(latestYmlUrl(repository)));
+      const version = parseLatestYml(await fetchText(latestYmlUrl(repository, platform)));
       if (!version) throw new Error('latest.yml sin versión');
       if (isNewer(version, state.currentVersion)) change({ status: 'available', version, lastChecked: now(), error: null });
       else change({ status: 'current', version: null, lastChecked: now(), error: null });
-    } catch {
-      fail();
+    } catch (err) {
+      // macOS: la última release todavía no tiene latest-mac.yml (el job de Mac sube después, o falló). No hay versión
+      // nueva para Mac: se queda en "al día" en vez de error. En la portable de Windows un 404 sí es un error.
+      if (mac && err?.status === 404) change({ status: 'current', version: null, lastChecked: now(), error: null });
+      else fail();
     }
     return snapshot();
   }
@@ -99,7 +114,7 @@ function createController({ app, updater, repository, portable = false, fetchTex
     if (disabledReason || disposed || ['downloading', 'ready', 'installing'].includes(state.status)) return Promise.resolve(snapshot());
     if (checking) return checking;
     change({ status: 'checking', error: null });
-    if (portable) {
+    if (manual) {
       checking = checkPortable().finally(() => { checking = null; });
       return checking;
     }
@@ -131,4 +146,4 @@ function createController({ app, updater, repository, portable = false, fetchTex
   };
 }
 
-module.exports = { normalizeRepository, createController, parseLatestYml, isNewer, latestYmlUrl };
+module.exports = { normalizeRepository, createController, parseLatestYml, isNewer, latestYmlUrl, manualDownloadUrl };

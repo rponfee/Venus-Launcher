@@ -1,5 +1,5 @@
 'use strict';
-// Buffer circular de la repeticion instantanea EN DISCO: con 5 minutos a 1080p son cientos de MB y en memoria le
+// Buffer circular de la repeticion instantanea EN DISCO: con 30 minutos a 1080p son GB y en memoria le
 // quitarian RAM al juego. Los cuadros (de webm.js) se escriben en segmentos rotativos dentro de una carpeta propia
 // de la cache del launcher (cache/capture-replay/<id>) y en memoria solo queda un indice chico por segmento.
 //
@@ -19,7 +19,7 @@ const FLAG_VIDEO = 2;
 const SEGMENT_SECONDS = 10;
 const MAX_WRITE = 8 * 1024 * 1024; // de a cuanto se junta lo que esta en fila para escribirlo de una vez
 const MAX_QUEUE = 128 * 1024 * 1024; // si el disco no da abasto, en vez de juntar esto en memoria se saltean cuadros
-const MAX_BYTES = 2 * 1024 * 1024 * 1024; // tope duro del buffer (5 minutos al bitrate maximo son ~1 GB)
+const MAX_BYTES = 2 * 1024 * 1024 * 1024; // tope duro por defecto; capture.js pasa el de lo elegido (logic.ringMaxBytes: hasta 30 minutos a 4K)
 
 function recordHead(frame) {
   const b = Buffer.allocUnsafe(RECORD_HEAD);

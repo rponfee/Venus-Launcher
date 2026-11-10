@@ -27,7 +27,7 @@ export default {
   desc_cloud: 'Tus cuentas de Minecraft y tu cuenta de Venus.',
   desc_privacy: 'Qué compartís con tus amigos y qué se guarda en tu PC o en la nube.',
   desc_ai: "Venus IA te ayuda en el asistente, con los crasheos y con las traducciones.",
-  desc_plan: 'Los planes de Venus IA: qué incluye cada uno, tu plan actual y tu suscripción.',
+  desc_plan: 'Los planes de Venus IA de Claude y de ChatGPT: qué incluye cada uno, tus saldos y tus pagos.',
   desc_java: 'El Java que usa Minecraft y el que ya tenés en tu PC.',
   desc_storage: 'Cómo se descargan los archivos y cuánto espacio ocupa cada cosa.',
   desc_data: 'Dónde se guarda todo, cuánto ocupa y la caché.',
@@ -245,7 +245,7 @@ export default {
   aiOffText: 'Las funciones de IA están apagadas. El launcher funciona igual, sin las ayudas inteligentes.',
   aiSignedOutText: 'Iniciá sesión con tu cuenta de Venus para usar la IA con tu plan.',
   aiNoPlanText: 'Tu cuenta todavía no tiene un plan de Venus IA. Elegí uno para usar el asistente y las demás funciones con IA.',
-  aiViaPlan: 'La IA funciona con tu cuenta de Venus y los límites de tu plan. El modelo y el esfuerzo se eligen en el Asistente.',
+  aiViaPlan: 'La IA funciona con tu cuenta de Venus y el saldo de tu plan (de Claude o de ChatGPT). El modelo, el esfuerzo y, si tenés los dos, el saldo se eligen en el Asistente.',
   aiGoAccount: 'Iniciar sesión',
   aiGoPlans: 'Ver planes',
   aiSeePlan: 'Ver tu plan',
@@ -276,7 +276,7 @@ export default {
   aiWhatMods: 'Textos de mods',
   aiWhatModsSub: 'Los textos de los mods que pedís traducir.',
   aiNeverSent: 'Nunca se envían tus contraseñas, tus cuentas de Minecraft ni los archivos de tus mundos.',
-  aiRouteText: 'Los pedidos pasan por el servidor de Venus, que guarda solo cuánto usaste (preguntas y costo), nunca el contenido. Si el proveedor principal falla, puede responder el de respaldo (OpenAI).',
+  aiRouteText: 'Los pedidos pasan por el servidor de Venus, que guarda solo cuánto usaste (preguntas y costo), nunca el contenido. Responde el motor de tu plan (Claude o ChatGPT); si falla, puede responder el otro como respaldo.',
 
   // Descargas y almacenamiento
   storageDownloads: 'Descargas',

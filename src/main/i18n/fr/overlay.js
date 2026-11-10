@@ -10,4 +10,12 @@ module.exports = {
   taskDoneTitle: "Tâche terminée",
   taskFailedTitle: "Une tâche n’a pas pu aboutir",
   errOffline: "L’assistant a besoin d’une connexion internet pour répondre. Vérifiez votre connexion et réessayez.",
+  errBadPreset: "Cette disposition de l’overlay n’existe pas.",
+  errBadDnd: "Choisissez la durée de « Ne pas déranger ».",
+  dndOnTitle: "Ne pas déranger activé",
+  dndOnBody: "Les notifications et les messages restent masqués jusqu’à la fermeture du jeu.",
+  dndOffTitle: "Ne pas déranger désactivé",
+  dndEndedTitle: "« Ne pas déranger » est terminé",
+  dndEndedBody_one: "{count} notification ou message est arrivé entre-temps.",
+  dndEndedBody_other: "{count} notifications ou messages sont arrivés entre-temps.",
 };

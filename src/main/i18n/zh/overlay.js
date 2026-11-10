@@ -10,4 +10,11 @@ module.exports = {
   taskDoneTitle: "任务已完成",
   taskFailedTitle: "有一项任务未能完成",
   errOffline: "助手需要网络连接才能回答。请检查网络连接后重试。",
+  errBadPreset: "该叠加层布局不存在。",
+  errBadDnd: "请选择“请勿打扰”持续多长时间。",
+  dndOnTitle: "“请勿打扰”已开启",
+  dndOnBody: "通知和消息将保持隐藏，直到你关闭游戏。",
+  dndOffTitle: "“请勿打扰”已关闭",
+  dndEndedTitle: "“请勿打扰”已结束",
+  dndEndedBody_other: "在此期间收到了 {count} 条通知或消息。",
 };

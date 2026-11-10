@@ -1,9 +1,13 @@
-// Pestaña Usuarios: búsqueda, filtros, tabla paginada con selección múltiple, ficha lateral y acciones en lote.
+// Pestaña Usuarios: búsqueda, filtros, tabla paginada con selección múltiple, columna Rol (dueño, admin, soporte:
+// del equipo, admin_team), ficha lateral y acciones en lote.
 import { navigate } from '../../app.js';
 import { h, icon, mount, selectEl, debounce, emptyState } from '../../ui.js';
 import { T, call, fmtUsd, fmtInt, fmtDay, fmtRelative, planBadge, statePills, displayName, errorBox, skeletonRows, showBulkResult, failAction } from './parts.js';
 import { removePlanDialog, banDialog, muteDialog, simpleAction, resetUsageDialog, deleteDialog, cancelStripeDialog } from './dialogs.js';
 import { openUserDrawer } from './user-drawer.js';
+import { roleOf } from './team-logic.js';
+
+const ROLE_PILL = { owner: ['good', 'crown'], admin: ['info', 'shieldCheck'], support: ['', 'message'] };
 
 const PER_PAGE = 25;
 const STATUSES = ['active', 'inactive', 'none', 'past_due', 'canceling', 'stripe'];
@@ -16,6 +20,14 @@ export function render(root, ctx) {
   if (STATUSES.includes(init.status)) state.status = init.status;
   if (init.moderation === 'banned' || init.moderation === 'muted') state.moderation = init.moderation;
   const selected = new Map(); // id -> nombre (persiste entre páginas)
+  let team = null; // para la columna Rol (si no se puede leer, la columna queda con "—")
+  const loadTeam = () =>
+    (ctx.team ? ctx.team() : Promise.reject(new Error('no_team')))
+      .then((next) => {
+        team = next;
+        if (state.data && root.isConnected) drawTable();
+      })
+      .catch(() => {});
 
   // ---------- Barra de filtros ----------
   const search = h('input', { class: 'input', type: 'search', placeholder: T('searchPlaceholder'), 'aria-label': T('searchLabel'), maxlength: 100 });
@@ -49,6 +61,17 @@ export function render(root, ctx) {
     for (const p of plans) planSel.append(h('option', { value: p.id }, p.active ? p.name : `${p.name} (${T('planOff')})`));
   }).catch(() => {});
 
+  const isFiltered = () => Boolean(state.search || state.plan || state.status || state.moderation !== 'all');
+  function clearFilters() {
+    search.value = '';
+    planSel.value = '';
+    statusSel.value = '';
+    sortSel.value = 'created';
+    setFilter({ search: '', plan: '', status: '', moderation: 'all', sort: 'created' });
+    drawSeg();
+  }
+  const clearBtn = h('button', { class: 'btn sm ghost', type: 'button', hidden: true, onclick: clearFilters }, icon('x'), T('clearFilters'));
+  const countNote = h('span', { class: 'muted small num adm-count', 'aria-live': 'polite' });
   const toolbar = h(
     'div',
     { class: 'adm-toolbar' },
@@ -56,6 +79,7 @@ export function render(root, ctx) {
     planSel,
     statusSel,
     modSeg,
+    clearBtn,
     h('div', { class: 'spacer' }),
     h('button', { class: 'btn sm', type: 'button', onclick: () => navigate('admin/payments') }, icon('card'), T('act_supportPayment')),
     h('label', { class: 'adm-sort' }, h('span', { class: 'muted small' }, T('sortLabel')), sortSel),
@@ -128,7 +152,14 @@ export function render(root, ctx) {
   }
 
   const openUser = (u) =>
-    openUserDrawer(u.id, { name: displayName(u), selfId: ctx.selfId, onChanged: () => load({ quiet: true }) });
+    openUserDrawer(u.id, { name: displayName(u), selfId: ctx.selfId, team: ctx.team, onTeamChanged: ctx.onTeamChanged, onChanged: () => load({ quiet: true }) });
+
+  function roleCell(u) {
+    const role = roleOf(u.id, team) || (u.isAdmin ? 'admin' : null);
+    if (!role) return h('span', { class: 'muted' }, '—');
+    const [tone, ic] = ROLE_PILL[role];
+    return h('span', { class: ['pill', tone] }, icon(ic), T(`team_role_${role}`));
+  }
 
   function userRow(u) {
     const name = displayName(u);
@@ -170,11 +201,12 @@ export function render(root, ctx) {
         { class: 'adm-col-user' },
         h('div', { class: 'adm-user' }, h('div', { class: 'adm-avatar sm', 'aria-hidden': 'true' }, name.slice(0, 1).toUpperCase()), h('div', { class: 'adm-user-text' }, h('div', { class: 'adm-user-name ellipsis', title: name }, name), h('div', { class: 'adm-user-email ellipsis', title: u.email || '' }, u.email || '—'))),
       ),
+      h('td', { class: 'adm-col-role' }, roleCell(u)),
       h('td', { class: 'adm-col-plan' }, planBadge(p && p.active ? p : p ? { ...p, active: false } : null), p && p.active && p.currentPeriodEnd ? h('div', { class: 'tiny muted' }, T('planUntil', { date: fmtDay(p.currentPeriodEnd) })) : null),
       h('td', { class: 'adm-col-usage num' }, fmtUsd(u.usage?.monthUsd, { precise: true }), h('div', { class: 'tiny muted' }, T('questions', { count: u.usage?.monthQuestions || 0, value: fmtInt(u.usage?.monthQuestions || 0) }))),
-      h('td', { class: 'adm-col-state' }, h('div', { class: 'adm-pills' }, statePills(u))),
+      h('td', { class: 'adm-col-state' }, h('div', { class: 'adm-pills' }, statePills({ ...u, isAdmin: false }))),
       h('td', { class: 'adm-col-date adm-col-created', title: u.createdAt || '' }, fmtDay(u.createdAt)),
-      h('td', { class: 'adm-col-date', title: u.lastSignInAt || '' }, u.lastSignInAt ? fmtRelative(u.lastSignInAt) : T('never')),
+      h('td', { class: 'adm-col-date adm-col-seen', title: u.lastSignInAt || '' }, u.lastSignInAt ? fmtRelative(u.lastSignInAt) : T('never')),
     );
     return tr;
   }
@@ -198,6 +230,8 @@ export function render(root, ctx) {
 
   function drawTable() {
     const users = state.data?.users || [];
+    clearBtn.hidden = !isFiltered();
+    mount(countNote, state.data ? T(isFiltered() ? 'usersFound' : 'usersTotal', { count: Number(state.data.total) || 0, value: fmtInt(state.data.total) }) : '');
     if (!users.length) {
       const filtered = state.search || state.plan || state.status || state.moderation !== 'all';
       mount(
@@ -206,16 +240,7 @@ export function render(root, ctx) {
           'users',
           filtered ? T('emptyTitle') : T('emptyNoUsers'),
           filtered ? T('emptyText') : null,
-          filtered
-            ? h('button', { class: 'btn', type: 'button', onclick: () => {
-                search.value = '';
-                planSel.value = '';
-                statusSel.value = '';
-                sortSel.value = 'created';
-                setFilter({ search: '', plan: '', status: '', moderation: 'all', sort: 'created' });
-                drawSeg();
-              } }, icon('x'), T('clearFilters'))
-            : null,
+          filtered ? h('button', { class: 'btn', type: 'button', onclick: clearFilters }, icon('x'), T('clearFilters')) : null,
         ),
       );
       mount(pager);
@@ -237,11 +262,12 @@ export function render(root, ctx) {
               {},
               h('th', { class: 'adm-col-check', scope: 'col' }, headCheck),
               h('th', { scope: 'col' }, T('colUser')),
+              h('th', { scope: 'col', class: 'adm-col-role' }, T('colRole')),
               h('th', { scope: 'col' }, T('colPlan')),
               h('th', { scope: 'col', class: 'num' }, T('colUsage')),
               h('th', { scope: 'col' }, T('colState')),
               h('th', { scope: 'col', class: 'adm-col-created' }, T('colCreated')),
-              h('th', { scope: 'col' }, T('colLastSeen')),
+              h('th', { scope: 'col', class: 'adm-col-seen' }, T('colLastSeen')),
             ),
           ),
           h('tbody', {}, users.map(userRow)),
@@ -296,10 +322,14 @@ export function render(root, ctx) {
     }
   }
 
-  mount(root, h('section', { class: 'card adm-card adm-users-card' }, toolbar, bulkBar, tableHost, pager));
+  mount(root, h('section', { class: 'card adm-card adm-users-card' }, toolbar, countNote, bulkBar, tableHost, pager));
   load();
+  loadTeam();
   return {
-    refresh: () => load(),
+    refresh: () => {
+      loadTeam();
+      return load();
+    },
     openUser: (id, name) => openUser({ id, username: name }),
   };
 }

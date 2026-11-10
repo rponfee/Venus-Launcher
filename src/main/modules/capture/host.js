@@ -7,6 +7,7 @@ const path = require('path');
 const { isAppPage, isPermissionRequester } = require('../../core/permissions');
 const RECORDER_FILE = path.join(__dirname, '..', '..', '..', 'renderer', 'recorder.html');
 const { EventEmitter } = require('events');
+const { platformSupport } = require('./logic');
 
 const PARTITION = 'venus-capture';
 const CMD = 'capture:recorderCmd';
@@ -48,7 +49,7 @@ class RecorderHost extends EventEmitter {
         try {
           if (!cur?.source) return callback({});
           const streams = { video: cur.source };
-          if (cur.audio && request?.audioRequested && process.platform === 'win32') streams.audio = 'loopback';
+          if (cur.audio && request?.audioRequested && platformSupport().audio) streams.audio = 'loopback';
           callback(streams);
         } catch (err) {
           console.warn('[capture] getDisplayMedia:', err?.message || err);
@@ -190,6 +191,9 @@ class RecorderHost extends EventEmitter {
           this.scheduleIdle();
         }
         break;
+      case 'stats':
+        if (msg.session === this.session) this.emit('stats', { session: msg.session, delivered: Number(msg.delivered), discarded: Number(msg.discarded) || 0 });
+        break;
       case 'warning':
         console.warn('[capture] grabadora:', String(msg.message || '').slice(0, 300));
         break;
@@ -219,8 +223,9 @@ class RecorderHost extends EventEmitter {
   // ---------- Sesion de grabacion (repeticion y grabacion comparten una sola) ----------
 
   /**
-   * Empieza a capturar la fuente. opts = { box: { width, height } | null, fps, audio, bitrate: { bpp, min, max },
-   * keyframeMs }. Devuelve { session, width, height, mimeType, audio } (los pedazos llegan por 'chunk').
+   * Empieza a capturar la fuente. opts = { box: { width, height } | null, fps, audio, bitrate (logic.bitrateModel),
+   * codecs (logic.codecOrder), keyframeMs }. Devuelve { session, width, height, mimeType, codec, bitrate, fps, audio }
+   * (los pedazos llegan por 'chunk'; cada 2 s, 'stats' con los cuadros que entrego la captura).
    */
   async start(source, opts) {
     clearTimeout(this.idleTimer);
@@ -259,8 +264,8 @@ class RecorderHost extends EventEmitter {
     }
   }
 
-  async stop() {
-    const session = this.session;
+  // Para la sesion pedida (por defecto, la actual). Con un id viejo no toca la que este andando ahora.
+  async stop(session = this.session) {
     if (!session) return;
     try {
       await this.request({ type: 'stop', session }, 5000);

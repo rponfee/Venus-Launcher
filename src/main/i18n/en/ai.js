@@ -38,4 +38,9 @@ module.exports = {
   effort_medium: 'Medium',
   effort_high: 'High',
   effort_xhigh: 'Extra',
+  effort_max: 'Max',
+
+  // Claude and ChatGPT plans (6.1)
+  errBudgetOut: 'Your {family} balance ({plan} plan) is used up and you have no {other} balance left. To keep going, buy more {family} balance or a {other} plan in Plans.',
+  errWallet: 'Could not change the balance the AI uses. Try again in a moment.',
 };

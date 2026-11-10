@@ -10,4 +10,11 @@ module.exports = {
   taskDoneTitle: "タスク完了",
   taskFailedTitle: "タスクを完了できませんでした",
   errOffline: "アシスタントが回答するにはインターネット接続が必要です。接続を確認して、もう一度お試しください。",
+  errBadPreset: "そのオーバーレイのレイアウトは存在しません。",
+  errBadDnd: "「おやすみモード」の継続時間を選んでください。",
+  dndOnTitle: "おやすみモードをオンにしました",
+  dndOnBody: "ゲームを閉じるまで、通知とメッセージは表示されません。",
+  dndOffTitle: "おやすみモードをオフにしました",
+  dndEndedTitle: "「おやすみモード」が終了しました",
+  dndEndedBody_other: "その間に、通知やメッセージが{count}件届きました。",
 };

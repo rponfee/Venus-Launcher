@@ -165,5 +165,4 @@ export default {
   saveToLibraryFailed: '스킨을 라이브러리에 저장하지 못했습니다',
   reasonCatalogDamaged: '이 스킨 파일이 없거나 손상되었습니다. Venus Launcher를 다시 설치하여 복원하세요.',
   exploreCatalog: '카탈로그 둘러보기',
-  venusCape: "Venus 망토",
 };

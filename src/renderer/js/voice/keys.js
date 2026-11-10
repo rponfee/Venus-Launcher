@@ -1,6 +1,7 @@
 // Teclas del Voice Chat: tecla de "pulsar para hablar" (codigo de KeyboardEvent o boton del mouse) y
 // atajo global para silenciar (acelerador de Electron, funciona tambien con el juego en primer plano).
 import { t } from '../i18n.js';
+import { isMac } from '../platform.js';
 
 const NAMED = {
   Space: 'Space',
@@ -58,7 +59,11 @@ export function acceleratorFromEvent(e) {
   const key = accelKey(e.code);
   if (!key) return { error: 'unsupported' };
   const mods = [];
-  if (e.ctrlKey || e.metaKey) mods.push('CommandOrControl');
+  // En macOS Cmd y Control son teclas distintas para un atajo global; en Windows, Ctrl (o la tecla Windows) es Ctrl.
+  if (isMac()) {
+    if (e.metaKey) mods.push('Command');
+    if (e.ctrlKey) mods.push('Control');
+  } else if (e.ctrlKey || e.metaKey) mods.push('CommandOrControl');
   if (e.altKey) mods.push('Alt');
   if (e.shiftKey) mods.push('Shift');
   // Sin modificador solo se aceptan F1-F24 (si no, el atajo se "comeria" esa tecla en todo el sistema)
@@ -67,6 +72,8 @@ export function acceleratorFromEvent(e) {
 }
 
 const MOD_LABEL = { CommandOrControl: 'Ctrl', CmdOrCtrl: 'Ctrl', Control: 'Ctrl', Ctrl: 'Ctrl', Alt: 'Alt', Shift: 'Shift', Super: 'Win', Meta: 'Win' };
+// macOS: ⌘ Cmd, ⌃ Control, ⌥ Opción, ⇧ Mayúsculas
+const MAC_LABEL = { CommandOrControl: '⌘', CmdOrCtrl: '⌘', Command: '⌘', Cmd: '⌘', Control: '⌃', Ctrl: '⌃', Alt: '⌥', Option: '⌥', Shift: '⇧' };
 
 // 'CommandOrControl+Shift+M' -> ['Ctrl', 'Shift', 'M']
 export function acceleratorParts(accel) {
@@ -74,7 +81,7 @@ export function acceleratorParts(accel) {
   return String(accel)
     .split('+')
     .filter(Boolean)
-    .map((p) => MOD_LABEL[p] || (p === 'Space' ? t('voice.keySpace') : p.replace(/^num/, 'Num ')));
+    .map((p) => (isMac() && MAC_LABEL[p]) || MOD_LABEL[p] || (p === 'Space' ? t('voice.keySpace') : p.replace(/^num/, 'Num ')));
 }
 
 // Etiqueta de la tecla de pulsar para hablar

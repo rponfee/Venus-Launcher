@@ -59,4 +59,6 @@ export default {
   noticeTitle: "Venus {version} yayında",
   noticeText: "Taşınabilir sürüm kendini güncellemez. Verilerini korumak için yeni .exe dosyasını indirip aynı klasöre kaydet.",
   noticeLater: "Daha sonra",
+  macNote: "Mac'te Venus kendini güncellemez: burada yeni sürümleri kontrol edebilirsin ve Gizlilik'te otomatik kontrolü açtıysan sana kendisi haber verir. Yeni .dmg dosyasını indir ve Venus Launcher'ı Uygulamalar'a sürükleyerek eskisinin yerine koy. Örneklerin ve hesapların olduğu gibi kalır.",
+  noticeTextMac: "Mac'te Venus kendini güncellemez. Yeni .dmg dosyasını indir ve Venus Launcher'ı Uygulamalar'a sürükleyerek eskisinin yerine koy. Örneklerin ve hesapların olduğu gibi kalır.",
 };

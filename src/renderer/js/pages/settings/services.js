@@ -72,7 +72,8 @@ export function renderAi(body, ctx) {
     const s = status || {};
     const enabled = s.enabled !== false;
     const ready = Boolean(s.provider);
-    const planName = s.quota?.planName || s.quota?.plan || '';
+    // "Claude Pro" / "ChatGPT Pro" (features/plans-catalog.js); los saldos de las dos familias van en el uso del plan
+    const planName = s.quota?.plan && plans?.planDisplayName ? plans.planDisplayName(s.quota) : s.quota?.planName || s.quota?.plan || '';
     let summary;
     let action = null;
     if (!enabled) {
@@ -92,7 +93,7 @@ export function renderAi(body, ctx) {
       action = h('button', { type: 'button', class: 'btn sm ghost', onclick: () => ctx.go('plan') }, icon('crown'), t('settings.aiSeePlan'));
     }
 
-    const usage = enabled && ready && !s.needsPlan && plans?.usageView && (s.modelOptions?.length || s.budget) ? h('div', { class: 'cfg-ai-usage' }, plans.usageView(s)) : null;
+    const usage = enabled && ready && !s.needsPlan && plans?.usageView && (s.modelOptions?.length || s.budget || s.wallets?.length) ? h('div', { class: 'cfg-ai-usage' }, plans.usageView(s)) : null;
 
     const testBtn = h('button', { type: 'button', class: 'btn sm', disabled: !enabled || !ready || Boolean(s.needsPlan) }, icon('zap'), t('settings.aiTest'));
     testBtn.addEventListener('click', () =>

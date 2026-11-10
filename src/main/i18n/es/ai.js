@@ -38,4 +38,9 @@ module.exports = {
   effort_medium: 'Medio',
   effort_high: 'Alto',
   effort_xhigh: 'Extra',
+  effort_max: 'Máximo',
+
+  // Planes de Claude y de ChatGPT (6.1)
+  errBudgetOut: 'Se terminó tu saldo de {family} (plan {plan}) y no te queda saldo de {other}. Para seguir, comprá más saldo de {family} o un plan de {other} en Planes.',
+  errWallet: 'No se pudo cambiar el saldo que usa la IA. Probá de nuevo en un rato.',
 };

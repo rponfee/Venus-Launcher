@@ -8,8 +8,8 @@ const AdmZip = require('adm-zip');
 const paths = require('./paths');
 const http = require('./http');
 const { t } = require('./i18n');
-const { rulesAllow } = require('./rules');
-const { OS_NAME, exists, readJson, writeJson, mavenPath, parseMaven } = require('./util');
+const { rulesAllow, HOST } = require('./rules');
+const { exists, readJson, writeJson, mavenPath, parseMaven } = require('./util');
 
 const MANIFEST_URL = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
 const MANIFEST_MAX_AGE = 10 * 60 * 1000;
@@ -113,8 +113,8 @@ function childReplacesLegacyArgs(chain) {
   );
 }
 
-// Fusiona la cadena de herencia (hijo -> ... -> raiz) en un objeto resuelto.
-function mergeChain(chain) {
+// Fusiona la cadena de herencia (hijo -> ... -> raiz) en un objeto resuelto. host: solo para las pruebas (rules.js).
+function mergeChain(chain, host = undefined) {
   const root = chain[chain.length - 1];
   const top = chain[0];
   const r = {
@@ -156,7 +156,7 @@ function mergeChain(chain) {
   for (const v of chain) {
     for (const lib of v.libraries || []) {
       if (!lib || !lib.name) continue;
-      if (!rulesAllow(lib.rules)) continue;
+      if (!rulesAllow(lib.rules, undefined, host)) continue;
       if (lib.clientreq === false) continue;
       const key = libKey(lib);
       if (seen.has(key)) continue;
@@ -208,8 +208,13 @@ function withSlash(u) {
   return u.endsWith('/') ? u : `${u}/`;
 }
 
-// Convierte una entrada de libreria en archivos concretos (artefacto y/o nativos).
-function libraryFiles(lib) {
+// Convierte una entrada de libreria en archivos concretos (artefacto y/o nativos). En macOS los nativos son
+// natives-osx (LWJGL 2) o natives-macos (LWJGL 3.1-3.2, solo x64); desde LWJGL 3.3 (1.19+) vienen como librerias
+// normales natives-macos y natives-macos-arm64 en el classpath y LWJGL elige la de su arquitectura.
+// host: solo para las pruebas ({ osName, arch } como en rules.js).
+function libraryFiles(lib, host = HOST) {
+  const osName = host.osName;
+  const archBits = host.arch === 'ia32' ? '32' : '64';
   const out = [];
   const artifact = lib.downloads?.artifact;
   if (artifact) {
@@ -229,8 +234,8 @@ function libraryFiles(lib) {
     const urls = [...new Set([base, ...MAVEN_MIRRORS].filter(Boolean).map((b) => b.replace(/^http:\/\/files\.minecraftforge\.net\/maven\//, 'https://maven.minecraftforge.net/') + rel))];
     out.push({ name: lib.name, rel, path: paths.library(rel), urls, sha1: lib.sha1, size: lib.size, classpath: true });
   }
-  if (lib.natives && lib.natives[OS_NAME]) {
-    const classifier = lib.natives[OS_NAME].replace('${arch}', process.arch === 'ia32' ? '32' : '64');
+  if (lib.natives && lib.natives[osName]) {
+    const classifier = lib.natives[osName].replace('${arch}', archBits);
     const info = lib.downloads?.classifiers?.[classifier];
     let rel;
     let urls;
@@ -256,11 +261,11 @@ function libraryFiles(lib) {
   return out;
 }
 
-function allLibraryFiles(resolved) {
+function allLibraryFiles(resolved, host = HOST) {
   const files = [];
   const seen = new Set();
   for (const lib of resolved.libraries) {
-    for (const f of libraryFiles(lib)) {
+    for (const f of libraryFiles(lib, host)) {
       const k = f.path.toLowerCase();
       if (seen.has(k)) continue;
       seen.add(k);

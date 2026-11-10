@@ -73,8 +73,9 @@ async function aiView({ refresh = false } = {}) {
     } catch {
       engines = null;
     }
-    // La fuente local pide plan Go o superior (cualquier plan de pago menos Basic)
-    entitled = String(status?.quota?.plan || '').toLowerCase() !== 'basic';
+    // La fuente local pide plan Go o superior (cualquier plan de pago menos Basic, de Claude o de ChatGPT)
+    const q = status?.quota;
+    entitled = String(q?.tier || q?.plan || '').toLowerCase().replace(/^claude_/, '') !== 'basic';
   }
   return aiSource.describe({ status, engines, entitled, preferredEngine: 'claude', prefs });
 }

@@ -103,7 +103,7 @@ export default {
   q_help: "Nasıl yardım alırım?",
   a_help: "Doğrudan başlatıcıdaki Destek bölümünden ya da Discord'dan. Program hataları GitHub'da da bildirilebilir.",
   q_platforms: "Mac veya Linux'ta çalışır mı?",
-  a_platforms: "Şimdilik yalnızca 64 bit Windows 10 ve 11'de.",
+  a_platforms: "64 bit Windows 10 ve 11'de ve macOS 12 veya daha yenisinde (Apple Silicon ve Intel). Mac'te oyun içi kaplama, müzik ve klipler bulunmaz.",
   helpTitle: "Aklında hâlâ soru var mı?",
   helpText: "Destek bölümünden bize yaz ya da Discord'da sor.",
   goSupport: "Destek'e git",

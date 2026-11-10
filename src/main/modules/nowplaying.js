@@ -81,7 +81,8 @@ function pushOverlay(evt) {
 }
 
 function register({ app, handle, send, onQuit }) {
-  const isWin = process.platform === 'win32';
+  // Solo Windows (controles multimedia del sistema): en macOS la página Música dice que no está disponible.
+  const isWin = require('../core/platform').supports('nowplaying');
   let cfg = normalizeConfig({});
   let voiceAccel = '';
   let overlayWidget = true; // overlay del juego encendido y con el widget de música (settings.overlay, módulo overlay)

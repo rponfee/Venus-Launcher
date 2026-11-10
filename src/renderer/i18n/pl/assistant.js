@@ -188,4 +188,12 @@ export default {
   ex3: "Zoptymalizuj moją instancję, aby zwiększyć FPS",
   ex4: "Zainstaluj Sodium i Iris",
   ex5: "Znajdź mi lekkie shadery",
+  effort_max: "Maksymalny",
+  walletLabel: "Saldo",
+  walletHint: "Którego salda użyje Twoje następne pytanie: Claude czy ChatGPT.",
+  walletOption: "{family} · zostało {left}",
+  walletLine: "Saldo {family}: zostało {left} z {limit}",
+  failoverNoteOf: "Odpowiedział zapasowy silnik ({provider})",
+  quotaBudgetTitle: "Twoje saldo się skończyło",
+  quotaBudgetOut: "Twoje saldo {family} (plan {plan}) się skończyło i nie masz już salda {other}. Dokup saldo {family} lub wypróbuj plan {other} w sekcji Plany.",
 };

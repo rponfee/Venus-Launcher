@@ -116,9 +116,10 @@ test('ajustes de los clips automaticos: rangos y valores por defecto', () => {
   assert.equal(logic.normalizeAuto({ cooldown: 'x', maxPerSession: null }).maxPerSession, 20);
   assert.equal(logic.normalizeAuto({ cooldown: '120' }).cooldown, 120);
   assert.equal(logic.normalizeAuto({ enabled: 'si' }).enabled, false);
-  // El largo del clip no pasa de lo que guarda la repeticion en el plan
-  assert.equal(logic.autoSeconds({ seconds: 300 }, false), 60);
-  assert.equal(logic.autoSeconds({ seconds: 300 }, true), 300);
-  assert.equal(logic.autoSeconds({ seconds: 30 }, true), 30);
-  assert.equal(logic.autoSeconds(undefined, true), 60);
+  // El largo del clip no pasa de lo que guarda la repeticion (la que eligio el usuario, sin plan)
+  assert.equal(logic.autoSeconds({ seconds: 300 }, 60), 60);
+  assert.equal(logic.autoSeconds({ seconds: 300 }, 1800), 300);
+  assert.equal(logic.autoSeconds({ seconds: 30 }, 300), 30);
+  assert.equal(logic.autoSeconds(undefined, 300), 60);
+  assert.equal(logic.autoSeconds({ seconds: 120 }), 60, 'sin decir el largo, el de por defecto (60 s)');
 });

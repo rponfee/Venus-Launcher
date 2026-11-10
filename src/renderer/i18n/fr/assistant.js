@@ -182,4 +182,12 @@ export default {
   ex3: "Optimise mon instance pour gagner des FPS",
   ex4: "Installe Sodium et Iris",
   ex5: "Trouve-moi des shaders légers",
+  effort_max: "Maximum",
+  walletLabel: "Solde",
+  walletHint: "Le solde utilisé par votre prochaine question : celui de Claude ou celui de ChatGPT.",
+  walletOption: "{family} · {left} restants",
+  walletLine: "Solde {family} : {left} restants sur {limit}",
+  failoverNoteOf: "Réponse fournie par le service de secours ({provider})",
+  quotaBudgetTitle: "Votre solde est épuisé",
+  quotaBudgetOut: "Votre solde {family} (forfait {plan}) est épuisé et il ne vous reste aucun solde {other}. Achetez plus de solde {family} ou essayez un forfait {other} dans Forfaits.",
 };

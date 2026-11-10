@@ -12,10 +12,13 @@
 //   assistant:confirm(requestId, aprobado) · assistant:cancel(conversationId) · assistant:undo(undoId)
 //   assistant:conversations() · assistant:conversation(id) · assistant:deleteConversation(id)
 //   assistant:status({ refresh }?) -> ai.status() + modelos permitidos (modelOptions), eleccion (selection),
-//     presupuesto (budget), renovaciones (resets), needsPlan y catalogo de planes (plans: del backend o plans.json)
+//     presupuesto (budget), saldos de Claude y ChatGPT (wallets, con el que esta en uso), renovaciones (resets),
+//     needsPlan y catalogo de planes (plans: del backend o plans.json)
+//   assistant:useWallet('anthropic'|'openai') -> elige que saldo usar (RPC ai_use_wallet); devuelve assistant:status
 // Evento: assistant:event (conversationId, { type: 'turn-start'|'thinking'|'text'|'tool-start'|'tool-result'|
-//   'confirm'|'undo'|'done'|'error'|'quota'|'notice', seq, ... }). 'text' y 'done' traen failover: true si respondio
-//   el proveedor de respaldo (served_by.failover del backend).
+//   'confirm'|'undo'|'done'|'error'|'quota'|'notice'|'switched', seq, ... }). 'text' y 'done' traen failover: true
+//   (y failoverProvider) si respondio el proveedor de respaldo (served_by.failover del backend); 'switched' ({ from,
+//   to, reason }) avisa que el servidor paso al otro saldo.
 const settings = require('../core/settings');
 const tasks = require('../core/tasks');
 const game = require('../core/game');
@@ -91,6 +94,7 @@ async function status(opts = {}) {
   const remote = Array.isArray(base.plans) && base.plans.length ? base.plans : null;
   const options = models.modelOptions(base);
   const budget = models.budgetOf(quota);
+  const wallets = models.walletsOf(quota);
   return {
     ...base,
     fake: fakeMode,
@@ -106,6 +110,10 @@ async function status(opts = {}) {
     // backend si no se manda model)
     selection: models.fitChoice({ model: s.ai?.assistantModel || null, effort: s.ai?.assistantEffort }, options),
     budget: budget ? { usedUsd: budget.usedUsd, limitUsd: budget.limitUsd, remainingUsd: budget.remainingUsd } : null,
+    // Saldos de la cuenta (uno por familia). Con dos que tienen saldo, el usuario elige cual usar (assistant:useWallet)
+    wallets,
+    planFamily: quota?.plan ? models.planFamily(quota) : null,
+    planTier: quota ? models.planTier(quota) : null,
     resets: quota?.resets && typeof quota.resets === 'object' ? quota.resets : null,
     jvmFlags: config.jvmFlags().map((f) => ({ id: f.id, label: f.label?.[lang] || f.label?.en || f.id })),
     limits: { maxRounds: agent.MAX_ROUNDS, bulkInstall: agent.BULK_LIMIT },
@@ -115,11 +123,15 @@ async function status(opts = {}) {
 
 function register({ app, handle, send, onQuit }) {
   // Modo falso SOLO para pruebas y capturas de desarrollo: nunca en la app empaquetada.
-  // VENUS_ASSISTANT_FAKE=noplan simula una cuenta sin plan (para ver la invitacion a elegir uno).
+  // VENUS_ASSISTANT_FAKE=noplan simula una cuenta sin plan (para ver la invitacion a elegir uno); =wallets, una
+  // cuenta con saldo de Claude y de ChatGPT; =switch, el saldo de Claude se termina en la primera respuesta y el
+  // servidor pasa al de ChatGPT (aviso switched); =<id de plan> (claude_pro, go...), ese plan solo.
   const fakeEnv = process.env.VENUS_ASSISTANT_FAKE;
-  fakeMode = (fakeEnv === '1' || fakeEnv === 'noplan') && !(app?.isPackaged && !process.env.VENUS_DEVSHOT);
+  const fakePlans = config.plans('es').plans.map((p) => p.id);
+  fakeMode = (fakeEnv === '1' || ['noplan', 'wallets', 'switch'].includes(fakeEnv) || fakePlans.includes(fakeEnv)) && !(app?.isPackaged && !process.env.VENUS_DEVSHOT);
   if (fakeMode) {
-    aiImpl = require('./assistant/fake-ai').createDemoAi({ plan: fakeEnv === 'noplan' ? 'none' : 'max' });
+    const scenario = fakeEnv === 'noplan' ? { plan: 'none' } : fakeEnv === 'wallets' || fakeEnv === 'switch' ? { scenario: fakeEnv } : { plan: fakeEnv === '1' ? 'claude_ultra' : fakeEnv };
+    aiImpl = require('./assistant/fake-ai').createDemoAi(scenario);
     console.warn('[assistant] Modo de demostracion (VENUS_ASSISTANT_FAKE=1): la IA es falsa.');
   } else {
     aiImpl = require('./ai');
@@ -186,6 +198,12 @@ function register({ app, handle, send, onQuit }) {
   handle('assistant:conversation', (id) => agent.conversation(String(id || '')));
   handle('assistant:deleteConversation', (id) => agent.deleteConversation(String(id || '')));
   handle('assistant:status', (opts) => status(opts && typeof opts === 'object' ? opts : {}));
+  handle('assistant:useWallet', async (family) => {
+    const quota = await aiImpl.useWallet(String(family || ''));
+    // modules/ai avisa la cuota nueva solo (ai:quota); la IA de demostracion no habla con nadie: se avisa aca
+    if (fakeMode) safeSend('ai:quota', quota);
+    return status({});
+  });
   onQuit(() => agent.shutdown());
 }
 

@@ -3,17 +3,23 @@
 //                      mensajes entrantes, invitaciones y solicitudes de amistad y el color de acento. Idempotente.
 //                      Solo empuja mientras el overlay esta activo (overlay:state). Las capturas y la musica las
 //                      avisan capture.js y nowplaying.js desde el proceso principal (respetan sus propios ajustes).
-//   overlayPanel()  -> Element con .destroy(): tarjeta de Ajustes (activar, estado, cada widget con su vista previa en vivo:
-//                      se arrastra, se elige, se apaga, se achica; "Restablecer" por widget y de todos; "Editar posiciones
-//                      en el juego", atajos que no pisan a Minecraft ni a las capturas y "Probar overlay").
-// Canales: overlay:push/status/edit/test/reset/setShortcut/setPanelShortcut/accent y eventos overlay:state y overlay:config
+//   overlayPanel()  -> Element con .destroy(): tarjeta de Ajustes (activar, estado, que hace falta para verlo, disenos
+//                      listos, "No molestar", cada widget con su vista previa en vivo: se arrastra, se elige, se apaga, se
+//                      achica; "Restablecer" por widget y de todos; "Editar posiciones en el juego", atajos que no pisan a
+//                      Minecraft ni a las capturas y "Probar overlay").
+//   overlayPreview() -> Promise<{ el, set(widgets), destroy() }>: la misma vista previa, quieta (sin arrastrar ni foco),
+//                      para el paso del overlay de la bienvenida (pages/welcome.js).
+// Desde la 6.1 el overlay viene apagado: startup() muestra una sola vez, a quien actualizo y lo usaba con el valor por
+// defecto, un aviso con un boton para ir a Ajustes (settings.overlay.offNotice, ver modules/overlay/config.js).
+// Canales: overlay:push/status/edit/test/reset/preset/dnd/setShortcut/setPanelShortcut/accent y eventos overlay:state y overlay:config
 // (src/main/modules/overlay.js). La pagina del overlay y la vista previa comparten js/overlay/widgets.js.
 import { h, icon, mount, ok, fail, ensureCss, loading, switchEl, setBusy, reducedMotion, avatarUrl, confirmDialog } from '../ui.js';
 import { store, api } from '../store.js';
 import { t, loadNs } from '../i18n.js';
+import { navigate } from '../app.js';
 import { OverlayView, WIDGETS } from '../overlay/widgets.js';
 import { ANCHORS } from '../overlay/layout.js';
-import { createLimiter, createChangeGate, voiceSnapshot, accelFromKey, accelParts } from '../overlay/logic.js';
+import { createLimiter, createChangeGate, voiceSnapshot, accelFromKey, accelParts, matchPreset, dndLabel, offNoticeDue } from '../overlay/logic.js';
 
 const NS = 'overlay';
 const STAGE = { width: 960, height: 540 }; // tamano virtual del juego en la vista previa
@@ -22,6 +28,10 @@ const DURATIONS = [3, 4, 5, 6, 8, 10, 12, 15, 20, 30];
 const PERF_METRICS = ['fps', 'ram', 'cpu', 'ping', 'session']; // widget de rendimiento (3.1), overlay/config.js
 const COUNTER_METRICS = ['deaths', 'mined', 'session']; // contadores en pantalla, overlay/config.js
 const PANELS = ['recipes', 'assistant']; // paneles del modo interactivo, overlay/config.js
+const PRESET_ICON = { minimal: 'mic', full: 'sparkles', performance: 'gauge' }; // disenos listos (overlay/config.js PRESETS)
+const DND_CHOICES = [['15', 'dnd15'], ['60', 'dnd60'], ['game', 'dndGame']];
+const OFF_NOTICE_DELAY_MS = 4000; // el aviso de la 6.1 espera a que pase lo del arranque
+const OFF_NOTICE_MS = 20000;
 let readyPromise = null;
 let panelSeq = 0;
 
@@ -102,6 +112,38 @@ export function startup() {
   hookVoice();
   hookSocial();
   hookAccent();
+  setTimeout(() => readyPromise.then(() => showOffNotice()), OFF_NOTICE_DELAY_MS);
+}
+
+// Aviso unico de la 6.1: "El overlay ahora viene apagado" con un boton para ir a Ajustes. Se marca como visto al mostrarlo.
+// No sale encima de un dialogo abierto (conexiones opcionales, novedades): espera a que se cierre, hasta 5 minutos.
+function showOffNotice(tries = 0) {
+  if (!offNoticeDue(store.settings, { onboarding: document.body.classList.contains('onboarding') })) return;
+  if (tries < 150 && document.querySelector('.modal-backdrop')) {
+    setTimeout(() => showOffNotice(tries + 1), 2000);
+    return;
+  }
+  const host = document.getElementById('toasts');
+  if (!host) return;
+  store.setSettings({ overlay: { offNotice: 'seen' } }).catch((err) => console.warn('[overlay] aviso', err?.message || err));
+  let timer = null;
+  const close = () => {
+    clearTimeout(timer);
+    el.remove();
+  };
+  const go = h('button', { type: 'button', class: 'btn sm', 'data-overlay-action': 'off-notice-go', onclick: () => (close(), navigate('settings/ingame/overlay')) }, icon('settings'), t('overlay.offNoticeGo'));
+  const x = h('button', { type: 'button', class: 'icon-btn sm ovp-toast-x', title: t('overlay.offNoticeClose'), 'aria-label': t('overlay.offNoticeClose'), onclick: close }, icon('x'));
+  const el = h(
+    'div',
+    { class: 'toast info ovp-toast', role: 'status' },
+    icon('layers'),
+    h('div', { class: 'ovp-toast-body' }, h('div', { class: 't-title' }, t('overlay.offNoticeTitle')), h('div', { class: 't-msg' }, t('overlay.offNoticeText')), h('div', { class: 'ovp-toast-actions' }, go)),
+    x,
+  );
+  host.append(el);
+  timer = setTimeout(close, OFF_NOTICE_MS);
+  el.addEventListener('mouseenter', () => clearTimeout(timer));
+  el.addEventListener('focusin', () => clearTimeout(timer));
 }
 
 // Avatar de la sala o de un perfil -> URL (sin las cabezas de Minecraft activadas, la inicial del nombre).
@@ -210,6 +252,56 @@ function sampleEvents() {
   ];
 }
 
+// Vista previa: el juego de 960x540 achicado al ancho de su caja, con los widgets encima (OverlayView en modo vista previa,
+// con contenido de ejemplo). La usan la tarjeta de Ajustes y la bienvenida (overlayPreview).
+function previewStage(viewOpts = {}) {
+  const viewRoot = h('div', { class: 'ovp-stage-view' });
+  const screen = h(
+    'div',
+    { class: 'ovp-screen' },
+    h('div', { class: 'ovp-fake', 'aria-hidden': 'true' }, h('span', { class: 'ovp-fake-cross' }), h('span', { class: 'ovp-fake-bar' }, Array.from({ length: 9 }, (_, i) => h('i', { class: i === 0 ? 'on' : '' })))),
+    viewRoot,
+  );
+  const box = h('div', { class: 'ovp-preview', role: 'group', 'aria-label': t('overlay.previewTitle') }, screen);
+  const view = new OverlayView(viewRoot, { tr: (k, v) => t(`overlay.${k}`, v), preview: true, isReduced: reducedMotion, ...viewOpts });
+  // El alto lo da el aspect-ratio de .ovp-preview: aca solo se escala el escenario (cambiar el tamano de la caja adentro de
+  // su ResizeObserver lo volveria a disparar)
+  const fit = () => {
+    const w = box.clientWidth;
+    if (w) screen.style.setProperty('--ovp-scale', String(w / STAGE.width));
+  };
+  let ro = null;
+  if (typeof ResizeObserver === 'function') {
+    ro = new ResizeObserver(fit);
+    ro.observe(box);
+  }
+  return {
+    box,
+    view,
+    fit,
+    destroy: () => {
+      ro?.disconnect();
+      view.destroy();
+    },
+  };
+}
+
+/**
+ * Vista previa quieta (sin arrastrar, sin foco) para la bienvenida: set(widgets) dibuja solo los que vengan.
+ */
+export async function overlayPreview() {
+  await prepare();
+  const color = await accent();
+  const stage = previewStage();
+  stage.box.classList.add('ovp-preview-still');
+  stage.box.inert = true;
+  return {
+    el: stage.box,
+    set: (widgets) => stage.view.setLayout({ widgets: widgets || {}, accent: color, motion: 'auto', editing: false, mode: 'game' }),
+    destroy: stage.destroy,
+  };
+}
+
 const deepClone = (o) => JSON.parse(JSON.stringify(o));
 function merge(target, patch) {
   for (const [k, v] of Object.entries(patch)) {
@@ -228,6 +320,7 @@ export function overlayPanel() {
   let disposed = false;
   let seen = false;
   const born = Date.now();
+  const ticks = new Set(); // lo que se redibuja con el reloj (el tiempo que le queda a "No molestar")
   const dispose = () => {
     if (disposed) return;
     disposed = true;
@@ -243,10 +336,11 @@ export function overlayPanel() {
   const watch = setInterval(() => {
     if (root.isConnected) seen = true;
     else if (seen || Date.now() - born > 60000) dispose();
+    if (!disposed) ticks.forEach((fn) => fn());
   }, 2000);
   root.destroy = dispose;
   prepare()
-    .then(() => build(root, offs, () => disposed))
+    .then(() => build(root, offs, () => disposed, ticks))
     .catch((err) => {
       if (disposed) return;
       console.error('[overlay]', err);
@@ -258,7 +352,7 @@ export function overlayPanel() {
   return root;
 }
 
-async function build(root, offs, isDisposed) {
+async function build(root, offs, isDisposed, ticks) {
   let status;
   try {
     status = await api.invoke('overlay:status');
@@ -321,6 +415,29 @@ async function build(root, offs, isDisposed) {
   const testBtn = h('button', { type: 'button', class: 'btn sm', 'data-overlay-action': 'test', title: t('overlay.testHint') }, icon('sparkles'), t('overlay.test'));
   const statusRow = h('div', { class: 'ovp-status' }, h('div', { class: 'ovp-status-main', role: 'status', 'aria-live': 'polite' }, pill, statusText), h('div', { class: 'ovp-actions' }, editBtn, testBtn));
   const fsNotice = h('div', { class: 'notice ovp-fs', hidden: true }, icon('alert'), h('div', {}, t('overlay.fullscreenNow')));
+  // Apagado (lo normal desde la 6.1): que hace y un boton para prenderlo, arriba de todo
+  const enableBtn = h('button', { type: 'button', class: 'btn primary sm', 'data-overlay-action': 'enable' }, icon('power'), t('overlay.offEnable'));
+  enableBtn.addEventListener('click', () => {
+    save({ enabled: true });
+    syncAll();
+  });
+  const offBox = h('div', { class: 'ovp-offbox', hidden: true }, h('div', { class: 'ovp-offbox-text' }, h('strong', {}, t('overlay.offTitle')), h('span', {}, t('overlay.offText'))), enableBtn);
+  // Que hace falta para verlo: prendido, el juego abierto y en ventana (o sin bordes). Cada punto dice si se cumple.
+  const reqItem = (key) => {
+    const ic = h('span', { class: 'ovp-req-icon', 'aria-hidden': 'true' });
+    const text = h('span', {});
+    const el = h('li', { class: 'ovp-req', dataset: { req: key } }, ic, text);
+    return {
+      el,
+      set: (state, label) => {
+        el.className = `ovp-req is-${state}`;
+        mount(ic, icon(state === 'ok' ? 'check' : state === 'warn' ? 'alert' : 'info'));
+        text.textContent = label;
+      },
+    };
+  };
+  const reqs = { on: reqItem('on'), game: reqItem('game'), window: reqItem('window') };
+  const reqBox = h('div', { class: 'ovp-reqs' }, h('div', { class: 'ovp-sec-title' }, t('overlay.reqTitle')), h('ul', { class: 'ovp-req-list' }, Object.values(reqs).map((r) => r.el)));
   const tip = h('p', { class: 'ovp-tip' }, icon('info'), h('span', {}, t('overlay.fullscreenTip')));
 
   editBtn.addEventListener('click', async () => {
@@ -385,28 +502,24 @@ async function build(root, offs, isDisposed) {
     editBtn.classList.toggle('active', Boolean(status.editing));
     editBtn.setAttribute('aria-pressed', String(Boolean(status.editing)));
     fsNotice.hidden = !(status.running && status.fullscreen);
+    offBox.hidden = !status.supported || Boolean(cfg.enabled);
+    reqBox.hidden = !status.supported;
+    reqs.on.set(cfg.enabled ? 'ok' : 'todo', t(cfg.enabled ? 'overlay.reqOnOk' : 'overlay.reqOn'));
+    reqs.game.set(status.running ? 'ok' : 'todo', t(status.running ? 'overlay.reqGameOk' : 'overlay.reqGame'));
+    if (status.running && status.found) reqs.window.set(status.fullscreen ? 'warn' : 'ok', t(status.fullscreen ? 'overlay.reqWindowFull' : 'overlay.reqWindowOk'));
+    else reqs.window.set('todo', t('overlay.reqWindow'));
+    drawDnd();
     shortcutWarn.hidden = status.shortcutOk !== false;
     shortcutRisk.hidden = !status.shortcutIssue;
     if (status.shortcutIssue) shortcutRisk.querySelector('span').textContent = shortcutError({ code: status.shortcutIssue });
-    panelRows.forEach((r) => {
+    [...panelRows, dndRow].forEach((r) => {
       r.warn(status.panelShortcutsOk?.[r.id] === false);
       r.risk(status.panelShortcutIssues?.[r.id] ? shortcutError({ code: status.panelShortcutIssues[r.id] }) : '');
     });
   }
 
   // ---------- Vista previa ----------
-  const viewRoot = h('div', { class: 'ovp-stage-view' });
-  const screen = h(
-    'div',
-    { class: 'ovp-screen' },
-    h('div', { class: 'ovp-fake', 'aria-hidden': 'true' }, h('span', { class: 'ovp-fake-cross' }), h('span', { class: 'ovp-fake-bar' }, Array.from({ length: 9 }, (_, i) => h('i', { class: i === 0 ? 'on' : '' })))),
-    viewRoot,
-  );
-  const previewBox = h('div', { class: 'ovp-preview', role: 'group', 'aria-label': t('overlay.previewTitle') }, screen);
-  const view = new OverlayView(viewRoot, {
-    tr: (k, v) => t(`overlay.${k}`, v),
-    preview: true,
-    isReduced: reducedMotion,
+  const stage = previewStage({
     onMove: (id, pos) => {
       save({ widgets: { [id]: pos } });
       blocks[id]?.sync();
@@ -419,22 +532,11 @@ async function build(root, offs, isDisposed) {
     // Tocar un widget en la vista previa abre sus opciones
     onSelect: (id) => blocks[id]?.reveal(),
   });
-  offs.push(() => view.destroy());
+  const { view, fit, box: previewBox } = stage;
+  offs.push(() => stage.destroy());
   function refreshPreview() {
     view.setLayout({ widgets: cfg.widgets, accent: accentNow, motion: 'auto', editing: false, mode: 'game' });
-  }
-  // La vista previa es el juego de 960x540 achicado para entrar en el ancho de la tarjeta.
-  const fit = () => {
-    const w = previewBox.clientWidth;
-    if (!w) return;
-    const s = w / STAGE.width;
-    screen.style.setProperty('--ovp-scale', String(s));
-    previewBox.style.height = `${Math.round(STAGE.height * s)}px`;
-  };
-  if (typeof ResizeObserver === 'function') {
-    const ro = new ResizeObserver(fit);
-    ro.observe(previewBox);
-    offs.push(() => ro.disconnect());
+    drawPresets();
   }
   const resetBtn = h('button', { type: 'button', class: 'btn ghost sm', 'data-overlay-action': 'reset', title: t('overlay.resetPositionsHint') }, icon('undo'), t('overlay.resetPositions'));
   resetBtn.addEventListener('click', async () => {
@@ -457,6 +559,77 @@ async function build(root, offs, isDisposed) {
     previewBox,
     h('p', { class: 'ovp-help' }, t('overlay.previewHint')),
     h('p', { class: 'ovp-help ovp-keys-help' }, icon('keyboard'), h('span', {}, t('overlay.previewKeys'))),
+  );
+
+  // ---------- Disenos listos ----------
+  const presetMsg = h('p', { class: 'ovp-help', role: 'status', 'aria-live': 'polite' });
+  const presetBtns = Object.keys(status.presets || {}).map((id) => {
+    const b = h('button', { type: 'button', class: 'ovp-preset', 'aria-pressed': 'false', dataset: { preset: id, overlayAction: `preset-${id}` } }, h('span', { class: 'ovp-preset-icon', 'aria-hidden': 'true' }, icon(PRESET_ICON[id] || 'layers')), h('span', { class: 'ovp-preset-text' }, h('span', { class: 'ovp-preset-name' }, t(`overlay.preset_${id}`)), h('span', { class: 'ovp-preset-sub' }, t(`overlay.preset_${id}Sub`))));
+    b.addEventListener('click', async () => {
+      const done = setBusy(b);
+      try {
+        status = await api.invoke('overlay:preset', id);
+        if (status?.config) cfg = deepClone(status.config);
+        refreshPreview();
+        syncAll();
+        presetMsg.textContent = t('overlay.presetApplied', { name: t(`overlay.preset_${id}`) });
+      } catch (err) {
+        fail(t('overlay.saveFailed'), err);
+      } finally {
+        done();
+      }
+    });
+    return b;
+  });
+  function drawPresets() {
+    const current = matchPreset(cfg.widgets, status.presets);
+    presetBtns.forEach((b) => {
+      const on = b.dataset.preset === current;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    if (!current) presetMsg.textContent = t('overlay.presetCustom');
+  }
+  const presetBox = presetBtns.length
+    ? h('div', { class: 'ovp-presets-box' }, h('div', { class: 'ovp-sec-title' }, t('overlay.presetsTitle')), h('p', { class: 'ovp-help' }, t('overlay.presetsHint')), h('div', { class: 'ovp-presets', role: 'group', 'aria-label': t('overlay.presetsTitle') }, presetBtns), presetMsg)
+    : null;
+
+  // ---------- No molestar ----------
+  const dndState = h('span', { class: 'ovp-dnd-state', role: 'status', 'aria-live': 'polite' });
+  const dndPill = h('span', { class: 'pill' });
+  const dndButtons = DND_CHOICES.map(([mode, key]) => {
+    const b = h('button', { type: 'button', class: 'btn sm', dataset: { overlayAction: `dnd-${mode}` } }, t(`overlay.${key}`));
+    b.addEventListener('click', () => setDnd(mode));
+    return b;
+  });
+  const dndOff = h('button', { type: 'button', class: 'btn ghost sm', 'data-overlay-action': 'dnd-off' }, icon('x'), t('overlay.dndOff'));
+  dndOff.addEventListener('click', () => setDnd('off'));
+  async function setDnd(mode) {
+    try {
+      status = { ...status, ...(await api.invoke('overlay:dnd', mode)) };
+      drawStatus();
+    } catch (err) {
+      fail(t('overlay.saveFailed'), err);
+    }
+  }
+  function drawDnd() {
+    const label = dndLabel(status.dnd);
+    const on = Boolean(status.dnd?.on);
+    dndPill.className = `pill ${on ? 'info' : ''}`.trim();
+    dndPill.textContent = on ? t('overlay.pillDndOn') : t('overlay.pillOff');
+    dndState.textContent = t(`overlay.${label.key}`, label.minutes ? { count: label.minutes } : undefined) + (on && status.dnd.missed ? ` ${t('overlay.dndMissed', { count: status.dnd.missed })}` : '');
+    dndOff.hidden = !on;
+  }
+  ticks.add(() => status.dnd?.on && !status.dnd.game && drawDnd());
+  const dndRow = panelShortcutRow('dnd', { uid, get: () => cfg.panelShortcuts?.dnd || '', put: (v) => { cfg.panelShortcuts = { ...cfg.panelShortcuts, dnd: v }; } });
+  const dndBox = h(
+    'div',
+    { class: 'ovp-dnd' },
+    h('div', { class: 'ovp-sec-head' }, h('div', { class: 'ovp-sec-title ovp-title-icon' }, icon('moon'), h('span', {}, t('overlay.dndTitle'))), dndPill),
+    h('p', { class: 'ovp-help' }, t('overlay.dndHint')),
+    dndState,
+    h('div', { class: 'ovp-actions' }, dndButtons, dndOff),
+    dndRow.el,
   );
 
   // ---------- Atajo ----------
@@ -577,14 +750,18 @@ async function build(root, offs, isDisposed) {
     root.classList.toggle('ovp-off', !cfg.enabled);
     WIDGETS.forEach((id) => blocks[id].sync());
     drawKeys();
-    panelRows.forEach((r) => r.sync());
+    [...panelRows, dndRow].forEach((r) => r.sync());
+    drawStatus();
   }
 
   mount(
     root,
     head,
+    offBox,
     statusRow,
     fsNotice,
+    reqBox,
+    h('div', { class: 'ovp-duo' }, presetBox, dndBox),
     h('div', { class: 'ovp-grid' }, previewCol, shortcutCol),
     h('div', { class: 'ovp-sec-head ovp-mt' }, h('div', { class: 'ovp-sec-title' }, t('overlay.widgetsTitle')), resetAllBtn),
     list,
@@ -593,7 +770,6 @@ async function build(root, offs, isDisposed) {
   fit();
   refreshPreview();
   syncAll();
-  drawStatus();
 
   offs.push(
     api.on('overlay:state', (s) => {

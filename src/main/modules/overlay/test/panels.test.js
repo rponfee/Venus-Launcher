@@ -83,7 +83,7 @@ test('que conversacion retoma el panel', () => {
 test('atajos de los paneles en los ajustes', () => {
   const c = config.normalize(undefined);
   assert.deepEqual(c.panelShortcuts, config.PANEL_SHORTCUTS);
-  assert.deepEqual(config.normalize({ panelShortcuts: { recipes: '', assistant: 'Ctrl+F9', otro: 'Ctrl+F1' } }).panelShortcuts, { recipes: '', assistant: 'Ctrl+F9' });
+  assert.deepEqual(config.normalize({ panelShortcuts: { recipes: '', assistant: 'Ctrl+F9', otro: 'Ctrl+F1' } }).panelShortcuts, { recipes: '', assistant: 'Ctrl+F9', dnd: 'Alt+Shift+N' });
   assert.deepEqual(config.normalize({ panelShortcuts: { recipes: 'cualquier cosa', assistant: 3 } }).panelShortcuts, config.PANEL_SHORTCUTS);
   assert.deepEqual(config.normalize({ panelShortcuts: 'x' }).panelShortcuts, config.PANEL_SHORTCUTS);
   assert.ok(!Object.values(config.PANEL_SHORTCUTS).includes(config.DEFAULT_SHORTCUT), 'no pisan el de mostrar y ocultar');

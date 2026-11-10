@@ -61,6 +61,29 @@ test('probeFile lee codec, tamanio, audio y duracion sin leer todo', async () =>
   }
 });
 
+test('un clip de mas de 256 MB (Segment con tamanio conocido) se puede leer', async () => {
+  const dir = tmp();
+  try {
+    const file = writeClip(dir, 'largo.webm', { seconds: 3 });
+    const want = readAll(file).frames.length;
+    // Se reescribe el tamanio del Segment (8 bytes despues de su ID) como el de un clip de 300 MB
+    const buf = fs.readFileSync(file);
+    const at = buf.indexOf(idBytes(ID.Segment)) + 4;
+    assert.equal(buf[at], 0x01, 'el Segment lleva su tamanio en 8 bytes');
+    const size = 300 * 1024 * 1024;
+    buf.fill(0, at + 1, at + 8);
+    buf.writeUIntBE(size, at + 2, 6);
+    fs.writeFileSync(file, buf);
+    const p = await join.probeFile(file);
+    assert.equal(p.ok, true, p.message);
+    let frames = 0;
+    for await (const f of join.readFrames(file)) if (!f.header) frames++;
+    assert.equal(frames, want);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('planJoin une sin recodificar solo si coinciden codec, tamanio y audio', async () => {
   const dir = tmp();
   try {

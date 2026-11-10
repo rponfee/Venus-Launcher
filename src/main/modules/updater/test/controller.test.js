@@ -94,6 +94,56 @@ test('sin empaquetar sigue desactivado y la instalada sigue usando electron-upda
   assert.equal(updater.allowDowngrade, false);
 });
 
+test('macOS: sin firma de Apple no instala; avisa con latest-mac.yml y baja el .dmg', async () => {
+  const urls = [];
+  let asked = 0;
+  const updater = { on() {}, removeListener() {}, checkForUpdates: async () => { asked++; } };
+  const controller = createController({
+    app: app('6.1.0'), updater, repository: REPO, platform: 'darwin', now: () => 99,
+    fetchText: async (url) => (urls.push(url), yml('6.2.0')),
+  });
+  const before = controller.status();
+  assert.equal(before.status, 'idle');
+  assert.equal(before.disabledReason, null);
+  assert.equal(before.portable, true);
+  assert.equal(before.edition, 'mac');
+  assert.equal(before.downloadUrl, `https://github.com/${REPO}/releases/latest/download/VenusLauncher-mac.dmg`);
+  assert.equal(updater.autoDownload, undefined, 'electron-updater no se configura en macOS');
+  const s = await controller.check();
+  assert.deepEqual(urls, [latestYmlUrl(REPO, 'darwin')]);
+  assert.match(urls[0], /\/latest-mac\.yml$/);
+  assert.equal(s.status, 'available');
+  assert.equal(s.version, '6.2.0');
+  assert.equal(asked, 0);
+  assert.throws(() => controller.install());
+  assert.equal((await createController({ app: app('6.2.0'), updater: null, repository: REPO, platform: 'darwin', fetchText: async () => yml('6.2.0') }).check()).status, 'current');
+});
+
+test('macOS: si la última release todavía no tiene latest-mac.yml (404) queda al día, no en error', async () => {
+  const notFound = () => Object.assign(new Error('404'), { status: 404 });
+  const mac = (fetchText) => createController({ app: app('6.1.0'), updater: null, repository: REPO, platform: 'darwin', now: () => 77, fetchText });
+  const s = await mac(async () => { throw notFound(); }).check();
+  assert.equal(s.status, 'current');
+  assert.equal(s.version, null);
+  assert.equal(s.lastChecked, 77);
+  assert.equal(s.error, null);
+  // Sin red u otro error: sigue en error
+  assert.equal((await mac(async () => { throw new Error('sin red'); }).check()).status, 'error');
+  assert.equal((await mac(async () => { throw Object.assign(new Error('500'), { status: 500 }); }).check()).status, 'error');
+  // La portable de Windows con 404 sigue en error (ahí latest.yml sube con la release)
+  const win = createController({ app: app(), updater: null, repository: REPO, portable: true, platform: 'win32', fetchText: async () => { throw notFound(); } });
+  assert.equal((await win.check()).status, 'error');
+});
+
+test('ediciones: instalada y portable de Windows; Linux sigue sin actualizaciones', () => {
+  const updater = { on() {}, removeListener() {} };
+  assert.equal(createController({ app: app(), updater, repository: REPO, platform: 'win32' }).status().edition, 'installed');
+  assert.equal(portable({ text: yml('1.0.0') }).controller.status().edition, 'portable');
+  const linux = createController({ app: app(), updater: null, repository: REPO, platform: 'linux', fetchText: async () => yml('9.9.9') });
+  assert.equal(linux.status().disabledReason, 'platform');
+  assert.equal(latestYmlUrl(REPO), `https://github.com/${REPO}/releases/latest/download/latest.yml`);
+});
+
 test('una beta recibe futuras betas sin permitir bajar a una versión anterior', () => {
   const updater = { on() {}, removeListener() {} };
   createController({ app: app('4.6.3-beta.3'), updater, repository: REPO, platform: 'win32' });

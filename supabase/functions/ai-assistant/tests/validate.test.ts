@@ -176,8 +176,9 @@ test('exige el cliente y un protocolo soportado', () => {
 test('valida task, effort, max_tokens y turn_id', () => {
   expectError(textBody({ task: 'chat' }), /task/);
   expectError(textBody({ task: undefined }), /task/);
-  expectError(textBody({ effort: 'max' }), /effort/);
+  expectError(textBody({ effort: 'ultra' }), /effort/);
   assert.equal(validateRequest(textBody({ effort: 'xhigh' })).ok, true);
+  assert.equal(validateRequest(textBody({ effort: 'max' })).ok, true, '0056: esfuerzo max');
   expectError(textBody({ max_tokens: 0 }), /max_tokens/);
   expectError(textBody({ max_tokens: 1.5 }), /max_tokens/);
   expectError(textBody({ max_tokens: '4000' }), /max_tokens/);

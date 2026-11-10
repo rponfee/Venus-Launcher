@@ -1,4 +1,5 @@
-// Integraciones del administrador. Cada tarjeta carga por separado; las claves van al Vault y no se muestran.
+// Integraciones del administrador (OpenAI, Claude, KLIPY y CurseForge). Cada tarjeta carga por separado; las claves van
+// al Vault y no se muestran.
 // CurseForge se consulta por el servicio de Venus. KLIPY conserva su contrato para pedidos desde los launchers.
 import { h, icon, mount, setBusy, ok, fail } from '../../ui.js';
 import { cloud } from '../../cloud.js';
@@ -139,7 +140,9 @@ export function render(root) {
     return { el, load, clear: () => { if (input) input.value = ''; } };
   }
 
-  const cards = [integration('openai', 'wand'), integration('klipy', 'image'), integration('curseforge', 'package', true)];
+  // Venus IA usa dos motores (6.1): OpenAI (planes de ChatGPT) y Anthropic (planes de Claude). Misma forma de RPC:
+  // admin_<id>_status() y admin_set_<id>_key(p_key) -> { configured, hint }; error bad_key si el formato no es el suyo.
+  const cards = [integration('openai', 'wand'), integration('anthropic', 'sparkles'), integration('klipy', 'image'), integration('curseforge', 'package', true)];
   mount(root, cards.map(item => item.el));
   cards.forEach(item => item.load());
   return { destroy() { alive = false; cards.forEach(item => item.clear()); } };

@@ -10,7 +10,8 @@ import { DENIAL_MESSAGES } from '../quota.ts';
 import { MAX_INFLIGHT, RESERVE_INPUT_TOKENS } from './fake-db.ts';
 
 function load(name: string): string {
-  const raw = readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), 'utf8');
+  // Con finales de línea de Unix: en el runner de Windows de GitHub el checkout deja los .sql con CRLF.
+  const raw = readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
   // Sin comentarios (ningún texto entre comillas de estas migraciones tiene "--").
   return raw.replace(/--[^\n]*/g, '');
 }

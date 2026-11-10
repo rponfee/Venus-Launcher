@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  menuAbout: "{app}について",
+  menuHide: "{app}を非表示",
+  menuHideOthers: "ほかを非表示",
+  menuShowAll: "すべてを表示",
+  menuQuit: "{app}を終了",
+  menuEdit: "編集",
+  menuUndo: "取り消す",
+  menuRedo: "やり直す",
+  menuCut: "カット",
+  menuCopy: "コピー",
+  menuPaste: "ペースト",
+  menuPasteMatch: "ペーストしてスタイルを合わせる",
+  menuDelete: "削除",
+  menuSelectAll: "すべてを選択",
+  menuWindow: "ウインドウ",
+  menuMinimize: "しまう",
+  menuZoom: "拡大/縮小",
+  menuFront: "すべてを手前に移動",
+};

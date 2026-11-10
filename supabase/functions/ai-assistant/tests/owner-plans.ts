@@ -2,7 +2,7 @@
 // Es la fuente de verdad de las pruebas: migration.test.ts revisa que la carga de 0008_ai_plans.sql sea
 // exactamente esto y fake-db.ts arranca con estos mismos datos.
 
-export type Effort = 'low' | 'medium' | 'high';
+export type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 export interface OwnerPlanModel {
   model: string;
@@ -139,7 +139,7 @@ export interface TierFallback {
   tier: string;
   /** ai_models.id del modelo de OpenAI. */
   model: string;
-  efforts: { low: string | null; medium: string | null; high: string | null };
+  efforts: { low: string | null; medium: string | null; high: string | null; xhigh?: string | null; max?: string | null };
 }
 
 /** Modelo de OpenAI de cada modelo de Venus (ai_tier_fallbacks de 0011). */
@@ -147,4 +147,63 @@ export const TIER_FALLBACKS: TierFallback[] = [
   { tier: 'haiku', model: 'gpt-6-luna', efforts: { low: 'low', medium: 'medium', high: 'high' } },
   { tier: 'sonnet', model: 'gpt-6-1-sol', efforts: { low: 'low', medium: 'medium', high: 'high' } },
   { tier: 'opus', model: 'gpt-6-astra', efforts: { low: 'low', medium: 'medium', high: 'high' } },
+];
+
+// ---------- 0056 (6.1): Venus IA con dos motores ----------
+// La tabla de docs/implementacion/ia-dos-motores.md, tal como la carga 0056_ia_dos_motores.sql. La usa
+// FakeDb.dual() (fake-db.ts). Preguntas sin límite (2147483647, el máximo de integer).
+
+export const UNLIMITED = 2147483647;
+
+export interface DualPlan extends OwnerPlan {
+  provider: 'anthropic' | 'openai';
+  tier: string;
+}
+
+const LMH: Effort[] = ['low', 'medium', 'high'];
+
+function dualPlan(id: string, provider: 'anthropic' | 'openai', tier: string, priceUsd: number, budgetUsd: number, maxTokens: number,
+  calls: number, rpm: number, sort: number, models: [string, Effort[]][]): DualPlan {
+  const name = tier[0].toUpperCase() + tier.slice(1);
+  return {
+    id, name, provider, tier, legacyModel: provider === 'anthropic' ? 'claude-haiku-5-5' : 'gpt-6-luna', priceUsd, budgetUsd, maxTokens,
+    maxCallsPerTurn: calls, rpm, sort,
+    models: models.map(([model, efforts], i) => ({ model, efforts, daily: UNLIMITED, weekly: UNLIMITED, sort: (i + 1) * 10 })),
+  };
+}
+
+export const DUAL_PLANS: DualPlan[] = [
+  dualPlan('basic', 'openai', 'basic', 6, 3.5, 12000, 40, 30, 10, [['haiku', ['low']]]),
+  dualPlan('go', 'openai', 'go', 10, 6.75, 32000, 40, 30, 20, [['haiku', LMH]]),
+  dualPlan('pro', 'openai', 'pro', 18, 12.5, 44000, 60, 40, 30, [['haiku', LMH]]),
+  dualPlan('max', 'openai', 'max', 32, 26, 78000, 60, 60, 40, [['haiku', LMH], ['sonnet', LMH]]),
+  dualPlan('ultra', 'openai', 'ultra', 40, 28, 128000, 60, 60, 50, [['haiku', LMH], ['sonnet', LMH]]),
+  dualPlan('claude_basic', 'anthropic', 'basic', 6, 3.5, 12000, 40, 30, 110, [['haiku', ['low', 'medium']]]),
+  dualPlan('claude_go', 'anthropic', 'go', 10, 6.75, 32000, 40, 30, 120, [['haiku', LMH]]),
+  dualPlan('claude_pro', 'anthropic', 'pro', 18, 12.5, 44000, 60, 40, 130, [['haiku', LMH], ['sonnet', LMH]]),
+  dualPlan('claude_max', 'anthropic', 'max', 32, 26, 78000, 60, 60, 140, [['haiku', [...LMH, 'xhigh']], ['sonnet', [...LMH, 'xhigh']]]),
+  dualPlan('claude_ultra', 'anthropic', 'ultra', 40, 32, 128000, 60, 60, 150, [['haiku', [...LMH, 'xhigh', 'max']], ['sonnet', [...LMH, 'xhigh', 'max']]]),
+];
+
+/** ai_models después de 0056: haiku y sonnet son las filas de Claude; GPT-6 Luna y GPT-5.6 Sol, las de ChatGPT. */
+export const DUAL_MODELS: ModelPrice[] = [
+  {
+    id: 'haiku', modelId: 'claude-haiku-5-5', label: 'Haiku 5.5', input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125,
+    long: { threshold: 100000, input: 0.5, output: 2.5, cacheRead: 0.05, cacheWrite: 0.625 }, fallback: false, sort: 10, active: true, provider: 'anthropic',
+  },
+  { id: 'sonnet', modelId: 'claude-sonnet-5-5', label: 'Sonnet 5.5', input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5, long: null, fallback: false, sort: 20, active: true, provider: 'anthropic' },
+  {
+    id: 'gpt-6-luna', modelId: 'gpt-6-luna', label: 'GPT-6 Luna', input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125,
+    long: { threshold: 272000, input: 0.2, output: 0.75, cacheRead: 0.02, cacheWrite: 0.25 }, fallback: false, sort: 110, active: false, provider: 'openai',
+  },
+  {
+    id: 'gpt-5-6-sol', modelId: 'gpt-5.6-sol', label: 'GPT-5.6 Sol', input: 4, output: 20, cacheRead: 0.4, cacheWrite: 5,
+    long: { threshold: 272000, input: 8, output: 30, cacheRead: 0.8, cacheWrite: 10 }, fallback: false, sort: 125, active: false, provider: 'openai',
+  },
+];
+
+/** ai_tier_fallbacks después de 0056: el modelo de ChatGPT de cada clave y su esfuerzo (max -> xhigh en Luna). */
+export const DUAL_TIERS: TierFallback[] = [
+  { tier: 'haiku', model: 'gpt-6-luna', efforts: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'xhigh' } },
+  { tier: 'sonnet', model: 'gpt-5-6-sol', efforts: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' } },
 ];

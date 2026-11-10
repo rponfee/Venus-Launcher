@@ -59,4 +59,6 @@ export default {
   noticeTitle: "Venus {version} is beschikbaar",
   noticeText: "De draagbare versie werkt zichzelf niet bij. Download de nieuwe .exe en sla die op in deze map om je gegevens te behouden.",
   noticeLater: "Later",
+  macNote: "Op de Mac werkt Venus zichzelf niet bij: hier kun je naar nieuwe versies zoeken en, als je automatisch zoeken hebt aangezet bij Privacy, krijg je vanzelf een melding. Download de nieuwe .dmg, sleep Venus Launcher naar de map Apps en vervang de vorige versie. Je instanties en accounts blijven zoals ze zijn.",
+  noticeTextMac: "Op de Mac werkt Venus zichzelf niet bij. Download de nieuwe .dmg, sleep Venus Launcher naar de map Apps en vervang de vorige versie. Je instanties en accounts blijven zoals ze zijn.",
 };

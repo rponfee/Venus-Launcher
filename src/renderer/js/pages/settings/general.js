@@ -10,6 +10,7 @@ import { discordButton } from '../../community.js';
 import { sectionHead, card, toggleRow, note, iconList, arrowFocus, extLink, embedPanel } from './shared.js';
 import { NET_KEYS } from '../../features/netprefs.js';
 import { normalizeBreaks, EVERY_OPTIONS, LIMIT_OPTIONS } from '../../features/playcare/breaks-logic.js';
+import { supports } from '../../platform.js';
 
 const AFTER_LAUNCH = [
   ['keep', 'monitor'],
@@ -199,12 +200,13 @@ export function renderGeneral(body, ctx) {
         checked: store.settings?.ingame?.pack !== false,
         onChange: (v) => saveSettings({ ingame: { pack: v } }),
       }),
-      toggleRow({
+      // Solo Windows (core/platform.js): en macOS no se puede cambiar la ventana del juego
+      supports('gameWindowBranding') ? toggleRow({
         title: t('settings.ingameWindow'),
         sub: t('settings.ingameWindowSub'),
         checked: store.settings?.ingame?.window !== false,
         onChange: (v) => saveSettings({ ingame: { window: v } }),
-      }),
+      }) : null,
       toggleRow({
         title: t('settings.ingameBadge'),
         sub: t('settings.ingameBadgeSub', { versions: listFormat(BADGE_BUILDS.map(([loader, mc]) => `${loader} (${listFormat(mc)})`)) }),

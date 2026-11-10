@@ -10,4 +10,12 @@ module.exports = {
   taskDoneTitle: "Tarefa concluída",
   taskFailedTitle: "Não foi possível concluir uma tarefa",
   errOffline: "O assistente precisa de conexão com a internet para responder. Confira sua conexão e tente de novo.",
+  errBadPreset: "Esse layout do overlay não existe.",
+  errBadDnd: "Escolha por quanto tempo o “Não perturbe” deve durar.",
+  dndOnTitle: "Não perturbe ativado",
+  dndOnBody: "Os avisos e as mensagens ficam ocultos até você fechar o jogo.",
+  dndOffTitle: "Não perturbe desativado",
+  dndEndedTitle: "O “Não perturbe” terminou",
+  dndEndedBody_one: "Nesse meio-tempo chegou {count} aviso ou mensagem.",
+  dndEndedBody_other: "Nesse meio-tempo chegaram {count} avisos ou mensagens.",
 };

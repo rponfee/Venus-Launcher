@@ -99,6 +99,24 @@ La [revisión SQL permanente](implementacion/revision-sql-0028-0036.md) conserva
 
 El preflight consulta catálogos. El ensayo local ejecutado creó objetos y modificó catálogos dentro de una transacción revertida; no fue una lectura. Usó una base descartable sin usuarios reales, fixtures y sustitutos de push/Realtime, con protección de secuencias. La comprobación posterior en producción fue distinta: **18 getters dentro de `BEGIN READ ONLY`, `SET LOCAL ROLE authenticated`, UUID aleatorio sin cuenta y `ROLLBACK`**. Diecisiete devolvieron la forma esperada y `cape_mine` devolvió `NULL` sin perfil; no se crearon registros. Esto no prueba JWT reales, flujos de usuarios ni concurrencia.
 
+### Migraciones de la 6.1
+
+Aplicadas en producción el 10 de noviembre de 2026 (registradas como `venus_0056_ia_dos_motores` y `venus_0057_admin_equipo`). Las dos son idempotentes y antes se probaron contra producción dentro de una transacción con `rollback` (la prueba termina siempre con una excepción, así que no puede dejar cambios). Después de aplicarlas se comprobó que el cuerpo de las 40 funciones que definen coincide con el de los archivos. No dependen una de la otra.
+
+| Archivo | Qué incorpora | Contratos y pruebas |
+|---|---|---|
+| `0056_ia_dos_motores.sql` | Venus IA con dos motores: `ai_plans.ai_provider` y `tier`, los diez planes (cinco de Claude y cinco de ChatGPT), `ai_wallets` (un saldo pagado por motor), clave de Anthropic en Vault (`admin_anthropic_status`, `admin_set_anthropic_key`, `ai_anthropic_key`), `ai_register_turn` con reserva según el pedido y cambio automático de saldo (`switched`), `ai_use_wallet`, cierre de cada llamada por su reserva (`p_call`), pagos por motor, `admin_ai_providers` y el formulario de soporte con los planes nuevos | [Venus IA con dos motores](implementacion/ia-dos-motores.md). Escenarios: `supabase/tests/ia-dos-motores-rollback.sql`. Revisión estática: `supabase/functions/ai-assistant/tests/dos-motores-migration.test.ts` |
+| `0057_admin_equipo.sql` | Equipo del panel: `admin_team`, `admin_grant_admin` y `admin_revoke_admin` (solo el dueño), `admin_set_support_staff`, y `admin_set_rank` sin el rango `admin` (queda atado al acceso real) | [Administración](admin.md), sección Equipo. Escenarios: `supabase/tests/admin-equipo-rollback.sql` (68 comprobaciones con cuentas simuladas). Revisión estática: `supabase/functions/admin/tests/team-migration.test.ts` |
+
+Orden que se siguió para publicar la 6.1:
+
+1. Aplicar `0056_ia_dos_motores.sql` y `0057_admin_equipo.sql`.
+2. Desplegar las funciones `ai-assistant`, `payments` y `admin` (la `ai-assistant` nueva necesita la 0056; la de la 6.0.0 sigue funcionando con la 0056 aplicada).
+3. Cargar la clave de Claude en Administración → Integraciones. Hasta entonces los planes de Claude figuran como "todavía no están a la venta" y no se pueden comprar; los de ChatGPT siguen igual.
+4. Publicar el launcher 6.1.
+
+El dueño del panel es la cuenta administradora con `profiles.rank = 'owner'`: ese rango se carga a mano con SQL y ninguna función lo da ni lo quita.
+
 ## 3. Autenticación y emails
 
 En **Authentication → Providers → Email** (o **Sign In / Providers**):

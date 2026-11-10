@@ -103,7 +103,7 @@ export default {
   q_help: "Jak uzyskać pomoc?",
   a_help: "W zakładce Pomoc, tu w launcherze, albo na Discordzie. Błędy programu można też zgłaszać na GitHubie.",
   q_platforms: "Czy działa na Macu lub Linuksie?",
-  a_platforms: "Na razie tylko w 64-bitowym Windowsie 10 i 11.",
+  a_platforms: "W 64-bitowym Windowsie 10 i 11 oraz w macOS 12 lub nowszym (Apple Silicon i Intel). Na Macu nie ma nakładki w grze, muzyki ani klipów.",
   helpTitle: "Masz jeszcze pytania?",
   helpText: "Napisz do nas w zakładce Pomoc albo zapytaj na Discordzie.",
   goSupport: "Przejdź do Pomocy",

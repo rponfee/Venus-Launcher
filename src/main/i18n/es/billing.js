@@ -4,8 +4,6 @@ module.exports = {
   errSignIn: 'Iniciá sesión con tu cuenta de Venus (Ajustes > Cuenta y nube) para elegir un plan de Venus IA.',
   errSession: 'Tu sesión de Venus venció. Volvé a iniciar sesión en Ajustes > Cuenta y nube.',
   errUnknownPlan: 'Ese plan no existe o no está a la venta.',
-  errUnknownCommunity: 'Esa comunidad no existe o ya no la tenés.',
-  errNotOwner: 'Solo el dueño de la comunidad puede comprar su plan.',
   errProviderDisabled: 'Ese medio de pago no está habilitado por ahora. Probá con el otro.',
   errTooMany: 'Hiciste muchos intentos de pago seguidos. Esperá un rato y probá de nuevo.',
   errBusy: 'Esperá unos segundos y probá de nuevo.',

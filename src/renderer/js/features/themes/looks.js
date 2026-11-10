@@ -10,8 +10,11 @@ export const MAX_LOOKS = 20;
 export const NAME_MAX = 40;
 export const LOGO_MAX = 200 * 1024; // bytes del data: del logo
 export const MAX_CODE = 400000; // un código más largo que esto no es un look
-// Lo que no viaja con un look: el modo liviano es del equipo y la copia de la temporada es interna
-const SKIP_KEYS = ['lite', 'liteOverlay', 'seasonalBackup'];
+// Lo que no viaja con un look: el modo liviano es del equipo, la copia de la temporada es interna y la página de
+// inicio y los extras de la barra de título (6.1) son costumbres, no parte del aspecto. El estilo de la interfaz
+// (letra, tamaño del texto, tarjetas, esquinas, densidad y menú lateral) sí viaja; un look o código anterior a la 6.1
+// no los trae y quedan los de fábrica.
+export const SKIP_KEYS = ['lite', 'liteOverlay', 'seasonalBackup', 'startPage', 'titlebar'];
 
 export function newLookId() {
   const rnd = Math.random().toString(36).slice(2, 8);

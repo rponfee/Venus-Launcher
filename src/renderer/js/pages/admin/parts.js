@@ -2,6 +2,7 @@
 // tarjetas, estados de error y el resumen de las acciones en lote.
 import { h, icon, mount, modal, toast, fail } from '../../ui.js';
 import { api } from '../../store.js';
+import { cloud } from '../../cloud.js';
 import { t, locale, getLanguage } from '../../i18n.js';
 
 export const T = (key, vars) => t(`admin.${key}`, vars);
@@ -12,6 +13,21 @@ const CURRENCY_LOCALES = { es: 'es-AR', en: 'en-US', pt: 'pt-BR' };
 /** Acción del panel (Edge Function "admin" por el proceso principal). Lanza el Error con err.code. */
 export function call(action, payload) {
   return api.invoke('admin:call', action, payload || {});
+}
+
+// Modo de datos de ejemplo (VENUS_ADMIN_FAKE): las RPC directas van al doble del proceso principal (admin/fake.js,
+// acción 'rpc'), que no habla con ningún servidor. Lo prende pages/admin.js con lo que responde admin:me.
+let fakeRpc = false;
+export function useFakeRpc(on) {
+  fakeRpc = Boolean(on);
+}
+
+/** RPC de Supabase con la sesión del usuario (como Integraciones). Lanza el error de PostgREST. */
+export async function rpc(name, args) {
+  if (fakeRpc) return call('rpc', { name, args: args || {} });
+  const { data, error } = await cloud.client.rpc(name, args || {});
+  if (error) throw error;
+  return data;
 }
 
 // ---------- Formatos ----------

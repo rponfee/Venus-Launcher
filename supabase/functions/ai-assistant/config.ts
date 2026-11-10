@@ -14,8 +14,9 @@ export type Protocol = (typeof PROTOCOLS)[number];
 export const PROTOCOL = 2;
 
 /**
- * Modelos que puede pedir el launcher (ids de public.ai_models). El id real de la API de Anthropic sale
- * siempre de la base (ai_models.model_id), nunca del texto del cliente.
+ * Modelos que puede pedir el launcher (ids de public.ai_models): haiku = el rápido, sonnet = el avanzado (opus queda
+ * para cuentas viejas). El id real de la API (de Anthropic o de OpenAI, según la familia del plan) sale siempre de
+ * la base (ai_register_turn: modelId y models), nunca del texto del cliente.
  */
 export const MODEL_KEYS = ['haiku', 'sonnet', 'opus'] as const;
 export type ModelKey = (typeof MODEL_KEYS)[number];
@@ -33,14 +34,21 @@ export const BETA_FALLBACK = 'server-side-fallback-2026-07-01';
 export const FALLBACK_MODELS: ReadonlySet<string> = new Set(['claude-opus-5-5', 'claude-sonnet-5-5']);
 
 /**
- * Proveedores de IA del backend. Por defecto Anthropic es el principal y OpenAI el secundario (respaldo);
- * el orden y el respaldo se configuran en public.ai_provider_config (0011_ai_providers.sql).
+ * Proveedores de IA del backend (6.1, 0056): cada llamada la atiende el proveedor del saldo que la paga (`provider`
+ * de ai_register_turn: planes de Claude -> anthropic, planes de ChatGPT -> openai). El respaldo entre proveedores
+ * por una caída sigue en public.ai_provider_config (0011) y hoy está apagado.
  */
 export const PROVIDERS = ['anthropic', 'openai'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 /** Forma de un id de modelo de la API de OpenAI (defensa extra sobre lo que devuelve la base). */
 export const OPENAI_MODEL_PATTERN = /^(gpt-[a-z0-9][a-z0-9.-]{0,60}|o[0-9][a-z0-9.-]{0,60})$/;
+
+/** true si `model` tiene la forma de un id de la API de ese proveedor. */
+export function isProviderModel(provider: Provider, model: unknown): model is string {
+  if (typeof model !== 'string') return false;
+  return provider === 'anthropic' ? ANTHROPIC_MODEL_PATTERN.test(model) : OPENAI_MODEL_PATTERN.test(model);
+}
 
 /** Esfuerzos de razonamiento de la API de OpenAI (reasoning.effort). Cuáles acepta cada modelo depende del modelo. */
 export const OPENAI_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
@@ -76,11 +84,27 @@ export const MIN_FAILOVER_MS = 15000;
 /** Cuánto se guarda en memoria la configuración de proveedores (ai_provider_settings) en cada instancia. */
 export const PROVIDER_SETTINGS_TTL_MS = 60000;
 
+/**
+ * Cuánto se guarda en memoria (nunca en logs) la clave de cada proveedor leída de Vault (ai_anthropic_key,
+ * ai_openai_key): una clave nueva cargada en Administración -> Integraciones se usa a más tardar en este tiempo.
+ */
+export const PROVIDER_KEY_TTL_MS = 60000;
+
 /** Mínimo de max_output_tokens que acepta la API de OpenAI. */
 export const OPENAI_MIN_OUTPUT_TOKENS = 16;
 
-/** Tope duro de tokens de salida: los pedidos no usan streaming. */
-export const MAX_OUTPUT_TOKENS = 36000;
+/**
+ * Tope duro de tokens de salida (el de los planes Ultra, 0056). Los pedidos no usan streaming: con este tope el
+ * SDK de Anthropic exige un timeout explícito (index.ts).
+ */
+export const MAX_OUTPUT_TOKENS = 128000;
+
+/**
+ * Velocidad de salida que se supone para cobrar un intento que se cortó sin respuesta (plazo vencido, cancelación o
+ * conexión caída): la salida estimada es la que pudo generar en lo que duró el intento, nunca más que max_tokens.
+ * Holgada a propósito (más rápida que los modelos de los planes), así la estimación queda de más y no de menos.
+ */
+export const ESTIMATE_OUTPUT_TOKENS_PER_SECOND = 400;
 
 /** Tiempo máximo de espera a la IA. Supabase corta a los 150 s sin respuesta. */
 export const DEFAULT_TIMEOUT_MS = 140000;
@@ -91,7 +115,7 @@ export const TASKS = ['assistant', 'text', 'json'] as const;
 export type Task = (typeof TASKS)[number];
 
 /** Esfuerzos que acepta el protocolo. Cuáles permite cada modelo lo decide el plan (ai_plan_models). */
-export const EFFORTS = ['low', 'medium', 'high', 'xhigh'] as const;
+export const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
 export type Effort = (typeof EFFORTS)[number];
 
 /** Límites del cuerpo del pedido (en bytes UTF-8 salvo que se indique otra cosa). */

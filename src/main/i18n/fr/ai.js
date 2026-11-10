@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "Moyen",
   effort_high: "Élevé",
   effort_xhigh: "Extra",
+  effort_max: "Maximum",
+  errBudgetOut: "Votre solde {family} (forfait {plan}) est épuisé et il ne vous reste aucun solde {other}. Pour continuer, achetez plus de solde {family} ou un forfait {other} dans Forfaits.",
+  errWallet: "Impossible de changer le solde utilisé par l’IA. Réessayez dans un moment.",
 };

@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "Średni",
   effort_high: "Wysoki",
   effort_xhigh: "Ekstra",
+  effort_max: "Maksymalny",
+  errBudgetOut: "Twoje saldo {family} (plan {plan}) się skończyło i nie masz już salda {other}. Aby kontynuować, dokup saldo {family} lub plan {other} w sekcji Plany.",
+  errWallet: "Nie udało się zmienić salda używanego przez AI. Spróbuj ponownie za chwilę.",
 };

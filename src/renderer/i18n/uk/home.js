@@ -246,4 +246,7 @@ export default {
   blockNarrow: "Повернути «{block}» звичайну ширину",
   blockHiddenTag: "Сховано",
   blockEmptyTag: "Поки немає даних",
+  heroSize: "Розмір основної картки",
+  heroSize_large: "Велика",
+  heroSize_compact: "Компактна",
 };

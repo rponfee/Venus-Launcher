@@ -11,4 +11,12 @@ module.exports = {
   playerJoinBody: 'Your server {name}.',
   taskDoneTitle: 'Task finished',
   taskFailedTitle: 'A task could not be completed',
+  errBadPreset: 'That overlay layout does not exist.',
+  errBadDnd: 'Choose how long Do Not Disturb should last.',
+  dndOnTitle: 'Do Not Disturb on',
+  dndOnBody: 'Alerts and messages stay hidden until you close the game.',
+  dndOffTitle: 'Do Not Disturb off',
+  dndEndedTitle: 'Do Not Disturb ended',
+  dndEndedBody_one: '{count} alert or message arrived meanwhile.',
+  dndEndedBody_other: '{count} alerts or messages arrived meanwhile.',
 };

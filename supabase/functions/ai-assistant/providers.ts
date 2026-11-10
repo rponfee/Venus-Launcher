@@ -1,6 +1,8 @@
-// Proveedores de la IA y respaldo: Anthropic (principal) y OpenAI (secundario).
-// Lee la configuración que devuelve public.ai_provider_settings() (0011_ai_providers.sql), decide en qué orden
-// se prueban los proveedores para una pregunta y si una falla pasa el pedido al otro proveedor.
+// Proveedores de la IA (Anthropic y OpenAI) y respaldo entre ellos.
+// Desde la 6.1 (0056) el proveedor de cada llamada es el del saldo que la paga (`provider` de ai_register_turn) y
+// el modelo sale de la misma respuesta (modelId y models). public.ai_provider_settings() (0011_ai_providers.sql)
+// solo decide si una caída de ese proveedor pasa el pedido al otro (hoy apagado). Con una base anterior a 0056 (sin
+// `provider`), el principal y los modelos de OpenAI salen de ai_provider_settings(), como antes.
 // Sin dependencias externas: se prueba con Node.
 import { DEFAULT_FAILOVER_ON, EFFORTS, FAILOVER_KINDS, MODEL_KEYS, OPENAI_EFFORTS, OPENAI_MODEL_PATTERN, PROVIDERS } from './config.ts';
 import type { Effort, FailoverKind, ModelKey, OpenAIEffort, Provider } from './config.ts';
@@ -24,7 +26,7 @@ export interface ProviderSettings {
   openai: Partial<Record<ModelKey, OpenAITier>>;
 }
 
-/** Sin la migración 0011 o sin OPENAI_API_KEY: solo Anthropic, como antes. */
+/** Sin respaldo entre proveedores (también si no se puede leer ai_provider_settings). */
 export const ANTHROPIC_ONLY: ProviderSettings = Object.freeze({
   primary: 'anthropic',
   secondary: null,
@@ -33,7 +35,7 @@ export const ANTHROPIC_ONLY: ProviderSettings = Object.freeze({
   openai: {},
 }) as ProviderSettings;
 
-/** Configuración segura cuando la base aún no tiene la fila de proveedores. */
+/** Base anterior a 0056 sin clave de Anthropic: todo a OpenAI (GPT-6 Luna), como en la 6.0.0. */
 export const OPENAI_ONLY: ProviderSettings = Object.freeze({
   primary: 'openai',
   secondary: null,
@@ -41,7 +43,7 @@ export const OPENAI_ONLY: ProviderSettings = Object.freeze({
   failoverOn: new Set<FailoverKind>(),
   openai: Object.fromEntries(MODEL_KEYS.map((key) => [key, {
     model: 'gpt-6-luna',
-    efforts: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh' },
+    efforts: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'xhigh' },
   }])) as Record<ModelKey, OpenAITier>,
 }) as ProviderSettings;
 
@@ -120,49 +122,81 @@ export function failoverKind(code: string): FailoverKind | null {
   return Object.prototype.hasOwnProperty.call(KIND_BY_CODE, code) ? KIND_BY_CODE[code] : null;
 }
 
-/** Un intento con un proveedor: Anthropic usa el modelo de la pregunta; OpenAI, el modelo que lo reemplaza. */
-export type Attempt = { provider: 'anthropic' } | { provider: 'openai'; tier: OpenAITier };
+/** Modelo de cada proveedor para una llamada (null: ese proveedor no la puede atender). */
+export interface CallTargets {
+  /** Id de la API de Anthropic. */
+  anthropic: string | null;
+  /** Id de la API de OpenAI y su reasoning.effort (null: no se manda). */
+  openai: { model: string; effort: OpenAIEffort | null } | null;
+}
+
+/** Lo que hace falta de ai_register_turn (quota.ts TurnCheck cumple esta forma). */
+export interface TargetSource {
+  provider: Provider | null;
+  model: ModelKey | null;
+  modelId: string | null;
+  models: { anthropic: string | null; openai: string | null };
+  effort: Effort | null;
+  openaiEffort?: OpenAIEffort | null;
+}
+
+/**
+ * Modelos de la llamada:
+ * - Con 0056 (hay `provider`): los de `models` (el del proveedor de la llamada es modelId) y el esfuerzo de OpenAI de
+ *   openaiEffort. Si la base no manda openaiEffort, se usa la traducción de ai_tier_fallbacks (si hay).
+ * - Sin `provider` (base anterior): modelId es de Anthropic y el de OpenAI sale de ai_tier_fallbacks.
+ */
+export function callTargets(check: TargetSource, settings: ProviderSettings): CallTargets {
+  const tier = check.model ? settings.openai[check.model] : undefined;
+  const tierEffort = tier && check.effort ? tier.efforts[check.effort] : null;
+  if (!check.provider) {
+    return { anthropic: check.modelId, openai: tier ? { model: tier.model, effort: tierEffort } : null };
+  }
+  const openaiModel = check.models.openai;
+  const effort = check.openaiEffort !== undefined ? check.openaiEffort : tierEffort;
+  return { anthropic: check.models.anthropic, openai: openaiModel ? { model: openaiModel, effort } : null };
+}
+
+/** Un intento con un proveedor, con el modelo (y para OpenAI el esfuerzo) que corre. */
+export type Attempt = { provider: 'anthropic'; model: string } | { provider: 'openai'; model: string; effort: OpenAIEffort | null };
 
 export interface AttemptPlan {
   /** En orden: el principal (si puede atender) y después el secundario (si el respaldo lo permite). */
   attempts: Attempt[];
-  /** El principal no puede atender (sin clave o sin modelo para esta pregunta) y se pasa directo al secundario. */
+  /** El principal no puede atender (sin clave o sin modelo para esta llamada) y se pasa directo al secundario. */
   primarySkipped: boolean;
 }
 
+/** Qué proveedores tienen clave (index.ts: Vault o la variable de entorno). */
 export interface Readiness {
   anthropic: boolean;
   openai: boolean;
 }
 
-function attemptFor(p: Provider, settings: ProviderSettings, ready: Readiness, model: ModelKey | null): Attempt | null {
-  if (p === 'anthropic') return ready.anthropic ? { provider: 'anthropic' } : null;
-  if (!ready.openai) return null;
-  if (model === null) {
-    // Antes de saber el modelo de la pregunta: alcanza con que OpenAI tenga algún modelo configurado.
-    const any = MODEL_KEYS.map((key) => settings.openai[key]).find((t): t is OpenAITier => Boolean(t));
-    return any ? { provider: 'openai', tier: any } : null;
-  }
-  const mapped = settings.openai[model];
-  return mapped ? { provider: 'openai', tier: mapped } : null;
+export function otherProvider(p: Provider): Provider {
+  return p === 'anthropic' ? 'openai' : 'anthropic';
+}
+
+function attemptFor(p: Provider, ready: Readiness, targets: CallTargets): Attempt | null {
+  if (!ready[p]) return null;
+  if (p === 'anthropic') return targets.anthropic ? { provider: 'anthropic', model: targets.anthropic } : null;
+  return targets.openai ? { provider: 'openai', model: targets.openai.model, effort: targets.openai.effort } : null;
 }
 
 /**
- * Proveedores que se prueban para una pregunta del modelo `model` (null: todavía no se sabe cuál).
- * - El principal va primero si tiene clave (y, si es OpenAI, un modelo para esa pregunta).
- * - El secundario va después solo con el respaldo activado; se usa si el principal falla con un tipo de
- *   falla de failoverOn (lo decide el handler).
- * - Si el principal no puede atender, se pasa directo al secundario solo si failoverOn incluye
- *   'not_configured' (por ejemplo, falta ANTHROPIC_API_KEY).
+ * Proveedores que se prueban para una llamada, empezando por `primary` (el del saldo que la paga, o el principal de
+ * ai_provider_settings con una base anterior a 0056).
+ * - El principal va primero si tiene clave y un modelo para la llamada.
+ * - El otro va después solo con el respaldo activado (failoverEnabled); se usa si el principal falla con un tipo
+ *   de falla de failoverOn (lo decide el handler).
+ * - Si el principal no puede atender, se pasa directo al otro solo si failoverOn incluye 'not_configured'. Si no,
+ *   no hay intentos y el handler responde 503 not_configured.
  */
-export function planAttempts(settings: ProviderSettings, ready: Readiness, model: ModelKey | null): AttemptPlan {
+export function planAttempts(primary: Provider, settings: ProviderSettings, ready: Readiness, targets: CallTargets): AttemptPlan {
   const attempts: Attempt[] = [];
-  const first = attemptFor(settings.primary, settings, ready, model);
+  const first = attemptFor(primary, ready, targets);
   if (first) attempts.push(first);
-  const second =
-    settings.failoverEnabled && settings.secondary && settings.secondary !== settings.primary
-      ? attemptFor(settings.secondary, settings, ready, model)
-      : null;
+  const second = settings.failoverEnabled ? attemptFor(otherProvider(primary), ready, targets) : null;
   if (second && (first || settings.failoverOn.has('not_configured'))) attempts.push(second);
   return { attempts, primarySkipped: !first };
 }

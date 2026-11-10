@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "Clips et captures",
   errReplayNoRoom: "Relecture instantanée en pause : pas assez d’espace disque.",
   autoLimitReached: "Maximum de {count} clips automatiques atteint pour cette partie. La relecture instantanée fonctionne toujours avec le raccourci.",
+  errReplayNoRoomNeed: "Relecture instantanée en pause : pas assez d’espace disque (il faut {need} et garder 1 Go libre). Choisissez une durée plus courte ou une qualité inférieure.",
+  replaySaveTight: "La relecture instantanée fonctionne, mais une fois la mémoire tampon pleine, il n’y aura pas assez de place pour enregistrer le clip entier (il faut {need} de plus). Libérez de l’espace ou choisissez une durée plus courte ou une qualité inférieure.",
+  errRecordNoRoom: "Pas assez d’espace disque pour enregistrer (plus de 1 Go doit rester libre).",
+  recordLimitReached: "L’enregistrement a atteint sa durée maximale ({minutes} min) et a été sauvegardé.",
+  recordStoppedDisk: "L’enregistrement s’est arrêté tout seul car le disque manquait d’espace. Ce qui a été enregistré est sauvegardé.",
+  degraded: "Votre PC ne suivait pas avec la qualité choisie : l’enregistrement se fait maintenant en {quality} à {fps} fps.",
+  degradedAfterRecording: "Votre PC ne suivait pas avec la qualité choisie : une fois l’enregistrement terminé, il se fera en {quality} à {fps} fps.",
+  native: "native",
+  errPlatform: "L’enregistrement n’est pas encore disponible sur ce système.",
 };

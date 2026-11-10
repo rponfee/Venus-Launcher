@@ -32,6 +32,22 @@
 .cap-note.good > svg { color: var(--good-text); }
 .cap-field { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
 .cap-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.cap-help > svg, .cap-plan > svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--muted); }
+.cap-help:has(> svg), .cap-plan { display: flex; align-items: flex-start; gap: var(--sp-2); }
+.cap-plan { margin: 0; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.45; }
+.cap-plan > svg { color: var(--accent-hi); }
+/* Presets de un clic: tres tarjetas; la elegida con el color de acento */
+.cap-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
+@container (max-width: 520px) { .cap-presets { grid-template-columns: minmax(0, 1fr); } }
+.cap-preset { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); border: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; min-width: 0; font: inherit; }
+.cap-preset:hover { border-color: var(--accent-line); }
+.cap-preset:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+.cap-preset.active { background: var(--accent-wash); border-color: var(--accent-line); }
+.cap-preset-name { font-weight: 600; font-size: var(--fs-sm); }
+.cap-preset.active .cap-preset-name { color: var(--accent-hi); }
+.cap-preset-sub { font-size: var(--fs-xs); color: var(--text-2); }
+.cap-preset-disk { font-size: var(--fs-xs); color: var(--muted); }
+.cap-seg { flex-wrap: wrap; }
 .cap-toggle { padding: 0; }
 .cap-sc-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-2) 0; border-top: 1px solid var(--border); }
 .cap-sc-row:first-of-type { border-top: 0; }

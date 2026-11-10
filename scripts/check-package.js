@@ -2,11 +2,18 @@
 // Revisa lo que realmente entró en el paquete (app.asar de la versión compilada): ningún archivo pesado sin aprobar y
 // nada de lo que tiene que quedar afuera. Lo corre el workflow Build después de compilar.
 //   node scripts/check-package.js [ruta a app.asar]
+// Sin ruta: el de Windows (dist/win-unpacked) o, si no está, el de macOS (dist/mac-universal/Venus Launcher.app).
 // Para aprobar un archivo grande, agregalo a APPROVED con el motivo.
 const asar = require('@electron/asar');
+const fs = require('fs');
 const path = require('path');
 
-const ARCHIVE = path.resolve(process.argv[2] || path.join(__dirname, '..', 'dist', 'win-unpacked', 'resources', 'app.asar'));
+const DIST = path.join(__dirname, '..', 'dist');
+const DEFAULTS = [
+  path.join(DIST, 'win-unpacked', 'resources', 'app.asar'),
+  path.join(DIST, 'mac-universal', 'Venus Launcher.app', 'Contents', 'Resources', 'app.asar'),
+];
+const ARCHIVE = path.resolve(process.argv[2] || DEFAULTS.find((p) => fs.existsSync(p)) || DEFAULTS[0]);
 const MAX_FILE = 2 * 1024 * 1024;
 const MAX_TOTAL = 150 * 1024 * 1024;
 const APPROVED = new Map([

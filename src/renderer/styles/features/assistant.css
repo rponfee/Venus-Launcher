@@ -154,6 +154,9 @@ body.as-drawer-open .tasks-dock { right: calc(min(440px, 100vw - 120px) + 18px);
 /* Notas, errores y "pensando" */
 .as-note { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }
 .as-note svg { width: 14px; height: 14px; flex-shrink: 0; }
+/* Cambio de saldo (Claude <-> ChatGPT): linea de sistema mas visible que las notas, sin alarmar */
+.as-switched { align-self: flex-start; padding: 6px 10px; border-radius: var(--radius); border: 1px solid var(--accent-line); background: var(--accent-wash); color: var(--text-2); line-height: 1.4; }
+.as-switched svg { color: var(--accent-hi); }
 .as-error { margin: 0; }
 .as-error-main { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
 .as-error-actions { gap: var(--sp-2); }
@@ -214,6 +217,11 @@ body.reduce-motion .as-dots i, body.reduce-motion .as-tb-btn.busy .as-tb-dot { a
 .as-ctx-group { display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 0; max-width: 100%; }
 .as-ctx-group > svg { width: 14px; height: 14px; flex-shrink: 0; }
 .as-ctx-label { font-weight: 600; color: var(--text-2); }
+/* Saldo, modelo y esfuerzo: cada etiqueta va pegada a su selector y, si no entran en una linea, bajan enteros */
+.as-model-box { flex-wrap: wrap; row-gap: var(--sp-2); }
+.as-ctx-pair { display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 0; max-width: 100%; }
+.as-ctx-pair[hidden] { display: none; }
+.as-ctx-pair .as-ctx-select { min-width: 96px; }
 /* Modelo y esfuerzo del plan (las preguntas que quedan hoy van en cada opcion) */
 .as-model-select { max-width: 230px; }
 .as-effort-select { max-width: 120px; }

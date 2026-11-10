@@ -10,4 +10,12 @@ module.exports = {
   taskDoneTitle: "Görev tamamlandı",
   taskFailedTitle: "Bir görev tamamlanamadı",
   errOffline: "Asistanın yanıt verebilmesi için internet bağlantısı gerekir. Bağlantını kontrol edip tekrar dene.",
+  errBadPreset: "Böyle bir kaplama düzeni yok.",
+  errBadDnd: "“Rahatsız etmeyin” modunun ne kadar süreceğini seç.",
+  dndOnTitle: "Rahatsız etmeyin açık",
+  dndOnBody: "Uyarılar ve mesajlar sen oyunu kapatana kadar gizli kalır.",
+  dndOffTitle: "Rahatsız etmeyin kapalı",
+  dndEndedTitle: "“Rahatsız etmeyin” sona erdi",
+  dndEndedBody_one: "Bu sırada {count} uyarı veya mesaj geldi.",
+  dndEndedBody_other: "Bu sırada {count} uyarı veya mesaj geldi.",
 };

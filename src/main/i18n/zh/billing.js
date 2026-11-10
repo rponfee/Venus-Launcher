@@ -16,6 +16,4 @@ module.exports = {
   errServer: '支付服务器未正确响应。请稍后再试。',
   errNetwork: '无法连接到支付服务器。请检查你的网络连接。',
   perMonth: '{price}/月',
-  errUnknownCommunity: "该社区不存在，或你已不在其中。",
-  errNotOwner: "只有社区所有者才能购买其套餐。",
 };

@@ -5,13 +5,13 @@ import assert from 'node:assert/strict';
 import { DEFAULT_FAILOVER_ON, FAILOVER_KINDS, OPENAI_EFFORTS, OPENAI_MODEL_PATTERN, PROVIDERS } from '../config.ts';
 import { mapUpstreamError } from '../errors.ts';
 import type { UpstreamFailure } from '../errors.ts';
-import { ANTHROPIC_ONLY, defaultSettings, failoverKind, parseProviderSettings, planAttempts } from '../providers.ts';
-import type { OpenAITier, ProviderSettings } from '../providers.ts';
+import { ANTHROPIC_ONLY, callTargets, defaultSettings, failoverKind, parseProviderSettings, planAttempts } from '../providers.ts';
+import type { CallTargets, OpenAITier, ProviderSettings, TargetSource } from '../providers.ts';
 
 const EFFORTS = { low: 'low', medium: 'medium', high: 'high' } as const;
-const LUNA: OpenAITier = { model: 'gpt-6-luna', efforts: { ...EFFORTS, xhigh: null } };
-const SOL: OpenAITier = { model: 'gpt-6.1-sol', efforts: { ...EFFORTS, xhigh: null } };
-const ASTRA: OpenAITier = { model: 'gpt-6-astra', efforts: { ...EFFORTS, xhigh: null } };
+const LUNA: OpenAITier = { model: 'gpt-6-luna', efforts: { ...EFFORTS, xhigh: null, max: null } };
+const SOL: OpenAITier = { model: 'gpt-6.1-sol', efforts: { ...EFFORTS, xhigh: null, max: null } };
+const ASTRA: OpenAITier = { model: 'gpt-6-astra', efforts: { ...EFFORTS, xhigh: null, max: null } };
 const BOTH = { anthropic: true, openai: true };
 
 function raw(extra: Record<string, unknown> = {}): Record<string, unknown> {
@@ -42,7 +42,7 @@ test('parseProviderSettings: la forma de ai_provider_settings()', () => {
   assert.ok(!settings?.failoverOn.has('unknown'));
   // Esfuerzos null (no se manda reasoning) y valores desconocidos (se ignoran).
   const partial = parseProviderSettings(raw({ openai: { haiku: { model: 'gpt-4.1', efforts: { low: null, medium: 'turbo', high: 'xhigh' } }, sonnet: { model: 'claude-sonnet-5-5' }, opus: 'x' } }));
-  assert.deepEqual(partial?.openai, { haiku: { model: 'gpt-4.1', efforts: { low: null, medium: null, high: 'xhigh', xhigh: null } } });
+  assert.deepEqual(partial?.openai, { haiku: { model: 'gpt-4.1', efforts: { low: null, medium: null, high: 'xhigh', xhigh: null, max: null } } });
   // Tipos de falla desconocidos se ignoran; nunca aparece un tipo que no está en FAILOVER_KINDS.
   assert.deepEqual([...(parseProviderSettings(raw({ failoverOn: ['overloaded', 'refusal', 'invalid_request', 3] }))?.failoverOn ?? [])], ['overloaded']);
   // Sin secundario (o igual al principal) no hay respaldo.
@@ -95,36 +95,59 @@ test('tabla de decisión: qué fallas pasan el pedido al otro proveedor', () => 
   assert.ok(!DEFAULT_FAILOVER_ON.includes('unknown'));
 });
 
-test('planAttempts: Anthropic primero y OpenAI de respaldo con el modelo de cada pregunta', () => {
-  const settings = defaultSettings({ haiku: LUNA, sonnet: SOL, opus: ASTRA });
-  assert.deepEqual(planAttempts(settings, BOTH, 'sonnet'), { attempts: [{ provider: 'anthropic' }, { provider: 'openai', tier: SOL }], primarySkipped: false });
-  assert.deepEqual(planAttempts(settings, BOTH, 'opus').attempts[1], { provider: 'openai', tier: ASTRA });
-  // Antes de saber el modelo: alcanza con que OpenAI tenga alguno.
-  assert.equal(planAttempts(settings, BOTH, null).attempts.length, 2);
-  // Sin OPENAI_API_KEY o sin respaldo: solo Anthropic.
-  assert.deepEqual(planAttempts(settings, { anthropic: true, openai: false }, 'sonnet'), { attempts: [{ provider: 'anthropic' }], primarySkipped: false });
-  assert.deepEqual(planAttempts({ ...settings, failoverEnabled: false }, BOTH, 'sonnet').attempts, [{ provider: 'anthropic' }]);
-  assert.deepEqual(planAttempts(ANTHROPIC_ONLY, BOTH, 'sonnet').attempts, [{ provider: 'anthropic' }]);
-  // Sin modelo de OpenAI para esa pregunta: solo Anthropic.
-  assert.deepEqual(planAttempts(defaultSettings({ haiku: LUNA }), BOTH, 'opus').attempts, [{ provider: 'anthropic' }]);
+// Llamada de 0056: proveedor del saldo, ids de los dos motores y el esfuerzo de OpenAI que decide la base.
+function source(extra: Partial<TargetSource> = {}): TargetSource {
+  return {
+    provider: 'anthropic', model: 'sonnet', modelId: 'claude-sonnet-5-5', effort: 'high', openaiEffort: 'high',
+    models: { anthropic: 'claude-sonnet-5-5', openai: 'gpt-5.6-sol' }, ...extra,
+  };
+}
+const TARGETS: CallTargets = { anthropic: 'claude-sonnet-5-5', openai: { model: 'gpt-5.6-sol', effort: 'high' } };
+const OFF: ProviderSettings = { ...defaultSettings({}), failoverEnabled: false };
+
+test('callTargets: con 0056 los modelos salen de la llamada; sin provider, de ai_tier_fallbacks', () => {
+  assert.deepEqual(callTargets(source(), OFF), TARGETS);
+  // openaiEffort null: no se manda reasoning (aunque ai_tier_fallbacks diga otra cosa).
+  assert.deepEqual(callTargets(source({ openaiEffort: null }), defaultSettings({ sonnet: SOL })).openai, { model: 'gpt-5.6-sol', effort: null });
+  // Sin openaiEffort (la base no lo manda): la traducción de ai_tier_fallbacks.
+  const noEffort = source();
+  delete noEffort.openaiEffort;
+  assert.deepEqual(callTargets(noEffort, defaultSettings({ sonnet: SOL })).openai, { model: 'gpt-5.6-sol', effort: 'high' });
+  // Un motor que no ofrece la clave: null.
+  assert.equal(callTargets(source({ provider: 'openai', models: { anthropic: 'claude-sonnet-5-5', openai: null } }), OFF).openai, null);
+  // Base anterior a 0056: modelId es de Anthropic y el de OpenAI sale de ai_tier_fallbacks.
+  const legacy = source({ provider: null, models: { anthropic: null, openai: null } });
+  delete legacy.openaiEffort;
+  assert.deepEqual(callTargets(legacy, defaultSettings({ sonnet: SOL })), { anthropic: 'claude-sonnet-5-5', openai: { model: 'gpt-6.1-sol', effort: 'high' } });
+  assert.deepEqual(callTargets(legacy, OFF), { anthropic: 'claude-sonnet-5-5', openai: null });
 });
 
-test('planAttempts: sin ANTHROPIC_API_KEY va directo a OpenAI (si not_configured está en failover_on)', () => {
-  const settings = defaultSettings({ haiku: LUNA, sonnet: SOL, opus: ASTRA });
-  const noAnthropic = { anthropic: false, openai: true };
-  assert.deepEqual(planAttempts(settings, noAnthropic, 'haiku'), { attempts: [{ provider: 'openai', tier: LUNA }], primarySkipped: true });
-  const withoutKind: ProviderSettings = { ...settings, failoverOn: new Set([...settings.failoverOn].filter((k) => k !== 'not_configured')) };
-  assert.deepEqual(planAttempts(withoutKind, noAnthropic, 'haiku'), { attempts: [], primarySkipped: true });
-  assert.deepEqual(planAttempts({ ...settings, failoverEnabled: false }, noAnthropic, 'haiku').attempts, []);
-  assert.deepEqual(planAttempts(settings, noAnthropic, 'opus').attempts, [{ provider: 'openai', tier: ASTRA }]);
-  assert.deepEqual(planAttempts(defaultSettings({}), noAnthropic, null).attempts, [], 'OpenAI sin modelos configurados');
-  assert.deepEqual(planAttempts(settings, { anthropic: false, openai: false }, 'haiku').attempts, []);
+test('planAttempts: el proveedor de la llamada primero; el otro solo con el respaldo activado', () => {
+  const both = { anthropic: true, openai: true };
+  const on = defaultSettings({});
+  const claude = { provider: 'anthropic' as const, model: 'claude-sonnet-5-5' };
+  const gpt = { provider: 'openai' as const, model: 'gpt-5.6-sol', effort: 'high' as const };
+  // Respaldo apagado (como en producción): solo el del saldo.
+  assert.deepEqual(planAttempts('anthropic', OFF, both, TARGETS), { attempts: [claude], primarySkipped: false });
+  assert.deepEqual(planAttempts('openai', OFF, both, TARGETS), { attempts: [gpt], primarySkipped: false });
+  assert.deepEqual(planAttempts('anthropic', ANTHROPIC_ONLY, both, TARGETS).attempts, [claude]);
+  // Respaldo activado: el otro después, sea cual sea el principal de ai_provider_config.
+  assert.deepEqual(planAttempts('anthropic', on, both, TARGETS).attempts, [claude, gpt]);
+  assert.deepEqual(planAttempts('openai', on, both, TARGETS).attempts, [gpt, claude]);
+  // El otro sin clave o sin modelo para la clave: no se suma.
+  assert.deepEqual(planAttempts('anthropic', on, { anthropic: true, openai: false }, TARGETS).attempts, [claude]);
+  assert.deepEqual(planAttempts('anthropic', on, both, { ...TARGETS, openai: null }).attempts, [claude]);
 });
 
-test('planAttempts: OpenAI como principal y Anthropic de respaldo', () => {
-  const settings: ProviderSettings = { ...defaultSettings({ sonnet: SOL }), primary: 'openai', secondary: 'anthropic' };
-  assert.deepEqual(planAttempts(settings, BOTH, 'sonnet'), { attempts: [{ provider: 'openai', tier: SOL }, { provider: 'anthropic' }], primarySkipped: false });
-  // OpenAI no tiene modelo para Haiku: va directo a Anthropic (como "no configurado").
-  assert.deepEqual(planAttempts(settings, BOTH, 'haiku'), { attempts: [{ provider: 'anthropic' }], primarySkipped: true });
-  assert.deepEqual(planAttempts(settings, { anthropic: true, openai: false }, 'sonnet'), { attempts: [{ provider: 'anthropic' }], primarySkipped: true });
+test('planAttempts: el proveedor de la llamada sin clave', () => {
+  const on = defaultSettings({});
+  const noClaude = { anthropic: false, openai: true };
+  // Sin respaldo: ningún intento (el handler responde 503 not_configured y devuelve la pregunta).
+  assert.deepEqual(planAttempts('anthropic', OFF, noClaude, TARGETS), { attempts: [], primarySkipped: true });
+  // Con respaldo y not_configured en failover_on: directo al otro.
+  assert.deepEqual(planAttempts('anthropic', on, noClaude, TARGETS), { attempts: [{ provider: 'openai', model: 'gpt-5.6-sol', effort: 'high' }], primarySkipped: true });
+  const withoutKind: ProviderSettings = { ...on, failoverOn: new Set([...on.failoverOn].filter((k) => k !== 'not_configured')) };
+  assert.deepEqual(planAttempts('anthropic', withoutKind, noClaude, TARGETS).attempts, []);
+  assert.deepEqual(planAttempts('openai', OFF, { anthropic: true, openai: false }, TARGETS).attempts, []);
+  assert.deepEqual(planAttempts('openai', on, { anthropic: false, openai: false }, TARGETS).attempts, []);
 });

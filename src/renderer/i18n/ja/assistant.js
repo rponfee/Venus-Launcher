@@ -179,4 +179,12 @@ export default {
   ex3: "FPSが上がるように、インスタンスを最適化して",
   ex4: "SodiumとIrisをインストールして",
   ex5: "軽量なシェーダーを探して",
+  effort_max: "最大",
+  walletLabel: "残高",
+  walletHint: "次の質問で使う残高 (ClaudeまたはChatGPT) を選びます。",
+  walletOption: "{family} · 残り{left}",
+  walletLine: "{family}の残高: 残り{left} / {limit}",
+  failoverNoteOf: "バックアップ ({provider}) が回答しました",
+  quotaBudgetTitle: "残高がなくなりました",
+  quotaBudgetOut: "{family}の残高 ({plan}プラン) がなくなり、{other}の残高も残っていません。「プラン」で{family}の残高を追加購入するか、{other}のプランをお試しください。",
 };

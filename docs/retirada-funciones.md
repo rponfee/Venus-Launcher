@@ -1,6 +1,6 @@
 # Retirada de funciones del launcher
 
-Actualización local del 4 de noviembre de 2026, por decisión del dueño. Este cambio retira Clanes, modo streamer, Extensiones y visor de semillas del launcher. Comunidades continúa, y **Ajustes → Acerca de → Web oficial** abre [venuslauncher.fun](https://venuslauncher.fun/) mediante el handler existente `app.openExternal`, solo al pulsar el botón.
+Actualización local del 4 de noviembre de 2026, por decisión del dueño. Este cambio retira Clanes, modo streamer, Extensiones y visor de semillas del launcher. Comunidades continuó hasta la 6.1 ([Retiros de la 6.1](#retiros-de-la-61)), y **Ajustes → Acerca de → Web oficial** abre [venuslauncher.fun](https://venuslauncher.fun/) mediante el handler existente `app.openExternal`, solo al pulsar el botón.
 
 | Función | Cambio efectivo | Lo que se conserva |
 |---|---|---|
@@ -35,9 +35,48 @@ Esta comprobación no equivale a un recorrido visual en Electron, OBS real, Mine
 ## Referencias conservadas
 
 - Extensiones y visor de semillas: la guía, los contratos y los informes se borraron en la 4.6 junto con el código (ver [supabase.md](supabase.md) para lo que queda en la base y la migración 0048).
-- [Clanes y comunidades: contratos anteriores](implementacion/clanes-comunidades.md); Comunidades sigue en desarrollo en su frente propio.
+- [Clanes y comunidades: contratos anteriores](implementacion/clanes-comunidades.md); Comunidades se retiró en la 6.1 (ver abajo).
 - [Clips y OBS](implementacion/clips.md): contrato actual sin el evento `obs:streamer`; los resultados anteriores de ese automatismo se identifican como antecedentes.
 
 ## Retiros de la 4.6
 
 La 4.6.0 borró del árbol, además de lo anterior: **Competir** (rankings, desafíos, eventos y el aviso de desafíos), **Extensiones**, el **visor de semillas**, el **modo streamer con OBS**, la página **Herramientas** (el conversor Nether, stacks, orden de encantamientos, ticks, colores § y chunks), las **capas de Venus** (tienda, mod y launcher; ver [insignia.md](insignia.md)) y el sistema viejo de **Clanes** (Comunidades lo reemplaza). Se conservan, funcionando igual, el recordatorio de descansos y tope de horas, el resumen al cerrar el juego, el aviso de versión nueva de Minecraft y las descargas programadas: mudaron a `features/playcare` sin cambiar ajustes ni canales (`play.breaks`, `play.today`, `play.sessionRecap`, `news.newVersions`, `downloads.schedule`, `mcnews:*`, `downloads:schedule*`). `modules-loader.js` ya no tiene lista de excepciones y la directiva `frame-src` de `index.html` volvió a `'none'`. Los campos "Semilla" al crear un mundo siguen. Las claves de ajustes de lo retirado quedan como datos inertes y en el disco pueden quedar `data/compete.json`, la carpeta `extensions/` y el secreto cifrado `obs.password`. La base: la migración **0048** (sin aplicar) elimina las tablas y funciones sin uso; ver [supabase.md](supabase.md).
+
+## Retiros de la 6.1
+
+Por decisión del dueño, la 6.1 retira las **Comunidades** del launcher: la sección del menú En línea con canales de texto, anuncios, foros y voz, roles y permisos, bienvenida y despedida, galería de GIF y los **planes de clan** pagos (Clanes Go, Pro, Max y Ultra). Siguen igual Voice Chat (las salas normales y la de emergencia), Mensajes (con GIF de KLIPY y stickers), los grupos para jugar, los perfiles (el banner de KLIPY sigue) y los temas de la comunidad.
+
+| Qué | Cambio efectivo |
+|---|---|
+| Página y menú | Sin ruta `#/communities` ni entrada en el menú. Una ruta vieja (un enlace, la página de inicio "la última que visitaste" o un acceso guardado) abre el Inicio, porque el router solo abre lo que está en `PAGES`. |
+| Navegación personalizada | Un `communities` guardado en `settings.nav` (orden, fijados u ocultos) se descarta al leerlo (`normalizeNav` solo acepta ids del menú actual) y no rompe el resto de la preferencia. El archivo no se reescribe. |
+| Voice Chat | La sala ya no pide el "escenario" de una comunidad (`community_stage_get`) ni carga código de Comunidades. |
+| Recorrido de novedades | Sin la pantalla "Jugá y charlá en comunidad" (`v45social`), que llevaba a la página; sus textos se borraron en los 14 idiomas. |
+| Planes de clan | `features/plans.js` ya no tiene la rama de clan. En el proceso principal, `billing:checkout` solo acepta los planes de IA (`clan_*` responde `unknownPlan` sin llegar a pedir el pago), el catálogo ya no devuelve `clans` y las órdenes no llevan `communityId`. Se borraron las claves `billing.errUnknownCommunity` y `billing.errNotOwner` en los 14 idiomas. |
+| Otros | Se borraron `pages/communities.js`, `pages/communities/` (vistas y pruebas), `features/communities/looks.js` y `report.js`, y `scripts/gen-clan-scenes.js` (generaba escenas que ya no estaban en el árbol). El texto de sugerencias de Soporte dice "Amigos, mensajes y voz" (es y en; los otros idiomas se traducen al final). |
+
+**Restos borrados en esta misma versión:** al quitarse la pestaña Comunidades de Administración (`pages/admin/communities.js`) se borraron también `features/communities/` (`backend`, `logic`, `fake`, `fake-plans`, `presets`, `permissions`, `greeting`, `media` y `plan`), `pages/communities/logic.js` y `media-view.js`, los estilos `pages/communities.css` y `features/communityplans.css`, los namespaces `communities` y `communityplans` en los 14 idiomas y la clave `nav.communities`. No queda código de Comunidades en `src`.
+
+**Datos que se conservan:** no se ejecutó SQL ni se borró nada de nadie. En la base siguen las tablas `communities`, `community_members`, `community_channels`, `community_messages`, `community_bans`, `community_mutes`, `group_reports` (0033), `community_categories`, `community_roles`, `community_member_roles`, `community_channel_perms`, `community_reactions`, `community_greetings`, `community_media` (0038), `community_plans`, `community_plan_periods`, `community_backdrops`, `community_presets` y la columna `payment_orders.community_id` (0044); el bucket privado `community-media`; las RPC públicas `community_*` y `admin_community_*`, y las privadas `private.community_*`, `private.group_*` y `private.clan_quote`. Las salas de voz de los canales de comunidad son filas de `voice_rooms` privadas y cerradas. El launcher ya no las crea ni invita a nadie (nada llama a `community_voice_room`), pero las que ya existen siguen saliendo en Voice Chat como salas comunes: al dueño de la comunidad en "Tus salas" (puede entrar, editarlas o borrarlas, y le cuentan para el tope de 12 salas) y a los miembros que entraron alguna vez en "Recientes" (cerradas: `voice_join` les responde `locked`). El cliente no puede ocultarlas porque el servidor no distingue una sala de comunidad; ocultarlas o borrarlas es una migración aparte. Además `voice_join`, `voice_member_keys` y la voz de respaldo siguen llamando a `private.community_voice_access`, `community_voice_speaks` y `community_voice_visible`, así que una limpieza futura tiene que redefinir esas funciones de voz **antes** de borrar las tablas. En el archivo de ajustes del usuario, las claves viejas quedan inertes.
+
+**Moderación mientras queden launchers viejos.** El servidor sigue aceptando las Comunidades de los launchers 6.0.0 o anteriores (la edición portable no se actualiza sola, y hay quien apaga las actualizaciones): se pueden seguir creando comunidades, mensajes, denuncias (`group_reports`) y GIFs, que nacen pendientes de aprobación. El panel de la 6.1 ya no tiene una pestaña para eso. Hasta que esos launchers se actualicen, se modera desde el SQL Editor de Supabase (las funciones aceptan esa sesión):
+
+- Ver las denuncias: `select public.admin_group_reports();`
+- Cerrar una (con `true` además borra el mensaje denunciado): `select public.admin_group_report_close('<id>'::uuid, true);`
+- Ver los GIFs pendientes: `select public.admin_community_media_queue('pending', 50, 0);`
+- Rechazar o aprobar uno (`'reject'` o `'approve'`): `select public.admin_community_media_review('<id>'::uuid, 'reject', '<motivo>');`
+- Disolver una comunidad: `select public.admin_group_dissolve('community', '<id>'::uuid, '<motivo>');`
+
+Si se quiere cortar del todo, hace falta una migración nueva que les quite el permiso de ejecución a las funciones públicas de escritura de Comunidades (`community_create`, `community_join`, `community_send` y las demás); no está escrita.
+
+### Archivos de integración (6.1)
+
+- `src/renderer/js/app.js`: `NAV` y `PAGES` sin Comunidades.
+- `voice/ui-room.js`: sin `attachStage`.
+- `features/plans.js`, `src/main/modules/billing/client.js` y `fake.js`: sin planes de clan.
+- `features/whatsnew.js` e `i18n/*/whatsnew.js`: sin la pantalla `v45social`.
+- `src/main/i18n/*/billing.js`: sin los errores de comunidad.
+
+### Verificación de la 6.1
+
+Regresiones nuevas en `src/renderer/js/features/retired/test/communities.test.js` (6 pruebas): sin ruta ni menú; preferencia vieja con `communities` ignorada; Voice Chat, Mensajes, Inicio, el menú, novedades y planes cargan sin archivos faltantes y sin llegar a código de Comunidades (recorriendo sus imports, sin entrar en Administración); los archivos borrados no existen; las novedades no mencionan Comunidades; el cliente de pagos no ofrece ni cobra planes de clan. `integration.test.js` pasó a comprobar que Comunidades ya no está. Capturas en Electron con datos temporales (Inicio, `#/communities` que abre el Inicio, Voice Chat, Mensajes y el menú con En línea completo) sin errores en la consola. No se probó con una cuenta real.

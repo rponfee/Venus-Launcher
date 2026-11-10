@@ -485,3 +485,17 @@ body.reduce-motion .wl-planet, body.reduce-motion .wl-brand-planet, body.reduce-
 /* Bienvenida corta: el acceso a todos los pasos */
 .wl-all-steps { position: relative; align-self: flex-start; margin: 0 6px var(--sp-2); }
 .wl-quick-note { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+/* Paso del overlay del juego (6.1): interruptor, vista previa de Ajustes (features/overlay.css) y diseños listos */
+.wl-ov-split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(220px, 1fr); gap: var(--sp-4); align-items: start; }
+.wl-ov-preview { min-width: 0; border-radius: var(--radius); transition: opacity var(--dur) var(--ease-out); }
+.wl-ov-preview.is-off { opacity: 0.5; }
+.wl-ov-skel { aspect-ratio: 16 / 9; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
+.wl-ov-side { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.wl-ov-presets { display: flex; flex-direction: column; gap: var(--sp-2); }
+.wl-ov-presets .wl-choice { gap: 2px; padding: 8px var(--sp-3); border-radius: var(--radius); }
+.wl-ov-presets .wl-choice-icon { width: 30px; height: 30px; }
+.wl-ov-presets .wl-choice-sub { padding-left: calc(30px + var(--sp-3)); font-size: var(--fs-xs); }
+.wl-ov-later { align-self: center; }
+@container wl (max-width: 860px) {
+  .wl-ov-split { grid-template-columns: minmax(0, 1fr); }
+}

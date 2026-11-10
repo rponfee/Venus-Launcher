@@ -7,6 +7,7 @@
 //   buildDoc / fitDoc    el JSON que se guarda, con el tope de tamaño
 //   createSyncEngine()   el recorrido completo contra la nube (recibe rpc, ajustes y pregunta como funciones)
 import { shareableLook } from '../themes/looks.js';
+import { APPEARANCE_DEFAULTS } from '../../a11y/appearance-logic.js';
 
 export const MAX_DOC_BYTES = 64 * 1024;
 const DOC_VERSION = 1;
@@ -33,6 +34,12 @@ const TYPES = {
   'appearance.seasonal': 'boolean',
   'appearance.rotation': 'object',
   'appearance.playButton': 'object',
+  // 6.1: tamaño del texto, tarjetas, lado del menú, página de inicio y extras de la barra de título
+  'appearance.uiText': 'string',
+  'appearance.uiCards': 'string',
+  'appearance.uiSide': 'string',
+  'appearance.startPage': 'string',
+  'appearance.titlebar': 'object',
   looks: 'array',
   'decor.particles': 'string',
   'decor.density': 'string',
@@ -45,6 +52,7 @@ const TYPES = {
   'nav.pinned': 'array',
   'nav.iconPack': 'string',
   'home.layout': 'object',
+  'home.hero': 'string',
 };
 
 export const SYNC_KEYS = Object.keys(TYPES);
@@ -112,13 +120,22 @@ export function pausedKeys(settings) {
   return out;
 }
 
+// Claves de APPEARANCE_DEFAULTS que se sumaron después de la 6.0 y viajan en los looks. Toda clave nueva de
+// APPEARANCE_DEFAULTS que viaje en los looks va en esta lista (si no, actualizar cambia el hash de 'looks' en todas las PCs).
+const LOOK_KEYS_NEW = ['uiText', 'uiCards', 'uiSide'];
+
 // Un look tal como viaja: sin rutas y sin el logo (pesa hasta 200 KB y no entra en el tope).
 function syncLook(raw) {
   if (!isObj(raw) || typeof raw.id !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(raw.id)) return null;
   const share = shareableLook(raw);
   if (!share) return null;
   const { logo: _l, logoName: _n, ...branding } = share.branding;
-  return { id: raw.id, createdAt: Number(raw.createdAt) || 0, name: share.name, appearance: share.appearance, branding };
+  // Las claves que la 6.0 no conoce solo viajan si no son las de fábrica: así un look sin estilo propio viaja igual que
+  // en 6.0, el hash guardado sigue valiendo y actualizar no cuenta como un cambio del usuario (que pisaría los looks
+  // más nuevos de las otras PCs). Al recibir, normalizeLook() repone los valores de fábrica.
+  const appearance = { ...share.appearance };
+  for (const k of LOOK_KEYS_NEW) if (appearance[k] === APPEARANCE_DEFAULTS[k]) delete appearance[k];
+  return { id: raw.id, createdAt: Number(raw.createdAt) || 0, name: share.name, appearance, branding };
 }
 
 export const syncLooks = (list) => (Array.isArray(list) ? list.map(syncLook).filter(Boolean) : []);

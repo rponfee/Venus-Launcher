@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  menuAbout: "O programie {app}",
+  menuHide: "Ukryj {app}",
+  menuHideOthers: "Ukryj pozostałe",
+  menuShowAll: "Pokaż wszystkie",
+  menuQuit: "Zakończ {app}",
+  menuEdit: "Edycja",
+  menuUndo: "Cofnij",
+  menuRedo: "Ponów",
+  menuCut: "Wytnij",
+  menuCopy: "Kopiuj",
+  menuPaste: "Wklej",
+  menuPasteMatch: "Wklej i dopasuj styl",
+  menuDelete: "Usuń",
+  menuSelectAll: "Zaznacz wszystko",
+  menuWindow: "Okno",
+  menuMinimize: "Minimalizuj",
+  menuZoom: "Powiększ",
+  menuFront: "Przesuń wszystko na wierzch",
+};

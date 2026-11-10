@@ -103,7 +103,7 @@ export default {
   q_help: 'How do I get help?',
   a_help: 'From Support, right here in the launcher, or on the Discord. Program bugs can also be reported on GitHub.',
   q_platforms: 'Does it work on Mac or Linux?',
-  a_platforms: 'For now, only on 64-bit Windows 10 and 11.',
+  a_platforms: 'On 64-bit Windows 10 and 11 and on macOS 12 or newer (Apple Silicon and Intel). The in-game overlay, music and clips are not available on Mac.',
   helpTitle: 'Still have questions?',
   helpText: 'Write to us from Support or ask on the Discord.',
   goSupport: 'Go to Support',

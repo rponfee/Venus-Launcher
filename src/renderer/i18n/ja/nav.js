@@ -45,6 +45,4 @@ export default {
   resetMenu: "リセット",
   done: "完了",
   menuSaveFailed: "メニューを保存できませんでした",
-  clans: "クラン",
-  communities: "コミュニティ",
 };

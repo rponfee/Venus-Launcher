@@ -8,9 +8,10 @@ const NOW = Date.UTC(2026, 9, 27, 18, 0, 0);
 const DAY = 86400000;
 const iso = (ms) => (ms === null || ms === undefined ? null : new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z'));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const { createFakeTeam } = require('./fake-team');
 
 const PLANS = require('../assistant/plans.json').plans.map((p) => ({
-  id: p.id, name: p.name, price: Math.round(p.priceUsd * 100), budget: p.budgetUsd,
+  id: p.id, name: p.name, provider: p.provider, tier: p.tier, price: Math.round(p.priceUsd * 100), budget: p.budgetUsd,
   tokens: p.maxTokensPerRequest, calls: 60, rpm: 60,
   models: p.models.map((m) => [m.id, m.efforts, 2147483647, 2147483647]),
 }));
@@ -43,7 +44,7 @@ function uuidFor(i) {
 
 function buildUsers() {
   const users = [];
-  const plans = ['basic', 'pro', null, null, 'go', null, 'pro', null, 'go', 'max'];
+  const plans = ['basic', 'claude_pro', null, null, 'go', null, 'pro', null, 'claude_go', 'claude_ultra'];
   PEOPLE.forEach(([email, username, plan, source, stripeStatus, usd, q, ageDays, extra = {}], i) => {
     users.push({ id: i === 0 ? ADMIN_ID : uuidFor(i), email, username, plan, source, stripeStatus, usd, q, ageDays, extra });
   });
@@ -79,12 +80,14 @@ function buildUsers() {
   }));
 }
 
-function createFakeAdmin() {
+function createFakeAdmin({ owner = true } = {}) {
   let users = buildUsers();
   let seq = 0;
   const plans = PLANS.map((p, i) => ({
     id: p.id,
     name: p.name,
+    provider: p.provider, // familia (6.1): anthropic = Claude, openai = ChatGPT
+    tier: p.tier,
     active: true,
     sort: (i + 1) * 10,
     priceUsd: p.price / 100,
@@ -168,6 +171,8 @@ function createFakeAdmin() {
     createdAt: iso(NOW - daysAgo * DAY),
   })).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+  // Equipo (0057) y RPC directas del Resumen: fake-team.js. owner=false: el panel como admin común.
+  const team = createFakeTeam({ users: () => users, adminId: ADMIN_ID, owner, now: NOW, log: (...a) => log(...a), audit: () => audit });
   const planOf = (id) => plans.find((p) => p.id === id);
   const banned = (u) => Boolean(u.moderation.bannedUntil && u.moderation.bannedUntil > NOW);
   const muted = (u) => Boolean(u.moderation.mutedUntil && u.moderation.mutedUntil > NOW);
@@ -184,7 +189,7 @@ function createFakeAdmin() {
       displayName: u.username,
       friendCode: u.friendCode,
       mcName: u.username.slice(0, 16),
-      isAdmin: Boolean(u.extra.admin),
+      isAdmin: team.isAdmin(u.id),
       plan: u.plan
         ? {
             id: u.plan,
@@ -307,7 +312,7 @@ function createFakeAdmin() {
     });
     return {
       account: { id: u.id, email: u.email, emailConfirmed: r.emailConfirmed, emailConfirmedAt: r.emailConfirmed ? r.createdAt : null, createdAt: r.createdAt, lastSignInAt: r.lastSignInAt, bannedUntil: r.moderation.bannedUntil, providers: ['email'], isAdmin: r.isAdmin },
-      profile: { username: u.username, displayName: u.username, friendCode: u.friendCode, mcName: r.mcName, mcUuid: null, bio: null, badges: [], status: 'online', statusText: null, lastSeen: r.lastSignInAt, createdAt: r.createdAt },
+      profile: { rank: team.rank(u.id), username: u.username, displayName: u.username, friendCode: u.friendCode, mcName: r.mcName, mcUuid: null, bio: null, badges: [], status: 'online', statusText: null, lastSeen: r.lastSignInAt, createdAt: r.createdAt },
       subscription: u.plan
         ? {
             planId: u.plan,
@@ -351,7 +356,7 @@ function createFakeAdmin() {
       const u = users.find((x) => x.id === id);
       if (!u) results.push({ id, ok: false, error: 'not_found' });
       else if (protect && id === ADMIN_ID) results.push({ id, ok: false, error: 'self' });
-      else if (protect && u.extra.admin) results.push({ id, ok: false, error: 'target_admin' });
+      else if (protect && team.isAdmin(u.id)) results.push({ id, ok: false, error: 'target_admin' });
       else {
         const extra = fn(u) || {};
         if (extra.warning) warnings.push({ id, email: u.email, ...extra.warning });
@@ -496,8 +501,10 @@ function createFakeAdmin() {
       log('plans.setPrice', null, { planId: pl.id, amount: p.amount, previousAmount: prev ? prev.amount : null });
       return { planId: pl.id, priceId, previousPriceId: prev ? prev.priceId : null, amount: p.amount, previousAmount: prev ? prev.amount : null, livemode: false, product: `venus_ai_${pl.id}`, portal: 'updated', warnings: [], plan: pl };
     },
+    rpc: (p) => team.rpc(p.name, p.args),
     'audit.list': (p) => {
       let out = audit;
+      if (p.adminId) out = out.filter((a) => a.adminId === p.adminId);
       if (p.action) out = out.filter((a) => (p.action.endsWith('.') ? a.action.startsWith(p.action) : a.action === p.action));
       if (p.targetUser) out = out.filter((a) => a.targetUser === p.targetUser);
       const page = Math.max(1, p.page || 1);

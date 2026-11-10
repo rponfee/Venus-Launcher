@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "中",
   effort_high: "高",
   effort_xhigh: "最高",
+  effort_max: "最大",
+  errBudgetOut: "{family}の残高（{plan}プラン）がなくなり、{other}の残高も残っていません。続けるには、「プラン」で{family}の残高を追加購入するか、{other}のプランを購入してください。",
+  errWallet: "AIが使う残高を切り替えられませんでした。しばらくしてからもう一度お試しください。",
 };

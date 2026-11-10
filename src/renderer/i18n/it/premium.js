@@ -13,8 +13,6 @@ export default {
   perk_effectsText: "Brillantini, arcobaleno e fuoco per il tuo nome, senza comprarli nel negozio.",
   perk_frame: "Cornici esclusive e titolo di Sostenitore",
   perk_frameText: "Cornici animate per l'avatar che arrivano solo con Premium e il titolo di Sostenitore accanto al tuo nome.",
-  perk_replay: "Replay istantaneo di 5 minuti",
-  perk_replayText: "Salva gli ultimi 5 minuti della tua partita invece di 60 secondi.",
   perk_ai: "Venus AI",
   perk_aiText: "L'assistente con i modelli e le domande del tuo piano, come sempre.",
   note: "Premium dura quanto il tuo piano. Se lo annulli, conservi tutto ciò che hai comprato con i Venus Points.",

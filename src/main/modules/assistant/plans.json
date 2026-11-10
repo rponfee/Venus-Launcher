@@ -1,13 +1,35 @@
 {
   "placeholder": false,
   "plans": [
-    { "id": "basic", "name": "Basic", "priceUsd": 4, "budgetUsd": 2, "maxTokensPerRequest": 12000,
+    { "id": "claude_basic", "name": "Basic", "provider": "anthropic", "tier": "basic", "priceUsd": 6, "budgetUsd": 3.5, "maxTokensPerRequest": 12000,
+      "models": [{ "id": "haiku", "label": "Haiku 5.5", "efforts": ["low", "medium"], "daily": null, "weekly": null }] },
+    { "id": "claude_go", "name": "Go", "provider": "anthropic", "tier": "go", "priceUsd": 10, "budgetUsd": 6.75, "maxTokensPerRequest": 32000,
+      "models": [{ "id": "haiku", "label": "Haiku 5.5", "efforts": ["low", "medium", "high"], "daily": null, "weekly": null }] },
+    { "id": "claude_pro", "name": "Pro", "provider": "anthropic", "tier": "pro", "priceUsd": 18, "budgetUsd": 12.5, "maxTokensPerRequest": 44000,
+      "models": [
+        { "id": "haiku", "label": "Haiku 5.5", "efforts": ["low", "medium", "high"], "daily": null, "weekly": null },
+        { "id": "sonnet", "label": "Sonnet 5.5", "efforts": ["low", "medium", "high"], "daily": null, "weekly": null }] },
+    { "id": "claude_max", "name": "Max", "provider": "anthropic", "tier": "max", "priceUsd": 32, "budgetUsd": 26, "maxTokensPerRequest": 78000,
+      "models": [
+        { "id": "haiku", "label": "Haiku 5.5", "efforts": ["low", "medium", "high", "xhigh"], "daily": null, "weekly": null },
+        { "id": "sonnet", "label": "Sonnet 5.5", "efforts": ["low", "medium", "high", "xhigh"], "daily": null, "weekly": null }] },
+    { "id": "claude_ultra", "name": "Ultra", "provider": "anthropic", "tier": "ultra", "priceUsd": 40, "budgetUsd": 32, "maxTokensPerRequest": 128000,
+      "models": [
+        { "id": "haiku", "label": "Haiku 5.5", "efforts": ["low", "medium", "high", "xhigh", "max"], "daily": null, "weekly": null },
+        { "id": "sonnet", "label": "Sonnet 5.5", "efforts": ["low", "medium", "high", "xhigh", "max"], "daily": null, "weekly": null }] },
+    { "id": "basic", "name": "Basic", "provider": "openai", "tier": "basic", "priceUsd": 6, "budgetUsd": 3.5, "maxTokensPerRequest": 12000,
       "models": [{ "id": "haiku", "label": "GPT-6 Luna", "efforts": ["low"], "daily": null, "weekly": null }] },
-    { "id": "go", "name": "Go", "priceUsd": 8, "budgetUsd": 4.5, "maxTokensPerRequest": 16000,
-      "models": [{ "id": "haiku", "label": "GPT-6 Luna", "efforts": ["medium"], "daily": null, "weekly": null }] },
-    { "id": "pro", "name": "Pro", "priceUsd": 15, "budgetUsd": 8.5, "maxTokensPerRequest": 24000,
-      "models": [{ "id": "haiku", "label": "GPT-6 Luna", "efforts": ["high"], "daily": null, "weekly": null }] },
-    { "id": "max", "name": "Max", "priceUsd": 35, "budgetUsd": 20, "maxTokensPerRequest": 36000,
-      "models": [{ "id": "haiku", "label": "GPT-6 Luna", "efforts": ["xhigh"], "daily": null, "weekly": null }] }
+    { "id": "go", "name": "Go", "provider": "openai", "tier": "go", "priceUsd": 10, "budgetUsd": 6.75, "maxTokensPerRequest": 32000,
+      "models": [{ "id": "haiku", "label": "GPT-6 Luna", "efforts": ["low", "medium", "high"], "daily": null, "weekly": null }] },
+    { "id": "pro", "name": "Pro", "provider": "openai", "tier": "pro", "priceUsd": 18, "budgetUsd": 12.5, "maxTokensPerRequest": 44000,
+      "models": [{ "id": "haiku", "label": "GPT-6 Luna", "efforts": ["low", "medium", "high"], "daily": null, "weekly": null }] },
+    { "id": "max", "name": "Max", "provider": "openai", "tier": "max", "priceUsd": 32, "budgetUsd": 26, "maxTokensPerRequest": 78000,
+      "models": [
+        { "id": "haiku", "label": "GPT-6 Luna", "efforts": ["low", "medium", "high"], "daily": null, "weekly": null },
+        { "id": "sonnet", "label": "GPT-5.6 Sol", "efforts": ["low", "medium", "high"], "daily": null, "weekly": null }] },
+    { "id": "ultra", "name": "Ultra", "provider": "openai", "tier": "ultra", "priceUsd": 40, "budgetUsd": 28, "maxTokensPerRequest": 128000,
+      "models": [
+        { "id": "haiku", "label": "GPT-6 Luna", "efforts": ["low", "medium", "high"], "daily": null, "weekly": null },
+        { "id": "sonnet", "label": "GPT-5.6 Sol", "efforts": ["low", "medium", "high"], "daily": null, "weekly": null }] }
   ]
 }

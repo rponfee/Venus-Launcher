@@ -4,8 +4,9 @@
 // node_modules (en %TEMP%/venus-assistant-backend-e2e-*) y la borra al terminar. Sin los paquetes, se saltea.
 // El SDK de OpenAI no está en el repo del launcher: se usa el de node_modules si alguien lo instala, el de
 // VENUS_OPENAI_SDK (ruta al index.mjs de un paquete "openai" 7.x, para verificarlo a mano) o, si no, el doble
-// de tests/fake-openai-sdk.ts (mismo pedido HTTP y mismas clases de error). index.ts se importa dos veces:
-// sin OPENAI_API_KEY (solo Anthropic, como antes) y con OPENAI_API_KEY (respaldo en OpenAI).
+// de tests/fake-openai-sdk.ts (mismo pedido HTTP y mismas clases de error). index.ts se importa varias veces (los
+// secretos se leen al cargarlo): solo ANTHROPIC_API_KEY, las dos claves, solo OPENAI_API_KEY y sin ninguna (las claves
+// salen de Vault). La "base" responde con el contrato de 0056: el proveedor de cada llamada es `provider`.
 import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -63,10 +64,17 @@ function providerSettings(): Record<string, unknown> {
 }
 
 // Lo que "devuelve la base": el modelo de la pregunta y su id de Anthropic (de ai_models).
+// Modelo de ChatGPT de cada clave (ai_tier_fallbacks; opus queda de los planes viejos).
+const OPENAI_BY_KEY: Record<string, string> = { haiku: 'gpt-6-luna', sonnet: 'gpt-6.1-sol', opus: 'gpt-6-astra' };
+
 const state: {
   requests: Entry[];
   modelKey: string;
   modelId: string;
+  provider: 'anthropic' | 'openai';
+  switched: Record<string, unknown> | null;
+  maxTokens: number;
+  vault: { anthropic: string | null; openai: string | null };
   fallback: boolean;
   anthropic: Responder | null;
   openai: Responder | null;
@@ -75,6 +83,10 @@ const state: {
   requests: [],
   modelKey: 'opus',
   modelId: 'claude-opus-5-5',
+  provider: 'anthropic',
+  switched: null,
+  maxTokens: 8000,
+  vault: { anthropic: null, openai: null },
   fallback: true,
   anthropic: null,
   openai: null,
@@ -85,6 +97,7 @@ const handlers: ((req: Request) => Promise<Response>)[] = [];
 let handler: ((req: Request) => Promise<Response>) | null = null;
 let openaiHandler: ((req: Request) => Promise<Response>) | null = null;
 let onlyOpenaiHandler: ((req: Request) => Promise<Response>) | null = null;
+let vaultHandler: ((req: Request) => Promise<Response>) | null = null;
 let workDir = '';
 
 function jsonResponse(status: number, body: unknown, headers: Record<string, string> = {}): Response {
@@ -179,15 +192,20 @@ async function fakeFetch(input: unknown, init: RequestInit = {}): Promise<Respon
     if (fn === 'ai_quota_status') return jsonResponse(200, quotaV2());
     if (fn === 'ai_catalog') return jsonResponse(200, CATALOG);
     if (fn === 'ai_register_turn') {
+      // 0056: el proveedor del saldo, los ids de los dos motores y el esfuerzo de OpenAI.
       return jsonResponse(200, {
         allowed: true,
         reason: null,
         model: state.modelKey,
+        provider: state.provider,
         modelId: state.modelId,
+        models: { anthropic: state.modelId, openai: OPENAI_BY_KEY[state.modelKey] ?? null },
+        openaiEffort: b.p_effort ?? 'medium',
+        switched: state.switched,
         fallback: state.fallback,
         effort: b.p_effort ?? 'medium',
         counted: true,
-        maxTokensPerRequest: 8000,
+        maxTokensPerRequest: state.maxTokens,
         quota: quotaV2(),
       });
     }
@@ -195,6 +213,9 @@ async function fakeFetch(input: unknown, init: RequestInit = {}): Promise<Respon
     if (fn === 'ai_release_turn') return jsonResponse(200, quotaV2());
     if (fn === 'ai_end_call') return jsonResponse(200, quotaV2());
     if (fn === 'ai_provider_settings') return jsonResponse(200, state.settings);
+    // Claves en Vault (0050 y 0056): sin cargar, null.
+    if (fn === 'ai_anthropic_key') return jsonResponse(200, state.vault.anthropic);
+    if (fn === 'ai_openai_key') return jsonResponse(200, state.vault.openai);
     return jsonResponse(404, { code: 'PGRST202', message: 'Could not find the function' });
   }
   // OpenAI (cualquier host: el SDK real respeta OPENAI_BASE_URL si está definido en el entorno).
@@ -248,8 +269,11 @@ if (available) {
   delete env.ANTHROPIC_API_KEY;
   await import(`${pathToFileURL(join(workDir, 'index.ts')).href}?solo-openai`);
   onlyOpenaiHandler = handlers[2] ?? null;
-  env.ANTHROPIC_API_KEY = anthropicKey;
+  // 4) Sin ninguna variable de entorno: las dos claves salen de Vault (ai_anthropic_key / ai_openai_key).
   delete env.OPENAI_API_KEY;
+  await import(`${pathToFileURL(join(workDir, 'index.ts')).href}?solo-vault`);
+  vaultHandler = handlers[3] ?? null;
+  env.ANTHROPIC_API_KEY = anthropicKey;
 }
 
 after(() => {
@@ -257,12 +281,15 @@ after(() => {
 });
 
 const skip = available ? false : 'faltan @anthropic-ai/sdk o @supabase/supabase-js en node_modules';
-const legacySkip = 'La integración con Anthropic se retiró; estas pruebas quedan como referencia histórica.';
 
 function reset(modelKey = 'opus', modelId = 'claude-opus-5-5', fallback = true): void {
   state.requests = [];
   state.modelKey = modelKey;
   state.modelId = modelId;
+  state.provider = 'anthropic';
+  state.switched = null;
+  state.maxTokens = 8000;
+  state.vault = { anthropic: null, openai: null };
   state.fallback = fallback;
   state.anthropic = null;
   state.openai = null;
@@ -320,7 +347,7 @@ test('index.ts: sesión inválida 401, anónima 403 con code, Auth caído 503', 
   assert.equal(anthropicCalls().length, 0);
 });
 
-test('index.ts: pedido exacto a Anthropic con Opus (beta, fallbacks, caché, effort; sin thinking, temperature ni tool_choice)', { skip: legacySkip }, async () => {
+test('index.ts: pedido exacto a Anthropic con Opus (beta, fallbacks, caché, effort; sin thinking, temperature ni tool_choice)', { skip }, async () => {
   reset();
   const messages = [{ role: 'user', content: `Explicame este crash ${SECRET}` }];
   const res = await run(post({ task: 'text', system: 'Answer in English.', messages, max_tokens: 4000, effort: 'medium', client: v1 }));
@@ -351,7 +378,7 @@ test('index.ts: pedido exacto a Anthropic con Opus (beta, fallbacks, caché, eff
     model: 'claude-opus-5-5',
     served_by: { provider: 'anthropic', model: 'claude-opus-5-5', failover: false },
   });
-  assert.ok(!rpcCalls().some((r) => r.fn === 'ai_provider_settings'), 'sin OPENAI_API_KEY no lee la configuración de proveedores');
+  assert.equal(openaiCalls().length, 0, 'un plan de Claude nunca llama a OpenAI');
   const add = rpcCalls().find((r) => r.fn === 'ai_add_usage');
   assert.deepEqual(add?.body, {
     p_user: 'user-uuid',
@@ -361,7 +388,7 @@ test('index.ts: pedido exacto a Anthropic con Opus (beta, fallbacks, caché, eff
   assert.equal(res.body.quota.budget.usedUsd, 0.51);
 });
 
-test('index.ts: el id del modelo sale de la base; Sonnet con fallbacks, Haiku nunca', { skip: legacySkip }, async () => {
+test('index.ts: el id del modelo sale de la base; Sonnet con fallbacks, Haiku nunca', { skip }, async () => {
   reset('sonnet', 'claude-sonnet-5-5', true);
   await run(post({ task: 'text', messages: [{ role: 'user', content: 'Hola' }], model: 'sonnet', max_tokens: 16000, effort: 'low', client: v2 }));
   let [call] = anthropicCalls();
@@ -371,7 +398,7 @@ test('index.ts: el id del modelo sale de la base; Sonnet con fallbacks, Haiku nu
   assert.equal(sent.fallbacks, 'default');
   assert.deepEqual(sent.output_config, { effort: 'low' });
   assert.equal(call.headers.get('anthropic-beta'), 'server-side-fallback-2026-07-01');
-  assert.deepEqual(rpcCalls()[0].body, { p_user: 'user-uuid', p_turn: rpcCalls()[0].body?.p_turn, p_model: 'sonnet', p_effort: 'low' });
+  assert.deepEqual(rpcCalls()[0].body, { p_user: 'user-uuid', p_turn: rpcCalls()[0].body?.p_turn, p_model: 'sonnet', p_effort: 'low', p_max_tokens: 16000, p_input_bytes: rpcCalls()[0].body?.p_input_bytes });
 
   // Aunque la base diga que Haiku tiene reintento en otro modelo, no se manda.
   reset('haiku', 'claude-haiku-5-5', true);
@@ -384,7 +411,7 @@ test('index.ts: el id del modelo sale de la base; Sonnet con fallbacks, Haiku nu
   assert.deepEqual(sent.output_config, { effort: 'medium' }, 'sin esfuerzo: el que resuelve la base');
 });
 
-test('index.ts: un reintento en otro modelo se registra intento por intento', { skip: legacySkip }, async () => {
+test('index.ts: un reintento en otro modelo se registra intento por intento', { skip }, async () => {
   reset();
   state.anthropic = () =>
     jsonResponse(200, message({
@@ -411,7 +438,7 @@ test('index.ts: un reintento en otro modelo se registra intento por intento', { 
   ]);
 });
 
-test('index.ts: json con el helper del SDK (parsed; respuesta cortada = parsed null; schema inválido = 400)', { skip: legacySkip }, async () => {
+test('index.ts: json con el helper del SDK (parsed; respuesta cortada = parsed null; schema inválido = 400)', { skip }, async () => {
   reset();
   const schema = { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] };
   state.anthropic = () => jsonResponse(200, message({ content: [{ type: 'text', text: '{"ok":true}', citations: null }] }));
@@ -436,7 +463,7 @@ test('index.ts: json con el helper del SDK (parsed; respuesta cortada = parsed n
   assert.equal(rpcCalls().length, 0);
 });
 
-test('index.ts: herramientas y bloques de la IA se reenvían intactos', { skip: legacySkip }, async () => {
+test('index.ts: herramientas y bloques de la IA se reenvían intactos', { skip }, async () => {
   reset();
   const tools = [
     { name: 'list_mods', description: 'Lista los mods', input_schema: { type: 'object', properties: { instanceId: { type: 'string' } }, required: ['instanceId'], additionalProperties: false }, strict: true },
@@ -459,10 +486,10 @@ test('index.ts: herramientas y bloques de la IA se reenvían intactos', { skip: 
   assert.deepEqual(sent.tools, tools);
   assert.deepEqual(sent.messages, messages);
   assert.ok(!('tool_choice' in sent));
-  assert.deepEqual(rpcCalls()[0].body, { p_user: 'user-uuid', p_turn: 'turno-abc', p_model: 'opus', p_effort: null });
+  assert.deepEqual(rpcCalls()[0].body, { p_user: 'user-uuid', p_turn: 'turno-abc', p_model: 'opus', p_effort: null, p_max_tokens: null, p_input_bytes: rpcCalls()[0].body?.p_input_bytes });
 });
 
-test('index.ts: rechazo final 422 y errores tipados del SDK', { skip: legacySkip }, async () => {
+test('index.ts: rechazo final 422 y errores tipados del SDK', { skip }, async () => {
   reset();
   state.anthropic = () => jsonResponse(200, message({ stop_reason: 'refusal', content: [] }));
   const refusal = await run(post({ task: 'text', messages: [{ role: 'user', content: 'x' }], client: v1 }));
@@ -492,7 +519,7 @@ test('index.ts: rechazo final 422 y errores tipados del SDK', { skip: legacySkip
   }
 });
 
-test('index.ts: red caída (después de los reintentos del SDK) y cancelación del launcher', { skip: legacySkip }, async () => {
+test('index.ts: red caída (después de los reintentos del SDK) y cancelación del launcher', { skip }, async () => {
   reset();
   state.anthropic = () => {
     throw new TypeError('fetch failed');
@@ -502,11 +529,15 @@ test('index.ts: red caída (después de los reintentos del SDK) y cancelación d
   assert.equal(network.status, 502);
   assert.equal(network.body.code, 'upstream_network');
   assert.equal(anthropicCalls().length, 3, '1 intento + 2 reintentos');
-  // La IA pudo haber procesado el pedido: se cobra una estimación (el pedido entero y la salida entera).
-  assert.deepEqual(rpcCalls().find((r) => r.fn === 'ai_add_usage')?.body, {
+  // La IA pudo haber procesado el pedido: se cobra una estimación (el pedido entero y la salida que pudo generar en
+  // lo que duraron los intentos, con el reloj real: nunca más que max_tokens).
+  const estimated = rpcCalls().find((r) => r.fn === 'ai_add_usage')?.body as Record<string, any>;
+  const output = estimated.p_usage[0].output;
+  assert.ok(output > 0 && output <= 8000, String(output));
+  assert.deepEqual(estimated, {
     p_user: 'user-uuid',
     p_model: 'opus',
-    p_usage: [{ model: 'claude-opus-5-5', input: 0, output: 8000, cacheRead: 0, cacheWrite: Math.ceil(JSON.stringify(networkBody).length / 3) }],
+    p_usage: [{ model: 'claude-opus-5-5', input: 0, output, cacheRead: 0, cacheWrite: Math.ceil(JSON.stringify(networkBody).length / 3) }],
   });
 
   reset();
@@ -552,7 +583,7 @@ const TOOLS_SONNET = [
 const overloaded = () =>
   jsonResponse(529, { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }, { 'x-should-retry': 'false', 'request-id': 'req_529' });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): sin fallas responde Anthropic y la configuración se lee una vez por minuto`, { skip: legacySkip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): sin fallas responde Anthropic y la configuración se lee una vez por minuto`, { skip }, async () => {
   reset('sonnet', 'claude-sonnet-5-5', true);
   const body = { task: 'text', messages: [{ role: 'user', content: 'Hola' }], model: 'sonnet', client: v2 };
   const first = await run(post(body), openaiHandler);
@@ -569,7 +600,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): sin fallas responde An
   assert.deepEqual(sent.output_config, { effort: 'medium' });
 });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): Anthropic saturada (529) -> OpenAI con el pedido traducido`, { skip: legacySkip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): Anthropic saturada (529) -> OpenAI con el pedido traducido`, { skip }, async () => {
   reset('sonnet', 'claude-sonnet-5-5', true);
   state.anthropic = overloaded;
   state.openai = () =>
@@ -643,7 +674,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): Anthropic saturada (52
   assert.ok(consoleLines.some((l) => l.includes('respaldo: anthropic -> openai (upstream_overloaded)')));
 });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): rechazos y pedidos inválidos nunca pasan a OpenAI`, { skip: legacySkip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): rechazos y pedidos inválidos nunca pasan a OpenAI`, { skip }, async () => {
   reset('sonnet', 'claude-sonnet-5-5', true);
   state.anthropic = () => jsonResponse(200, message({ model: 'claude-sonnet-5-5', stop_reason: 'refusal', content: [] }));
   const refusal = await run(post({ task: 'text', messages: [{ role: 'user', content: 'x' }], model: 'sonnet', client: v2 }), openaiHandler);
@@ -660,7 +691,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): rechazos y pedidos inv
   assert.equal(openaiCalls().length, 0);
 });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): errores tipados del SDK de OpenAI`, { skip: legacySkip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): errores tipados del SDK de OpenAI`, { skip }, async () => {
   const cases = [
     // Sin crédito en OpenAI: la respuesta es la del respaldo; la pregunta no se devuelve.
     { status: 429, error: { type: 'insufficient_quota', code: 'insufficient_quota', message: 'quota' }, expect: 503, code: 'upstream_billing', release: false },
@@ -684,7 +715,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): errores tipados del SD
   assert.ok(consoleLines.some((l) => l.includes('provider=openai') && l.includes('request_id=req_oa_err')));
 });
 
-test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): json con salida estructurada estricta en OpenAI`, { skip: legacySkip }, async () => {
+test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): json con salida estructurada estricta en OpenAI`, { skip }, async () => {
   reset('haiku', 'claude-haiku-5-5', false);
   state.anthropic = () => jsonResponse(500, { type: 'error', error: { type: 'api_error', message: 'Internal' } }, { 'x-should-retry': 'false' });
   state.openai = () =>
@@ -710,7 +741,7 @@ test(`index.ts con OPENAI_API_KEY (SDK ${openaiSdkKind}): json con salida estruc
   assert.deepEqual(res.body.message.served_by, { provider: 'openai', model: 'gpt-6-luna', failover: true });
 });
 
-test(`index.ts sin ANTHROPIC_API_KEY y con OPENAI_API_KEY (SDK ${openaiSdkKind}): responde OpenAI directo`, { skip: legacySkip }, async () => {
+test(`index.ts sin ANTHROPIC_API_KEY y con OPENAI_API_KEY (SDK ${openaiSdkKind}): responde OpenAI directo`, { skip }, async () => {
   reset('opus', 'claude-opus-5-5', true);
   state.openai = () => jsonResponse(200, openaiResponse({ model: 'gpt-6-astra' }));
   const res = await run(post({ task: 'text', messages: [{ role: 'user', content: 'Hola' }], model: 'opus', effort: 'high', client: v2 }), onlyOpenaiHandler);
@@ -725,8 +756,9 @@ test(`index.ts sin ANTHROPIC_API_KEY y con OPENAI_API_KEY (SDK ${openaiSdkKind})
   assert.ok(consoleLines.some((l) => l.includes('respaldo: anthropic -> openai (not_configured)')));
 });
 
-test('index.ts: OpenAI principal usa GPT-6 Luna sin llamar a Claude', { skip }, async () => {
+test('index.ts: un plan de ChatGPT (provider openai) usa GPT-6 Luna sin llamar a Claude', { skip }, async () => {
   reset('haiku', 'claude-haiku-5-5', false);
+  state.provider = 'openai';
   state.settings = {
     primary: 'openai', secondary: null, failoverEnabled: false, failoverOn: [],
     openai: { haiku: { model: 'gpt-6-luna', efforts: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh' } } },
@@ -743,4 +775,72 @@ test('index.ts: OpenAI principal usa GPT-6 Luna sin llamar a Claude', { skip }, 
 
 test('index.ts: nada del contenido de la conversación aparece en los logs', { skip }, () => {
   for (const line of consoleLines) assert.ok(!line.includes(SECRET), line);
+});
+
+// ---------- 6.1 (0056): claves en Vault, proveedor por llamada, max_tokens grandes ----------
+
+const VAULT_ANTHROPIC = 'sk-ant-vault-0123456789abcdefghijklmn';
+const VAULT_OPENAI = 'sk-openai-vault-0123456789abcdefghijk';
+
+test('index.ts sin variables de entorno: sin claves en Vault, 503 not_configured del proveedor de la llamada', { skip }, async () => {
+  reset('haiku', 'claude-haiku-5-5', false);
+  const res = await run(post({ task: 'text', messages: [{ role: 'user', content: 'Hola' }], model: 'haiku', client: v2 }), vaultHandler);
+  assert.equal(res.status, 503, JSON.stringify(res.body));
+  assert.equal(res.body.code, 'not_configured');
+  assert.equal(res.body.provider, 'anthropic');
+  assert.equal(anthropicCalls().length + openaiCalls().length, 0);
+  const fns = rpcCalls().map((r) => r.fn);
+  assert.ok(fns.includes('ai_anthropic_key'));
+  assert.ok(fns.includes('ai_release_turn') && fns.includes('ai_end_call'), 'devuelve la pregunta y cierra la llamada');
+});
+
+test('index.ts sin variables de entorno: clave de Claude desde Vault (una lectura por minuto), max 128.000 y esfuerzo max', { skip }, async () => {
+  // Las claves de Vault se guardan un minuto: otra instancia del módulo para no heredar el "sin clave" de la prueba anterior.
+  const handlersBefore = handlers.length;
+  await import(`${pathToFileURL(join(workDir, 'index.ts')).href}?vault-2`);
+  const h = handlers[handlersBefore];
+  reset('sonnet', 'claude-sonnet-5-5', false);
+  state.vault = { anthropic: VAULT_ANTHROPIC, openai: VAULT_OPENAI };
+  state.maxTokens = 128000;
+  state.switched = { from: 'openai', to: 'anthropic', reason: 'budget' };
+  const body = { task: 'text', messages: [{ role: 'user', content: `Hola ${SECRET}` }], model: 'sonnet', effort: 'max', max_tokens: 128000, client: v2 };
+  const res = await run(post(body), h);
+  // Con max_tokens 128.000 y sin streaming, el SDK lanzaría "Streaming is required" si no se le pasara timeout.
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  const [call] = anthropicCalls();
+  assert.equal(call.headers.get('authorization'), `Bearer ${VAULT_ANTHROPIC}`);
+  const sent = call.body as Record<string, any>;
+  assert.equal(sent.model, 'claude-sonnet-5-5');
+  assert.equal(sent.max_tokens, 128000);
+  assert.deepEqual(sent.output_config, { effort: 'max' });
+  assert.ok(!('fallbacks' in sent));
+  assert.deepEqual(res.body.switched, { from: 'openai', to: 'anthropic', reason: 'budget' });
+  const register = rpcCalls().find((r) => r.fn === 'ai_register_turn');
+  assert.equal(register?.body?.p_max_tokens, 128000);
+  assert.equal(register?.body?.p_input_bytes, new TextEncoder().encode(JSON.stringify(body)).length);
+  // Segunda llamada: la clave sale del caché (no otro RPC).
+  state.switched = null;
+  const again = await run(post({ ...body, turn_id: 'otra' }), h);
+  assert.equal(again.status, 200);
+  assert.ok(!('switched' in again.body));
+  assert.equal(rpcCalls().filter((r) => r.fn === 'ai_anthropic_key').length, 1, 'una sola lectura de Vault');
+  // Plan de ChatGPT: la clave de OpenAI también sale de Vault y el esfuerzo es el de openaiEffort.
+  state.provider = 'openai';
+  state.modelKey = 'haiku';
+  state.modelId = 'claude-haiku-5-5';
+  state.openai = () => jsonResponse(200, openaiResponse({ model: 'gpt-6-luna' }));
+  const gpt = await run(post({ task: 'text', messages: [{ role: 'user', content: 'Hola' }], model: 'haiku', effort: 'high', client: v2 }), h);
+  assert.equal(gpt.status, 200, JSON.stringify(gpt.body));
+  const [oa] = openaiCalls();
+  assert.equal(oa.headers.get('authorization'), `Bearer ${VAULT_OPENAI}`);
+  assert.equal((oa.body as Record<string, any>).model, 'gpt-6-luna');
+  assert.deepEqual((oa.body as Record<string, any>).reasoning, { effort: 'high' });
+  assert.deepEqual(gpt.body.message.served_by, { provider: 'openai', model: 'gpt-6-luna', failover: false });
+  for (const line of consoleLines) {
+    assert.ok(!line.includes(VAULT_ANTHROPIC) && !line.includes(VAULT_OPENAI), 'las claves nunca van a los logs');
+  }
+});
+
+test('index.ts: las claves de Vault nunca aparecen en los logs', { skip }, () => {
+  for (const line of consoleLines) assert.ok(!line.includes('vault-0123456789'), line);
 });

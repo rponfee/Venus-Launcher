@@ -16,6 +16,4 @@ module.exports = {
   errServer: '결제 서버가 제대로 응답하지 않았어요. 잠시 후 다시 시도해 주세요.',
   errNetwork: '결제 서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
   perMonth: '{price}/월',
-  errUnknownCommunity: "존재하지 않는 커뮤니티이거나 더 이상 속해 있지 않아요.",
-  errNotOwner: "커뮤니티 소유자만 요금제를 구매할 수 있어요.",
 };

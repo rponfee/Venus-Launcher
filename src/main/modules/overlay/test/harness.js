@@ -188,7 +188,8 @@ function makeEnv(options = {}, t = null) {
 
   // ---- Ajustes y juego falsos ----
   const listeners = new Set();
-  let data = deepMerge({ language: 'es', ai: { enabled: true }, voice: { muteShortcut: 'CommandOrControl+Shift+M' } }, options.settings || {});
+  // El overlay viene apagado desde la 6.1: las pruebas lo prenden salvo que pidan otra cosa (settings: { overlay: { enabled: false } })
+  let data = deepMerge({ language: 'es', ai: { enabled: true }, voice: { muteShortcut: 'CommandOrControl+Shift+M' }, overlay: { enabled: true } }, options.settings || {});
   env.setCalls = [];
   const settings = {
     get: async () => data,

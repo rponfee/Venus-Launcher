@@ -280,18 +280,25 @@ async function start(id, opts = {}) {
   return { pid: child.pid };
 }
 
-function stop(id) {
+// force: false es el cierre amable (control parental en macOS/Linux): SIGTERM sin SIGKILL. Igual queda marcado como
+// cerrado por el launcher, así la salida de Java (143) no cuenta como crash.
+function stop(id, { force = true } = {}) {
   const r = running.get(id);
   if (!r || !r.child) return false;
   r.killed = true;
+  // Windows: taskkill /T /F. macOS y Linux: SIGTERM al grupo del juego (se lanza con detached) y SIGKILL si sigue.
+  let sent = false;
   try {
-    if (process.platform === 'win32') {
-      require('child_process').spawn('taskkill', ['/pid', String(r.pid), '/T', '/F'], { windowsHide: true });
-    } else {
-      r.child.kill('SIGTERM');
-    }
+    sent = require('./platform').stopProcess({ pid: r.pid, child: r.child, force });
   } catch {
-    r.child.kill();
+    sent = false;
+  }
+  if (!sent) {
+    try {
+      r.child.kill();
+    } catch {
+      /* ya termino */
+    }
   }
   return true;
 }

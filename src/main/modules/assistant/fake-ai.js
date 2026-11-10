@@ -3,10 +3,13 @@
 //   createScriptedAi(fn)  respuestas programadas por las pruebas (selftest.js)
 //   createDemoAi(opts)    conversacion de demostracion para devshot (VENUS_ASSISTANT_FAKE=1), que usa las
 //                         herramientas reales sobre los datos de la carpeta temporal. { plan: 'none' }
-//                         (VENUS_ASSISTANT_FAKE=noplan) simula una cuenta sin plan. Un pedido que nombra
-//                         "respaldo" responde como si lo hubiera atendido el proveedor de respaldo (OpenAI).
-// Imita la forma de modules/ai.messages(): { content, stop_reason, usage, model, quota, via } y, como
-// modules/ai, cachedQuota() (QuotaV2 conocida) y provider().
+//                         (VENUS_ASSISTANT_FAKE=noplan) simula una cuenta sin plan; { plan: '<id>' }, ese plan;
+//                         { scenario: 'wallets' }, saldo de Claude (en uso) y de ChatGPT; { scenario: 'switch' },
+//                         el saldo de Claude se termina en la primera respuesta y el servidor pasa al de ChatGPT
+//                         (switched). Un pedido que nombra "respaldo" responde como si lo hubiera atendido el
+//                         proveedor de respaldo (el de la otra familia).
+// Imita la forma de modules/ai.messages(): { content, stop_reason, usage, model, quota, switched, via } y, como
+// modules/ai, cachedQuota() (QuotaV3 conocida), provider() y useWallet().
 
 let sigCounter = 0;
 const thinkingBlock = () => ({ type: 'thinking', thinking: '', signature: `fake-signature-${++sigCounter}` });
@@ -14,6 +17,7 @@ let toolCounter = 0;
 const toolUse = (name, input) => ({ type: 'tool_use', id: `toolu_fake_${++toolCounter}`, name, input });
 const text = (s) => ({ type: 'text', text: s });
 const MODEL_IDS = { haiku: 'claude-haiku-5-5', sonnet: 'claude-sonnet-5-5', opus: 'claude-opus-5-5' };
+const FAMILY_MODEL_IDS = { anthropic: MODEL_IDS, openai: { haiku: 'gpt-6-luna', sonnet: 'gpt-5.6-sol' } };
 
 // ai.quota (QuotaV2 o null) y ai.via ('backend' o null) los pueden cambiar las pruebas.
 function createScriptedAi(script) {
@@ -28,7 +32,7 @@ function createScriptedAi(script) {
       if (opts.signal?.aborted) throw Object.assign(new Error('aborted'), { name: 'AbortError' });
       const r = await script(opts, ai.calls.length);
       if (r instanceof Error) throw r;
-      return { content: r.content, stop_reason: r.stop_reason || 'end_turn', usage: { input_tokens: 100, output_tokens: 20 }, model: r.model || 'fake', served_by: r.served_by || null, quota: r.quota || null, via: 'fake' };
+      return { content: r.content, stop_reason: r.stop_reason || 'end_turn', usage: { input_tokens: 100, output_tokens: 20 }, model: r.model || 'fake', served_by: r.served_by || null, quota: r.quota || null, switched: r.switched || null, via: 'fake' };
     },
   };
   return ai;
@@ -69,13 +73,25 @@ function instanceFromContext(ctx) {
   }
 }
 
-function createDemoAi({ plan = 'max' } = {}) {
+function createDemoAi({ plan = 'claude_ultra', scenario = null } = {}) {
   // Capturas de desarrollo con el mismo catálogo de planes que usa el launcher.
   const catalog = require('./plans.json').plans;
-  const selected = catalog.find((p) => p.id === plan) || catalog.find((p) => p.id === 'max');
+  const find = (id) => catalog.find((p) => p.id === id);
+  // Saldos de ejemplo: uno por familia. El que tiene active: true es el que se usa.
+  let wallets;
+  if (scenario === 'wallets') wallets = [{ provider: 'anthropic', plan: 'claude_pro', usedUsd: 1.2, active: true }, { provider: 'openai', plan: 'go', usedUsd: 3.55, active: false }];
+  else if (scenario === 'switch') wallets = [{ provider: 'anthropic', plan: 'claude_go', usedUsd: 6.7, active: true }, { provider: 'openai', plan: 'pro', usedUsd: 0.8, active: false }];
+  else if (plan === 'none') wallets = [];
+  else {
+    const p = find(plan) || find('claude_ultra');
+    wallets = [{ provider: p.provider, plan: p.id, usedUsd: Math.round(p.budgetUsd * 18) / 100, active: true }];
+  }
+  let pendingSwitch = scenario === 'switch';
   const used = { haiku: 3, sonnet: 2 };
-  let lastModel = selected.models.at(-1).id;
-  const noPlan = plan === 'none';
+  const activeWallet = () => wallets.find((w) => w.active) || null;
+  const selectedPlan = () => (activeWallet() ? find(activeWallet().plan) : null);
+  let lastModel = selectedPlan()?.models.at(-1).id || 'haiku';
+  const noPlan = !wallets.length;
   const emptyQuota = () => ({
     plan: null,
     planName: null,
@@ -83,21 +99,45 @@ function createDemoAi({ plan = 'max' } = {}) {
     status: 'none',
     models: [],
     budget: { usedUsd: 0, limitUsd: 0 },
+    wallets: [],
     resets: { daily: null, weekly: null, monthly: null },
     timezone: 'America/Argentina/Buenos_Aires',
   });
-  const quota = () => (noPlan ? emptyQuota() : {
-    plan: selected.id,
-    planName: selected.name,
-    priceUsd: selected.priceUsd,
-    maxTokensPerRequest: selected.maxTokensPerRequest,
-    status: 'active',
-    models: selected.models.map((m) => ({ ...m, model: MODEL_IDS[m.id], daily: { used: used[m.id] || 0, limit: null }, weekly: { used: used[m.id] || 0, limit: null } })),
-    budget: { usedUsd: Math.round((0.1 + used.haiku * 0.01 + (selected.models.some((m) => m.id === 'sonnet') ? used.sonnet * 0.09 : 0)) * 100) / 100, limitUsd: selected.budgetUsd },
-    resets: { daily: null, weekly: null, monthly: null },
-    timezone: 'America/Argentina/Buenos_Aires',
-    lastModel,
-  });
+  const walletView = (w) => {
+    const p = find(w.plan);
+    const usedUsd = Math.round(w.usedUsd * 100) / 100;
+    return { provider: w.provider, plan: p.id, planName: p.name, tier: p.tier, usedUsd, limitUsd: p.budgetUsd, remainingUsd: Math.max(0, Math.round((p.budgetUsd - usedUsd) * 100) / 100), active: w.active };
+  };
+  const quota = () => {
+    if (noPlan) return emptyQuota();
+    const selected = selectedPlan();
+    const w = activeWallet();
+    return {
+      plan: selected.id,
+      planName: selected.name,
+      priceUsd: selected.priceUsd,
+      provider: selected.provider,
+      tier: selected.tier,
+      maxTokensPerRequest: selected.maxTokensPerRequest,
+      status: 'active',
+      models: selected.models.map((m) => ({ ...m, model: MODEL_IDS[m.id], providerModel: FAMILY_MODEL_IDS[selected.provider][m.id], daily: { used: used[m.id] || 0, limit: null }, weekly: { used: used[m.id] || 0, limit: null } })),
+      budget: { usedUsd: Math.round(w.usedUsd * 100) / 100, limitUsd: selected.budgetUsd },
+      wallets: wallets.map(walletView),
+      resets: { daily: null, weekly: null, monthly: null },
+      timezone: 'America/Argentina/Buenos_Aires',
+      lastModel: selected.models.some((m) => m.id === lastModel) ? lastModel : selected.models[0].id,
+    };
+  };
+  // Elegir a mano qué saldo usar (como la RPC ai_use_wallet): solo uno con saldo.
+  async function useWallet(family) {
+    const next = wallets.find((w) => w.provider === family);
+    if (!next || walletView(next).remainingUsd <= 0) {
+      const { t } = require('../../core/i18n');
+      throw Object.assign(new Error(t('ai.errWallet')), { code: 'error' });
+    }
+    for (const w of wallets) w.active = w === next;
+    return quota();
+  }
   const wait = (ms, signal) =>
     new Promise((resolve, reject) => {
       const timer = setTimeout(resolve, ms);
@@ -118,22 +158,39 @@ function createDemoAi({ plan = 'max' } = {}) {
     const q = user.text.toLowerCase();
     const inst = instanceFromContext(user.context);
     const results = lastResults(msgs);
+    // Escenario "switch": la primera llamada agota el saldo de Claude y el servidor pasa al de ChatGPT
+    let switched = null;
+    if (pendingSwitch) {
+      pendingSwitch = false;
+      const from = activeWallet();
+      const to = wallets.find((w) => w !== from);
+      from.usedUsd = find(from.plan).budgetUsd;
+      from.active = false;
+      to.active = true;
+      switched = { from: from.provider, to: to.provider, reason: 'budget' };
+    }
+    const selected = selectedPlan();
+    const family = selected.provider;
+    const other = family === 'anthropic' ? 'openai' : 'anthropic';
     const alias = selected.models.some((m) => m.id === model) ? model : selected.models[0].id;
-    // "respaldo": como si Anthropic hubiera fallado y respondiera OpenAI (served_by.failover del backend)
+    // "respaldo": como si el proveedor del plan hubiera fallado y respondiera el otro (served_by.failover del backend)
     const failover = /respaldo|backup/.test(q);
-    const servedBy = failover ? { provider: 'openai', model: 'gpt-6-luna', failover: true } : { provider: 'anthropic', model: MODEL_IDS[alias], failover: false };
+    const servedBy = failover ? { provider: other, model: FAMILY_MODEL_IDS[other].haiku, failover: true } : { provider: family, model: FAMILY_MODEL_IDS[family][alias], failover: false };
     const reply = (content, stop = 'end_turn') => ({
-      content: failover ? content : [thinkingBlock(), ...content],
+      content: failover || family === 'openai' ? content : [thinkingBlock(), ...content],
       stop_reason: stop,
       usage: { input_tokens: 2400, output_tokens: 180, cache_read_input_tokens: 2000 },
       model: servedBy.model,
       served_by: servedBy,
       quota: quota(),
+      switched,
       via: 'fake',
     });
     if (step === 0) {
       used[alias] = (used[alias] || 0) + 1;
       lastModel = alias;
+      const w = activeWallet();
+      if (w) w.usedUsd = Math.min(find(w.plan).budgetUsd, w.usedUsd + (alias === 'sonnet' ? 0.09 : 0.02));
     }
 
     if (!inst && step === 0 && !/hola|hello|qué podés|que podes/.test(q)) return reply([toolUse('list_instances', {})], 'tool_use');
@@ -183,10 +240,13 @@ function createDemoAi({ plan = 'max' } = {}) {
 
   return {
     messages,
+    useWallet,
     cachedQuota: () => quota(),
     provider: async () => 'backend',
     async status() {
-      return { provider: 'fake', enabled: true, cloudConfigured: true, signedIn: true, configured: true, model: noPlan ? null : MODEL_IDS[lastModel], models: [], efforts: noPlan ? [] : selected.models.find((m) => m.id === lastModel).efforts, quota: quota(), plans: catalog };
+      const q = quota();
+      const selected = selectedPlan();
+      return { provider: 'fake', enabled: true, cloudConfigured: true, signedIn: true, configured: true, model: noPlan ? null : FAMILY_MODEL_IDS[selected.provider][q.lastModel], models: [], efforts: noPlan ? [] : selected.models.find((m) => m.id === q.lastModel).efforts, quota: q, planFamily: noPlan ? null : selected.provider, planTier: noPlan ? null : selected.tier, plans: catalog };
     },
   };
 }

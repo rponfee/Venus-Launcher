@@ -4,18 +4,22 @@
 
 Mientras se juega, Venus muestra encima del juego el **Voice Chat** (quién está en la sala, quién habla, quién está silenciado o sin sonido), los **mensajes** que llegan, **avisos** (del launcher, de amigos y grupos, de los servidores locales, logros y Venus Points), **capturas, clips y grabación** y **la canción que suena**. Cada widget se activa o no, se ubica en una grilla de 3×3 o en una posición libre arrastrándolo, y tiene tamaño, opacidad y tema propios.
 
+**Viene apagado (6.1).** Nada del overlay corre hasta que el usuario lo prende (Ajustes → En el juego o el paso opcional de la bienvenida). Ver la [sección 10](#10-apagado-por-defecto-bienvenida-diseños-listos-y-no-molestar-61).
+
 **Cómo funciona:** no toca el juego. Es una ventana de Electron transparente, siempre encima (nivel `screen-saver`), sin foco en su modo habitual, fuera de la barra de tareas y de Alt+Tab, y que deja pasar los clics (`setIgnoreMouseEvents(true, { forward: true })`), puesta exactamente sobre el área de juego de la ventana de Minecraft. Por eso anda con **cualquier versión y loader** (vanilla, Fabric, Forge, NeoForge, Quilt, OptiFine, versiones viejas con LWJGL 2...).
 
 **Límite conocido: pantalla completa exclusiva.** Si el juego toma la pantalla en modo exclusivo, Windows no compone ninguna otra ventana encima y el overlay no se ve. En Windows 10/11 la "pantalla completa" de Minecraft muchas veces pasa por la composición del escritorio (optimizaciones de pantalla completa) y el overlay sí se ve, pero no está garantizado. Lo seguro es jugar en ventana (maximizada) o en ventana sin bordes (por ejemplo con el mod Borderless Mining). La tarjeta de Ajustes lo dice siempre como consejo y, si el ayudante detecta que el área de juego ocupa todo el monitor, muestra un aviso con F11.
 
-Solo Windows (el seguimiento de la ventana usa la API de Win32). En otras plataformas `overlay:status` devuelve `supported: false`; la prueba y el modo edición igual funcionan sobre la pantalla.
+Solo Windows (el seguimiento de la ventana usa la API de Win32). **El único lugar que lo decide es `modules/overlay/platform.js` (`available(platform?)`)**: lo usa el módulo y cualquier otro que lo necesite (por ejemplo el puerto a macOS). En otras plataformas `overlay:status` devuelve `supported: false`, la bienvenida no muestra el paso del overlay y la tarjeta de Ajustes lo dice; la prueba y el modo edición igual funcionan sobre la pantalla. Aunque `overlay.enabled` quede en `true` (por ejemplo, al importar una copia de Windows), sin soporte no se registran los atajos globales ni se cuentan avisos durante la partida.
 
 ## 1. Piezas
 
 ```
 src/main/modules/overlay.js               Módulo: ventana, seguimiento, push(), canales, atajo, modo edición, prueba, avisos propios
 src/main/modules/overlay/
-  config.js      settings.overlay: valores por defecto, normalización, atajos válidos, parches de posición
+  config.js      settings.overlay: valores por defecto, normalización, atajos válidos, parches de posición, diseños
+                 listos (PRESETS), "No molestar" (dndPlan) y la actualización a la 6.1 (upgradeSaved)
+  platform.js    Único lugar donde se decide si hay overlay en esta plataforma
   events.js      Validación de los eventos del contrato 1 (textos, números, imágenes)
   geometry.js    Líneas del ayudante, píxeles físicos -> DIP, qué juego seguir, cuándo se ve
   tracker.js     Ayudante de PowerShell + C# que sigue la ventana del juego
@@ -28,11 +32,14 @@ src/renderer/js/overlay/
   page.js        Arranque de la página: layout + eventos del preload -> OverlayView
   widgets.js     OverlayView: dibuja los 5 widgets, colas y tiempos, arrastre y teclado (también la vista previa)
   layout.js      Cuentas de posiciones sin DOM (grilla, posición libre, snap, teclado)
-  logic.js       Límite de frecuencia, foto del Voice Chat, atajos desde el teclado (sin DOM)
+  logic.js       Límite de frecuencia, foto del Voice Chat, atajos desde el teclado, diseño que coincide, texto de
+                 "No molestar", aviso de la 6.1 y lo que guarda la bienvenida (sin DOM)
   dom.js         h() e iconos propios (la página no carga ui.js)
   i18n.js        Textos de la página (el mismo diccionario renderer/i18n/<idioma>/overlay.js)
 src/renderer/styles/overlay.css           Widgets (.ovl-*), compartido por la página y la vista previa
-src/renderer/js/features/overlay.js       startup() y overlayPanel() (tarjeta de Ajustes)
+src/renderer/js/features/overlay.js       startup() (y el aviso de la 6.1), overlayPanel() (tarjeta de Ajustes) y overlayPreview()
+                                          (la vista previa quieta que usa la bienvenida)
+src/renderer/js/pages/welcome.js          Paso "Overlay" de la bienvenida (stepOverlay)
 src/renderer/styles/features/overlay.css  Tarjeta de Ajustes (.ovp-*)
 src/renderer/i18n/{es,en}/overlay.js      Textos de los widgets y de la tarjeta
 ```
@@ -100,8 +107,10 @@ Layout que manda el proceso principal: `{ lang, accent, motion ('auto'|'on'|'off
 
 ```js
 overlay: {
-  enabled: true,                 // overlay activado
+  enabled: false,                // overlay activado (apagado por defecto desde la 6.1; core/settings.js lo trae así)
+  offNotice: 'pending' | 'seen', // aviso único de la 6.1 (solo quien actualizó y lo usaba con el valor por defecto)
   shortcut: 'Alt+Shift+O',       // mostrar u ocultar ('' = sin atajo)
+  panelShortcuts: { recipes: 'Alt+Shift+R', assistant: 'Alt+Shift+A', dnd: 'Alt+Shift+N' },
   widgets: {
     voice:    { enabled, anchor, x, y, scale, opacity, theme, show: 'all' | 'speaking' },
     messages: { enabled, anchor, x, y, scale, opacity, theme, hideContent: false, duration: 8 },
@@ -121,19 +130,23 @@ overlay: {
 | Canal | Qué hace |
 |---|---|
 | `overlay:push(evento)` | Contrato 1 desde la interfaz → `true` (`err.code 'badEvent'`) |
-| `overlay:status()` | `{ supported, enabled, active, running, found, fullscreen, minimized, visible, hidden, editing, testing, mode, shortcut, shortcutOk, config, defaults }` |
+| `overlay:status()` | `{ supported, enabled, active, running, found, fullscreen, minimized, visible, hidden, editing, testing, mode, shortcut, shortcutOk, dnd: { on, until, game, missed }, config, defaults, presets }` (más los campos de la sección 9) |
 | `overlay:edit(bool)` | Abre o cierra el modo edición → status |
 | `overlay:test([eventos])` | Muestra el overlay 9 s (sobre el juego o la pantalla) con hasta 12 eventos de ejemplo → status |
 | `overlay:reset()` | Posiciones de fábrica → status |
 | `overlay:setShortcut(accel)` | `{ ok, shortcut, code? }` |
 | `overlay:accent('#rrggbb')` | Color del tema "Acento" → `true`/`false` |
+| `overlay:preset(id)` | Diseño listo (`minimal`, `full`, `performance`): prende y apaga widgets → status (`err.code 'invalid'`) |
+| `overlay:dnd(modo)` | "No molestar": `15`, `60`, `'game'` u `'off'` → status (`err.code 'invalid'`) |
 | evento `overlay:state` | Lo mismo que status sin `config` ni `defaults`, cuando cambia |
 | evento `overlay:config` | La configuración normalizada cada vez que cambia (por ejemplo, al mover un widget en el juego) |
 
 ## 7. Probar
 
 ```bash
-node --test "src/main/modules/overlay/test/"        # 32 pruebas: config, eventos, geometría (DPI), layout, límite, ayudante
+node --test "src/main/modules/overlay/test/"        # 124 pruebas: config, eventos, geometría (DPI), layout, límite, ayudante,
+                                                    # módulo entero con Electron falso, apagado por defecto, diseños,
+                                                    # "No molestar" y la lógica del paso de la bienvenida
 ```
 
 Con capturas de desarrollo (`scripts/devshot.js`), `VENUS_OVERLAY_FAKE_PID=<pid>` (solo con `VENUS_DEVSHOT` y sin empaquetar) trata la ventana de ese proceso como si fuera el juego: sirve con cualquier ventana propia (por ejemplo un formulario de PowerShell). Desde la consola de la interfaz: `venus.invoke('overlay:test', [...])`, `venus.invoke('overlay:edit', true)`.
@@ -173,3 +186,23 @@ Sin migraciones ni RPC; `settings.overlay` no suma claves (los `panelShortcuts` 
 **Textos.** Namespaces `overlay` e `overlaytools` (interfaz) y `overlay` (principal, `errOffline`) en es y en; los otros 12 idiomas quedan sin las claves nuevas.
 
 **Límites.** Sin probar: el overlay encima del juego real en ventana, sin bordes y pantalla completa (la exclusiva no se ve, límite de Windows), el robo y devolución real del foco, monitores de distinta escala, un PowerShell bloqueado por política, cientos de mods reales y conflictos con atajos de otras aplicaciones (la lista de teclas de Minecraft es la de las teclas por defecto).
+
+## 10. Apagado por defecto, bienvenida, diseños listos y "No molestar" (6.1)
+
+**Valor por defecto.** `overlay.enabled` es `false` en `overlay/config.js` y en `core/settings.js` (`defaults().overlay`), así cualquier módulo que lea `settings.overlay.enabled` (por ejemplo `nowplaying.js` o el modo liviano de `appearance.js`) ve lo mismo. Quien lo tenía guardado a mano (prendido o apagado) conserva su elección.
+
+**Quien actualiza.** `core/settings.js` pasa lo que lee del disco por `config.upgradeSaved` antes de mezclarlo con los valores por defecto: si la bienvenida ya estaba terminada (`onboarded: true`) y nunca se guardó `overlay.enabled`, el usuario usaba el overlay prendido por defecto; queda apagado y con `offNotice: 'pending'`. `features/overlay.js` muestra entonces, una sola vez y no durante la bienvenida, un aviso ("El overlay ahora viene apagado") con **Ir a Ajustes** (`settings/ingame/overlay`) y lo pasa a `'seen'` al mostrarlo. Una instalación nueva no tiene nada que avisar.
+
+**Costo cero apagado.** Con `enabled: false` (y sin prueba ni modo edición) no se crea la ventana, no se abre el ayudante que sigue la ventana del juego ni el medidor de rendimiento, los contadores no corren, no se leen los textos del juego ni el registro para las muertes y no se registra ningún atajo global; solo quedan los oyentes de eventos (juego, ajustes, pantallas). Si se prende en plena partida arranca todo en ese momento (las muertes y los bloques se cuentan desde ahí; la sesión, desde que se abrió el juego) y al apagarlo se suelta. Medido el 10/11/2026 con `VENUS_OVERLAY_FAKE_PID` y un proceso falso como juego: apagado, 0 procesos de PowerShell del overlay y 1 proceso de interfaz (`tracker: 'off'`); prendido, el ayudante, el medidor y la ventana del overlay (2 PowerShell más y 1 proceso de interfaz más). Las pruebas `apagado.test.js` lo comprueban con el entorno falso.
+
+**Bienvenida.** Paso `overlay` entre Preferencias y Resumen, también en la bienvenida corta, marcado como opcional; se saltea con Siguiente. Dos líneas de qué muestra y qué hace falta, la vista previa de Ajustes quieta (`overlayPreview()`, `inert`, sin las guías del modo edición), un interruptor apagado y, si se prende, tres diseños listos como opciones (radio con flechas, Enter y Espacio). Con el modo liviano el interruptor queda deshabilitado con un aviso. Si `overlay:status` dice `supported: false` (o no hay módulo), el paso desaparece de la lista. Al terminar guarda `welcomeOverlayPatch` (`overlay/logic.js`): apagado → `{ enabled: false }`; prendido → `{ enabled: true, widgets: <diseño> }` (al volver a abrir la bienvenida con el overlay ya prendido, solo pisa los widgets si se eligió otro diseño a mano).
+
+**Diseños listos** (`config.PRESETS`): `minimal` (voz con solo quien habla y avisos de 4 s), `full` (los siete widgets) y `performance` (solo rendimiento con todas sus medidas). Solo prenden y apagan widgets y tocan esas opciones; la posición, el tamaño, la opacidad y el tema no cambian. La tarjeta marca el que coincide con los widgets prendidos (`matchPreset`) o dice que el diseño es propio.
+
+**No molestar.** Calla los eventos `alert` y `message` (los cuenta en `dnd.missed`); voz, música, capturas, rendimiento y contadores siguen. No calla ni cuenta los avisos que son respuesta a algo que hizo el jugador: los `alert` con icono `capture` (un clip que no se pudo guardar) o `music` (volumen desde su atajo) (`config.dndSilences`), ni los que el proceso principal manda con `push(ev, { direct: true })` (avisos críticos, como el modo familia); el canal `overlay:push` de la interfaz no puede pedirlo. Modos: 15 min, 1 h o hasta cerrar el juego (se apaga cuando no queda ningún juego abierto). Solo en memoria: reiniciar el launcher lo apaga. Al prenderlo, la página vacía los avisos, su cola y los mensajes que estaban en pantalla (evento interno `{ kind: 'dnd', on }`). Al terminar, si se calló algo, un aviso dice cuántos. Atajo `panelShortcuts.dnd` (`Alt+Shift+N`), con las mismas reglas que los de los paneles (solo con el juego adelante, sin pisar a Minecraft, Windows ni otros atajos de Venus); desde el juego lo prende "hasta cerrar el juego" o lo apaga, con un aviso corto que pasa aunque esté en silencio.
+
+**Tarjeta de Ajustes.** Apagado, arriba de todo dice qué hace y tiene **Activar overlay**. Debajo del estado, "Qué hace falta para verlo" con tres puntos que se marcan solos (prendido, juego abierto, juego en ventana; en pantalla completa queda en advertencia). Después **Diseños listos** y **No molestar** (estado con los minutos que quedan, botones y su atajo). El orden del resto de la página En el juego (capturas y música) no cambia.
+
+**Textos.** Interfaz: `overlay` (aviso, caja de apagado, requisitos, diseños, "No molestar") y `welcome` (paso del overlay). Principal: `overlay` (`errBadPreset`, `errBadDnd`, avisos de "No molestar"). Solo es y en.
+
+**Límites.** Sin Minecraft real: el atajo de "No molestar" y el vaciado de la pantalla se probaron con el entorno falso, no sobre el juego. La bienvenida se probó con una carpeta de datos nueva (cuenta sin conexión e instancia preparadas en el disco) a 1040×680, con mouse y con flechas; no con un control real. El modo liviano en la bienvenida se revisó por código, sin captura.

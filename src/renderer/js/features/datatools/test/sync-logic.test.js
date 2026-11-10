@@ -280,6 +280,40 @@ test('dos versiones que normalizan distinto no se pisan para siempre', async () 
   assert.deepEqual(b.settings.appearance.playButton, { color: 'accent', sound: 'none' });
 });
 
+// Las claves que la 6.1 sumó a los looks (uiText, uiCards, uiSide): con el valor de fábrica no viajan, así un look viaja
+// igual que en 6.0 y el hash que guardó la 6.0 sigue valiendo
+const NEW_LOOK_KEYS = ['uiText', 'uiCards', 'uiSide'];
+const as60 = (looks) => looks.map((l) => ({ ...l, appearance: Object.fromEntries(Object.entries(l.appearance).filter(([k]) => !NEW_LOOK_KEYS.includes(k))) }));
+
+test('un look sin estilo propio viaja sin las claves nuevas de la 6.1; con estilo propio, las lleva', () => {
+  const [plain] = syncLooks([{ id: 'a', name: 'A', createdAt: 1, appearance: {}, branding: {} }]);
+  for (const k of NEW_LOOK_KEYS) assert.equal(k in plain.appearance, false, k);
+  const [styled] = syncLooks([{ id: 'b', name: 'B', createdAt: 1, appearance: { uiSide: 'right', uiText: 'large' }, branding: {} }]);
+  assert.equal(styled.appearance.uiSide, 'right');
+  assert.equal(styled.appearance.uiText, 'large');
+  assert.equal('uiCards' in styled.appearance, false);
+});
+
+test('actualizar a la 6.1 no cuenta como un cambio de looks: la PC atrasada trae los looks nuevos en lugar de pisarlos', async () => {
+  const net = cloud();
+  const clock = ticking();
+  const uno = { id: 'uno', name: 'Uno', createdAt: 1, appearance: { accent: 'mars' }, branding: {} };
+  const a = pc(net, { looks: [uno] }, { clock });
+  const b = pc(net, { looks: [uno] }, { clock });
+  await a.engine.sync();
+  await b.engine.sync();
+  // B guardó su estado con la 6.0: el hash de los looks sin las claves nuevas
+  b.state.keys.looks.h = hashValue(as60(syncLooks(b.settings.looks)));
+  // A, ya en 6.1, guarda un look nuevo y lo sube
+  a.set({ looks: [{ id: 'nuevo', name: 'Nuevo en A', createdAt: 2, appearance: { accent: 'venus' }, branding: {} }, uno] });
+  await a.engine.sync();
+  // B se abre ya actualizada: trae, no sube su lista vieja
+  assert.equal((await b.engine.sync()).status, 'pulled');
+  assert.deepEqual(b.settings.looks.map((l) => l.name), ['Nuevo en A', 'Uno']);
+  await a.engine.sync();
+  assert.deepEqual(a.settings.looks.map((l) => l.name), ['Nuevo en A', 'Uno']);
+});
+
 test('elegir "subir esto" manda sobre la nube, aunque tenga fechas más nuevas', async () => {
   const net = cloud();
   const clock = ticking();

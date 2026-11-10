@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  menuAbout: "Sobre o {app}",
+  menuHide: "Ocultar o {app}",
+  menuHideOthers: "Ocultar outros",
+  menuShowAll: "Mostrar tudo",
+  menuQuit: "Encerrar o {app}",
+  menuEdit: "Editar",
+  menuUndo: "Desfazer",
+  menuRedo: "Refazer",
+  menuCut: "Recortar",
+  menuCopy: "Copiar",
+  menuPaste: "Colar",
+  menuPasteMatch: "Colar com o mesmo estilo",
+  menuDelete: "Excluir",
+  menuSelectAll: "Selecionar tudo",
+  menuWindow: "Janela",
+  menuMinimize: "Minimizar",
+  menuZoom: "Zoom",
+  menuFront: "Trazer tudo para a frente",
+};

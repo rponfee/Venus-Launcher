@@ -337,4 +337,18 @@ export default {
   bgModsFailed_other: 'No se pudieron instalar {count} mods',
   allSteps: "Configurar todo",
   quickNote: "Lo demás queda con los valores recomendados. Lo cambiás cuando quieras en Ajustes.",
+  // Paso del overlay del juego (6.1)
+  step_overlay: 'Overlay',
+  t_overlay: 'Overlay en el juego',
+  s_overlay: 'Opcional. Viene apagado: prendelo si querés ver información encima del juego mientras jugás.',
+  ovToggle: 'Activar el overlay en el juego',
+  ovWhat: 'Muestra encima de Minecraft quién habla en el Voice Chat, avisos y lo que elijas, sin tocar el juego.',
+  ovNeeds: 'Se ve si jugás en ventana o en ventana sin bordes; en pantalla completa exclusiva Windows no lo deja.',
+  ovPreviewLabel: 'Vista previa del overlay con el diseño {name}',
+  ovPresetsLabel: 'Qué querés ver',
+  ovAfter: 'Después podés mover y ajustar cada parte en Ajustes → En el juego.',
+  ovLater: 'Si no lo prendés ahora, podés hacerlo cuando quieras en Ajustes → En el juego.',
+  ovLite: 'Tenés el modo liviano activado, que mantiene el overlay apagado. Cuando lo desactives podés prenderlo en Ajustes → En el juego.',
+  ovSumOn: 'Activado · {name}',
+  sumOverlay: 'Overlay en el juego',
 };

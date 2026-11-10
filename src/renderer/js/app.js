@@ -6,6 +6,7 @@ import { voice } from './voice.js';
 import { cloud } from './cloud.js';
 import { t, loadNs, setLanguage, onLanguageChange, systemLanguage } from './i18n.js';
 import { discordButton } from './community.js';
+import { setInfo as setPlatformInfo, modKey } from './platform.js';
 // Menu a gusto (settings.nav): orden, fijados, ocultos y pack de iconos (features/navcustom). icons.js registra
 // los packs al importarse, asi el primer dibujo del menu ya sale con el pack elegido.
 import { normalizeNav, navLayout } from './features/navcustom/logic.js';
@@ -31,7 +32,6 @@ const NAV = [
   { id: 'servers', icon: 'server' },
   { id: 'voice', icon: 'mic' },
   { id: 'messages', icon: 'message' },
-  { id: 'communities', icon: 'users' },
   { group: 'tools' },
   { id: 'updates', icon: 'download' },
   { id: 'stats', icon: 'chart' },
@@ -60,7 +60,6 @@ const PAGES = {
   server: () => import('./pages/server.js'),
   voice: () => import('./pages/voice.js'),
   messages: () => import('./pages/messages.js'),
-  communities: () => import('./pages/communities.js'),
   settings: () => import('./pages/settings.js'),
   updates: () => import('./pages/updates.js'),
   support: () => import('./pages/support.js'),
@@ -709,6 +708,7 @@ async function init() {
   document.getElementById('tb-net')?.addEventListener('click', () => navigate('settings/storage'));
 
   [store.info] = await Promise.all([api.app.info(), store.refreshSettings(), store.refreshAccounts(), store.refreshInstances()]);
+  setPlatformInfo(store.info); // macOS: Cmd en los atajos y funciones que no existen (js/platform.js)
   await setLanguage(store.settings.language || systemLanguage(store.info.locale));
   // Tema, marca y accesibilidad: arrancan ya, en paralelo con el resto del inicio
   const early = Promise.all(EARLY_STARTUP.map(runStartup));
@@ -795,6 +795,11 @@ async function init() {
   await waitAtMost(early, EARLY_WAIT_MS);
   window.addEventListener('hashchange', renderRoute);
   if (onboarding) location.hash = '#/welcome';
+  else if (!location.hash.replace(/^#\/?/, '')) {
+    // Página de inicio elegida en Ajustes > Apariencia > Interfaz (appearance.js); si ya no existe, el Inicio
+    const start = await import('./appearance.js').then((m) => m.startRoute?.() || 'home', () => 'home');
+    if (start !== 'home' && Object.prototype.hasOwnProperty.call(PAGES, start)) history.replaceState(null, '', `#/${start}`);
+  }
   renderRoute().finally(hideBoot);
   refreshServerDot();
 
@@ -837,7 +842,7 @@ async function init() {
 
   // Atajo de recarga (desarrollo)
   window.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'r') location.reload();
+    if (modKey(e) && e.shiftKey && e.key.toLowerCase() === 'r') location.reload(); // Ctrl+Shift+R (Cmd en Mac)
   });
 }
 

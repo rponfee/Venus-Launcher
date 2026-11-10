@@ -231,4 +231,7 @@ export default {
   blockNarrow: "{block}を標準の幅に戻す",
   blockHiddenTag: "非表示",
   blockEmptyTag: "まだデータがありません",
+  heroSize: "メインカードのサイズ",
+  heroSize_large: "大",
+  heroSize_compact: "コンパクト",
 };

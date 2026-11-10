@@ -12,4 +12,5 @@ module.exports = {
   warnTooOld: "Minecraft {mc}에는 Java {required} 이상이 필요하지만, 이 인스턴스는 직접 선택한 Java {current} 버전을 사용하고 있어요. 이대로는 실행할 수 없으니 인스턴스 설정에서 Java를 자동으로 되돌려 주세요.",
   warnLegacyModded: "모드를 사용하는 Minecraft {mc} 버전은 Java 8에 맞춰져 있지만, 이 인스턴스는 Java {current} 버전을 사용하고 있어요. 실행되지 않으면 인스턴스 설정에서 Java를 자동으로 되돌려 주세요.",
   spawnFailed: "Java를 실행하지 못했어요: {error}",
+  errRosetta: "이 Minecraft 버전은 Apple Silicon용 빌드가 없어서 Rosetta 2를 통해 Intel용 Java {major} 버전으로 실행돼요. 이 Mac에는 Rosetta 2가 설치되어 있지 않아요. 터미널을 열고 softwareupdate --install-rosetta --agree-to-license를 실행한 뒤 다시 플레이해 주세요.",
 };

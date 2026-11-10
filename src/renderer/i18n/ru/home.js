@@ -246,4 +246,7 @@ export default {
   blockNarrow: "Вернуть «{block}» обычную ширину",
   blockHiddenTag: "Скрыт",
   blockEmptyTag: "Пока нет данных",
+  heroSize: "Размер основной карточки",
+  heroSize_large: "Большая",
+  heroSize_compact: "Компактная",
 };

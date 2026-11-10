@@ -11,4 +11,12 @@ module.exports = {
   taskDoneTitle: "Taak voltooid",
   taskFailedTitle: "Een taak kon niet worden voltooid",
   errOffline: "De assistent heeft een internetverbinding nodig om te antwoorden. Controleer je verbinding en probeer het opnieuw.",
+  errBadPreset: "Dat overlayontwerp bestaat niet.",
+  errBadDnd: "Kies hoe lang “Niet storen” duurt.",
+  dndOnTitle: "Niet storen aan",
+  dndOnBody: "Meldingen en berichten worden niet getoond tot je het spel sluit.",
+  dndOffTitle: "Niet storen uit",
+  dndEndedTitle: "“Niet storen” is afgelopen",
+  dndEndedBody_one: "Ondertussen is er {count} melding of bericht binnengekomen.",
+  dndEndedBody_other: "Ondertussen zijn er {count} meldingen of berichten binnengekomen.",
 };

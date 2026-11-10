@@ -1,6 +1,6 @@
 // Bienvenida obligatoria (primer inicio): asistente a pantalla completa que deja el launcher listo para jugar.
 // Pasos: idioma -> apariencia -> cuenta de Minecraft -> cuenta de Venus (opcional) -> primera instancia -> contenido extra (opcional)
-// -> rendimiento -> preferencias -> resumen. Al terminar guarda los ajustes, crea la instancia (se instala en segundo
+// -> rendimiento -> preferencias -> overlay del juego (opcional, solo donde existe) -> resumen. Al terminar guarda los ajustes, crea la instancia (se instala en segundo
 // plano), pide los paquetes de contenido y la optimización al módulo de rendimiento y llama a finishOnboarding().
 // El estado vive a nivel de módulo: sobrevive al redibujado que hace app.js cuando cambia el idioma.
 import { h, icon, mount, toast, confirmDialog, emptyState, skeleton, fmtBytes, fmtMb, fmtDate, avatarImg, registerIcons, switchEl, instanceIcon, instanceLoaderKey, LOADERS } from '../ui.js';
@@ -11,6 +11,7 @@ import { cloud } from '../cloud.js';
 import { appearancePicker, appearanceSettings, flushAppearance } from '../appearance.js';
 import { getWallpaper } from '../wallpapers.js';
 import { discordButton } from '../community.js';
+import { matchPreset, previewWidgets, welcomeOverlayPatch } from '../overlay/logic.js';
 
 registerIcons({
   wlWifiOff:
@@ -33,12 +34,19 @@ const ALL_STEPS = [
   { id: 'content', icon: 'package' },
   { id: 'performance', icon: 'memory' },
   { id: 'prefs', icon: 'sliders' },
+  { id: 'overlay', icon: 'layers' },
   { id: 'summary', icon: 'rocket' },
 ];
-// Bienvenida corta: lo mínimo para jugar (idioma, cuenta e instancia). Lo demás queda con los valores por defecto y se
-// cambia después en Ajustes; "Configurar todo" muestra todos los pasos.
-const QUICK_STEPS = new Set(['language', 'account', 'instance', 'summary']);
-const quickSteps = () => ALL_STEPS.filter((s) => QUICK_STEPS.has(s.id));
+// Bienvenida corta: lo mínimo para jugar (idioma, cuenta e instancia) y el overlay del juego, que viene apagado y se
+// ofrece una vez (se saltea con Siguiente). Lo demás queda con los valores por defecto y se cambia después en Ajustes;
+// "Configurar todo" muestra todos los pasos.
+const QUICK_STEPS = new Set(['language', 'account', 'instance', 'overlay', 'summary']);
+// Overlay del juego: su estado (overlay:status, con los diseños listos) y la vista previa de Ajustes, que se reutiliza entre
+// redibujados (features/overlay.js overlayPreview). El paso solo existe donde hay overlay (lo decide el proceso principal:
+// overlay:status.supported).
+const ov = { asked: false, status: null, preview: null, previewP: null };
+const stepAllowed = (s) => s.id !== 'overlay' || ov.status?.supported !== false;
+const quickSteps = () => ALL_STEPS.filter((s) => QUICK_STEPS.has(s.id) && stepAllowed(s));
 const indexOfSteps = (steps) => Object.fromEntries(steps.map((s, i) => [s.id, i]));
 let STEPS = quickSteps();
 let STEP_INDEX = indexOfSteps(STEPS);
@@ -47,13 +55,24 @@ function showAllSteps() {
   if (!S?.quick) return;
   const current = STEPS[S.step].id;
   const visited = STEPS[S.visited].id;
-  STEPS = ALL_STEPS;
+  STEPS = ALL_STEPS.filter(stepAllowed);
   STEP_INDEX = indexOfSteps(STEPS);
   S.quick = false;
   S.step = STEP_INDEX[current];
   S.visited = STEP_INDEX[visited];
   // Con todos los pasos se ve el interruptor de Discord antes de decidir; en la corta no se prende sin que se vea.
   S.discord = store.settings?.discord?.enabled ?? true;
+}
+
+// Llegó el estado del overlay: si en esta plataforma no hay, su paso se va (sin perder el paso en el que se está)
+function rebuildSteps() {
+  if (!S) return;
+  const current = STEPS[S.step]?.id;
+  const visited = STEPS[S.visited]?.id;
+  STEPS = S.quick ? quickSteps() : ALL_STEPS.filter(stepAllowed);
+  STEP_INDEX = indexOfSteps(STEPS);
+  S.step = STEP_INDEX[current] ?? Math.min(S.step, STEPS.length - 1);
+  S.visited = STEP_INDEX[visited] ?? Math.min(S.visited, STEPS.length - 1);
 }
 
 const OFFLINE_NAME = /^[A-Za-z0-9_]{3,16}$/;
@@ -149,6 +168,11 @@ function freshState() {
     // Preferencias
     afterLaunch: ['keep', 'minimize', 'hide'].includes(s.afterLaunch) ? s.afterLaunch : 'minimize',
     discord: s.discord?.enabled ?? false,
+    // Overlay del juego (apagado por defecto). preset: diseño listo; picked: lo eligió a mano
+    overlayOn: s.overlay?.enabled === true,
+    overlayWasOn: s.overlay?.enabled === true,
+    overlayPreset: ov.status ? startPreset(s.overlay?.enabled === true) : null,
+    overlayPicked: false,
     // Final
     finishing: false,
     finishMsg: null,
@@ -241,6 +265,53 @@ function prefetch(retry) {
   ensureSodium(retry);
   ensureSupport('iris', retry);
   ensureSupport('neoforge', retry);
+}
+
+// Estado del overlay (una vez): dice si existe en esta plataforma y trae los diseños listos
+function ensureOverlay() {
+  if (ov.asked) return;
+  ov.asked = true;
+  api
+    .invoke('overlay:status')
+    .then(
+      (st) => {
+        ov.status = st || { supported: false };
+      },
+      (err) => {
+        if (!isMissing(err)) console.warn('[welcome] overlay', err?.message || err);
+        ov.status = { supported: false };
+      },
+    )
+    .finally(() => {
+      if (!S) return;
+      if (!S.overlayPreset) S.overlayPreset = startPreset(S.overlayWasOn);
+      rebuildSteps();
+      if (view) view.refreshSoon();
+    });
+}
+
+// Diseño con el que arranca el paso: el que coincide con lo que ya tenía prendido o, si estaba apagado, el mínimo
+function startPreset(wasOn) {
+  return (wasOn && matchPreset(ov.status?.config?.widgets, ov.status?.presets)) || 'minimal';
+}
+
+// La vista previa de Ajustes, quieta (se pide una vez y se mueve de un dibujado al siguiente)
+function overlayPreviewReady() {
+  if (!ov.previewP) {
+    ov.previewP = import('../features/overlay.js')
+      .then((m) => m.overlayPreview())
+      .then((p) => (ov.preview = p))
+      .catch((err) => {
+        console.warn('[welcome] vista previa del overlay', err?.message || err);
+        return null;
+      });
+  }
+  return ov.previewP;
+}
+
+function dropOverlayPreview() {
+  ov.preview?.destroy?.();
+  Object.assign(ov, { asked: false, status: null, preview: null, previewP: null });
 }
 
 async function pool(items, size, fn) {
@@ -585,7 +656,7 @@ function chosenMemory() {
 function stepNeed(id) {
   if (id === 'language' || id === 'account') return 'required';
   if (id === 'instance') return store.instances.length ? 'optional' : 'required';
-  if (id === 'appearance' || id === 'venus' || id === 'content') return 'optional';
+  if (id === 'appearance' || id === 'venus' || id === 'content' || id === 'overlay') return 'optional';
   return null;
 }
 
@@ -647,9 +718,19 @@ function railSummary(id) {
     }
     case 'prefs':
       return t(`welcome.after_${S.afterLaunch}`);
+    case 'overlay':
+      return overlaySummary();
     default:
       return null;
   }
+}
+
+// El overlay queda apagado mientras esté el modo liviano (appearance.js lo apaga y lo devuelve al salir)
+const liteOn = () => Boolean(appearanceSettings().appearance?.lite);
+
+function overlaySummary() {
+  if (!S.overlayOn || liteOn()) return t('welcome.off');
+  return S.overlayPreset ? t('welcome.ovSumOn', { name: t(`overlay.preset_${S.overlayPreset}`) }) : t('welcome.on');
 }
 
 function appearanceSummary() {
@@ -942,6 +1023,10 @@ async function finish(ctx) {
       discord: { enabled: Boolean(S.discord) },
     };
     if (memory) patch.memory = { min: memory.min, max: memory.max };
+    // Overlay: solo si su paso existió y sin el modo liviano (que lo mantiene apagado y decide al salir)
+    if (STEP_INDEX.overlay !== undefined && ov.status?.supported && !liteOn()) {
+      patch.overlay = welcomeOverlayPatch({ on: S.overlayOn, preset: S.overlayPreset, picked: S.overlayPicked, wasOn: S.overlayWasOn, presets: ov.status.presets });
+    }
     await store.setSettings(patch);
 
     const tg = instanceTarget();
@@ -974,6 +1059,7 @@ async function finish(ctx) {
     S = null;
     venusPass = '';
     resetData(); // si se vuelve a abrir la bienvenida más adelante, los datos se piden de nuevo
+    dropOverlayPreview();
     if (created) toast('good', t('welcome.doneTitle'), t('welcome.doneInstalling', { name }), 7000);
     else toast('good', t('welcome.doneTitle'), t('welcome.doneReady'), 5000);
     await finishOnboarding();
@@ -2421,6 +2507,88 @@ function stepPrefs(ctx) {
   );
 }
 
+// ---------------- Overlay del juego (opcional) ----------------
+// Viene apagado. Dos líneas de qué muestra, la misma vista previa de Ajustes y, si se prende, tres diseños listos. Lo que se
+// guarda al terminar lo arma welcomeOverlayPatch (overlay/logic.js). Con el modo liviano el interruptor queda apagado.
+
+function stepOverlay(ctx) {
+  const lite = liteOn();
+  const on = S.overlayOn && !lite;
+  const presets = ov.status?.presets || null;
+  const preset = S.overlayPreset || 'minimal';
+  const sw = switchEl(on, (v) => {
+    S.overlayOn = v;
+    pendingFocus = 'ov-switch';
+    ctx.refresh();
+  }, t('welcome.ovToggle'));
+  const input = sw.querySelector('input');
+  input.dataset.fk = 'ov-switch';
+  input.disabled = lite || !ov.status;
+  const toggle = h(
+    'div',
+    { class: 'card wl-toggles wl-ov-toggle' },
+    h(
+      'div',
+      { class: 'toggle-row' },
+      h('span', { class: 'wl-toggle-icon' }, icon('layers')),
+      h('div', { class: 'tr-text' }, h('div', { class: 'tr-title' }, t('welcome.ovToggle')), h('div', { class: 'tr-sub' }, t('welcome.ovWhat')), h('div', { class: 'tr-sub' }, t('welcome.ovNeeds'))),
+      sw,
+    ),
+  );
+  // Vista previa: lo que se vería con el diseño elegido (apagado, tenue)
+  const holder = h('div', { class: ['wl-ov-preview', !on && 'is-off'], role: 'img', 'aria-label': t('welcome.ovPreviewLabel', { name: t(`overlay.preset_${preset}`) }) });
+  // El estado del overlay puede llegar despues que la vista previa: se lee al pintar
+  const paint = (p) => {
+    if (!p || !ov.status) return;
+    p.set(previewWidgets(ov.status.config?.widgets, ov.status.presets?.[preset]));
+    if (p.el.parentNode !== holder) holder.replaceChildren(p.el);
+  };
+  if (ov.preview) paint(ov.preview);
+  else {
+    holder.append(h('div', { class: 'wl-ov-skel' }));
+    overlayPreviewReady().then((p) => {
+      if (holder.isConnected) paint(p);
+    });
+  }
+  const choices = presets
+    ? radioGroup(
+        h(
+          'div',
+          { class: 'wl-ov-presets', role: 'radiogroup', 'aria-label': t('welcome.ovPresetsLabel') },
+          Object.keys(presets).map((id) =>
+            choiceCard({
+              on: S.overlayPreset === id,
+              fk: `ov-preset-${id}`,
+              ic: { minimal: 'mic', full: 'sparkles', performance: 'gauge' }[id] || 'layers',
+              title: t(`overlay.preset_${id}`),
+              sub: t(`overlay.preset_${id}Sub`),
+              disabled: !on,
+              onPick: () => {
+                S.overlayPreset = id;
+                S.overlayPicked = true;
+                pendingFocus = `ov-preset-${id}`;
+                ctx.refresh();
+              },
+            }),
+          ),
+        ),
+        '.wl-choice',
+      )
+    : null;
+  return h(
+    'div',
+    { class: 'wl-stack' },
+    toggle,
+    lite ? note('warn', 'alert', t('welcome.ovLite')) : null,
+    h(
+      'div',
+      { class: 'wl-ov-split' },
+      holder,
+      on && choices ? h('div', { class: 'wl-ov-side' }, h('div', { class: 'wl-label' }, t('welcome.ovPresetsLabel')), choices, h('p', { class: 'wl-hint' }, icon('info'), t('welcome.ovAfter'))) : h('p', { class: 'wl-hint wl-ov-later' }, icon('info'), t('welcome.ovLater')),
+    ),
+  );
+}
+
 // ---------------- Paso 8: resumen ----------------
 
 function stepSummary(ctx) {
@@ -2485,6 +2653,7 @@ function stepSummary(ctx) {
     ],
     ['prefs', 'rocket', t('welcome.sumAfter'), t(`welcome.after_${S.afterLaunch}`)],
     ['prefs', 'message', t('welcome.sumDiscord'), S.discord ? t('welcome.on') : t('welcome.off')],
+    ['overlay', 'layers', t('welcome.sumOverlay'), overlaySummary()],
   ];
   const shownRows = rows.filter(([step]) => STEP_INDEX[step] !== undefined);
   return h(
@@ -2529,6 +2698,7 @@ const STEP_RENDER = {
   content: stepContent,
   performance: stepPerformance,
   prefs: stepPrefs,
+  overlay: stepOverlay,
   summary: stepSummary,
 };
 
@@ -2921,11 +3091,12 @@ function cssReady() {
 }
 
 export default {
-  ns: ['welcome', 'appearance'],
+  ns: ['welcome', 'appearance', 'overlay'],
   css: ['pages/welcome'],
   async render(root) {
     if (!S) S = freshState();
     prefetch();
+    ensureOverlay();
     await cssReady();
     // Si mientras tanto app.js dibujó otra vez la ruta (cambio de hash o de idioma), esta vista ya no hace falta.
     if (!root.isConnected) return null;

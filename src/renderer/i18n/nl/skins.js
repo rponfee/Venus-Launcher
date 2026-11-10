@@ -169,5 +169,4 @@ export default {
   saveToLibraryFailed: 'De skin kon niet in je bibliotheek worden bewaard',
   reasonCatalogDamaged: 'Het bestand van deze skin ontbreekt of is beschadigd. Installeer Venus Launcher opnieuw om het te herstellen.',
   exploreCatalog: 'Catalogus bekijken',
-  venusCape: "Venus-cape",
 };

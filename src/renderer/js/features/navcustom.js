@@ -6,6 +6,7 @@
 import { h, icon, mount, ensureCss } from '../ui.js';
 import { store } from '../store.js';
 import { t, loadNs, onLanguageChange } from '../i18n.js';
+import { modKey } from '../platform.js';
 import './navcustom/icons.js';
 
 let started = false;
@@ -57,7 +58,7 @@ const inField = (el) => el instanceof Element && Boolean(el.closest('input, text
 
 function keyboard() {
   window.addEventListener('keydown', (e) => {
-    if (!e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.repeat || String(e.key).toLowerCase() !== 'm') return;
+    if (!modKey(e) || e.altKey || e.shiftKey || e.repeat || String(e.key).toLowerCase() !== 'm') return; // Ctrl+M (Cmd+M en Mac)
     if (inField(e.target) || document.body.classList.contains('onboarding')) return;
     e.preventDefault();
     toggleMini().catch((err) => console.warn('[navcustom]', err));

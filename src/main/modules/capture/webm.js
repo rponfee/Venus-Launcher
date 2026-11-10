@@ -339,7 +339,8 @@ class WebmReader {
     const h = readHeader(buf, this.pos);
     if (!h) return false;
     const full = h.size >= 0 ? this.pos + h.head + h.size : -1;
-    if (h.size > MAX_ELEMENT) throw bad('too large');
+    // El Segment y los Cluster no se juntan enteros en memoria (sus hijos se leen de a uno): un clip largo los pasa
+    if (h.size > MAX_ELEMENT && h.id !== ID.Segment && h.id !== ID.Cluster) throw bad('too large');
     const have = full >= 0 && full <= buf.length;
     if (this.state === 'ebml') {
       if (h.id !== ID.EBML || h.size < 0) throw bad('not webm');

@@ -5,7 +5,7 @@ import { createPaymentsHandler } from '../handler.ts';
 import { createWebhookHandler } from '../webhook.ts';
 import { mpOutcome, mpVerifySignature, parsePayment } from '../../_shared/pagos/mercadopago.ts';
 import { paypalOutcome } from '../../_shared/pagos/paypal.ts';
-import { ADMIN, BASE, COMMUNITY, ELSE_COMMUNITY, FakeDb, FakeProviders, NOW, OTHER, USER, recorder } from './fakes.ts';
+import { ADMIN, BASE, FakeDb, FakeProviders, NOW, OTHER, USER, recorder } from './fakes.ts';
 
 function setup() {
   const db = new FakeDb();
@@ -67,9 +67,9 @@ test('checkout con Mercado Pago: preferencia en pesos con la orden como referenc
 
 test('checkout: plan, proveedor, sesión y ritmo', async () => {
   const s = setup();
-  assert.equal((await body(await s.handler(call('checkout', { plan: 'ultra', provider: 'paypal' })))).data.error, 'unknown_plan');
+  assert.equal((await body(await s.handler(call('checkout', { plan: 'supreme', provider: 'paypal' })))).data.error, 'unknown_plan');
   // El Venus Pass ya no se compra.
-  assert.equal((await body(await s.handler(call('checkout', { plan: 'pass_go', provider: 'paypal', community: COMMUNITY })))).data.error, 'unknown_plan');
+  assert.equal((await body(await s.handler(call('checkout', { plan: 'pass_go', provider: 'paypal' })))).data.error, 'unknown_plan');
   assert.equal((await body(await s.handler(call('checkout', { plan: 'go', provider: 'stripe' })))).data.error, 'provider_disabled');
   s.db.enabled.paypal = false;
   s.tick(5000);
@@ -218,7 +218,7 @@ test('páginas de vuelta: acreditan el pago y responden texto', async () => {
   s.net.addMpPayment({ id: 8001, status: 'approved', external_reference: id, transaction_amount: 11600 });
   const res = await s.hook(new Request(`${BASE}/payments?return=mp&collection_id=8001&status=approved&external_reference=${id}`));
   assert.equal(res.headers.get('content-type'), 'text/plain; charset=utf-8');
-  assert.match(await res.text(), /plan Go de Venus IA ya está activo/);
+  assert.match(await res.text(), /plan ChatGPT Go de Venus IA ya está activo/);
   assert.equal(s.db.orders.get(id)!.status, 'paid');
   assert.match(await (await s.hook(new Request(`${BASE}/payments?return=paypal-cancel&token=ABCDEF`))).text(), /no se cobró nada/);
   assert.match(await (await s.hook(new Request(`${BASE}/payments?return=paypal&token=NOEXISTE1`))).text(), /No encontramos ese pago/);

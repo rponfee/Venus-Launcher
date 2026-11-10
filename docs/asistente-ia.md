@@ -4,7 +4,8 @@ El asistente es un agente de Claude que vive dentro del launcher: responde dudas
 
 - Interfaz: página **Asistente IA** (`#/assistant/<conversación>`), panel lateral (botón **Asistente** en la barra de título o **Ctrl+J**) y `openAssistant({ prompt, instanceId, autoSend })` para abrirlo desde otros módulos (por ejemplo, el diálogo de crash).
 - Todas las capacidades están en todos los planes; lo que cambia entre planes son los modelos, los niveles de esfuerzo y las preguntas por día y por semana, que decide el backend. Sin plan pago no hay IA: el asistente muestra los planes (`openPlans()` de `features/plans.js`).
-- Selector de modelo y esfuerzo en el campo de texto: solo los modelos y esfuerzos que permite el plan, con las preguntas que quedan hoy y en la semana de cada modelo y el presupuesto del mes. La elección se recuerda (`settings.ai.assistantModel` / `assistantEffort`) y viaja en `assistant:send` como `{ model, effort }`. Si respondió el proveedor de respaldo (`served_by.failover`), la respuesta lleva la nota "Respondió el respaldo (OpenAI)".
+- Selector de modelo y esfuerzo en el campo de texto: solo los modelos y esfuerzos que permite el plan (esfuerzos `low`, `medium`, `high`, `xhigh` y `max`), con el saldo que queda. Los nombres salen de `label` de la cuota (el launcher no los arma: la clave `haiku` es "Haiku 5.5" con Claude y "GPT-6 Luna" con ChatGPT). La elección se recuerda (`settings.ai.assistantModel` / `assistantEffort`) y viaja en `assistant:send` como `{ model, effort }`. Si respondió el proveedor de respaldo (`served_by.failover`), la respuesta lleva la nota "Respondió el respaldo (ChatGPT)" o "(Claude)" según `served_by.provider`.
+- Dos saldos (6.1, [implementacion/ia-dos-motores.md](implementacion/ia-dos-motores.md)): con saldo de Claude y de ChatGPT aparece el selector **Saldo** (`assistant:useWallet` → RPC `ai_use_wallet`). Cuando el servidor pasa solo al otro saldo (`switched`), el chat muestra una línea de sistema (evento `switched`, se guarda en la conversación) y las demás funciones con IA un aviso (`ai:switched`); una vez por cambio. Si el plan en uso cambia a mitad de un turno, las llamadas siguientes del turno piden el modelo y el esfuerzo que permite el plan nuevo (el pedido si lo tiene, si no el primero; el esfuerzo permitido más alto por debajo), igual que el servidor en la llamada del cambio.
 
 ## 1. Cómo funciona
 
@@ -32,7 +33,7 @@ Casos especiales del bucle:
 | `model_context_window_exceeded` | Pide empezar una conversación nueva. |
 | Firma de *thinking* rechazada (historial alterado) | Una sola vez: reintenta sin los bloques de razonamiento anteriores (recuperación documentada por la API). El archivo guardado no se edita. |
 | El launcher se cerró a mitad de un turno | Al abrir la conversación se agregan `tool_result` de error para los `tool_use` sin respuesta y el turno queda "interrumpido". |
-| Errores de la IA | Sin sesión → botón a **Ajustes > Cuenta y nube**; IA desactivada → **Ajustes > Inteligencia artificial**; sin plan (`noplan`) o cuota agotada (`quota`) → aviso con el uso del plan y **Ver planes** (las tarjetas de `features/plans.js`, con "Mejorar plan" por Stripe); modelo o esfuerzo fuera del plan (`plan`) → pide elegir otro en el selector. |
+| Errores de la IA | Sin sesión → botón a **Ajustes > Cuenta y nube**; IA desactivada → **Ajustes > Inteligencia artificial**; sin plan (`noplan`) o cuota agotada (`quota`) → aviso con el uso del plan y **Ver planes** (las tarjetas de `features/plans.js` por familia, Claude y ChatGPT, con el pago por Mercado Pago o PayPal; sin saldo en ningún motor, el aviso ofrece comprar más o el otro motor); modelo o esfuerzo fuera del plan (`plan`) → pide elegir otro en el selector. |
 
 ## 2. Herramientas y niveles de permiso
 
@@ -148,7 +149,7 @@ Todos en `src/main/modules/assistant/`. Se validan al leerlos: lo que no cumple 
 
 Tipos: `int`, `float`, `bool`, `enum`, `enumInt` (nombre → número) y `fov` (grados → valor interno). `since` = primera versión de Minecraft que la tiene; `quotedSince`/`numericBefore` resuelven los cambios de formato entre versiones.
 
-**`plans.json`** — catálogo de planes de respaldo (sin conexión): Go, Pro, Super, Ultra, Max y Supreme con sus modelos, esfuerzos, preguntas por día y por semana y presupuesto. El catálogo vigente lo manda el backend y tiene prioridad; el plan real y la cuota de cada usuario llegan en `quota`. Las tarjetas de planes y el pago ("Mejorar plan", "Administrar suscripción") son de `features/plans.js` (canales `billing:*`, ver [pagos.md](pagos.md)).
+**`plans.json`** — catálogo de planes de respaldo (sin conexión): Claude y ChatGPT, con Basic, Go, Pro, Max y Ultra cada una (`provider`, `tier`, precio, saldo, tokens por respuesta, modelos con su `label` y esfuerzos). El catálogo vigente lo manda el backend y tiene prioridad; el plan real y la cuota de cada usuario llegan en `quota`. Las tarjetas de planes (selector Claude | ChatGPT) y el pago son de `features/plans.js` (canales `billing:*`, ver [pagos.md](pagos.md)).
 
 ## 6. Privacidad
 
@@ -174,15 +175,16 @@ Las conversaciones se guardan solo en la PC del usuario (`data/assistant/convers
 | `assistant:cancel(conversationId)` | Cancela el turno (y las confirmaciones pendientes). |
 | `assistant:undo(undoId)` | Deshace exactamente esa acción. |
 | `assistant:conversations()` / `assistant:conversation(id)` / `assistant:deleteConversation(id)` | Historial de la cuenta de Venus con la sesión abierta (las de otra cuenta responden "No se encontró esa conversación"). |
-| `assistant:status({ refresh }?)` | Estado de la IA (`ai.status()`), modelos del plan con sus esfuerzos y las preguntas que quedan (`modelOptions`), elección actual (`selection`), presupuesto del mes (`budget`), renovaciones (`resets`), `needsPlan`, catálogo de planes, herramientas con su nivel, flags de JVM y límites. |
+| `assistant:status({ refresh }?)` | Estado de la IA (`ai.status()`), modelos del plan con sus esfuerzos y las preguntas que quedan (`modelOptions`), elección actual (`selection`), saldo en uso (`budget`), saldos de Claude y ChatGPT (`wallets`, `planFamily`, `planTier`), renovaciones (`resets`), `needsPlan`, catálogo de planes, herramientas con su nivel, flags de JVM y límites. |
+| `assistant:useWallet('anthropic' \| 'openai')` | Elige qué saldo usa la IA (RPC `ai_use_wallet` con la sesión del usuario) y devuelve el estado nuevo. |
 
 Evento `assistant:event (conversationId, evento)`; cada evento tiene `seq` (orden) y `at`:
-`turn-start` (texto del usuario), `thinking` (transitorio), `text` y `done` (`stopReason`; los dos con `failover: true` si respondió el proveedor de respaldo), `tool-start`, `tool-result` (`summary`, `warnings`, `undoId`), `confirm` (`state: pending → approved | denied | cancelled`), `undo`, `error` (`code`: `unavailable`, `session`, `noplan`, `plan`, `quota`, `network`, `rounds`, `context`…), `quota` (transitorio).
+`turn-start` (texto del usuario), `thinking` (transitorio), `text` y `done` (`stopReason`; los dos con `failover: true` y `failoverProvider` si respondió el proveedor de respaldo), `switched` (`from`, `to`, `reason`: el servidor pasó al otro saldo), `tool-start`, `tool-result` (`summary`, `warnings`, `undoId`), `confirm` (`state: pending → approved | denied | cancelled`), `undo`, `error` (`code`: `unavailable`, `session`, `noplan`, `plan`, `quota`, `network`, `rounds`, `context`…), `quota` (transitorio).
 
 ## 8. Pruebas y capturas
 
 - `node src/main/modules/assistant/selftest.js`: pruebas del bucle con una IA falsa sobre una carpeta temporal (sin red ni Electron): lecturas en paralelo, cambio reversible + Deshacer, destructiva aceptada y rechazada, instalación masiva, errores, hosts bloqueados, `max_tokens`, tope de rondas, cancelación, persistencia, recuperación de firmas, anonimización, JVM (y la validación de `jvm-args.json`), versión de Java, cambio de versión o de loader con mundos, ids de instancia exactos, nombres con etiquetas que no cierran el bloque de contexto, conversaciones por cuenta de Venus, instancia nueva y más.
-- Modo demostración para capturas: `VENUS_ASSISTANT_FAKE=1` (junto con `VENUS_DEVSHOT`) reemplaza la IA por una conversación de ejemplo (plan Ultra) que usa las herramientas reales sobre la carpeta de datos temporal; un pedido que nombra "respaldo" responde como si lo hubiera atendido OpenAI. `VENUS_ASSISTANT_FAKE=noplan` simula una cuenta sin plan. Nunca se activa en la app empaquetada sin `VENUS_DEVSHOT`.
+- Modo demostración para capturas: `VENUS_ASSISTANT_FAKE=1` (junto con `VENUS_DEVSHOT`) reemplaza la IA por una conversación de ejemplo (plan Claude Ultra) que usa las herramientas reales sobre la carpeta de datos temporal; un pedido que nombra "respaldo" responde como si lo hubiera atendido el otro motor. `VENUS_ASSISTANT_FAKE=noplan` simula una cuenta sin plan, `=wallets` una cuenta con saldo de Claude (en uso) y de ChatGPT, `=switch` agota el saldo de Claude en la primera respuesta (aviso `switched`) y `=<id de plan>` (por ejemplo `go`) usa ese plan solo. Nunca se activa en la app empaquetada sin `VENUS_DEVSHOT`.
 
 ## 9. Integración con otros módulos (opcionales)
 

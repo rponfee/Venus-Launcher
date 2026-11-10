@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "클립과 스크린샷",
   errReplayNoRoom: "즉시 다시 보기가 일시 중지됐어요: 디스크 공간이 부족해요.",
   autoLimitReached: "이번 게임에서 자동 클립 최대 개수({count}개)에 도달했어요. 즉시 다시 보기는 단축키로 계속 사용할 수 있어요.",
+  errReplayNoRoomNeed: "즉시 다시 보기가 일시 중지됐어요: 디스크 공간이 부족해요 ({need}에 더해 1 GB의 여유 공간이 필요해요). 시간이나 품질을 낮춰 주세요.",
+  replaySaveTight: "즉시 다시 보기가 작동 중이지만, 버퍼가 가득 차면 클립 전체를 저장할 공간이 부족해요 ({need}의 여유 공간이 더 필요해요). 공간을 확보하거나 시간 또는 품질을 낮춰 주세요.",
+  errRecordNoRoom: "녹화할 디스크 공간이 부족해요 (여유 공간이 1 GB보다 많아야 해요).",
+  recordLimitReached: "녹화가 최대 길이({minutes}분)에 도달해서 저장했어요.",
+  recordStoppedDisk: "디스크 공간이 부족해져서 녹화가 자동으로 끝났어요. 녹화된 부분은 저장했어요.",
+  degraded: "PC가 선택한 품질을 따라가지 못해서 지금은 {quality}, {fps} fps로 녹화해요.",
+  degradedAfterRecording: "PC가 선택한 품질을 따라가지 못해요. 이번 녹화가 끝나면 {quality}, {fps} fps로 녹화해요.",
+  native: "원본",
+  errPlatform: "이 시스템에서는 아직 녹화를 사용할 수 없어요.",
 };

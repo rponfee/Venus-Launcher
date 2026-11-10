@@ -13,8 +13,6 @@ export default {
   perk_effectsText: "为你的名字加上闪光、彩虹和火焰特效，无需在商店购买。",
   perk_frame: "专属头像框和 Supporter 称号",
   perk_frameText: "仅 Premium 提供的动态头像框，以及显示在你名字旁的 Supporter 称号。",
-  perk_replay: "5 分钟即时回放",
-  perk_replayText: "保存游戏中最近 5 分钟的画面，而不是 60 秒。",
   perk_ai: "Venus AI",
   perk_aiText: "和往常一样，使用你套餐中包含的模型和提问次数来使用助手。",
   note: "Premium 的有效期与你的套餐相同。即使取消套餐，你用 Venus Points 购买的所有物品都会保留。",

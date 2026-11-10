@@ -177,5 +177,4 @@ export default {
   saveToLibraryFailed: 'Не удалось сохранить скин в библиотеку',
   reasonCatalogDamaged: 'Файл этого скина отсутствует или повреждён. Переустановите Venus Launcher, чтобы восстановить его.',
   exploreCatalog: 'Открыть каталог',
-  venusCape: "Плащ Venus",
 };

@@ -112,3 +112,7 @@ export function visualOrder(layout, visible = () => true) {
 }
 
 export const sameLayout = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// Tamaño de la tarjeta principal (settings.home.hero, 6.1): 'large' (la de siempre) o 'compact'. Otro valor -> 'large'.
+export const HERO_SIZES = ['large', 'compact'];
+export const normalizeHero = (home) => (home && typeof home === 'object' && HERO_SIZES.includes(home.hero) ? home.hero : 'large');

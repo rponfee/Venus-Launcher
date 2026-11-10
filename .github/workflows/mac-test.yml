@@ -1,0 +1,21 @@
+# Prueba de la versión de macOS sin publicar nada: al subir una rama mac-* (por ejemplo mac-6.1) corre el mod de la
+# insignia, los chequeos y el job "mac" de build.yml (compila la app universal, la abre y saca capturas), sin el job de
+# Windows ni la release. El DMG y las capturas quedan en el artefacto "VenusLauncher-mac" de la corrida.
+name: Prueba de macOS
+
+on:
+  push:
+    branches:
+      - 'mac-*'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write # build.yml lo pide para la release; con solo_mac no publica nada
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      solo_mac: true
+    secrets: inherit

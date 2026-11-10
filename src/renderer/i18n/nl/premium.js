@@ -14,8 +14,6 @@ export default {
   perk_effectsText: "Glans, regenboog en vuur voor je naam, zonder ze in de winkel te kopen.",
   perk_frame: "Exclusieve randen en de titel Supporter",
   perk_frameText: "Geanimeerde avatarranden die alleen bij Premium horen, en de titel Supporter naast je naam.",
-  perk_replay: "Directe herhaling van 5 minuten",
-  perk_replayText: "Bewaar de laatste 5 minuten van je spel in plaats van 60 seconden.",
   perk_ai: "Venus AI",
   perk_aiText: "De assistent met de modellen en vragen van je abonnement, zoals altijd.",
   note: "Premium duurt zolang je abonnement loopt. Als je opzegt, houd je alles wat je met Venus Points hebt gekocht.",

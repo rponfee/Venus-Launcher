@@ -108,7 +108,6 @@ const PERKS = [
   { id: 'banner', icon: 'image' },
   { id: 'effects', icon: 'sparkles' },
   { id: 'frame', icon: 'crown' },
-  { id: 'replay', icon: 'camera' },
   { id: 'ai', icon: 'wand' },
 ];
 

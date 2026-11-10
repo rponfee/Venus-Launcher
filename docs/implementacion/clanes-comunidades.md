@@ -1,5 +1,7 @@
 # Comunidades
 
+> **Retirado en la 6.1 (10 de noviembre de 2026).** Por decisión del dueño, el launcher ya no tiene Comunidades: sin página, menú, salas con escenario en Voice Chat ni compra de planes de clan. La base conserva las tablas, funciones y el bucket descritos acá, sin borrar datos de nadie; lo que quedó sin uso está listado en [Retirada de funciones](../retirada-funciones.md#retiros-de-la-61). Este documento queda como antecedente.
+
 > **Estado del 4 de noviembre de 2026.** La base de comunidades de `0033_clanes_comunidades.sql` ya está aplicada en producción; la activación general llegó hasta 0037. **0038 está preparada y pasó 318 comprobaciones SQL locales; no se aplicó en producción.** Requiere autorización específica antes de activarse. El launcher y la web siguen sin publicar. Ver [estado general](../estado-4.5.0.md) y [activación del backend](../activacion-backend-4.5.0.md).
 
 El usuario pidió retirar Clanes de la aplicación, sin borrar sus datos de producción. Ese cambio de UI pertenece a otro frente. **0038 modifica solo comunidades y su integración con voz**: conserva las tablas, filas y funciones de clanes y las firmas anteriores de comunidades. Los apartados de Clanes que siguen al final son antecedentes históricos, no una propuesta para volver a mostrar esa sección.

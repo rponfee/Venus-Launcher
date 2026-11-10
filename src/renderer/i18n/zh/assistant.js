@@ -179,4 +179,12 @@ export default {
   ex3: "优化我的实例，让 FPS 更高",
   ex4: "安装 Sodium 和 Iris",
   ex5: "帮我找一些轻量的光影",
+  effort_max: "最高",
+  walletLabel: "余额",
+  walletHint: "你的下一个问题使用哪个余额：Claude 或 ChatGPT。",
+  walletOption: "{family} · 剩余 {left}",
+  walletLine: "{family} 余额：{limit} 中剩余 {left}",
+  failoverNoteOf: "由备用引擎（{provider}）回复",
+  quotaBudgetTitle: "你的余额已用完",
+  quotaBudgetOut: "你的 {family} 余额（{plan} 套餐）已用完，也没有剩余的 {other} 余额。请在“套餐”中购买更多 {family} 余额，或试试 {other} 套餐。",
 };

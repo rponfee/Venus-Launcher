@@ -103,7 +103,7 @@ export default {
   q_help: "Hoe krijg ik hulp?",
   a_help: "Via Ondersteuning, hier in de launcher, of op de Discord. Programmafouten kun je ook op GitHub melden.",
   q_platforms: "Werkt het op Mac of Linux?",
-  a_platforms: "Voorlopig alleen op 64-bits Windows 10 en 11.",
+  a_platforms: "Op 64-bits Windows 10 en 11 en op macOS 12 of nieuwer (Apple Silicon en Intel). Op de Mac zijn de overlay in het spel, de muziek en de clips niet beschikbaar.",
   helpTitle: "Nog vragen?",
   helpText: "Schrijf ons via Ondersteuning of vraag het op de Discord.",
   goSupport: "Naar Ondersteuning",

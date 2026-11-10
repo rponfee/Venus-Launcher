@@ -1,9 +1,11 @@
 // Pruebas del flujo HTTP completo con dobles de Supabase y de Anthropic (node --test).
-// La base es FakeDb: una réplica en memoria de las funciones SQL de 0008 (ver tests/fake-db.ts).
+// La base es FakeDb: una réplica en memoria de las funciones SQL de 0008 (ver tests/fake-db.ts), anterior a 0056: el
+// protocolo, la cuota y los errores no cambian con los dos motores (eso se prueba en dual-engines.test.ts).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHandler, readBody } from '../handler.ts';
 import type { Deps, ModelCall, ModelResult } from '../handler.ts';
+import { ESTIMATE_OUTPUT_TOKENS_PER_SECOND } from '../config.ts';
 import type { UpstreamFailure } from '../errors.ts';
 import { FakeDb, TIMEZONE } from './fake-db.ts';
 
@@ -235,7 +237,7 @@ test('cuerpo: Content-Type, tamaño, UTF-8 y JSON', async () => {
   assert.equal(notJson.status, 400);
   assert.match(String(notJson.body.message), /JSON válido/);
   // El protocolo 1 no elige el modelo; el 2 solo acepta los ids del protocolo (nunca un id de Anthropic).
-  for (const body of [textBody({ model: 'claude-fable-5-1' }), v2Body({ model: 'claude-opus-5-5' }), v2Body({ effort: 'max' })]) {
+  for (const body of [textBody({ model: 'claude-fable-5-1' }), v2Body({ model: 'claude-opus-5-5' }), v2Body({ effort: 'ultra' })]) {
     const invalid = await call(deps, post(body));
     assert.equal(invalid.status, 400);
     assert.deepEqual(Object.keys(invalid.body).sort(), ['code', 'error', 'message']);
@@ -258,7 +260,7 @@ test('readBody corta apenas se pasa del límite', async () => {
   });
   const streamed = new Request(URL_FN, { method: 'POST', body: stream, duplex: 'half' } as RequestInit);
   assert.deepEqual(await readBody(streamed, 100), { ok: false, reason: 'too_large' });
-  assert.deepEqual(await readBody(new Request(URL_FN, { method: 'POST', body: 'ñ' }), 100), { ok: true, text: 'ñ' });
+  assert.deepEqual(await readBody(new Request(URL_FN, { method: 'POST', body: 'ñ' }), 100), { ok: true, text: 'ñ', bytes: 2 });
 });
 
 // ---------- Estado del plan y catálogo ----------
@@ -359,7 +361,8 @@ test('protocolo 1: usa el primer modelo del plan (Haiku) y el id de Anthropic sa
   assert.equal(rec.model[0].model, 'claude-haiku-5-5');
   assert.equal(rec.model[0].effort, 'medium', 'sin esfuerzo: medium');
   assert.equal(rec.model[0].fallback, false, 'Haiku nunca usa fallbacks');
-  assert.deepEqual(rec.rpc[0], { name: 'ai_register_turn', args: { p_user: USER, p_turn: rec.rpc[0].args.p_turn, p_model: null, p_effort: null } });
+  assert.deepEqual(rec.rpc[0], { name: 'ai_register_turn', args: { p_user: USER, p_turn: rec.rpc[0].args.p_turn, p_model: null, p_effort: null, p_max_tokens: 2000, p_input_bytes: rec.rpc[0].args.p_input_bytes } });
+  assert.ok(Number(rec.rpc[0].args.p_input_bytes) > 0, 'manda el tamaño del cuerpo');
   assert.equal(body.message.model, 'claude-haiku-5-5');
   assert.equal(modelQuota(body, 'haiku').daily.used, 1);
   assert.equal(body.quota.lastModel, 'haiku');
@@ -563,7 +566,7 @@ test('presupuesto del mes: con el gasto en el tope, 429 budget (también dentro 
   assert.equal(denied.status, 429);
   assert.equal(denied.body.error, 'quota');
   assert.equal(denied.body.reason, 'budget');
-  assert.match(String(denied.body.message), /presupuesto/);
+  assert.match(String(denied.body.message), /saldo/);
   assert.equal(denied.body.quota.budget.limitUsd, 1.5);
   assert.ok(denied.body.quota.budget.usedUsd >= 1.5);
   const newQuestion = await call(deps, post(textBody({ turn_id: 'b-2' })));
@@ -873,12 +876,16 @@ test('pedido inválido para la API: 400 bad_request con detalle y sin devolver l
 
 test('plazo vencido: 503 upstream_timeout y se aborta la llamada', async () => {
   let aborted = false;
+  // Reloj de prueba: el intento "dura" 2 s (el plazo real de la prueba es de 30 ms).
+  let now = 1_000_000;
   const { deps, rec } = makeDeps(
     {},
     {
       timeoutMs: 30,
+      now: () => now,
       callModel: (_call: ModelCall, signal: AbortSignal) =>
         new Promise<ModelResult>((_resolve, reject) => {
+          now += 2000;
           signal.addEventListener('abort', () => {
             aborted = true;
             reject(new Error('aborted'));
@@ -891,21 +898,28 @@ test('plazo vencido: 503 upstream_timeout y se aborta la llamada', async () => {
   assert.equal(body.code, 'upstream_timeout');
   assert.equal(aborted, true);
   assert.ok(!rec.rpc.some((r) => r.name === 'ai_release_turn'), 'la IA pudo haber cobrado el pedido');
-  // Se cobra una estimación del peor caso: todo el pedido como escritura de caché y la salida entera.
+  // Se cobra una estimación: todo el pedido como escritura de caché y la salida que pudo generar en 2 s
+  // (ESTIMATE_OUTPUT_TOKENS_PER_SECOND), no los 2.000 de max_tokens.
   const add = rec.rpc.find((r) => r.name === 'ai_add_usage');
   const cacheWrite = Math.ceil(JSON.stringify(textBody()).length / 3);
-  assert.deepEqual(add?.args, { p_user: USER, p_model: 'haiku', p_usage: [{ model: 'claude-haiku-5-5', input: 0, output: 2000, cacheRead: 0, cacheWrite }] });
-  assert.equal(body.quota.budget.usedUsd, Math.round((cacheWrite * 0.125 + 2000 * 0.5) / 100) / 10000);
+  const output = 2 * ESTIMATE_OUTPUT_TOKENS_PER_SECOND;
+  assert.equal(output, 800);
+  assert.deepEqual(add?.args, { p_user: USER, p_model: 'haiku', p_usage: [{ model: 'claude-haiku-5-5', input: 0, output, cacheRead: 0, cacheWrite }] });
+  assert.equal(body.quota.budget.usedUsd, Math.round((cacheWrite * 0.125 + output * 0.5) / 100) / 10000);
 });
 
 test('plazo vencido repetido con la misma pregunta: el costo estimado llega al presupuesto y la corta', async () => {
+  // Reloj de prueba: cada intento "dura" 140 s, así la salida estimada llega al tope (max_tokens 16.000).
+  let now = 1_000_000;
   const { deps, rec, db } = makeDeps(
     { plan: 'supreme' },
     {
       timeoutMs: 20,
+      now: () => now,
       callModel: (call: ModelCall, signal: AbortSignal) =>
         new Promise<ModelResult>((_resolve, reject) => {
           rec.model.push(call);
+          now += 140000;
           signal.addEventListener('abort', () => reject(new Error('aborted')));
         }),
     },
@@ -928,11 +942,19 @@ test('plazo vencido repetido con la misma pregunta: el costo estimado llega al p
 });
 
 test('conexión cortada: también se cobra estimada; una falla sin proceso (saturada) cierra la llamada sin cobrar', async () => {
-  const network = makeDeps({ failure: { kind: 'connection' } });
+  // La conexión se corta a los 3 s del intento: 1.200 tokens de salida estimados (menos que max_tokens).
+  let now = 1_000_000;
+  const network = makeDeps({}, {
+    now: () => now,
+    callModel: async () => {
+      now += 3000;
+      throw fail({ kind: 'connection' });
+    },
+  });
   const cut = await call(network.deps, post(textBody({ turn_id: 'red-1' })));
   assert.equal(cut.status, 502);
   assert.equal(cut.body.code, 'upstream_network');
-  assert.equal((network.rec.rpc.find((r) => r.name === 'ai_add_usage')?.args.p_usage as Body[])[0].output, 2000);
+  assert.equal((network.rec.rpc.find((r) => r.name === 'ai_add_usage')?.args.p_usage as Body[])[0].output, 1200);
   assert.equal(network.db.inflight(USER), 0);
 
   const busy = makeDeps({ failure: { kind: 'status', status: 529, type: 'overloaded_error' } });
@@ -974,6 +996,25 @@ test('si el launcher cancela, se corta la llamada a la IA', async () => {
   assert.equal((await res.json()).code, 'aborted');
   // La IA pudo haber procesado el pedido: se cobra estimado (si no, cancelar sería gratis).
   assert.ok(rec.rpc.some((r) => r.name === 'ai_add_usage'));
+});
+
+test('si el launcher cancela antes de que el pedido salga hacia la IA, no se cobra: la pregunta se devuelve', async () => {
+  const controller = new AbortController();
+  const { deps, rec, db } = makeDeps();
+  const original = deps.rpc;
+  deps.rpc = async (name, args) => {
+    const out = await original(name, args);
+    // El launcher cancela mientras la base registra la pregunta.
+    if (name === 'ai_register_turn') controller.abort();
+    return out;
+  };
+  const { status, body } = await call(deps, post(textBody({ turn_id: 'cancelada' }), {}, { signal: controller.signal }));
+  assert.equal(status, 503);
+  assert.equal(body.code, 'aborted');
+  assert.equal(rec.model.length, 0, 'no se llamó a la IA');
+  assert.deepEqual(rec.rpc.map((r) => r.name), ['ai_register_turn', 'ai_release_turn', 'ai_end_call']);
+  assert.equal(body.quota.budget.usedUsd, 0);
+  assert.equal(db.inflight(USER), 0);
 });
 
 test('si no se puede registrar el uso, la respuesta igual llega', async () => {

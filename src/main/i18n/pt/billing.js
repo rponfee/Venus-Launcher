@@ -16,6 +16,4 @@ module.exports = {
   errServer: 'O servidor de pagamentos não respondeu corretamente. Tente novamente daqui a pouco.',
   errNetwork: 'Não foi possível conectar ao servidor de pagamentos. Verifique sua conexão com a internet.',
   perMonth: '{price}/mês',
-  errUnknownCommunity: "Essa comunidade não existe ou você não a tem mais.",
-  errNotOwner: "Só o dono da comunidade pode comprar o plano dela.",
 };

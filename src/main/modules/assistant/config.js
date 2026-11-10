@@ -102,12 +102,14 @@ function optionKeys() {
 }
 
 const PLAN_MODELS = ['haiku', 'sonnet', 'opus'];
-const PLAN_EFFORTS = ['low', 'medium', 'high', 'xhigh'];
+const PLAN_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
+const PLAN_FAMILIES = ['anthropic', 'openai'];
+const PLAN_TIERS = ['basic', 'go', 'pro', 'max', 'ultra'];
 const count = (n) => (Number.isInteger(n) && n >= 0 ? n : null);
 const money = (n) => (typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : null);
 
-// Catalogo local con la misma forma que el del backend:
-// [{ id, name, priceUsd, budgetUsd, models: [{ id, label, efforts, daily, weekly }] }]
+// Catalogo local con la misma forma que el del backend (6.1: dos familias, Claude y ChatGPT, cinco niveles cada una):
+// [{ id, name, provider, tier, priceUsd, budgetUsd, maxTokensPerRequest, models: [{ id, label, efforts, daily, weekly }] }]
 function plans(lang) {
   const raw = readConfig('plans.json');
   const list = [];
@@ -125,7 +127,9 @@ function plans(lang) {
       .filter((m) => m.efforts.length);
     if (!models.length) continue;
     const name = typeof p.name === 'string' ? p.name : p.name && typeof p.name === 'object' ? p.name[lang] || p.name.en : null;
-    list.push({ id: p.id, name: name || p.id, priceUsd: money(p.priceUsd), budgetUsd: money(p.budgetUsd), maxTokensPerRequest: count(p.maxTokensPerRequest), models });
+    const provider = PLAN_FAMILIES.includes(p.provider) ? p.provider : p.id.startsWith('claude_') ? 'anthropic' : 'openai';
+    const tier = PLAN_TIERS.includes(p.tier) ? p.tier : null;
+    list.push({ id: p.id, name: name || p.id, provider, tier, priceUsd: money(p.priceUsd), budgetUsd: money(p.budgetUsd), maxTokensPerRequest: count(p.maxTokensPerRequest), models });
   }
   return { placeholder: raw?.placeholder !== false, plans: list };
 }

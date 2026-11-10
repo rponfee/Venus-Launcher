@@ -2,10 +2,16 @@
 // nunca se muestra: captura la ventana del juego (la elige el proceso principal en su manejador de
 // getDisplayMedia) y graba con MediaRecorder (WebM VP9 o VP8 + Opus) en pedazos de 1 s que manda al proceso
 // principal, que arma la repeticion instantanea y las grabaciones. Tambien saca capturas al tamanio real.
+// El codec lo elige el proceso principal (lista en orden de preferencia, logic.codecOrder); aca se usa el primero
+// que este MediaRecorder acepte y arranque. Cada STATS_MS avisa cuantos cuadros entrego la captura, para que el
+// proceso principal sepa si la PC no llega a los fps pedidos (y por que).
+import { bitrateFor } from './bitrate.js';
+
 const bridge = window.venusRecorder;
 
 const CHUNK_MS = 1000;
-let current = null; // { session, stream, recorder, queue, flushWaiters, track }
+const STATS_MS = 2000;
+let current = null; // { session, stream, recorder, queue, flushWaiters, track, statsTimer }
 
 const send = (msg) => bridge?.send(msg);
 const reply = (id, value) => send({ type: 'reply', id, value });
@@ -42,15 +48,66 @@ async function openStream({ fps, box, audio, sourceId }) {
   }
 }
 
-function pickMime(withAudio) {
-  const list = withAudio ? ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'] : ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
-  return list.find((m) => MediaRecorder.isTypeSupported(m)) || '';
+const CODECS = new Set(['vp9', 'vp8', 'av1', 'h264']);
+const mimeOf = (codec, withAudio) => `video/webm;codecs=${codec}${withAudio ? ',opus' : ''}`;
+
+// Codecs de la lista que esta PC codifica por hardware a ese tamanio y fps. MediaRecorder no lo dice y
+// mediaCapabilities.encodingInfo no acepta 'record' en este Chromium (y con 'webrtc' nunca dice powerEfficient):
+// se pregunta a WebCodecs con prefer-hardware, que usa los mismos codificadores de la GPU.
+const WEBCODECS = { av1: 'av01.0.13M.08', h264: 'avc1.640034', vp9: 'vp09.00.51.08', vp8: 'vp8' };
+async function hardwareCodecs(list, { width, height }) {
+  const out = [];
+  if (typeof VideoEncoder !== 'function' || !VideoEncoder.isConfigSupported) return out;
+  for (const codec of list) {
+    try {
+      // Solo codec y tamanio: con framerate y bitrate, este Chromium dice que no a 1440p60 o 4K60 aunque la GPU los
+      // codifica (medido: AV1 y H.264 a 4K60 con menos del 10 % de CPU)
+      const res = await VideoEncoder.isConfigSupported({ codec: WEBCODECS[codec], width, height, hardwareAcceleration: 'prefer-hardware' });
+      if (res?.supported) out.push(codec);
+    } catch {
+      /* no se sabe: no cuenta como hardware */
+    }
+  }
+  return out;
 }
 
-function bitrateFor(width, height, fps, b) {
-  const pixels = Math.max(1, width || 0) * Math.max(1, height || 0);
-  const rate = fps >= 60 ? 45 : 30;
-  return Math.round(Math.min(b?.max || 25e6, Math.max(b?.min || 2e6, pixels * rate * (b?.bpp || 0.11))));
+// Formatos a probar: primero los de cmd.hardware que anden por hardware, despues cmd.codecs (siempre WebM; al
+// final, el que elija el navegador). [{ codec, mime, hardware }]
+async function mimeCandidates(withAudio, cmd, size) {
+  const valid = (l) => (Array.isArray(l) ? l : []).filter((c) => CODECS.has(c) && MediaRecorder.isTypeSupported(mimeOf(c, withAudio)));
+  const hw = await hardwareCodecs(valid(cmd.hardware), size);
+  const sw = valid(cmd.codecs?.length ? cmd.codecs : ['vp9', 'vp8']);
+  const out = [...hw.map((codec) => ({ codec, hardware: true })), ...sw.filter((c) => !hw.includes(c)).map((codec) => ({ codec, hardware: false }))].map((c) => ({ ...c, mime: mimeOf(c.codec, withAudio) }));
+  out.push({ codec: 'vp8', hardware: false, mime: MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '' });
+  return out;
+}
+
+// Tamanio real de los cuadros (getSettings() de una captura puede decir el tope pedido y no el de la ventana)
+async function frameSize(stream, fallback) {
+  const v = document.createElement('video');
+  v.muted = true;
+  v.srcObject = stream;
+  try {
+    await Promise.race([v.play(), new Promise((resolve) => setTimeout(resolve, 3000))]);
+    for (let i = 0; i < 30 && !v.videoWidth; i++) await new Promise((resolve) => setTimeout(resolve, 50));
+    return v.videoWidth && v.videoHeight ? { width: v.videoWidth, height: v.videoHeight } : fallback;
+  } catch {
+    return fallback;
+  } finally {
+    v.pause();
+    v.srcObject = null;
+  }
+}
+
+// Cuadros que entrego la captura hasta ahora (MediaStreamTrack.stats, si este Chromium lo tiene) o null
+function trackFrames(track) {
+  try {
+    const st = track.stats;
+    if (st && Number.isFinite(st.deliveredFrames)) return { delivered: st.deliveredFrames, discarded: st.discardedFrames || 0, total: st.totalFrames || 0 };
+  } catch {
+    /* sin estadisticas */
+  }
+  return null;
 }
 
 function stopTracks(stream) {
@@ -74,14 +131,40 @@ async function start(cmd) {
     stopTracks(stream);
     throw new Error('no video');
   }
+  // Un juego se mueve: que la captura priorice los cuadros por segundo antes que el detalle
+  try {
+    track.contentHint = 'motion';
+  } catch {
+    /* sin contentHint */
+  }
   const s = track.getSettings();
-  const mimeType = pickMime(stream.getAudioTracks().length > 0);
-  const width = s.width || cmd.box?.width || 1280;
-  const height = s.height || cmd.box?.height || 720;
-  const options = { videoBitsPerSecond: bitrateFor(width, height, cmd.fps, cmd.bitrate), audioBitsPerSecond: 128000, videoKeyFrameIntervalDuration: cmd.keyframeMs || 2000 };
-  if (mimeType) options.mimeType = mimeType;
-  const recorder = new MediaRecorder(stream, options);
-  const sess = { session: cmd.session, stream, recorder, track, queue: Promise.resolve(), flushWaiters: [], stopped: false };
+  const { width, height } = await frameSize(stream, { width: s.width || cmd.box?.width || 1280, height: s.height || cmd.box?.height || 720 });
+  // El primer codec que MediaRecorder acepte y arranque (si uno falla al crear el codificador, el siguiente)
+  let recorder = null;
+  let chosen = null;
+  let videoBitsPerSecond = 0;
+  let lastErr = null;
+  for (const cand of await mimeCandidates(stream.getAudioTracks().length > 0, cmd, { width, height })) {
+    videoBitsPerSecond = bitrateFor(width, height, cmd.fps, cmd.bitrate, cand.codec, cand.hardware);
+    const options = { videoBitsPerSecond, audioBitsPerSecond: 128000, videoKeyFrameIntervalDuration: cmd.keyframeMs || 2000 };
+    if (cmd.bitrateMode) options.videoBitrateMode = cmd.bitrateMode;
+    if (cand.mime) options.mimeType = cand.mime;
+    try {
+      const r = new MediaRecorder(stream, options);
+      r.start(CHUNK_MS);
+      recorder = r;
+      chosen = cand;
+      break;
+    } catch (err) {
+      lastErr = err;
+      send({ type: 'warning', message: `${cand.mime}: ${err?.name}: ${err?.message}` });
+    }
+  }
+  if (!recorder) {
+    stopTracks(stream);
+    throw lastErr || new Error('no recorder');
+  }
+  const sess = { session: cmd.session, stream, recorder, track, queue: Promise.resolve(), flushWaiters: [], stopped: false, statsTimer: null };
   recorder.ondataavailable = (e) => {
     const waiters = sess.flushWaiters.splice(0);
     sess.queue = sess.queue.then(async () => {
@@ -95,15 +178,22 @@ async function start(cmd) {
   };
   // La ventana del juego se cerro (o dejo de poder capturarse)
   track.addEventListener('ended', () => end(sess, 'ended'));
-  recorder.start(CHUNK_MS);
   current = sess;
-  return { width, height, mimeType: recorder.mimeType || mimeType, audio: stream.getAudioTracks().length > 0, audioFailed: Boolean(opened.audioFailed), fps: s.frameRate || cmd.fps };
+  // Cuantos cuadros llegan de la captura (el proceso principal los compara con los que salen codificados)
+  if (trackFrames(track)) {
+    sess.statsTimer = setInterval(() => {
+      const f = trackFrames(track);
+      if (f && current === sess) send({ type: 'stats', session: sess.session, at: performance.now(), ...f });
+    }, STATS_MS);
+  }
+  return { width, height, mimeType: recorder.mimeType || chosen.mime, codec: chosen.codec, hardware: chosen.hardware, bitrate: videoBitsPerSecond, audio: stream.getAudioTracks().length > 0, audioFailed: Boolean(opened.audioFailed), fps: cmd.fps, sourceFps: s.frameRate || 0, stats: Boolean(sess.statsTimer) };
 }
 
 // Termina la sesion: espera los ultimos pedazos y avisa
 function end(sess, reason) {
   if (sess.stopped) return sess.done;
   sess.stopped = true;
+  clearInterval(sess.statsTimer);
   sess.done = new Promise((resolve) => {
     const finish = () =>
       sess.queue.then(() => {
@@ -216,9 +306,18 @@ async function grab(cmd) {
 
 // ---------- Ordenes ----------
 
+// Empezar y parar de a uno, en el orden en que llegan: dos arranques seguidos no pueden dejar una captura huerfana
+let lane = Promise.resolve();
+function serial(fn) {
+  const run = lane.then(fn, fn);
+  lane = run.catch(() => {});
+  return run;
+}
+
 const HANDLERS = {
-  start: (cmd) => start(cmd),
-  stop: () => stop().then(() => true),
+  start: (cmd) => serial(() => start(cmd)),
+  // Solo la sesion pedida: si el proceso principal ya arranco otra (parar y volver a empezar seguidos), esa sigue
+  stop: (cmd) => serial(() => (!cmd.session || current?.session === cmd.session ? stop() : Promise.resolve()).then(() => true)),
   flush: () => flush(),
   thumb: (cmd) => thumb(cmd.width),
   grab: (cmd) => grab(cmd),

@@ -103,7 +103,7 @@ export default {
   q_help: "怎么获得帮助？",
   a_help: "可以在启动器里的“支持”页面，或者到 Discord 上提问。程序的错误也可以在 GitHub 上反馈。",
   q_platforms: "能在 Mac 或 Linux 上用吗？",
-  a_platforms: "目前只支持 64 位的 Windows 10 和 11。",
+  a_platforms: "支持 64 位 Windows 10 和 11，以及 macOS 12 或更高版本（Apple Silicon 和 Intel）。Mac 上没有游戏内叠加层、音乐和剪辑功能。",
   helpTitle: "还有疑问吗？",
   helpText: "可以在“支持”里给我们留言，或者到 Discord 上提问。",
   goSupport: "前往支持",

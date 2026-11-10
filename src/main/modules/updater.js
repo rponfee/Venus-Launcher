@@ -22,7 +22,7 @@ function register({ app, handle, send, onQuit }) {
 
   // La búsqueda automática (al abrir y cada 4 horas) respeta privacy.autoUpdates; viene activa en instalaciones
   // nuevas y quien la desactivó conserva su elección. Los errores quedan en Actualizaciones.
-  // Vale igual para la portable, que en vez de instalar avisa (features/update-notice.js).
+  // Vale igual para la portable y para macOS, que en vez de instalar avisan (features/update-notice.js).
   const autoCheck = async () => {
     const s = await require('../core/settings').get().catch(() => null);
     if (s?.privacy?.autoUpdates === true) controller.check();

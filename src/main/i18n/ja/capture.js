@@ -17,4 +17,13 @@ module.exports = {
   overlayErrorTitle: "クリップとスクリーンショット",
   errReplayNoRoom: "インスタントリプレイを一時停止しました: ディスクの空き容量が足りません。",
   autoLimitReached: "このプレイの自動クリップが上限の{count}件に達しました。ショートカットでのインスタントリプレイは引き続き使えます。",
+  errReplayNoRoomNeed: "インスタントリプレイを一時停止しました: ディスクの空き容量が足りません（{need}に加えて1 GBの空きが必要です）。時間か画質を下げてください。",
+  replaySaveTight: "インスタントリプレイは動作していますが、バッファがいっぱいになるとクリップ全体を保存する空き容量がなくなります（さらに{need}の空きが必要です）。空き容量を増やすか、時間か画質を下げてください。",
+  errRecordNoRoom: "ディスクの空き容量が足りないため録画できません（1 GBを超える空きが必要です）。",
+  recordLimitReached: "録画が最大時間（{minutes}分）に達したため、保存しました。",
+  recordStoppedDisk: "ディスクの空き容量が少なくなったため、録画を自動で終了しました。録画した内容は保存されています。",
+  degraded: "選んだ画質にPCの処理が追いつかなかったため、現在は{quality}、{fps} fpsで録画しています。",
+  degradedAfterRecording: "選んだ画質にPCの処理が追いつきませんでした。現在の録画が終わると、{quality}、{fps} fpsで録画します。",
+  native: "ネイティブ",
+  errPlatform: "このシステムでは、録画はまだ利用できません。",
 };

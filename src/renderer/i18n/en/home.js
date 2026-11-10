@@ -260,4 +260,7 @@ export default {
   blockNarrow: 'Set {block} back to normal width',
   blockHiddenTag: 'Hidden',
   blockEmptyTag: 'No data yet',
+  heroSize: "Main card size",
+  heroSize_large: "Large",
+  heroSize_compact: "Compact",
 };

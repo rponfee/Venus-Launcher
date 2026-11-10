@@ -4,8 +4,6 @@ module.exports = {
   errSignIn: 'Sign in with your Venus account (Settings > Account & cloud) to choose a Venus AI plan.',
   errSession: 'Your Venus session expired. Sign in again in Settings > Account & cloud.',
   errUnknownPlan: 'That plan does not exist or is not for sale.',
-  errUnknownCommunity: 'That community does not exist or you no longer have it.',
-  errNotOwner: 'Only the community owner can buy its plan.',
   errProviderDisabled: 'That payment method is not available right now. Try the other one.',
   errTooMany: 'Too many payment attempts in a row. Wait a while and try again.',
   errBusy: 'Wait a few seconds and try again.',

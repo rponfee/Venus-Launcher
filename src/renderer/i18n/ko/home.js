@@ -231,4 +231,7 @@ export default {
   blockNarrow: "{block} 기본 너비로",
   blockHiddenTag: "숨김",
   blockEmptyTag: "아직 데이터 없음",
+  heroSize: "메인 카드 크기",
+  heroSize_large: "크게",
+  heroSize_compact: "작게",
 };

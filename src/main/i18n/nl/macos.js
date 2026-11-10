@@ -1,0 +1,21 @@
+'use strict';
+module.exports = {
+  menuAbout: "Over {app}",
+  menuHide: "Verberg {app}",
+  menuHideOthers: "Verberg andere",
+  menuShowAll: "Toon alles",
+  menuQuit: "Stop {app}",
+  menuEdit: "Wijzig",
+  menuUndo: "Herstel",
+  menuRedo: "Opnieuw",
+  menuCut: "Knip",
+  menuCopy: "Kopieer",
+  menuPaste: "Plak",
+  menuPasteMatch: "Plak en pas stijl aan",
+  menuDelete: "Verwijder",
+  menuSelectAll: "Selecteer alles",
+  menuWindow: "Venster",
+  menuMinimize: "Minimaliseer",
+  menuZoom: "Zoom",
+  menuFront: "Alles op voorgrond",
+};

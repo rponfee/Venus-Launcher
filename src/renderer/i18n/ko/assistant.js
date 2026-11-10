@@ -179,4 +179,12 @@ export default {
   ex3: "FPS가 더 잘 나오도록 내 인스턴스를 최적화해 주세요",
   ex4: "Sodium과 Iris를 설치해 주세요",
   ex5: "가벼운 셰이더를 찾아 주세요",
+  effort_max: "최대",
+  walletLabel: "잔액",
+  walletHint: "다음 질문에 사용할 잔액을 선택해요: Claude 또는 ChatGPT.",
+  walletOption: "{family} · {left} 남음",
+  walletLine: "{family} 잔액: {limit} 중 {left} 남음",
+  failoverNoteOf: "예비 제공자({provider})가 응답했어요",
+  quotaBudgetTitle: "잔액을 모두 사용했어요",
+  quotaBudgetOut: "{family} 잔액({plan} 요금제)을 모두 사용했고 {other} 잔액도 남아 있지 않아요. 요금제 메뉴에서 {family} 잔액을 더 구매하거나 {other} 요금제를 이용해 보세요.",
 };

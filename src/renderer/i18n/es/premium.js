@@ -14,8 +14,6 @@ export default {
   perk_effectsText: 'Brillo, arcoíris y fuego para tu nombre, sin comprarlos en la tienda.',
   perk_frame: 'Marcos exclusivos y título Supporter',
   perk_frameText: 'Marcos animados para tu avatar que solo vienen con Premium y el título Supporter junto a tu nombre.',
-  perk_replay: 'Repetición instantánea de 5 minutos',
-  perk_replayText: 'Guardá los últimos 5 minutos de tu partida en vez de 60 segundos.',
   perk_ai: 'Venus IA',
   perk_aiText: 'El asistente con los modelos y las preguntas de tu plan, como siempre.',
   note: 'Premium dura lo que dura tu plan. Si lo cancelás, conservás todo lo que compraste con Venus Points.',

@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "Orta",
   effort_high: "Yüksek",
   effort_xhigh: "Ekstra",
+  effort_max: "Maksimum",
+  errBudgetOut: "{family} bakiyen ({plan} planı) bitti ve {other} bakiyen de kalmadı. Devam etmek için Planlar bölümünden daha fazla {family} bakiyesi veya bir {other} planı satın al.",
+  errWallet: "Yapay zekânın kullandığı bakiye değiştirilemedi. Birazdan tekrar dene.",
 };

@@ -246,4 +246,7 @@ export default {
   blockNarrow: "Normalna szerokość: {block}",
   blockHiddenTag: "Ukryty",
   blockEmptyTag: "Na razie brak danych",
+  heroSize: "Rozmiar karty głównej",
+  heroSize_large: "Duża",
+  heroSize_compact: "Kompaktowa",
 };

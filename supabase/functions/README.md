@@ -4,7 +4,7 @@
 
 | Función | Para qué | Migraciones que necesita | Documentación |
 |---|---|---|---|
-| `ai-assistant` | Puerta de la IA del launcher: verifica la sesión, aplica el plan del usuario (modelos, esfuerzos, preguntas por día y por semana y presupuesto mensual) y llama a Claude (Anthropic, principal) con la clave del servidor; si Anthropic falla por un problema del proveedor, pasa el pedido a ChatGPT (OpenAI, secundario). | `supabase/migrations/0007_ai.sql`, después `0008_ai_plans.sql` y, para el respaldo, `0011_ai_providers.sql` | [docs/backend-ia.md](../../docs/backend-ia.md) |
+| `ai-assistant` | Puerta de la IA del launcher: verifica la sesión, aplica el plan y el saldo del usuario y llama al proveedor del saldo que paga cada llamada: Claude (Anthropic) para los planes de Claude y ChatGPT (OpenAI) para los de ChatGPT, con las claves de Vault. Si el saldo en uso no alcanza y el otro sí, la base pasa al otro y la respuesta lo avisa (`switched`). | `0007_ai.sql`, `0008_ai_plans.sql`, `0011_ai_providers.sql`, `0013`, `0053` y **`0056_ia_dos_motores.sql`** | [docs/backend-ia.md](../../docs/backend-ia.md) y [ia-dos-motores.md](../../docs/implementacion/ia-dos-motores.md) |
 | `admin` | Panel de administración del launcher: en cada pedido vuelve a verificar la sesión, que el email esté confirmado y que el usuario siga siendo admin. Maneja usuarios (planes, baneos, silencios, sesiones, uso y borrar cuentas), cupones y códigos de promoción de Stripe, el precio de los planes y el registro de acciones. Se despliega con la verificación de JWT activada y lleva los archivos compartidos `billing/config.ts`, `billing/http.ts` y `billing/stripe.ts` (los imports `../billing/` se resuelven al empaquetar). Secretos: `STRIPE_SECRET_KEY` (opcional: sin ella, cupones, precios y cancelaciones responden "no configurado") y `BILLING_PORTAL_CONFIGURATION` (opcional). | `supabase/migrations/0012_admin.sql` (después de 0011; usa 0001, 0002, 0007, 0008 y 0009) | [docs/admin.md](../../docs/admin.md) |
 | `voice-turn` | Claves temporales del servidor TURN del Voice Chat (coturn con `use-auth-secret`), solo para sesiones de Venus: el launcher las pide al iniciar sesión y antes de entrar a una sala. Se despliega con la verificación de JWT activada. Secretos: `TURN_SECRET` (obligatorio, el `static-auth-secret` de coturn), `TURN_URLS` y `TURN_TTL_SECONDS` (opcionales). Sin `TURN_SECRET` responde una lista vacía y la voz sigue con STUN. | ninguna | [docs/voice-turn.md](../../docs/voice-turn.md) |
 | `badge` | Anota una cuenta de Minecraft en la insignia de Venus: con la sesión de Venus y un desafío de `badge_challenge`, le pregunta a Mojang (`hasJoined`) si esa cuenta entró con ese desafío y, si sí, la anota. El token de Minecraft nunca llega al servidor. Se despliega con la verificación de JWT activada. Sin secretos propios. Las consultas del mod no pasan por acá: van a la función SQL `badge_lookup` (PostgREST), que no gasta invocaciones. | `supabase/migrations/0019_insignia.sql` (después de 0012) | [docs/insignia.md](../../docs/insignia.md) |
@@ -27,15 +27,13 @@ Las instrucciones siguientes son generales. La aplicación de 0028–0037 y los 
 ## Desplegar `ai-assistant`
 
 ```bash
-# 1. Claves (quedan guardadas en Supabase; nunca van en el código ni en el launcher)
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-...   # principal: Claude
-supabase secrets set OPENAI_API_KEY=sk-...          # secundaria: ChatGPT, el respaldo (opcional)
-
-# 2. Desplegar (la verificación de JWT queda activada, que es lo que corresponde)
+# Después de aplicar 0056_ia_dos_motores.sql (la verificación de JWT queda activada, que es lo que corresponde)
 supabase functions deploy ai-assistant
 ```
 
-- **Respaldo**: si Anthropic falla por un problema del proveedor (429, 529, 5xx, red, plazo del proveedor, sin crédito, clave, permisos, beta o modelo no disponible, o falta `ANTHROPIC_API_KEY`), la función traduce el pedido a la Responses API de OpenAI y lo manda con el modelo equivalente (`ai_tier_fallbacks`); la respuesta vuelve con la forma de siempre y `message.served_by = { provider, model, failover }`. Nunca pasa al otro proveedor un rechazo de la IA, un pedido inválido (400) ni una cancelación. Sin `OPENAI_API_KEY` o sin 0011, solo Anthropic, como antes. Orden de los proveedores, qué fallas activan el respaldo y cómo apagarlo: [docs/backend-ia.md](../../docs/backend-ia.md), sección 12.
+- **Claves (6.1)**: las de Claude y de ChatGPT se cargan desde **Administración → Integraciones** y quedan en Vault (`venus_anthropic_key`, `venus_openai_key`); la función las lee con `ai_anthropic_key()` / `ai_openai_key()` (solo `service_role`) y las guarda 60 s en memoria, nunca en los logs. `ANTHROPIC_API_KEY` y `OPENAI_API_KEY` (`supabase secrets set`) son solo un respaldo opcional si Vault no tiene una. Si el proveedor de una llamada no tiene clave: `503 not_configured` con `provider`, sin cobrar nada.
+- **Proveedor de cada llamada (6.1)**: el del saldo que la paga (`provider` de `ai_register_turn`). Orden de publicación: 0056, después `ai-assistant`, `payments` y `admin`, después la clave de Claude, y recién ahí el launcher 6.1 ([ia-dos-motores.md](../../docs/implementacion/ia-dos-motores.md), sección 6).
+- **Respaldo entre proveedores** (apagado desde 0049; si se activa en `ai_provider_config`, el principal es el proveedor de la llamada): si ese proveedor falla por un problema del proveedor (429, 529, 5xx, red, plazo del proveedor, sin crédito, clave, permisos, beta o modelo no disponible, o falta `ANTHROPIC_API_KEY`), la función traduce el pedido a la Responses API de OpenAI y lo manda con el modelo equivalente (`ai_tier_fallbacks`); la respuesta vuelve con la forma de siempre y `message.served_by = { provider, model, failover }`. Nunca pasa al otro proveedor un rechazo de la IA, un pedido inválido (400) ni una cancelación. Sin `OPENAI_API_KEY` o sin 0011, solo Anthropic, como antes. Orden de los proveedores, qué fallas activan el respaldo y cómo apagarlo: [docs/backend-ia.md](../../docs/backend-ia.md), sección 12.
 
 - Desplegá enseguida después de aplicar `0008_ai_plans.sql`: mientras tanto, una versión vieja de la función rechaza todos los pedidos (a propósito, para que no gaste fuera del presupuesto). Al revés, la función nueva sin la migración 0008 responde `backend_not_ready`.
 - No hay plan gratis: para usar la IA, cada usuario necesita una fila en `ai_subscriptions` (a mano o, cuando exista, desde el webhook de pagos). Ver [docs/backend-ia.md](../../docs/backend-ia.md), secciones 7 y 8.
@@ -45,7 +43,8 @@ supabase functions deploy ai-assistant
 
 | Secreto | Por defecto | Para qué |
 |---|---|---|
-| `OPENAI_API_KEY` | sin cargar | Clave de OpenAI para el respaldo (proveedor secundario). Sin ella, solo Anthropic. Conviene un proyecto de OpenAI dedicado, con límite de gasto. |
+| `ANTHROPIC_API_KEY` | sin cargar | Respaldo de la clave de Claude si Vault no tiene una (la principal se carga en Administración → Integraciones). |
+| `OPENAI_API_KEY` | sin cargar | Respaldo de la clave de ChatGPT si Vault no tiene una. Conviene un proyecto de OpenAI dedicado, con límite de gasto. |
 | `AI_UPSTREAM_TIMEOUT_MS` | `140000` | Cuánto se espera a la IA (entre 10000 y 390000), para los dos proveedores juntos: el respaldo solo se prueba si quedan al menos 15 s. Supabase corta a los 150 s sin respuesta, así que no conviene subirlo. |
 | `AI_REQUIRE_CONFIRMED_EMAIL` | apagado | Con `1`, solo pueden usar la IA las cuentas con el email confirmado. |
 
@@ -77,7 +76,7 @@ En local: `supabase start`, después `supabase functions serve ai-assistant --en
 
 ## Pruebas automáticas (sin Deno ni Postgres)
 
-La lógica de la función (validación, cuotas, errores, política, la traducción a OpenAI, el respaldo y el flujo HTTP completo con dobles de Supabase, de Anthropic y de OpenAI) está en archivos `.ts` sin dependencias, que Node corre directamente. El doble de la base (`tests/fake-db.ts`) replica las funciones SQL de 0008 y 0011 para probar planes, modelos, esfuerzos, cupos por día y por semana, presupuesto y costos (también los de OpenAI) de punta a punta; `tests/migration.test.ts` y `tests/providers-migration.test.ts` revisan el SQL de 0008 y 0011 sin ejecutarlo (carga de planes y precios, precios y mapeo de OpenAI, RLS, `search_path`, permisos y las claves del JSON). `tests/openai.test.ts`, `tests/providers.test.ts` y `tests/failover.test.ts` prueban la traducción en los dos sentidos, la tabla de decisión del respaldo y el flujo completo con los dos proveedores. Además, `tests/index.e2e.test.ts` corre el `index.ts` real con los paquetes `@anthropic-ai/sdk` y `@supabase/supabase-js` del launcher (los de `node_modules`) contra un `fetch` falso, sin red, y revisa los pedidos exactos que salen hacia Supabase, Anthropic y OpenAI (si faltan los paquetes, se saltea). El paquete `openai` no está en el repositorio: la prueba usa un doble con la misma superficie (`tests/fake-openai-sdk.ts`), o el SDK real si `VENUS_OPENAI_SDK` apunta al `index.mjs` de un paquete `openai` 7.x instalado en otro lado:
+La lógica de la función (validación, cuotas, errores, política, la traducción a OpenAI, el respaldo y el flujo HTTP completo con dobles de Supabase, de Anthropic y de OpenAI) está en archivos `.ts` sin dependencias, que Node corre directamente. El doble de la base (`tests/fake-db.ts`) replica las funciones SQL de 0008 y 0011 (y, con `FakeDb.dual()`, el contrato de 0056: dos saldos, `switched`, `max_tokens` según el saldo; ver `tests/dual-engines.test.ts`) para probar planes, modelos, esfuerzos, cupos por día y por semana, presupuesto y costos (también los de OpenAI) de punta a punta; `tests/migration.test.ts` y `tests/providers-migration.test.ts` revisan el SQL de 0008 y 0011 sin ejecutarlo (carga de planes y precios, precios y mapeo de OpenAI, RLS, `search_path`, permisos y las claves del JSON). `tests/openai.test.ts`, `tests/providers.test.ts` y `tests/failover.test.ts` prueban la traducción en los dos sentidos, la tabla de decisión del respaldo y el flujo completo con los dos proveedores. Además, `tests/index.e2e.test.ts` corre el `index.ts` real con los paquetes `@anthropic-ai/sdk` y `@supabase/supabase-js` del launcher (los de `node_modules`) contra un `fetch` falso, sin red, y revisa los pedidos exactos que salen hacia Supabase, Anthropic y OpenAI (si faltan los paquetes, se saltea). El paquete `openai` no está en el repositorio: la prueba usa un doble con la misma superficie (`tests/fake-openai-sdk.ts`), o el SDK real si `VENUS_OPENAI_SDK` apunta al `index.mjs` de un paquete `openai` 7.x instalado en otro lado:
 
 ```bash
 node --test "supabase/functions/ai-assistant/tests/*.test.ts"
@@ -91,12 +90,12 @@ Las funciones SQL no se ejecutan en estas pruebas: probalas una vez en un proyec
 
 | Archivo | Qué hace |
 |---|---|
-| `index.ts` | Entrada (`Deno.serve`). Crea los clientes de Supabase y los SDK de Anthropic y de OpenAI y se los pasa al handler. Único archivo con imports `npm:`. |
+| `index.ts` | Entrada (`Deno.serve`). Crea los clientes de Supabase, lee las claves de Vault (con un caché de 60 s) y arma los SDK de Anthropic y de OpenAI con la clave vigente. Único archivo con imports `npm:`. |
 | `handler.ts` | Flujo HTTP: CORS, sesión, cuerpo, validación, plan y cuota, llamada a la IA (con el respaldo entre proveedores), uso y errores. |
-| `providers.ts` | Configuración de proveedores (`ai_provider_settings`), orden de los intentos y tabla de decisión del respaldo. |
+| `providers.ts` | Modelo de cada proveedor para una llamada (`callTargets`), configuración del respaldo (`ai_provider_settings`), orden de los intentos y tabla de decisión del respaldo. |
 | `openai.ts` | Traducción entre el formato de Anthropic y la Responses API de OpenAI (pedido, respuesta, uso, esquemas estrictos y errores). |
 | `validate.ts` | Validación estricta del cuerpo (protocolos 1 y 2). |
-| `quota.ts` | Lectura de la cuota (QuotaV2), del catálogo y de las funciones SQL; recorte de `max_tokens`; uso por intento; respuestas de rechazo. |
+| `quota.ts` | Lectura de la cuota (QuotaV2 y los campos de 0056: `provider`, `tier`, `wallets`), del catálogo y de las funciones SQL (con `provider`, `models`, `openaiEffort` y `switched`); recorte de `max_tokens`; uso por intento; respuestas de rechazo. |
 | `errors.ts` | Traduce las fallas de los proveedores a respuestas seguras. |
 | `policy.ts` | Política fija del servidor que va primero en el system de cada pedido. |
 | `config.ts` | Constantes: protocolos, modelos que acepta el protocolo, herramientas permitidas y su nivel de permiso, límites, CORS. |

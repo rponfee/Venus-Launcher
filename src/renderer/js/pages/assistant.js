@@ -1,11 +1,11 @@
 // Pagina del asistente de IA (#/assistant/<conversacion?>): conversaciones, chat, plan y uso (preguntas que quedan
-// por modelo y presupuesto del mes) y el panel de transparencia "Que puede hacer / Que no puede hacer".
+// por modelo y saldos de Claude y de ChatGPT, con el que esta en uso) y el panel de transparencia "Que puede hacer / Que no puede hacer".
 import { h, icon, mount, confirmDialog, ok, fail, fmtAgo, debounce, skeleton, emptyState } from '../ui.js';
 import { api } from '../store.js';
 import { t } from '../i18n.js';
 import { navigate } from '../app.js';
 import { createChat, registerPageChat, getStatus, onStatus, quotaInfo, openTransparency } from '../features/assistant.js';
-import { openPlans, usageView } from '../features/plans.js';
+import { openPlans, usageView, planDisplayName } from '../features/plans.js';
 
 export default {
   ns: ['assistant', 'plans'],
@@ -175,7 +175,7 @@ export default {
         return;
       }
       const q = st.quota || {};
-      const planLabel = q.planName || q.plan || '?';
+      const planLabel = (q.plan && planDisplayName(q)) || q.planName || '?';
       mount(
         planBox,
         h(

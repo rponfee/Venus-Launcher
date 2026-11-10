@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "보통",
   effort_high: "높음",
   effort_xhigh: "매우 높음",
+  effort_max: "최대",
+  errBudgetOut: "{family} 잔액({plan} 요금제)을 모두 사용했고 {other} 잔액도 남아 있지 않아요. 계속하려면 요금제 메뉴에서 {family} 잔액을 더 구매하거나 {other} 요금제를 구매하세요.",
+  errWallet: "AI가 사용하는 잔액을 전환하지 못했어요. 잠시 후 다시 시도해 주세요.",
 };

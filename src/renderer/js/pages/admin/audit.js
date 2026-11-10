@@ -1,37 +1,16 @@
-// Pestaña Registro: lo que hizo cada admin (admin_actions), con filtros y páginas. Exporta también cómo se
-// muestra una acción (lo usa la ficha del usuario).
-import { h, icon, mount, selectEl, emptyState } from '../../ui.js';
+// Pestaña Registro: lo que hizo cada admin (admin_actions), con filtros por tipo de acción y por admin, y páginas.
+// Exporta también cómo se muestra una acción (lo usa la ficha del usuario). Las acciones conocidas y sus grupos
+// están en team-logic.js (AUDIT_ACTIONS, AUDIT_GROUPS).
+import { h, icon, mount, emptyState } from '../../ui.js';
 import { T, call, fmtDateTime, fmtDay, fmtCents, card, errorBox, skeletonRows } from './parts.js';
 import { discountText } from './coupons.js';
+import { AUDIT_ACTIONS, AUDIT_GROUPS, auditLabelKey, auditTone, personName } from './team-logic.js';
 
 const DURATIONS = new Set(['1h', '24h', '7d', '30d', 'permanent']);
 
-const ACTIONS = [
-  'users.setPlan',
-  'users.removePlan',
-  'users.ban',
-  'users.unban',
-  'users.mute',
-  'users.unmute',
-  'users.signOut',
-  'users.resetUsage',
-  'users.delete',
-  'users.setNotes',
-  'stripe.cancelSubscription',
-  'coupons.create',
-  'coupons.addPromo',
-  'coupons.deactivatePromo',
-  'coupons.activatePromo',
-  'coupons.delete',
-  'plans.update',
-  'plans.setPrice',
-  'rank.set',
-  'klipy.key',
-];
-const KNOWN = new Set(ACTIONS);
-
 export function actionLabel(action) {
-  return KNOWN.has(action) ? T(`a_${action.replace('.', '_')}`) : action;
+  const key = auditLabelKey(action);
+  return key ? T(key) : action;
 }
 
 /** Resumen corto de los detalles (sin volcar el JSON entero). */
@@ -53,29 +32,42 @@ export function actionDetails(a) {
   if (a.action === 'plans.setPrice' && d.amount) parts.push(T('d_price', { from: d.previousAmount ? fmtCents(d.previousAmount) : '—', to: fmtCents(d.amount) }));
   if (Array.isArray(d.canceledSubscriptions) && d.canceledSubscriptions.length) parts.push(T('d_canceled', { count: d.canceledSubscriptions.length }));
   if (d.stripeActive) parts.push(T('d_stripeActive'));
+  // Equipo y rangos: de qué rango a cuál (sin rango = "—").
+  if (a.action === 'admin.grant' || a.action === 'admin.revoke') {
+    if ((d.rankFrom || null) !== (d.rankTo || null)) parts.push(T('d_rank', { from: d.rankFrom ? T(`rank_${d.rankFrom}`) : '—', to: d.rankTo ? T(`rank_${d.rankTo}`) : '—' }));
+  } else if (a.action === 'rank.set' && ('from' in d || 'to' in d)) {
+    parts.push(T('d_rank', { from: d.from ? T(`rank_${d.from}`) : '—', to: d.to ? T(`rank_${d.to}`) : '—' }));
+  }
+  if (typeof d.configured === 'boolean' && a.action.endsWith('.key')) parts.push(T(d.configured ? 'd_keySaved' : 'd_keyRemoved'));
   return parts.join(' · ');
 }
 
 export function render(root, ctx) {
-  const state = { action: '', page: 1, perPage: 50, data: null };
-  const filter = selectEl(
-    [
-      { value: '', label: T('action_all') },
-      { value: 'users.', label: T('group_users') },
-      { value: 'coupons.', label: T('group_coupons') },
-      { value: 'plans.', label: T('group_plans') },
-      { value: 'stripe.', label: T('group_stripe') },
-      ...ACTIONS.map((a) => ({ value: a, label: actionLabel(a) })),
-    ],
-    '',
-    (v) => {
-      state.action = v;
-      state.page = 1;
-      load();
-    },
-    'select',
+  const state = { action: '', admin: '', page: 1, perPage: 50, data: null };
+  // Tipo de acción: grupos primero ("Equipo (todas)"...), después cada acción con su texto.
+  const filter = h('select', { class: 'select adm-select', 'aria-label': T('filterAction') },
+    h('option', { value: '' }, T('action_all')),
+    h('optgroup', { label: T('filterGroups') }, AUDIT_GROUPS.map((g) => h('option', { value: g }, T(`group_${g.slice(0, -1)}`)))),
+    h('optgroup', { label: T('filterActions') }, AUDIT_ACTIONS.filter((x) => !x.startsWith('coupons.') && !x.startsWith('stripe.')).map((x) => h('option', { value: x }, actionLabel(x)))),
   );
-  filter.setAttribute('aria-label', T('filterAction'));
+  filter.addEventListener('change', () => {
+    state.action = filter.value;
+    state.page = 1;
+    load();
+  });
+  // Por admin: la lista del equipo (si no se puede leer, el filtro no aparece).
+  const adminSel = h('select', { class: 'select adm-select', 'aria-label': T('filterAdmin'), hidden: true }, h('option', { value: '' }, T('admin_all')));
+  adminSel.addEventListener('change', () => {
+    state.admin = adminSel.value;
+    state.page = 1;
+    load();
+  });
+  ctx.team?.()
+    .then((team) => {
+      for (const a of team.admins) adminSel.append(h('option', { value: a.userId }, personName(a)));
+      adminSel.hidden = team.admins.length < 2;
+    })
+    .catch(() => {});
   const target = h('div', { class: 'adm-filter-note', hidden: true });
   const content = h('div', { class: 'adm-audit-body' });
   const pager = h('div', { class: 'adm-pager' });
@@ -96,7 +88,7 @@ export function render(root, ctx) {
   mount(
     root,
     card(
-      { icon: 'history', title: T('auditTitle'), sub: T('auditSub'), actions: [filter] },
+      { icon: 'history', title: T('auditTitle'), sub: T('auditSub'), actions: [filter, adminSel] },
       target,
       content,
       pager,
@@ -109,7 +101,7 @@ export function render(root, ctx) {
     mount(content, skeletonRows(8));
     mount(pager);
     try {
-      const data = await call('audit.list', { action: state.action || null, targetUser: state.target?.id || null, page: state.page, perPage: state.perPage });
+      const data = await call('audit.list', { action: state.action || null, adminId: state.admin || null, targetUser: state.target?.id || null, page: state.page, perPage: state.perPage });
       if (my !== seq || !root.isConnected) return;
       state.data = data;
       draw();
@@ -143,7 +135,7 @@ export function render(root, ctx) {
                 {},
                 h('td', { class: 'adm-nowrap' }, fmtDateTime(a.createdAt)),
                 h('td', { class: 'ellipsis adm-col-admin', title: a.adminEmail || '' }, a.adminEmail || '—'),
-                h('td', {}, h('span', { class: ['badge', a.action.startsWith('users.delete') || a.action.endsWith('ban') ? 'bad' : a.action.startsWith('coupons') ? 'accent' : 'info'] }, actionLabel(a.action))),
+                h('td', {}, h('span', { class: ['badge', auditTone(a.action)] }, actionLabel(a.action))),
                 h(
                   'td',
                   { class: 'ellipsis adm-col-target' },

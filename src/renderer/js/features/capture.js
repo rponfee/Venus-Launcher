@@ -1,8 +1,11 @@
-// Clips y capturas en toda la interfaz: avisos al guardar (con "Ver"), logros first_screenshot / first_clip, el
-// plan (Venus Premium = repeticion de 5 minutos), la señal 'media-share' de un amigo (aviso con "Ver") y el panel de
-// Ajustes: atajos, repeticion instantanea, clips automaticos, calidad, fps, audio, avisos y carpeta.
-// Contrato: startup() (idempotente), capturePanel() -> Element (con .destroy()).
-// Canales: capture:status, capture:setPremium, capture:testShortcut, capture:openFolder; eventos capture:saved,
+// Clips y capturas en toda la interfaz: avisos al guardar (con "Ver"), logros first_screenshot / first_clip, la
+// señal 'media-share' de un amigo (aviso con "Ver") y el panel de Ajustes: atajos, repeticion instantanea (30 s a 30
+// minutos, para todos), clips automaticos, calidad (presets Liviano / Equilibrado / Maximo o manual: resolucion, fps
+// y calidad de imagen, con lo que ocupa en disco), largo maximo de una grabacion, audio, avisos y carpeta.
+// Las cuentas (bitrate, disco, presets, que se graba de verdad) las hace el proceso principal (capture/logic.js) y
+// llegan en capture:status: aca solo se muestran.
+// Contrato: startup() (idempotente), capturePanel() -> Element (con .destroy()), fmtLength(segundos) -> "5 min".
+// Canales: capture:status, capture:testShortcut, capture:openFolder, perf:system; eventos capture:saved,
 // capture:state y capture:notice.
 import { h, icon, mount, ok, fail, toast, ensureCss, loading, switchEl, setBusy, fmtBytes, modal } from '../ui.js';
 import { store, api } from '../store.js';
@@ -12,7 +15,13 @@ import { cloud } from '../cloud.js';
 
 const NS = 'capture';
 const ACTIONS = ['replay', 'record', 'screenshot'];
-const QUALITIES = ['720p', '1080p', 'native'];
+const QUALITIES = ['720p', '1080p', '1440p', '2160p', 'native']; // si capture:status no trae la lista
+const FPS_LIST = [30, 45, 60, 80, 120];
+const LEVELS = ['low', 'medium', 'high'];
+const REPLAY_LENGTHS = [30, 60, 120, 300, 600, 900, 1800];
+const RECORD_LIMITS = [0, 15, 30, 60, 120, 240];
+const PRESETS = ['light', 'balanced', 'max'];
+const CODEC_NAME = { av1: 'AV1', h264: 'H.264', vp9: 'VP9', vp8: 'VP8' };
 const AUTO_TYPES = ['death', 'advancement', 'boss'];
 const AUTO_COOLDOWNS = [15, 30, 60, 120, 300];
 const AUTO_LIMITS = [5, 10, 20, 50];
@@ -58,24 +67,27 @@ function onSaved(evt) {
   toast('good', title, msg, 6000);
 }
 
-// ---------- Plan (repeticion de 5 minutos con Venus Premium) ----------
+// ---------- Largos ----------
 
-async function syncPremium() {
-  let premium = null;
-  try {
-    premium = await import('./premium.js');
-  } catch {
-    premium = null; // todavia no existe: la repeticion queda en 60 s
-  }
-  const push = (v) => api.invoke('capture:setPremium', v === true).catch(() => {});
-  if (typeof premium?.isPremium !== 'function') return;
-  try {
-    push(await premium.isPremium());
-  } catch {
-    push(false);
-  }
-  if (typeof premium.onPremiumChange === 'function') premium.onPremiumChange((v) => push(v));
+// "30 s", "5 min", "1 h", "1 h 30 min" (largo de la repeticion, de un clip o limite de una grabacion)
+export function fmtLength(seconds) {
+  const sec = Math.max(0, Math.round(Number(seconds) || 0));
+  if (sec < 60) return t('capture.lenSeconds', { n: sec });
+  const min = Math.round(sec / 60);
+  if (min < 60) return t('capture.lenMinutes', { n: min });
+  const hours = Math.floor(min / 60);
+  return min % 60 ? `${t('capture.lenHours', { n: hours })} ${t('capture.lenMinutes', { n: min % 60 })}` : t('capture.lenHours', { n: hours });
 }
+
+// "1:05" de lo que hay en el buffer
+function clockOf(seconds) {
+  const sec = Math.max(0, Math.round(Number(seconds) || 0));
+  const m = Math.floor(sec / 60);
+  return `${m}:${String(sec % 60).padStart(2, '0')}`;
+}
+
+const qualityLabel = (q) => t(`capture.quality_${q}`);
+const mbps = (bps) => (Math.round((Number(bps) || 0) / 1e5) / 10).toLocaleString();
 
 // ---------- Señal 'media-share' de un amigo ----------
 
@@ -159,7 +171,6 @@ export async function startup() {
     if (n?.message) toast(n.level === 'error' ? 'bad' : 'info', t('capture.noticeTitle'), String(n.message), n.level === 'error' ? 7000 : 4500);
   });
   listenShares();
-  syncPremium();
 }
 
 // ---------- Panel de Ajustes ----------
@@ -265,6 +276,15 @@ export function capturePanel() {
 
 async function buildPanel(root, offs, isDisposed) {
   await store.refreshSettings().catch(() => {});
+  // Datos de la PC (perf): en una PC modesta o con el modo liviano se avisa si la calidad elegida es pesada
+  let tier = null;
+  api
+    .invoke('perf:system')
+    .then((sys) => {
+      tier = sys?.tier || null;
+      if (!isDisposed() && (tier === 'low' || tier === 'mid')) draw();
+    })
+    .catch(() => {});
   let st = null;
   try {
     st = await api.invoke('capture:status');
@@ -309,13 +329,16 @@ async function buildPanel(root, offs, isDisposed) {
     if (!st) return mount(statusLine);
     let text;
     let cls = '';
-    if (st.recording?.active) {
+    if (st.available === false) {
+      text = t('capture.platformUnavailable');
+      cls = 'warn';
+    } else if (st.recording?.active) {
       text = t('capture.statusRecording');
       cls = 'bad';
     } else if (st.game && st.replay?.error) {
       text = t('capture.statusReplayNoDisk');
       cls = 'warn';
-    } else if (st.game) text = st.replay?.active ? t('capture.statusReplayDisk', { seconds: st.replay.buffered, max: st.replaySeconds, disk: fmtBytes(st.replay.disk || 0) }) : t('capture.statusGame');
+    } else if (st.game) text = st.replay?.active ? t('capture.statusReplayBuffer', { buffered: clockOf(st.replay.buffered), length: fmtLength(st.replaySeconds), disk: fmtBytes(st.replay.disk || 0) }) : t('capture.statusGame');
     else text = t('capture.statusIdle');
     if (st.game || st.recording?.active) cls = cls || 'good';
     mount(statusLine, h('span', { class: ['pill', cls] }, h('span', { class: 'cap-dot', 'aria-hidden': 'true' }), text));
@@ -377,12 +400,18 @@ async function buildPanel(root, offs, isDisposed) {
     return h(
       'div',
       { class: 'cap-sc-row' },
-      h('div', { class: 'cap-sc-label' }, h('div', { class: 'tr-title' }, t(`capture.action_${action}`)), h('div', { class: 'tr-sub' }, t(`capture.action_${action}Sub`, { seconds: st?.replaySeconds || 60 }))),
+      h('div', { class: 'cap-sc-label' }, h('div', { class: 'tr-title' }, t(`capture.action_${action}`)), h('div', { class: 'tr-sub' }, actionSub(action))),
       keys,
       h('div', { class: 'cap-sc-actions' }, change, clear),
       warn,
       err,
     );
+  }
+
+  function actionSub(action) {
+    if (action === 'replay') return t('capture.action_replayLenSub', { length: fmtLength(st?.replaySeconds || 60) });
+    if (action === 'record' && cfg().recordLimit) return t('capture.action_recordLimitSub', { length: fmtLength(cfg().recordLimit * 60) });
+    return t(`capture.action_${action}Sub`);
   }
 
   // ---------- Dibujo ----------
@@ -405,14 +434,75 @@ async function buildPanel(root, offs, isDisposed) {
     else if (a.enabled) {
       for (const type of AUTO_TYPES) rows.push(toggleRow(`auto-${type}`, t(`capture.auto_${type}`), t(`capture.auto_${type}Sub`), a[type] !== false, (v) => save({ auto: { [type]: v } })));
       const seconds = (s) => (s < 60 ? t('capture.autoSecondsValue', { seconds: s }) : t('capture.autoMinutesValue', { minutes: s / 60 }));
+      // Un clip no puede durar mas que lo que guarda la repeticion
+      const lengths = AUTO_LENGTHS.filter((s) => s <= maxSeconds);
       rows.push(
-        h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.autoLength')), segmented(t('capture.autoLength'), AUTO_LENGTHS.filter((s) => s <= maxSeconds).map((s) => ({ value: s, label: seconds(s) })), Math.min(a.seconds || 60, maxSeconds), (v) => save({ auto: { seconds: Number(v) } }))),
+        h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.autoLength')), segmented(t('capture.autoLength'), (lengths.length ? lengths : [maxSeconds]).map((s) => ({ value: s, label: seconds(s) })), Math.min(a.seconds || 60, maxSeconds), (v) => save({ auto: { seconds: Number(v) } }))),
         h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.autoCooldown')), segmented(t('capture.autoCooldown'), AUTO_COOLDOWNS.map((s) => ({ value: s, label: seconds(s) })), a.cooldown, (v) => save({ auto: { cooldown: Number(v) } }))),
         h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.autoLimit')), segmented(t('capture.autoLimit'), AUTO_LIMITS.map((n) => ({ value: n, label: String(n) })), a.maxPerSession, (v) => save({ auto: { maxPerSession: Number(v) } }))),
         h('p', { class: 'cap-help' }, t('capture.autoHelp')),
       );
     }
     return h('div', { class: 'cap-section' }, h('div', { class: 'cap-section-title', role: 'heading', 'aria-level': '3' }, icon('sparkles'), t('capture.autoTitle')), master, rows);
+  }
+
+  // Lo que ocupa la repeticion con lo elegido, y si no entra en el disco
+  function diskNote() {
+    const disk = fmtBytes(st?.diskEstimate || 0);
+    const known = Number.isFinite(st?.diskFree) && st.diskFree !== null;
+    if (known && st.diskOk === false) return h('div', { class: 'notice bad cap-disk', role: 'alert' }, icon('alert'), h('div', {}, t('capture.replayNoRoom', { disk, free: fmtBytes(st.diskFree) })));
+    // El buffer entra, pero guardar el tramo entero necesita otro tanto en el mismo disco
+    if (known && st.diskSaveOk === false) return h('div', { class: 'notice cap-disk' }, icon('alert'), h('div', {}, t('capture.replaySaveTight', { disk, free: fmtBytes(st.diskFree) })));
+    return h('p', { class: 'cap-help cap-disk' }, icon('drive'), h('span', {}, known ? t('capture.replayDiskLine', { disk, free: fmtBytes(st.diskFree) }) : t('capture.replayDiskLineNoFree', { disk })));
+  }
+
+  // Presets de un clic + manual: resolucion, fps y calidad de imagen
+  function qualitySection(c, opts) {
+    const active = st?.preset || 'custom';
+    const presets = st?.presets || [];
+    const presetBtn = (id) => {
+      const p = presets.find((x) => x.id === id);
+      const on = active === id;
+      return h(
+        'button',
+        { type: 'button', class: ['cap-preset', on ? 'active' : ''], 'data-cap-id': `preset-${id}`, 'aria-pressed': String(on), onclick: () => p && save({ quality: p.quality, fps: p.fps, level: p.level }) },
+        h('span', { class: 'cap-preset-name' }, t(`capture.preset_${id}`)),
+        p ? h('span', { class: 'cap-preset-sub' }, t('capture.presetSub', { quality: qualityLabel(p.quality), fps: p.fps })) : null,
+        p ? h('span', { class: 'cap-preset-disk' }, t('capture.presetDisk', { disk: fmtBytes(p.disk || 0), length: fmtLength(seconds()) })) : null,
+      );
+    };
+    const seconds = () => st?.replaySeconds || 60;
+    const plan = st?.plan || null;
+    const live = st?.live || null;
+    const notes = [];
+    if (st?.degraded) notes.push(h('div', { class: 'notice warn' }, icon('alert'), h('div', {}, t('capture.degradedNote', { quality: qualityLabel(st.degraded.quality), fps: st.degraded.fps }))));
+    const lite = document.documentElement.hasAttribute('data-ui-lite');
+    if (st?.heavy && (tier === 'low' || tier === 'mid' || lite)) notes.push(h('div', { class: 'notice warn' }, icon('alert'), h('div', {}, t('capture.heavyWarn'))));
+    if (plan?.notes?.includes('window')) notes.push(h('p', { class: 'cap-help' }, icon('info'), h('span', {}, t('capture.noteWindow', { quality: qualityLabel(c.quality), width: plan.width, height: plan.height }))));
+    if (plan?.notes?.includes('monitor') && st?.display?.hz) notes.push(h('p', { class: 'cap-help' }, icon('info'), h('span', {}, t('capture.noteMonitor', { hz: st.display.hz }))));
+    // Por la GPU no se baja nada: si salen menos cuadros, es el juego (o su VSync) o la pantalla
+    if (live?.hardware && Number.isFinite(live.fps) && live.fps !== null && live.fps < (plan?.fps || 0) * 0.85) notes.push(h('p', { class: 'cap-help' }, icon('info'), h('span', {}, t('capture.noteSource', { fps: Math.round(live.fps) }))));
+    const planLine = live
+      ? t('capture.planLive', { width: live.width, height: live.height, fps: Number.isFinite(live.fps) && live.fps !== null ? Math.round(live.fps) : plan?.fps || c.fps, codec: t(live.hardware ? 'capture.codecHw' : 'capture.codecSw', { codec: CODEC_NAME[live.codec] || live.codec || '?' }), mbps: mbps(live.bitrate) })
+      : plan
+        ? t('capture.planLine', { width: plan.width, height: plan.height, fps: plan.fps, mbps: mbps(plan.expected) })
+        : null;
+    return h(
+      'div',
+      { class: 'cap-section' },
+      h('div', { class: 'cap-section-title', role: 'heading', 'aria-level': '3' }, icon('monitor'), t('capture.qualityTitle')),
+      h('div', { class: 'cap-presets', role: 'group', 'aria-label': t('capture.presetsLabel') }, PRESETS.map(presetBtn)),
+      h('p', { class: 'cap-help' }, active === 'custom' ? t('capture.presetCustom') : t('capture.presetHelp')),
+      h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.resolution')), segmented(t('capture.resolution'), (opts.qualities || QUALITIES).map((q) => ({ value: q, label: qualityLabel(q) })), c.quality, (v) => save({ quality: v }))),
+      h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.fps')), segmented(t('capture.fps'), (opts.fps || FPS_LIST).map((f) => ({ value: f, label: t('capture.fpsValue', { fps: f }) })), c.fps, (v) => save({ fps: Number(v) }))),
+      h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.level')), segmented(t('capture.level'), (opts.levels || LEVELS).map((l) => ({ value: l, label: t(`capture.level_${l}`) })), c.level || 'medium', (v) => save({ level: v }))),
+      planLine ? h('p', { class: 'cap-plan', role: 'status' }, icon('gauge'), h('span', {}, planLine)) : null,
+      h('p', { class: 'cap-help' }, t('capture.qualityHelp')),
+      notes,
+      h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.recordLimit')), segmented(t('capture.recordLimit'), (opts.recordLimits || RECORD_LIMITS).map((m) => ({ value: m, label: m ? fmtLength(m * 60) : t('capture.recordLimitNone') })), c.recordLimit || 0, (v) => save({ recordLimit: Number(v) }))),
+      h('p', { class: 'cap-help' }, t('capture.recordHelp', { disk: fmtBytes(st?.recordPerMinute || 0) })),
+      st?.audioAvailable === false ? null : toggleRow('audio', t('capture.audio'), t('capture.audioSub'), c.audio !== false, (v) => save({ audio: v })),
+    );
   }
 
   function draw() {
@@ -423,26 +513,17 @@ async function buildPanel(root, offs, isDisposed) {
     capturing = null;
     const c = cfg();
     const seconds = st?.replaySeconds || 60;
-    const premiumNote = st?.premium
-      ? h('p', { class: 'cap-note good' }, icon('crown'), h('span', {}, t('capture.premiumOnLong')))
-      : h('p', { class: 'cap-note' }, icon('crown'), h('span', {}, t('capture.premiumOffLong')), h('button', { class: 'btn sm ghost', type: 'button', onclick: () => navigate('settings/plan') }, t('capture.seePlans')));
+    const opts = st?.options || {};
     const replay = h(
       'div',
       { class: 'cap-section' },
       h('div', { class: 'cap-section-title', role: 'heading', 'aria-level': '3' }, icon('history'), t('capture.replayTitle')),
-      toggleRow('replay', t('capture.replayEnable'), t('capture.replayDiskSub', { seconds, disk: fmtBytes(st?.diskEstimate || 0) }), Boolean(c.replay), (v) => save({ replay: v })),
-      premiumNote,
+      toggleRow('replay', t('capture.replayEnable'), t('capture.replayEnableSub', { length: fmtLength(seconds) }), Boolean(c.replay), (v) => save({ replay: v })),
+      h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.replayLength')), segmented(t('capture.replayLength'), (opts.replayLengths || REPLAY_LENGTHS).map((n) => ({ value: n, label: fmtLength(n) })), seconds, (v) => save({ replaySeconds: Number(v) }))),
+      diskNote(),
     );
     const auto = autoSection(c, seconds);
-    const quality = h(
-      'div',
-      { class: 'cap-section' },
-      h('div', { class: 'cap-section-title', role: 'heading', 'aria-level': '3' }, icon('monitor'), t('capture.qualityTitle')),
-      h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.resolution')), segmented(t('capture.resolution'), QUALITIES.map((q) => ({ value: q, label: t(`capture.quality_${q}`) })), c.quality, (v) => save({ quality: v }))),
-      h('div', { class: 'cap-field' }, h('span', { class: 'cap-label' }, t('capture.fps')), segmented(t('capture.fps'), [30, 60].map((f) => ({ value: f, label: t('capture.fpsValue', { fps: f }) })), c.fps, (v) => save({ fps: Number(v) }))),
-      h('p', { class: 'cap-help' }, t('capture.qualityHelp')),
-      toggleRow('audio', t('capture.audio'), t('capture.audioSub'), c.audio !== false, (v) => save({ audio: v })),
-    );
+    const quality = qualitySection(c, opts);
     const shortcuts = h(
       'div',
       { class: 'cap-section' },
@@ -485,7 +566,8 @@ async function buildPanel(root, offs, isDisposed) {
   offs.push(() => capturing?.off());
   offs.push(
     api.on('capture:state', (next) => {
-      const shape = (s) => JSON.stringify([s?.settings, s?.premium, s?.shortcuts, s?.replaySeconds]);
+      // Se redibuja si cambia algo que se ve en el panel (no el buffer, que va en la linea de estado)
+      const shape = (s) => JSON.stringify([s?.settings, s?.shortcuts, s?.replaySeconds, s?.diskEstimate, s?.diskOk, s?.diskSaveOk, s?.plan, s?.degraded, s?.preset, s?.live && [s.live.width, s.live.height, s.live.codec, Math.round((s.live.fps || 0) / 5), Math.round((s.live.delivered || 0) / 5)]]);
       const redraw = shape(next) !== shape(st);
       st = next;
       if (isDisposed()) return;

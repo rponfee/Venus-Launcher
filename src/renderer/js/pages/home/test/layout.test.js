@@ -2,7 +2,7 @@
 // node --test "src/renderer/js/pages/home/test/*.test.js"
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BLOCKS, MAIN_BLOCKS, RAIL_BLOCKS, normalizeLayout, buildRows, moveBlock, reorder, isWide, toggleIn, visualOrder, sameLane } from '../layout.js';
+import { BLOCKS, MAIN_BLOCKS, RAIL_BLOCKS, normalizeLayout, buildRows, moveBlock, reorder, isWide, toggleIn, visualOrder, sameLane, HERO_SIZES, normalizeHero } from '../layout.js';
 
 const DEFAULT_ORDER = ['quick', 'worlds', 'featured', 'screenshots', 'news', 'server', 'friends', 'stats', 'tips'];
 
@@ -89,4 +89,27 @@ test('moveBlock: un bloque ancho salta filas enteras', () => {
 test('visualOrder recorre filas y columnas', () => {
   const l = normalizeLayout({ layout: { order: ['quick', 'worlds', 'server', 'news', 'friends'], wide: ['news'] } });
   assert.deepEqual(visualOrder(l, (id) => ['quick', 'worlds', 'server', 'news', 'friends'].includes(id)), ['quick', 'worlds', 'server', 'news', 'friends']);
+});
+
+// 6.1: tamaño de la tarjeta principal y orden guardado junto con ella
+test('normalizeHero: grande por defecto, compacta si se eligio y cualquier otra cosa vuelve a grande', () => {
+  assert.deepEqual(HERO_SIZES, ['large', 'compact']);
+  assert.equal(normalizeHero(undefined), 'large');
+  assert.equal(normalizeHero({}), 'large');
+  assert.equal(normalizeHero({ hero: 'compact' }), 'compact');
+  assert.equal(normalizeHero({ hero: 'enorme' }), 'large');
+  assert.equal(normalizeHero('compact'), 'large');
+});
+
+test('el orden del Inicio no depende del tamaño de la tarjeta principal y se mueve con el teclado', () => {
+  const home = { hero: 'compact', layout: { order: ['news', 'quick'], hidden: ['tips'], wide: [] } };
+  const l = normalizeLayout(home);
+  assert.deepEqual(l.order.slice(0, 2), ['news', 'quick']);
+  assert.equal(normalizeHero(home), 'compact');
+  // subir 'worlds' lo pone antes del vecino de arriba (los accesos rapidos, que van a lo ancho)
+  const up = moveBlock(l, 'worlds', -1);
+  assert.deepEqual(up.slice(0, 3), ['news', 'worlds', 'quick']);
+  // bajar el ultimo de una columna no hace nada
+  const last = visualOrder(l).filter((id) => !isWide(l, id) && RAIL_BLOCKS.includes(id)).pop();
+  assert.deepEqual(moveBlock(l, last, 1), l.order);
 });

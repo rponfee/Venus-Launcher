@@ -36,4 +36,7 @@ module.exports = {
   effort_medium: "中",
   effort_high: "高",
   effort_xhigh: "极高",
+  effort_max: "最高",
+  errBudgetOut: "你的 {family} 余额（{plan} 套餐）已用完，也没有剩余的 {other} 余额。要继续使用，请在“套餐”中购买更多 {family} 余额或 {other} 套餐。",
+  errWallet: "无法更改 AI 使用的余额。请稍后重试。",
 };

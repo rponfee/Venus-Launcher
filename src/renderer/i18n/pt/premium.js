@@ -13,8 +13,6 @@ export default {
   perk_effectsText: "Brilho, arco-íris e fogo para o seu nome, sem comprar na loja.",
   perk_frame: "Molduras exclusivas e título de Apoiador",
   perk_frameText: "Molduras de avatar animadas que só vêm com o Premium, e o título de Apoiador ao lado do seu nome.",
-  perk_replay: "Replay instantâneo de 5 minutos",
-  perk_replayText: "Salve os últimos 5 minutos da sua partida em vez de 60 segundos.",
   perk_ai: "Venus IA",
   perk_aiText: "O assistente com os modelos e as perguntas do seu plano, como sempre.",
   note: "O Premium dura enquanto durar o seu plano. Se você cancelar, mantém tudo o que comprou com Venus Points.",

@@ -677,14 +677,17 @@ const quotaGo = (over = {}) => ({
   timezone: 'America/Argentina/Buenos_Aires',
   ...over,
 });
+// Cuota de la 6.1 (QuotaV3): plan de Claude, con provider, tier y el id real del motor en providerModel
 const quotaPro = (over = {}) => ({
-  plan: 'pro',
+  plan: 'claude_pro',
   planName: 'Pro',
-  priceUsd: 9.25,
+  priceUsd: 18,
+  provider: 'anthropic',
+  tier: 'pro',
   status: 'active',
   models: [
-    { id: 'haiku', model: 'claude-haiku-5-5', label: 'Claude Haiku 5.5', efforts: ['low', 'medium', 'high'], daily: { used: 3, limit: 25 }, weekly: { used: 10, limit: 115 } },
-    { id: 'sonnet', model: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5', efforts: ['low', 'medium'], daily: { used: 5, limit: 5 }, weekly: { used: 12, limit: 20 } },
+    { id: 'haiku', model: 'claude-haiku-5-5', providerModel: 'claude-haiku-5-5', label: 'Claude Haiku 5.5', efforts: ['low', 'medium', 'high'], daily: { used: 3, limit: 25 }, weekly: { used: 10, limit: 115 } },
+    { id: 'sonnet', model: 'claude-sonnet-5-5', providerModel: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5', efforts: ['low', 'medium'], daily: { used: 5, limit: 5 }, weekly: { used: 12, limit: 20 } },
   ],
   budget: { usedUsd: 1.2, limitUsd: 5 },
   resets: { daily: inH(9), weekly: inH(100), monthly: inH(300) },
@@ -730,8 +733,14 @@ test('modelo y esfuerzo: iguales en todas las llamadas del turno y recordados (c
   // Valores invalidos se ignoran (queda lo recordado)
   script = steps(textStep('ok'));
   const b5 = fake.calls.length;
-  await ask(r4.conversationId, 'x', { instanceId: INST, model: 'gpt-4', effort: 'max' });
+  await ask(r4.conversationId, 'x', { instanceId: INST, model: 'gpt-4', effort: 'turbo' });
   assert.deepStrictEqual([fake.calls[b5].model, fake.calls[b5].effort], ['opus', 'low']);
+  // 'max' es el esfuerzo nuevo de la 6.1 (Claude Ultra)
+  script = steps(textStep('ok'));
+  const b6 = fake.calls.length;
+  await ask(r4.conversationId, 'y', { instanceId: INST, model: 'sonnet', effort: 'max' });
+  assert.deepStrictEqual([fake.calls[b6].model, fake.calls[b6].effort], ['sonnet', 'max']);
+  await settingsMod.set({ ai: { assistantModel: 'opus', assistantEffort: 'low' } });
 });
 
 test('eleccion recordada que el plan ya no incluye: se ajusta al plan; la explicita se respeta', async () => {
@@ -816,18 +825,128 @@ test('opciones de modelos del plan: esfuerzos, preguntas que quedan y bloqueos',
   assert.deepStrictEqual(models.fitChoice({ model: 'claude-sonnet-5-5', effort: 'LOW' }, []), { model: 'sonnet', effort: 'low' });
 });
 
-test('catalogo local (plans.json): los cuatro planes con precios, presupuestos, limites y esfuerzos', () => {
+test('catalogo local (plans.json): Claude y ChatGPT, cinco niveles cada una, con precios, saldos, tokens y esfuerzos', () => {
   const { placeholder, plans } = config.plans('es');
   assert.strictEqual(placeholder, false);
   const row = (id) => plans.find((p) => p.id === id);
-  const short = (p) => [p.priceUsd, p.budgetUsd, p.models.map((m) => `${m.id}:${m.efforts.map((e) => e[0]).join('')}:${m.daily}/${m.weekly}`).join(' ')];
-  assert.deepStrictEqual(plans.map((p) => p.id), ['basic', 'go', 'pro', 'max']);
-  assert.deepStrictEqual(short(row('basic')), [4, 2, 'haiku:lm:null/null']);
-  assert.deepStrictEqual(short(row('go')), [8, 4.5, 'haiku:lmh:null/null']);
-  assert.deepStrictEqual(short(row('pro')), [15, 8.5, 'haiku:lmh:null/null sonnet:lmh:null/null']);
-  assert.deepStrictEqual(short(row('max')), [35, 20, 'haiku:lmhx:null/null sonnet:lmhx:null/null']);
-  assert.deepStrictEqual(plans.map((p) => p.maxTokensPerRequest), [12000, 16000, 24000, 36000]);
-  assert.ok(plans.every((p) => p.models[0].id === 'haiku' && p.models[0].efforts.includes('low') && p.models[0].efforts.includes('medium')), 'Haiku con low y medium en todos los planes');
+  const short = (p) => [p.provider, p.tier, p.priceUsd, p.budgetUsd, p.maxTokensPerRequest, p.models.map((m) => `${m.id}:${m.label}:${m.efforts.map((e) => (e === 'max' ? 'M' : e[0])).join('')}`).join(' ')];
+  assert.deepStrictEqual(plans.map((p) => p.id), ['claude_basic', 'claude_go', 'claude_pro', 'claude_max', 'claude_ultra', 'basic', 'go', 'pro', 'max', 'ultra']);
+  assert.deepStrictEqual(short(row('claude_basic')), ['anthropic', 'basic', 6, 3.5, 12000, 'haiku:Haiku 5.5:lm']);
+  assert.deepStrictEqual(short(row('claude_go')), ['anthropic', 'go', 10, 6.75, 32000, 'haiku:Haiku 5.5:lmh']);
+  assert.deepStrictEqual(short(row('claude_pro')), ['anthropic', 'pro', 18, 12.5, 44000, 'haiku:Haiku 5.5:lmh sonnet:Sonnet 5.5:lmh']);
+  assert.deepStrictEqual(short(row('claude_max')), ['anthropic', 'max', 32, 26, 78000, 'haiku:Haiku 5.5:lmhx sonnet:Sonnet 5.5:lmhx']);
+  assert.deepStrictEqual(short(row('claude_ultra')), ['anthropic', 'ultra', 40, 32, 128000, 'haiku:Haiku 5.5:lmhxM sonnet:Sonnet 5.5:lmhxM']);
+  assert.deepStrictEqual(short(row('basic')), ['openai', 'basic', 6, 3.5, 12000, 'haiku:GPT-6 Luna:l']);
+  assert.deepStrictEqual(short(row('go')), ['openai', 'go', 10, 6.75, 32000, 'haiku:GPT-6 Luna:lmh']);
+  assert.deepStrictEqual(short(row('pro')), ['openai', 'pro', 18, 12.5, 44000, 'haiku:GPT-6 Luna:lmh']);
+  assert.deepStrictEqual(short(row('max')), ['openai', 'max', 32, 26, 78000, 'haiku:GPT-6 Luna:lmh sonnet:GPT-5.6 Sol:lmh']);
+  assert.deepStrictEqual(short(row('ultra')), ['openai', 'ultra', 40, 28, 128000, 'haiku:GPT-6 Luna:lmh sonnet:GPT-5.6 Sol:lmh']);
+  // El nivel es el mismo en las dos familias (claude_pro se porta como pro)
+  assert.deepStrictEqual(['claude_basic', 'basic', 'claude_ultra', 'go', 'nada', null].map((id) => models.planTier(id)), ['basic', 'basic', 'ultra', 'go', null, null]);
+  assert.deepStrictEqual([models.planFamily('claude_go'), models.planFamily('go'), models.planFamily({ plan: 'pro', provider: 'anthropic' }), models.planFamily(null)], ['anthropic', 'openai', 'anthropic', null]);
+});
+
+test('saldos de Claude y ChatGPT: walletsOf, el agotado no bloquea si el otro tiene, tope de tokens por nivel', async () => {
+  const two = quotaPro({
+    budget: { usedUsd: 12.5, limitUsd: 12.5 },
+    wallets: [
+      { provider: 'openai', plan: 'go', planName: 'Go', tier: 'go', usedUsd: 1, limitUsd: 6.75, remainingUsd: 5.75, active: false },
+      { provider: 'anthropic', plan: 'claude_pro', planName: 'Pro', tier: 'pro', usedUsd: 12.5, limitUsd: 12.5, remainingUsd: 0, active: true },
+      { provider: 'otro', plan: 'x', usedUsd: 0, limitUsd: 1, active: false },
+    ],
+  });
+  const w = models.walletsOf(two);
+  assert.deepStrictEqual(w.map((x) => [x.provider, x.plan, x.tier, x.remainingUsd, x.active]), [['anthropic', 'claude_pro', 'pro', 0, true], ['openai', 'go', 'go', 5.75, false]], 'orden fijo y solo familias conocidas');
+  assert.ok(models.modelOptions({ provider: 'backend', quota: two }).every((o) => o.blocked !== 'budget'), 'el servidor pasa solo al otro saldo');
+  const none = quotaPro({ budget: { usedUsd: 12.5, limitUsd: 12.5 }, wallets: [two.wallets[1]] });
+  assert.ok(models.modelOptions({ provider: 'backend', quota: none }).every((o) => o.blocked === 'budget'), 'sin otro saldo: bloqueado');
+  assert.deepStrictEqual(models.walletsOf(quotaGo()), [], 'cuota vieja: sin saldos');
+  // Etiquetas: siempre la label de la cuota; el id real sale de providerModel (model sigue siendo el de Claude)
+  const gpt = { plan: 'max', planName: 'Max', provider: 'openai', tier: 'max', status: 'active', models: [{ id: 'haiku', model: 'claude-haiku-5-5', providerModel: 'gpt-6-luna', label: 'GPT-6 Luna', efforts: ['low', 'medium', 'high'] }, { id: 'sonnet', model: 'claude-sonnet-5-5', providerModel: 'gpt-5.6-sol', label: 'GPT-5.6 Sol', efforts: ['low'] }], budget: { usedUsd: 0, limitUsd: 26 } };
+  const opts = models.modelOptions({ provider: 'backend', quota: gpt });
+  assert.deepStrictEqual(opts.map((o) => [o.id, o.model, o.label]), [['haiku', 'gpt-6-luna', 'GPT-6 Luna'], ['sonnet', 'gpt-5.6-sol', 'GPT-5.6 Sol']]);
+  // Sin label (servidor viejo): el nombre del modelo de esa familia, nunca armado con la clave
+  assert.strictEqual(ai.modelLabel('sonnet', { provider: 'openai', models: [{ id: 'sonnet' }] }), 'GPT-5.6 Sol');
+  assert.strictEqual(ai.modelLabel('haiku', { provider: 'anthropic', models: [] }), 'Haiku 5.5');
+  // Tope de tokens por respuesta: el de la cuota; sin el, el del nivel (claude_max = max = 78.000)
+  fake.quota = { plan: 'claude_max', provider: 'anthropic', tier: 'max', status: 'active', models: [] };
+  script = steps(textStep('ok'));
+  let b = fake.calls.length;
+  await ask(null, 'tokens');
+  assert.strictEqual(fake.calls[b].maxTokens, 78000);
+  fake.quota = { plan: 'ultra', status: 'active', models: [], maxTokensPerRequest: 128000 };
+  script = steps(textStep('ok'));
+  b = fake.calls.length;
+  await ask(null, 'tokens ultra');
+  assert.strictEqual(fake.calls[b].maxTokens, 128000);
+  fake.quota = null;
+});
+
+test('aviso de cambio de saldo (switched) en el chat: una linea por cambio, tambien con error', async () => {
+  script = steps({ ...textStep('Sigo con ChatGPT.'), switched: { from: 'anthropic', to: 'openai', reason: 'budget' } });
+  const r = await ask(null, 'Hola');
+  const sw = evs(r.conversationId, 'switched');
+  assert.strictEqual(sw.length, 1);
+  assert.deepStrictEqual([sw[0].from, sw[0].to, sw[0].reason, sw[0].turnId], ['anthropic', 'openai', 'budget', r.turnId]);
+  const conv = await agent.conversation(r.conversationId);
+  assert.ok(conv.events.some((e) => e.type === 'switched'), 'queda guardado en la conversacion');
+  // Varias llamadas del mismo turno con el mismo aviso: una sola linea; un aviso invalido no muestra nada
+  script = steps({ ...toolsStep(toolUse('list_instances', {})), switched: { from: 'openai', to: 'anthropic', reason: 'noplan' } }, { ...textStep('ok'), switched: { from: 'openai', to: 'anthropic', reason: 'noplan' } });
+  const r2 = await ask(null, 'Otra');
+  assert.deepStrictEqual(evs(r2.conversationId, 'switched').map((e) => e.reason), ['noplan']);
+  script = steps({ ...textStep('ok'), switched: { from: 'openai', to: 'openai' } });
+  const r3 = await ask(null, 'Nada');
+  assert.strictEqual(evs(r3.conversationId, 'switched').length, 0);
+  // Error con cuota que igual trae switched (por ejemplo, el otro saldo tampoco alcanzaba para seguir)
+  script = () => Object.assign(new Error(t('ai.errQuotaTurn', { plan: 'ChatGPT Go' })), { code: 'quota', reason: 'turn', switched: { from: 'anthropic', to: 'openai', reason: 'budget' } });
+  const r4 = await ask(null, 'Larga');
+  assert.strictEqual(evs(r4.conversationId, 'switched').length, 1);
+  assert.strictEqual(evs(r4.conversationId, 'error').at(-1).code, 'quota');
+  // El cambio llega en un 400 de firma de thinking: el reintento no lo vuelve a traer, igual se avisa
+  let n = 0;
+  script = () => (++n === 1 ? Object.assign(new Error('Error de la IA (400): messages.1.content.0: Invalid `signature` in `thinking` block'), { switched: { from: 'openai', to: 'anthropic', reason: 'budget' } }) : textStep('ok'));
+  const r5 = await ask(null, 'Firma');
+  assert.deepStrictEqual(evs(r5.conversationId, 'switched').map((e) => [e.from, e.to]), [['openai', 'anthropic']]);
+  assert.strictEqual(evs(r5.conversationId, 'done').at(-1).stopReason, 'end_turn');
+});
+
+test('cambio de saldo a mitad del turno: las llamadas siguientes usan el modelo y el esfuerzo del plan nuevo', async () => {
+  const saved = (await settingsMod.get()).ai;
+  // Claude Pro con Sonnet; la primera llamada pasa a un plan sin Sonnet ni 'high' (modules/ai guarda la cuota nueva)
+  fake.quota = quotaPro();
+  script = steps(
+    () => {
+      fake.quota = quotaGo();
+      return { ...toolsStep(toolUse('list_instances', {})), switched: { from: 'anthropic', to: 'openai', reason: 'budget' } };
+    },
+    textStep('ok'),
+  );
+  const b = fake.calls.length;
+  const r = await ask(null, 'Con Sonnet', { instanceId: INST, model: 'sonnet', effort: 'high' });
+  const calls = fake.calls.slice(b);
+  assert.strictEqual(calls.length, 2);
+  assert.deepStrictEqual([calls[0].model, calls[0].effort], ['sonnet', 'high']);
+  assert.deepStrictEqual([calls[1].model, calls[1].effort], ['haiku', 'medium'], 'el modelo y el esfuerzo del plan nuevo');
+  assert.strictEqual(calls[1].turnId, r.turnId);
+  assert.strictEqual(evs(r.conversationId, 'done').at(-1).stopReason, 'end_turn');
+  assert.deepStrictEqual([evs(r.conversationId, 'done').at(-1).model, (await agent.getConv(r.conversationId)).model], ['haiku', 'haiku']);
+  // Sin switched (aviso repetido que modules/ai descarto, o el selector del chat): alcanza con que cambie el plan
+  fake.quota = quotaPro();
+  script = steps(() => {
+    fake.quota = quotaGo();
+    return toolsStep(toolUse('list_instances', {}));
+  }, textStep('ok'));
+  const b2 = fake.calls.length;
+  await ask(null, 'Otra con Sonnet', { instanceId: INST, model: 'sonnet', effort: 'low' });
+  assert.deepStrictEqual(fake.calls.slice(b2).map((c) => [c.model, c.effort]), [['sonnet', 'low'], ['haiku', 'low']]);
+  // Mismo plan en todo el turno: no se toca la eleccion explicita
+  fake.quota = quotaGo();
+  script = steps(toolsStep(toolUse('list_instances', {})), textStep('ok'));
+  const b3 = fake.calls.length;
+  await ask(null, 'Opus igual', { instanceId: INST, model: 'opus', effort: 'high' });
+  assert.deepStrictEqual(fake.calls.slice(b3).map((c) => [c.model, c.effort]), [['opus', 'high'], ['opus', 'high']]);
+  fake.quota = null;
+  await settingsMod.set({ ai: { assistantModel: saved?.assistantModel, assistantEffort: saved?.assistantEffort } });
 });
 
 test('clasificacion de errores de la IA', () => {
@@ -899,10 +1018,10 @@ test('ai.js: protocolo 2 con modelo y esfuerzo (asistente, text y json) y evento
   assert.strictEqual(c1.headers.get('apikey'), 'anon-key');
   assert.deepStrictEqual(c1.body.client, { app: 'venus-launcher', protocol: 2 });
   assert.deepStrictEqual([c1.body.task, c1.body.model, c1.body.effort, c1.body.turn_id, c1.body.max_tokens], ['assistant', 'sonnet', 'high', 't-1', 16000]);
-  assert.deepStrictEqual([r1.model, r1.via, r1.quota.plan], ['claude-sonnet-5-5', 'backend', 'pro']);
+  assert.deepStrictEqual([r1.model, r1.via, r1.quota.plan, r1.switched], ['claude-sonnet-5-5', 'backend', 'claude_pro', null]);
   assert.deepStrictEqual(r1.served_by, { provider: 'anthropic', model: 'claude-sonnet-5-5', failover: false }, 'served_by llega tal cual');
   assert.ok(net.calls[0].url.startsWith('https://proyecto.supabase.co/'), 'nunca el proyecto guardado en settings.cloud');
-  assert.ok(uiEvents.some(([ch, q]) => ch === 'ai:quota' && q.plan === 'pro'), 'la cuota llega a la interfaz');
+  assert.ok(uiEvents.some(([ch, q]) => ch === 'ai:quota' && q.plan === 'claude_pro'), 'la cuota llega a la interfaz');
   // Asistente sin modelo: no se manda (el backend usa el primero del plan); esfuerzo medio por defecto
   net.queue.push(okMsg());
   await ai.messages({ messages: userMsgs, turnId: 't-2' });
@@ -915,7 +1034,19 @@ test('ai.js: protocolo 2 con modelo y esfuerzo (asistente, text y json) y evento
   net.queue.push(reply(200, { message: { content: [{ type: 'text', text: '{"a":1}' }], stop_reason: 'end_turn', usage: {}, model: 'claude-opus-5-5' }, parsed: { a: 1 }, quota: quotaPro() }));
   assert.deepStrictEqual(await ai.json({ prompt: 'x', schema: { type: 'object' }, model: 'claude-opus-5-5' }), { a: 1 });
   assert.deepStrictEqual([net.calls[3].body.task, net.calls[3].body.model, net.calls[3].body.effort], ['json', 'opus', 'medium']);
-  assert.strictEqual(ai.cachedQuota().plan, 'pro');
+  assert.strictEqual(ai.cachedQuota().plan, 'claude_pro');
+  // switched: el texto de otras funciones lo avisa a la interfaz UNA vez; el asistente lo recibe en la respuesta
+  const switchedMsg = () => reply(200, { message: { content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: {}, model: 'gpt-6-luna' }, quota: quotaPro(), switched: { from: 'anthropic', to: 'openai', reason: 'budget' } });
+  const before = uiEvents.length;
+  net.queue.push(switchedMsg(), switchedMsg());
+  await Promise.all([ai.text({ prompt: 'a' }), ai.text({ prompt: 'b' })]);
+  const toasts = uiEvents.slice(before).filter(([ch]) => ch === 'ai:switched');
+  assert.strictEqual(toasts.length, 1, 'llamadas simultaneas con el mismo cambio: un solo aviso');
+  assert.deepStrictEqual(toasts[0][1], { from: 'anthropic', to: 'openai', reason: 'budget', task: 'text' });
+  net.queue.push(reply(200, { message: { content: [], stop_reason: 'end_turn', usage: {}, model: 'claude-haiku-5-5' }, quota: quotaPro(), switched: { from: 'openai', to: 'anthropic', reason: 'noplan' } }));
+  const r9 = await ai.messages({ messages: userMsgs, turnId: 't-9' });
+  assert.deepStrictEqual(r9.switched, { from: 'openai', to: 'anthropic', reason: 'noplan' });
+  assert.strictEqual(uiEvents.slice(before).filter(([ch]) => ch === 'ai:switched').length, 1, 'el asistente no muestra el aviso general');
 });
 
 test('ai.js: 403 plan en una tarea interna se reintenta UNA vez con el primer modelo del plan; el asistente no', async () => {
@@ -944,10 +1075,10 @@ test('ai.js: 403 plan en una tarea interna se reintenta UNA vez con el primer mo
   assert.strictEqual(e.code, 'plan');
   assert.strictEqual(net.calls.length - n, 2);
   // Asistente: sin reintento; el error nombra el modelo y el plan
-  e = await failWith(reply(403, { error: 'plan', reason: 'model', model: 'opus', quota: quotaGo() }), () => ai.messages({ messages: userMsgs, model: 'opus', effort: 'high', turnId: 'ta-1' }));
-  assert.deepStrictEqual([e.code, e.reason, e.model], ['plan', 'model', 'opus']);
-  assert.strictEqual(e.message, t('ai.errPlanModel', { plan: 'Go', model: 'Claude Opus 5.5' }));
-  assert.strictEqual(net.calls.at(-1).body.model, 'opus');
+  e = await failWith(reply(403, { error: 'plan', reason: 'model', model: 'sonnet', quota: quotaGo() }), () => ai.messages({ messages: userMsgs, model: 'sonnet', effort: 'high', turnId: 'ta-1' }));
+  assert.deepStrictEqual([e.code, e.reason, e.model], ['plan', 'model', 'sonnet']);
+  assert.strictEqual(e.message, t('ai.errPlanModel', { plan: 'Go', model: 'GPT-5.6 Sol' }), 'cuota vieja (sin provider) = ChatGPT');
+  assert.strictEqual(net.calls.at(-1).body.model, 'sonnet');
   e = await failWith(reply(403, { error: 'plan', reason: 'effort', model: 'haiku', quota: quotaGo() }), () => ai.messages({ messages: userMsgs, model: 'haiku', effort: 'high' }));
   assert.deepStrictEqual([e.code, e.reason, e.model, e.effort], ['plan', 'effort', 'haiku', 'high']);
   assert.strictEqual(e.message, t('ai.errPlanEffort', { plan: 'Go', model: 'Claude Haiku 5.5', effort: t('ai.effort_high') }));
@@ -970,9 +1101,13 @@ test('ai.js: errores del backend (sin plan, cuota por modelo y presupuesto, sesi
   assert.ok(matches(e.message, 'ai.errQuotaWeekly') && e.message.includes('Claude Sonnet 5.5'), e.message);
   e = await failWith(reply(429, { error: 'quota', reason: 'budget', quota: q }));
   assert.deepStrictEqual([e.code, e.reason, e.resetAt], ['quota', 'budget', q.resets.monthly]);
-  assert.ok(matches(e.message, 'ai.errQuotaBudget') && e.message.includes('Pro'), e.message);
+  assert.strictEqual(e.message, t('ai.errBudgetOut', { plan: 'Claude Pro', family: 'Claude', other: 'ChatGPT' }), 'sin ningun saldo: comprar mas o el otro motor');
+  e = await failWith(reply(429, { error: 'quota', reason: 'budget', quota: quotaGo() }));
+  assert.ok(matches(e.message, 'ai.errQuotaBudget') && e.message.includes('Go'), 'cuota vieja: el texto de siempre');
   e = await failWith(reply(429, { error: 'quota', reason: 'turn', quota: q }));
-  assert.deepStrictEqual([e.code, e.message], ['quota', t('ai.errQuotaTurn', { plan: 'Pro' })]);
+  assert.deepStrictEqual([e.code, e.message], ['quota', t('ai.errQuotaTurn', { plan: 'Claude Pro' })]);
+  e = await failWith(reply(429, { error: 'quota', reason: 'budget', quota: q, switched: { from: 'anthropic', to: 'openai', reason: 'budget' } }), () => ai.messages({ messages: userMsgs }));
+  assert.deepStrictEqual(e.switched, { from: 'anthropic', to: 'openai', reason: 'budget' }, 'los errores con cuota tambien traen switched');
   e = await failWith(reply(429, { error: 'quota', reason: 'rate', quota: q }));
   assert.deepStrictEqual([e.code, e.reason, e.message], ['ratelimit', 'rate', t('ai.errQuotaRate')]);
   e = await failWith(reply(429, { error: 'quota', reason: 'daily', quota: { plan: 'pro', planName: 'Pro' } }));
@@ -1012,10 +1147,11 @@ test('ai.js: status() con GET (cuota + catalogo), cache de 5 minutos y cambio de
   const st = await ai.status();
   assert.strictEqual(net.calls.length, 1);
   assert.deepStrictEqual([net.calls[0].method, net.calls[0].body], ['GET', null]);
-  assert.deepStrictEqual([st.provider, st.signedIn, st.cloudConfigured, st.enabled, st.quota.plan, st.model], ['backend', true, true, true, 'pro', 'claude-sonnet-5-5']);
+  assert.deepStrictEqual([st.provider, st.signedIn, st.cloudConfigured, st.enabled, st.quota.plan, st.model, st.planFamily, st.planTier], ['backend', true, true, true, 'claude_pro', 'claude-sonnet-5-5', 'anthropic', 'pro']);
   assert.deepStrictEqual(st.plans, CATALOG);
-  assert.deepStrictEqual(st.efforts, ['low', 'medium', 'high']);
-  assert.ok(st.models.some((m) => m.id === 'claude-haiku-5-5' && m.alias === 'haiku' && m.label === 'Claude Haiku 5.5'));
+  assert.deepStrictEqual(st.efforts, ['low', 'medium', 'high', 'xhigh', 'max']);
+  assert.ok(st.models.some((m) => m.id === 'claude-haiku-5-5' && m.alias === 'haiku' && m.provider === 'anthropic'));
+  assert.ok(st.models.some((m) => m.id === 'gpt-5.6-sol' && m.alias === 'sonnet' && m.provider === 'openai'));
   await ai.status();
   assert.strictEqual(net.calls.length, 1, 'dentro de los 5 minutos no se vuelve a pedir');
   net.queue.push(reply(200, { quota: quotaPro() }));
@@ -1033,6 +1169,17 @@ test('ai.js: status() con GET (cuota + catalogo), cache de 5 minutos y cambio de
   assert.strictEqual(net.calls.length, 4);
   assert.strictEqual(net.calls[3].headers.get('authorization'), 'Bearer token-u8');
   assert.strictEqual(st3.quota.plan, 'go');
+  assert.deepStrictEqual([st3.planFamily, st3.planTier, st3.model], ['openai', 'go', 'gpt-6-luna'], 'cuota vieja: ChatGPT');
+  // Elegir el saldo: RPC ai_use_wallet con la sesion del usuario; la cuota que devuelve pasa a la interfaz
+  net.queue.push(reply(200, { ...quotaPro(), wallets: [{ provider: 'anthropic', plan: 'claude_pro', active: true, usedUsd: 1, limitUsd: 12.5 }] }));
+  const used = await ai.useWallet('anthropic');
+  assert.strictEqual(net.calls.at(-1).url, 'https://proyecto.supabase.co/rest/v1/rpc/ai_use_wallet');
+  assert.deepStrictEqual([net.calls.at(-1).method, net.calls.at(-1).body, net.calls.at(-1).headers.get('authorization')], ['POST', { p_provider: 'anthropic' }, 'Bearer token-u8']);
+  assert.strictEqual(used.plan, 'claude_pro');
+  assert.strictEqual(ai.cachedQuota().plan, 'claude_pro');
+  await assert.rejects(() => ai.useWallet('gemini'), (err) => err.message === t('ai.errWallet'));
+  net.queue.push(reply(404, { code: 'PGRST202' }));
+  await assert.rejects(() => ai.useWallet('openai'), (err) => err.code === 'backend');
   // Sin sesion: sin IA (y sin cuota)
   await secure.remove('ui:sb.venus-auth');
   const st4 = await ai.status();
@@ -1086,12 +1233,13 @@ test('assistant:status (modo demostracion): opciones de modelos, eleccion, presu
   await settingsMod.set({ ai: { assistantModel: 'opus', assistantEffort: 'high' } });
   const st = await handlers['assistant:status']({});
   assert.strictEqual(st.fake, true);
-  assert.deepStrictEqual(st.modelOptions.map((o) => o.id), ['haiku', 'sonnet']);
-  assert.ok(st.modelOptions.every((o) => o.efforts.length === 3 && typeof o.remaining === 'number' && 'daily' in o && 'weekly' in o && 'blocked' in o));
+  assert.deepStrictEqual(st.modelOptions.map((o) => [o.id, o.label]), [['haiku', 'Haiku 5.5'], ['sonnet', 'Sonnet 5.5']]);
+  assert.ok(st.modelOptions.every((o) => o.efforts.length === 5 && o.efforts.includes('max') && 'daily' in o && 'weekly' in o && 'blocked' in o));
   assert.deepStrictEqual(st.selection, { model: 'haiku', effort: 'high' }, 'opus no esta en el plan: el primero, con el esfuerzo pedido');
-  assert.deepStrictEqual([st.plansSource, st.plansPlaceholder, st.plans.length, st.needsPlan], ['local', false, 6, false]);
-  assert.ok(st.budget && st.budget.limitUsd === 12 && st.budget.remainingUsd > 0);
-  assert.ok(st.resets && st.resets.daily && st.resets.weekly && st.resets.monthly);
+  assert.deepStrictEqual([st.plansSource, st.plansPlaceholder, st.plans.length, st.needsPlan, st.planFamily, st.planTier], ['backend', false, 10, false, 'anthropic', 'ultra']);
+  assert.ok(st.budget && st.budget.limitUsd === 32 && st.budget.remainingUsd > 0);
+  assert.deepStrictEqual(st.wallets.map((w) => [w.provider, w.plan, w.active]), [['anthropic', 'claude_ultra', true]]);
+  assert.ok(st.resets && 'daily' in st.resets);
   assert.ok(Array.isArray(st.tools) && st.limits.maxRounds === agent.MAX_ROUNDS);
   const sent = await handlers['assistant:send'](null, 'Hola', { model: 'sonnet', effort: 'low' });
   assert.deepStrictEqual([sent.model, sent.effort], ['sonnet', 'low']);
@@ -1100,6 +1248,39 @@ test('assistant:status (modo demostracion): opciones de modelos, eleccion, presu
   assert.deepStrictEqual([conv.model, conv.effort], ['sonnet', 'low']);
   assert.strictEqual(conv.events.find((e) => e.type === 'done').servedBy, 'claude-sonnet-5-5');
   delete process.env.VENUS_ASSISTANT_FAKE;
+});
+
+test('modo demostracion con dos saldos (wallets) y con cambio de saldo (switch)', async () => {
+  const boot = (env) => {
+    process.env.VENUS_ASSISTANT_FAKE = env;
+    const handlers = {};
+    const sent = [];
+    require('../assistant').register({ app: { isPackaged: false }, handle: (ch, fn) => (handlers[ch] = fn), send: (...a) => sent.push(a), onQuit: () => {} });
+    delete process.env.VENUS_ASSISTANT_FAKE;
+    return { handlers, sent };
+  };
+  // Dos saldos: Claude en uso; elegir ChatGPT cambia los modelos (otros nombres) y avisa la cuota nueva
+  let { handlers, sent } = boot('wallets');
+  let st = await handlers['assistant:status']({});
+  assert.deepStrictEqual(st.wallets.map((w) => [w.provider, w.plan, w.active, w.remainingUsd]), [['anthropic', 'claude_pro', true, 11.3], ['openai', 'go', false, 3.2]]);
+  st = await handlers['assistant:useWallet']('openai');
+  assert.deepStrictEqual([st.planFamily, st.planTier, st.modelOptions.map((o) => o.label).join(',')], ['openai', 'go', 'GPT-6 Luna']);
+  assert.ok(sent.some(([ch, q]) => ch === 'ai:quota' && q.provider === 'openai'));
+  await assert.rejects(() => handlers['assistant:useWallet']('gemini'));
+  // Cambio: la primera respuesta agota Claude y el chat muestra la linea de sistema
+  ({ handlers } = boot('switch'));
+  const r = await handlers['assistant:send'](null, 'Hola', {});
+  await agent.waitIdle(r.conversationId);
+  const conv = await handlers['assistant:conversation'](r.conversationId);
+  const sw = conv.events.filter((e) => e.type === 'switched');
+  assert.deepStrictEqual(sw.map((e) => [e.from, e.to, e.reason]), [['anthropic', 'openai', 'budget']]);
+  st = await handlers['assistant:status']({});
+  assert.deepStrictEqual(st.wallets.map((w) => [w.provider, w.active, w.remainingUsd > 0]), [['anthropic', false, false], ['openai', true, true]]);
+  assert.ok(st.modelOptions.every((o) => !o.blocked));
+  await assert.rejects(() => handlers['assistant:useWallet']('anthropic'), 'un saldo vacio no se puede elegir');
+  const r2 = await handlers['assistant:send'](r.conversationId, 'Seguí', {});
+  await agent.waitIdle(r2.conversationId);
+  assert.strictEqual((await handlers['assistant:conversation'](r.conversationId)).events.filter((e) => e.type === 'switched').length, 1, 'una vez por cambio');
 });
 
 // ---------- Ejecucion ----------
@@ -1112,7 +1293,7 @@ test('assistant:status (modo demostracion): opciones de modelos, eleccion, presu
       console.log(`  ok  ${tc.name}`);
     } catch (err) {
       failed++;
-      console.log(`  FALLO  ${tc.name}\n        ${err && err.stack ? err.stack.split('\n').slice(0, 4).join('\n        ') : err}`);
+      console.log(`  FALLO  ${tc.name}\n        ${err && err.stack ? err.stack.split('\n').slice(0, 16).join('\n        ') : err}`);
     }
   }
   await agent.shutdown();

@@ -8,7 +8,7 @@ import { errorName, json, obj, readText, str, textPage } from '../_shared/pagos/
 import { type FetchLike, ProviderError } from '../_shared/pagos/provider.ts';
 import { mpGetPayment, mpVerifySignature } from '../_shared/pagos/mercadopago.ts';
 import { paypalVerifyWebhook } from '../_shared/pagos/paypal.ts';
-import { type Logger, type Order, type Rpc, type Secrets, UUID, asOrder, parseSecrets, paypalCreds, syncOrder } from '../_shared/pagos/sync.ts';
+import { type Logger, type Order, type Rpc, type Secrets, UUID, asOrder, parseSecrets, paypalCreds, planLabel, syncOrder } from '../_shared/pagos/sync.ts';
 
 const TAG = 'payments-webhook';
 const MP_BODY_LIMIT = 64 * 1024;
@@ -25,11 +25,6 @@ export type WebhookDeps = {
 
 export const PAGES = {
   paid: (plan: string) => `¡Listo! Tu plan ${plan} de Venus IA ya está activo. Volvé a Venus Launcher: ya podés cerrar esta pestaña.\n\nDone! Your Venus AI ${plan} plan is active. Go back to Venus Launcher. You can close this tab.\n`,
-  // Plan de clan (0044): dura 30 días y se renueva a mano, sin débito automático.
-  paidClan: (plan: string) => `¡Listo! Tu plan ${plan} ya está activo en tu comunidad por 30 días. Se renueva a mano: no hay débito automático. Volvé a Venus Launcher: ya podés cerrar esta pestaña.
-
-Done! Your ${plan} plan is active in your community for 30 days. It renews manually: there is no automatic charge. Go back to Venus Launcher. You can close this tab.
-`,
   pending: 'Recibimos tu pago y estamos esperando la confirmación. Venus Launcher activa el plan solo apenas se acredite: ya podés cerrar esta pestaña.\n\nWe are waiting for the payment to be confirmed. Venus Launcher activates the plan automatically. You can close this tab.\n',
   failed: 'El pago no se completó y no se activó ningún plan. Volvé a Venus Launcher para intentarlo de nuevo.\n\nThe payment was not completed. Go back to Venus Launcher to try again.\n',
   cancelled: 'Cancelaste el pago: no se cobró nada. Volvé a Venus Launcher cuando quieras.\n\nYou cancelled the payment: nothing was charged. Go back to Venus Launcher whenever you want.\n',
@@ -149,7 +144,7 @@ export function createWebhookHandler(deps: WebhookDeps) {
         logger.warn(`[${TAG}] no se pudo revisar la orden ${order.id} al volver: ${err instanceof ProviderError ? err.describe() : errorName(err)}`);
       }
     }
-    if (order.status === 'paid') return textPage(String(order.plan).startsWith('clan_') ? PAGES.paidClan(order.planName || order.plan) : PAGES.paid(order.planName || order.plan));
+    if (order.status === 'paid') return textPage(PAGES.paid(planLabel(order)));
     if (order.status === 'pending') {
       const mpStatus = kind === 'mp' ? url.searchParams.get('status') ?? url.searchParams.get('collection_status') : null;
       return textPage(mpStatus === 'rejected' || mpStatus === 'null' ? PAGES.failed : PAGES.pending);

@@ -22,10 +22,8 @@ export type Order = {
   userId: string;
   plan: string;
   planName: string;
-  /** 'ai_plan' o 'clan_plan' (0044). */
+  /** 'ai_plan' (los planes de clan de 0044 se retiraron en la 6.1). */
   product?: string;
-  /** Comunidad de un plan de clan. */
-  communityId?: string | null;
   provider: 'mercado_pago' | 'paypal';
   currency: 'ARS' | 'USD';
   amount: number;
@@ -59,6 +57,20 @@ export function parseSecrets(raw: unknown): Secrets {
 
 export function paypalCreds(secrets: Secrets): PaypalCreds | null {
   return secrets.paypalClientId && secrets.paypalSecret ? { env: secrets.paypalEnv, clientId: secrets.paypalClientId, secret: secrets.paypalSecret } : null;
+}
+
+/**
+ * Nombre del plan para el título del pago y la página de vuelta, con la familia adelante ("Claude Pro", "ChatGPT Pro").
+ * 0056 ya guarda planName así en la orden; si llega solo el nivel ("Pro"), la familia sale del id del plan
+ * (claude_* es Claude; basic, go, pro, max y ultra son ChatGPT).
+ */
+export function planLabel(order: Pick<Order, 'plan' | 'planName'>): string {
+  const plan = String(order.plan ?? '');
+  const name = String(order.planName ?? '').trim() || plan;
+  if (/^(claude|chatgpt)\b/i.test(name)) return name;
+  if (/^claude_/.test(plan)) return `Claude ${name}`;
+  if (/^(basic|go|pro|max|ultra)$/.test(plan)) return `ChatGPT ${name}`;
+  return name;
 }
 
 export function asOrder(raw: unknown): Order | null {

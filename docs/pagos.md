@@ -2,14 +2,23 @@
 
 Los planes de **Venus IA** son **pagos únicos**: el usuario elige un plan en el launcher, paga en el navegador con **Mercado Pago (en pesos)** o **PayPal (en dólares)** y el plan se activa solo cuando el medio de pago lo acredita. Soporte queda para consultas: un ticket ya no pide ni activa planes. Stripe quedó retirado (sus tablas siguen como historial).
 
-| Plan | Precio de lista | Saldo de IA | Modelos |
-|---|---|---|---|
-| Basic | US$ 4 | US$ 2 | Haiku (esfuerzo bajo y medio) |
-| Go | US$ 8 | US$ 4,50 | Haiku (hasta alto) |
-| Pro | US$ 15 | US$ 8,50 | Haiku y Sonnet |
-| Max | US$ 35 | US$ 20 | Haiku y Sonnet (esfuerzo extra) |
+Desde la 6.1 hay **dos familias** de planes: **Claude** (ids `claude_*`) y **ChatGPT** (conservan los ids de la 6.0 y suman `ultra`). Contrato completo: [implementacion/ia-dos-motores.md](implementacion/ia-dos-motores.md).
 
-- El saldo **no vence**. Si alguien compra otro plan con saldo sin usar, **lo que le queda se suma** al nuevo.
+| Plan | Precio de lista | Saldo de IA | Tokens por respuesta | Modelos | Esfuerzos |
+|---|---|---|---|---|---|
+| Claude Basic (`claude_basic`) | US$ 6 | US$ 3,50 | 12.000 | Haiku 5.5 | bajo, medio |
+| Claude Go (`claude_go`) | US$ 10 | US$ 6,75 | 32.000 | Haiku 5.5 | hasta alto |
+| Claude Pro (`claude_pro`) | US$ 18 | US$ 12,50 | 44.000 | Haiku 5.5 y Sonnet 5.5 | hasta alto |
+| Claude Max (`claude_max`) | US$ 32 | US$ 26 | 78.000 | Haiku 5.5 y Sonnet 5.5 | hasta extra |
+| Claude Ultra (`claude_ultra`) | US$ 40 | US$ 32 | 128.000 | Haiku 5.5 y Sonnet 5.5 | hasta máximo |
+| ChatGPT Basic (`basic`) | US$ 6 | US$ 3,50 | 12.000 | GPT-6 Luna | bajo |
+| ChatGPT Go (`go`) | US$ 10 | US$ 6,75 | 32.000 | GPT-6 Luna | hasta alto |
+| ChatGPT Pro (`pro`) | US$ 18 | US$ 12,50 | 44.000 | GPT-6 Luna | hasta alto |
+| ChatGPT Max (`max`) | US$ 32 | US$ 26 | 78.000 | GPT-6 Luna y GPT-5.6 Sol | hasta alto |
+| ChatGPT Ultra (`ultra`) | US$ 40 | US$ 28 | 128.000 | GPT-6 Luna y GPT-5.6 Sol | hasta alto |
+
+- El saldo **no vence**. Cada cuenta puede tener **un saldo por familia**: comprar un plan de Claude no toca el saldo de ChatGPT y al revés. Si alguien compra otro plan **de la misma familia** con saldo sin usar, **lo que le queda se suma** al nuevo.
+- Siempre hay un saldo en uso. Cuando no alcanza y el de la otra familia sí, la IA pasa sola al otro y el launcher lo avisa; con dos saldos, el usuario elige cuál usar desde el Asistente o en Ajustes.
 - Con **PayPal** se cobra el precio de lista en dólares.
 - Con **Mercado Pago** se cobra en pesos: precio en dólares × la **cotización** que cargás en el panel, redondeado hacia arriba.
 

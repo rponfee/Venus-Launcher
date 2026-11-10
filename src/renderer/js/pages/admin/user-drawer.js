@@ -1,11 +1,14 @@
-// Ficha de un usuario (panel lateral): cuenta, plan con los ids de Stripe, uso de la IA por modelo, moderación con
-// notas internas, acciones recientes de admins y las mismas acciones del lote para esta cuenta.
+// Ficha de un usuario (panel lateral): cuenta, plan con los ids de Stripe, uso de la IA por modelo, acceso al panel
+// (dar o quitar admin y soporte: 0057), rango del perfil, moderación con notas internas, acciones recientes de
+// admins y las mismas acciones del lote para esta cuenta.
 import { navigate } from '../../app.js';
 import { cloud } from '../../cloud.js';
-import { h, icon, mount, modal, setBusy, ok, copyText } from '../../ui.js';
-import { T, call, fmtUsd, fmtInt, fmtDay, fmtDateTime, fmtRelative, isPermanent, planBadge, statePills, errorBox, skeletonRows, showBulkResult, failAction } from './parts.js';
+import { h, icon, mount, modal, setBusy, ok, fail, copyText } from '../../ui.js';
+import { T, call, rpc, fmtUsd, fmtInt, fmtDay, fmtDateTime, fmtRelative, isPermanent, planBadge, statePills, errorBox, skeletonRows, showBulkResult, failAction } from './parts.js';
 import { removePlanDialog, banDialog, muteDialog, simpleAction, resetUsageDialog, deleteDialog, cancelStripeDialog } from './dialogs.js';
 import { actionLabel, actionDetails } from './audit.js';
+import { accessState, rankState, teamView } from './team-logic.js';
+import { fetchTeam, grantDialog, revokeDialog, staffDialog, teamErrorText } from './team.js';
 
 function row(label, value, { copy, mono } = {}) {
   return h(
@@ -127,37 +130,81 @@ function usage(d) {
   return section('activity', T('sec_usage'), head, bar, table);
 }
 
-// Rango que se ve en el perfil (owner no se da ni se quita desde aca). No da acceso al panel: eso es app_admins.
-function rankSection(userId) {
+// Rango que se ve en el perfil: helper o mod. 'admin' va con el acceso al panel (Dar/Quitar acceso) y 'owner' no se
+// toca desde acá (0057). El rango no da acceso: eso es app_admins.
+async function profileRank(userId, d) {
+  if (d.profile && typeof d.profile === 'object' && 'rank' in d.profile) return d.profile.rank || '';
+  const { data, error } = await cloud.client.from('profiles').select('rank').eq('id', userId).maybeSingle();
+  if (error) throw error;
+  return data?.rank || '';
+}
+
+function rankSection(userId, d) {
   const box = h('div', { class: 'row wrap' }, h('span', { class: 'muted small' }, T('rankLoading')));
-  const RANKS = ['', 'helper', 'mod', 'admin'];
-  cloud.client
-    .from('profiles')
-    .select('rank')
-    .eq('id', userId)
-    .maybeSingle()
-    .then(({ data, error }) => {
-      if (error) throw error;
-      const cur = data?.rank || '';
-      if (cur === 'owner') return mount(box, h('span', { class: 'pill good' }, icon('crown'), T('rank_owner')), h('span', { class: 'muted small' }, T('rankOwnerLocked')));
-      const select = h('select', { class: 'select', 'aria-label': T('rankLabel') }, RANKS.map((r) => h('option', { value: r, selected: r === cur }, T(r ? `rank_${r}` : 'rankNone'))));
+  const help = h('p', { class: 'tiny muted' }, T('rankHelp'));
+  profileRank(userId, d)
+    .then((cur) => {
+      const st = rankState(cur, d.account?.isAdmin === true);
+      if (st.mode === 'owner') return mount(box, h('span', { class: 'pill good' }, icon('crown'), T('rank_owner')), h('span', { class: 'muted small' }, T('rankOwnerLocked')));
+      if (st.mode === 'admin') return mount(box, h('span', { class: 'pill info' }, icon('shieldCheck'), T('rank_admin')), h('span', { class: 'muted small' }, T('rankAdminLocked')));
+      const select = h('select', { class: 'select', 'aria-label': T('rankLabel') }, st.options.map((r) => h('option', { value: r, selected: r === cur }, T(r === 'admin' ? 'rank_adminLegacy' : r ? `rank_${r}` : 'rankNone'))));
       const save = h('button', { class: 'btn sm', type: 'button' }, icon('save'), T('rankSave'));
       save.addEventListener('click', async () => {
+        if (select.value === 'admin') return; // la insignia vieja se puede sacar, no volver a poner
         const done = setBusy(save);
         try {
-          const { error: err } = await cloud.client.rpc('admin_set_rank', { p_user: userId, p_rank: select.value || null });
-          if (err) throw err;
+          await rpc('admin_set_rank', { p_user: userId, p_rank: select.value || null });
           ok(T('rankSaved'));
         } catch (err) {
-          failAction(err);
+          fail(T('actionFailed'), teamErrorText(err));
         } finally {
           done();
         }
       });
       mount(box, select, save);
+      if (st.legacy) mount(help, T('rankLegacyHint'));
     })
-    .catch((err) => mount(box, h('span', { class: 'muted small' }, String(err?.message || err))));
-  return section('crown', T('sec_rank'), box, h('p', { class: 'tiny muted' }, T('rankHelp')));
+    .catch(() => mount(box, h('span', { class: 'muted small' }, T('rankLoadFailed'))));
+  return section('crown', T('sec_rank'), box, help);
+}
+
+// Acceso al panel: quién es (dueño, admin, soporte) y, solo para el dueño, Dar/Quitar acceso. Cualquier admin puede
+// sumar o quitar personal de soporte. El servidor vuelve a decidir todo en cada RPC.
+function accessSection(userId, d, opts, reload) {
+  const box = h('div', { class: 'stack' }, h('span', { class: 'muted small' }, T('access_loading')));
+  const name = d.profile?.username || d.account?.email || opts.name || userId;
+  const user = { id: userId, name };
+  const after = (res) => {
+    if (!res) return;
+    opts.onTeamChanged?.();
+    opts.onChanged?.();
+    reload();
+  };
+  (opts.team ? opts.team() : fetchTeam())
+    .then((team) => {
+      if (!box.isConnected && box.parentNode) return;
+      const st = accessState(userId, team, opts.selfId, { account: d.account || {}, moderation: d.moderation || {} });
+      const view = teamView(team);
+      const status = st.role
+        ? h('div', { class: 'row wrap' }, h('span', { class: ['pill', st.role === 'owner' ? 'good' : st.role === 'admin' ? 'info' : ''] }, icon(st.role === 'owner' ? 'crown' : st.role === 'admin' ? 'shieldCheck' : 'message'), T(`team_role_${st.role}`)), h('span', { class: 'small text-2' }, T(`access_${st.role}`)))
+        : h('p', { class: 'small text-2' }, T('access_none'));
+      const buttons = [];
+      const notes = [];
+      if (view.canManageAdmins) {
+        if (st.isAdmin) {
+          if (st.canRevoke) buttons.push(h('button', { class: 'btn sm danger', type: 'button', onclick: () => revokeDialog(user).then(after) }, icon('x'), T('team_revoke')));
+          else notes.push(T(st.revokeReason === 'self' ? 'access_selfLocked' : 'team_ownerLockedHint'));
+        } else if (st.canGrant) buttons.push(h('button', { class: 'btn sm primary', type: 'button', onclick: () => grantDialog(user).then(after) }, icon('shieldCheck'), T('team_grant')));
+        else if (st.grantBlocker === 'unconfirmed' || st.grantBlocker === 'banned') notes.push(T(`access_blocked_${st.grantBlocker}`));
+      } else notes.push(T('access_ownerOnly'));
+      if (!st.isAdmin && view.canManageStaff) {
+        if (st.isStaff) buttons.push(h('button', { class: 'btn sm', type: 'button', onclick: () => staffDialog(user, false).then(after) }, icon('x'), T('team_removeStaff')));
+        else if (st.canToggleStaff) buttons.push(h('button', { class: 'btn sm', type: 'button', onclick: () => staffDialog(user, true).then(after) }, icon('message'), T('team_addStaff')));
+      }
+      mount(box, status, buttons.length ? h('div', { class: 'row wrap' }, buttons) : null, notes.map((n) => h('p', { class: 'tiny muted' }, n)));
+    })
+    .catch((err) => mount(box, h('p', { class: 'small muted' }, teamErrorText(err))));
+  return section('shieldCheck', T('sec_access'), box);
 }
 
 function moderation(d, userId, refresh) {
@@ -214,7 +261,8 @@ function actions(d) {
 
 /**
  * Abre la ficha. opts: { onChanged() (para refrescar la lista),
- * selfId (el admin: sin acciones de moderación sobre sí mismo) }.
+ * selfId (el admin: sin acciones de moderación sobre sí mismo), team() (equipo compartido del panel),
+ * onTeamChanged() (después de dar o quitar acceso) }.
  */
 export function openUserDrawer(userId, opts = {}) {
   const body = h('div', { class: 'adm-drawer-body' }, skeletonRows(10));
@@ -303,7 +351,8 @@ export function openUserDrawer(userId, opts = {}) {
       account(detail),
       plan(detail, cancelStripe),
       usage(detail),
-      rankSection(userId),
+      accessSection(userId, detail, opts, load),
+      rankSection(userId, detail),
       moderation(detail, userId, load),
       actions(detail),
     );

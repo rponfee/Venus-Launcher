@@ -10,6 +10,7 @@
 import { h, icon, mount, modal, toast, ok, fail, setBusy, confirmDialog, ensureCss, registerIcons, skeleton, emptyState } from '../../ui.js';
 import { api, store } from '../../store.js';
 import { t, loadNs } from '../../i18n.js';
+import { keyLabel } from '../../platform.js';
 import { createViewer } from './viewer.js';
 import { loadImage, normalizeSkin } from './texture.js';
 import { skinThumb } from './parts.js';
@@ -125,8 +126,8 @@ function buildEditor({ libraryId = null, start = null, onSaved = null } = {}) {
   const toggleBtn = (name, iconName, key, onclick) => h('button', { type: 'button', class: 'icon-btn se-toggle', 'aria-pressed': 'false', title: key ? t('skineditor.toolTip', { name: t(`skineditor.${name}`), key }) : t(`skineditor.${name}`), 'aria-label': t(`skineditor.${name}`), 'aria-keyshortcuts': key || null, onclick }, icon(iconName));
   const actionBtn = (name, iconName, key, onclick) => h('button', { type: 'button', class: 'icon-btn', title: key ? t('skineditor.toolTip', { name: t(`skineditor.${name}`), key }) : t(`skineditor.${name}`), 'aria-label': t(`skineditor.${name}`), 'aria-keyshortcuts': key || null, onclick }, icon(iconName));
   const mirrorBtn = toggleBtn('mirror', 'seMirror', 'M', () => setMirror(!S.mirror));
-  const undoBtn = actionBtn('undo', 'undo', 'Ctrl+Z', () => undo());
-  const redoBtn = actionBtn('redo', 'seRedo', 'Ctrl+Y', () => redo());
+  const undoBtn = actionBtn('undo', 'undo', keyLabel('Ctrl+Z'), () => undo());
+  const redoBtn = actionBtn('redo', 'seRedo', keyLabel('Ctrl+Y'), () => redo());
   const zoomOutBtn = actionBtn('zoomOut', 'zoomOut', '-', () => setZoom(S.zoom - 1));
   const zoomInBtn = actionBtn('zoomIn', 'zoomIn', '+', () => setZoom(S.zoom + 1));
   const fitBtn = actionBtn('zoomFit', 'maximize', '0', () => fitZoom(true));

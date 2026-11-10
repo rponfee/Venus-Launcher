@@ -34,18 +34,30 @@ function registerProtocol(app) {
 }
 
 let toUi = () => {};
+// Antes de register no hace nada: en el arranque en frío la ventana aparece sola en ready-to-show.
+let bringToFront = () => {};
 const queue = createLinkQueue((action) => toUi(action));
 
 function preReady({ app }) {
-  // macOS avisa con 'open-url', a veces antes de que la app esté lista.
+  // macOS avisa con 'open-url', a veces antes de que la app esté lista. No hay segunda copia que restaure la ventana
+  // (en Windows lo hace 'second-instance' en main.js): si está minimizada u oculta, se trae al frente acá.
   app.on('open-url', (event, url) => {
     event.preventDefault();
-    queue.push(parseLink(url));
+    const action = parseLink(url);
+    if (action?.link) bringToFront();
+    queue.push(action);
   });
 }
 
-function register({ app, handle, send }) {
+function register({ app, handle, send, getWindow }) {
   toUi = (action) => send('deeplink:open', action);
+  bringToFront = () => {
+    const w = getWindow?.();
+    if (!w || w.isDestroyed()) return;
+    if (w.isMinimized()) w.restore();
+    w.show();
+    w.focus();
+  };
   registerProtocol(app);
   handle('deeplink:ready', () => queue.ready());
   queue.push(findLink(process.argv));

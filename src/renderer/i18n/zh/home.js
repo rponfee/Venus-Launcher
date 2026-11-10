@@ -231,4 +231,7 @@ export default {
   blockNarrow: "将{block}恢复为标准宽度",
   blockHiddenTag: "已隐藏",
   blockEmptyTag: "暂无数据",
+  heroSize: "主卡片大小",
+  heroSize_large: "大号",
+  heroSize_compact: "紧凑",
 };

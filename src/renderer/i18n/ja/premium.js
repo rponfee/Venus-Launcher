@@ -13,8 +13,6 @@ export default {
   perk_effectsText: "きらめき、レインボー、炎のエフェクトを、ショップで買わずに名前に使えます。",
   perk_frame: "限定フレームと称号「Supporter」",
   perk_frameText: "Premiumでのみ入手できるアニメーションのアバターフレームと、名前の横に表示される称号「Supporter」。",
-  perk_replay: "5分間のインスタントリプレイ",
-  perk_replayText: "直前の60秒ではなく、5分間のプレイを保存できます。",
   perk_ai: "Venus AI",
   perk_aiText: "いつもどおり、プランのモデルと質問回数でアシスタントを使えます。",
   note: "Premiumはプランの期間中有効です。解約しても、Venus Pointsで購入したものはすべて残ります。",

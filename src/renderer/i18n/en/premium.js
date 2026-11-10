@@ -14,8 +14,6 @@ export default {
   perk_effectsText: 'Shimmer, rainbow and fire for your name, without buying them in the shop.',
   perk_frame: 'Exclusive frames and Supporter title',
   perk_frameText: 'Animated avatar frames that only come with Premium, and the Supporter title next to your name.',
-  perk_replay: '5-minute instant replay',
-  perk_replayText: 'Save the last 5 minutes of your game instead of 60 seconds.',
   perk_ai: 'Venus AI',
   perk_aiText: 'The assistant with the models and questions of your plan, as always.',
   note: 'Premium lasts as long as your plan. If you cancel it, you keep everything you bought with Venus Points.',

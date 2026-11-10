@@ -20,14 +20,15 @@ const PRICES: Record<string, { name: string; usd: number; budget: number }> = {
   go: { name: 'Go', usd: 8, budget: 4.5 },
   pro: { name: 'Pro', usd: 15, budget: 8.5 },
   max: { name: 'Max', usd: 35, budget: 20 },
-  // Planes de clan (0044): el precio sale de community_plans y no dan saldo de IA.
-  clan_go: { name: 'Clanes Go', usd: 2, budget: 0 },
-  clan_pro: { name: 'Clanes Pro', usd: 4, budget: 0 },
-  clan_max: { name: 'Clanes Max', usd: 6, budget: 0 },
-  clan_ultra: { name: 'Clanes Ultra', usd: 10, budget: 0 },
+  // 6.1 (0056): Ultra de ChatGPT y los cinco planes de Claude. Los de Claude ya traen la familia en el nombre (como
+  // los guarda 0056); los de ChatGPT, solo el nivel (como una orden vieja): planLabel agrega la familia.
+  ultra: { name: 'Ultra', usd: 40, budget: 28 },
+  claude_basic: { name: 'Claude Basic', usd: 6, budget: 3.5 },
+  claude_go: { name: 'Claude Go', usd: 10, budget: 6.75 },
+  claude_pro: { name: 'Claude Pro', usd: 18, budget: 12.5 },
+  claude_max: { name: 'Claude Max', usd: 32, budget: 26 },
+  claude_ultra: { name: 'Claude Ultra', usd: 40, budget: 32 },
 };
-export const COMMUNITY = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-export const ELSE_COMMUNITY = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
 export class FakeDb {
   orders = new Map<string, Order & { userId: string }>();
@@ -44,8 +45,6 @@ export class FakeDb {
   enabled: Record<string, boolean> = { mercado_pago: true, paypal: true };
   arsPerUsd = 1450;
   admins = new Set([ADMIN]);
-  /** Dueño de cada comunidad: solo quien la dirige puede comprar su plan. */
-  communityOwners = new Map<string, string>([[COMMUNITY, USER], [ELSE_COMMUNITY, OTHER]]);
   saved: unknown[] = [];
 
   quote(plan: string, provider: string) {
@@ -72,21 +71,15 @@ export class FakeDb {
       case 'payments_create_order': {
         const provider = String(args.p_provider);
         if (!this.enabled[provider]) throw fail('22023', 'provider_disabled');
-        const clan = String(args.p_plan).startsWith('clan_');
-        if (clan) {
-          if (!args.p_community || !this.communityOwners.has(String(args.p_community))) throw fail('22023', 'unknown_community');
-          if (this.communityOwners.get(String(args.p_community)) !== args.p_user) throw fail('42501', 'not_owner');
-        }
+        if ('p_community' in args) throw fail('PGRST202', 'Could not find the function');
         const q = this.quote(String(args.p_plan), provider);
         if (!q) throw fail('22023', 'unknown_plan');
-        const community = clan ? String(args.p_community) : null;
-        const reuse = [...this.orders.values()].find((o) => o.userId === args.p_user && o.plan === args.p_plan && o.provider === provider && o.status === 'pending' && o.checkoutUrl
-          && ((o as unknown as Record<string, unknown>).communityId ?? null) === community);
+        const reuse = [...this.orders.values()].find((o) => o.userId === args.p_user && o.plan === args.p_plan && o.provider === provider && o.status === 'pending' && o.checkoutUrl);
         if (reuse) return { ...reuse, reused: true };
         const id = uuid();
         const order = {
           id, userId: String(args.p_user), plan: String(args.p_plan), planName: q.planName, provider, currency: q.currency,
-          product: clan ? 'clan_plan' : 'ai_plan', communityId: community,
+          product: 'ai_plan',
           amount: q.total, priceUsd: q.priceUsd, budgetUsd: q.budgetUsd, status: 'pending', providerStatus: null,
           providerOrderId: null, checkoutUrl: null, live: args.p_live === true, createdAt: new Date(NOW).toISOString(),
           paidAt: null, expiresAt: new Date(NOW + 2 * 86400000).toISOString(),

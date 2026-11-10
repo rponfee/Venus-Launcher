@@ -182,4 +182,12 @@ export default {
   ex3: "Optimaliseer mijn instantie voor meer FPS",
   ex4: "Installeer Sodium en Iris",
   ex5: "Zoek lichte shaders voor me",
+  effort_max: "Maximaal",
+  walletLabel: "Tegoed",
+  walletHint: "Welk tegoed je volgende vraag gebruikt: dat van Claude of dat van ChatGPT.",
+  walletOption: "{family} · {left} over",
+  walletLine: "Tegoed van {family}: {left} van {limit} over",
+  failoverNoteOf: "Beantwoord door de reserve ({provider})",
+  quotaBudgetTitle: "Je tegoed is op",
+  quotaBudgetOut: "Je tegoed van {family} (pakket {plan}) is op en je hebt geen tegoed van {other} meer. Koop meer tegoed van {family} of probeer een pakket van {other} bij Pakketten.",
 };

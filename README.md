@@ -1,6 +1,6 @@
 # Venus Launcher
 
-Launcher de **Minecraft: Java Edition** para Windows hecho con Electron. Instala cualquier versión (de pre-classic a las snapshots más nuevas) con Vanilla, Fabric, Quilt, Forge, NeoForge, OptiFine, Iris, Legacy Fabric o Babric; trae el catálogo completo de Modrinth (y el de CurseForge, configurado por el administrador), servidores locales, juego con amigos sin abrir puertos, amigos, mensajes y Voice Chat, nube de mundos, un asistente de IA y muchas herramientas para que los mods no se rompan. Toda la interfaz está en español rioplatense y se traduce a 14 idiomas.
+Launcher de **Minecraft: Java Edition** para Windows y macOS hecho con Electron. Instala cualquier versión (de pre-classic a las snapshots más nuevas) con Vanilla, Fabric, Quilt, Forge, NeoForge, OptiFine, Iris, Legacy Fabric o Babric; trae el catálogo completo de Modrinth (y el de CurseForge, configurado por el administrador), servidores locales, juego con amigos sin abrir puertos, amigos, mensajes y Voice Chat, nube de mundos, un asistente de IA y muchas herramientas para que los mods no se rompan. Toda la interfaz está en español rioplatense y se traduce a 14 idiomas.
 
 ![Logo](src/renderer/assets/logo-256.png)
 
@@ -10,12 +10,27 @@ Launcher de **Minecraft: Java Edition** para Windows hecho con Electron. Instala
 
 ## Descargar
 
-Para Windows 10 y 11 (64 bits). Los links bajan siempre la última versión:
+Para Windows 10 y 11 (64 bits) y para [macOS](#macos). Los links bajan siempre la última versión:
 
 - **Instalador:** [VenusLauncher-Setup.exe](https://github.com/rponfee/Venus-Launcher/releases/latest/download/VenusLauncher-Setup.exe). Se actualiza solo si activás las actualizaciones automáticas.
 - **Portable** (sin instalar, guarda los datos junto al ejecutable): [VenusLauncher-Portable.exe](https://github.com/rponfee/Venus-Launcher/releases/latest/download/VenusLauncher-Portable.exe)
 - Todas las versiones y sus notas: [Releases](https://github.com/rponfee/Venus-Launcher/releases)
 - Fondos de pantalla para el launcher: [venus-launcher-fondos.netlify.app](https://venus-launcher-fondos.netlify.app/)
+
+### macOS
+
+Para macOS 12 Monterey o más nuevo, en Macs con Apple Silicon (M1, M2, M3, M4...) y con Intel: es un solo archivo que anda en las dos.
+
+- **Venus Launcher para Mac:** [VenusLauncher-mac.dmg](https://github.com/rponfee/Venus-Launcher/releases/latest/download/VenusLauncher-mac.dmg). Abrilo y arrastrá **Venus Launcher** a **Aplicaciones**.
+- **La primera vez que lo abras**: la app no está firmada por Apple (hace falta una cuenta paga de desarrollador), así que macOS avisa que no puede comprobar quién la hizo. Para abrirla igual:
+  - macOS 15 Sequoia o más nuevo: abrila una vez (aparece el aviso y tocá **Listo**), andá a **Ajustes del Sistema → Privacidad y seguridad**, bajá hasta el aviso de Venus Launcher y tocá **Abrir igualmente**. Confirmá con tu contraseña.
+  - macOS 12 a 14: en Aplicaciones, **clic derecho (o Control + clic) sobre Venus Launcher → Abrir** y en el aviso, **Abrir**.
+  - Otra forma, desde Terminal: `xattr -dr com.apple.quarantine "/Applications/Venus Launcher.app"`.
+  
+  Después abre como cualquier app. Al usar el Voice Chat por primera vez, macOS pide permiso para el micrófono.
+- **No se actualiza solo**: avisa cuando hay una versión nueva y abre la descarga del `.dmg`; arrastrá la nueva a Aplicaciones reemplazando la anterior (tus instancias y cuentas no se tocan).
+- **No están en macOS** (dependen de Windows): el overlay del juego, la música (control de Spotify y otros reproductores), los clips y capturas del juego, el ícono y título de Venus en la ventana del juego, los accesos directos de instancias en el escritorio y los accesos de Windows. Todo lo demás es igual, en los 14 idiomas.
+- En Macs con Apple Silicon, las versiones de Minecraft anteriores a la 1.19 corren con el Java para Intel a través de **Rosetta 2**, igual que en el launcher oficial. Si Rosetta no está instalado, Venus avisa cómo instalarlo. Detalles: [docs/macos.md](docs/macos.md).
 
 **Code signing:** the Windows builds are compiled from this repository with GitHub Actions and signed through the SignPath Foundation program. Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org). See the [Code signing policy](#code-signing-policy). Mientras SignPath no apruebe el proyecto, los instaladores van sin firma y Windows SmartScreen puede mostrar un aviso: tocá "Más información" y "Ejecutar de todas formas".
 
@@ -23,11 +38,23 @@ Para Windows 10 y 11 (64 bits). Los links bajan siempre la última versión:
 
 Agrupadas como en el menú del launcher.
 
+### Novedades de la 6.1
+
+- **Venus IA con Claude o ChatGPT**: cinco planes de cada una (Basic, Go, Pro, Max y Ultra), cada uno con su saldo. Con un saldo de cada una, cuando uno se termina Venus pasa al otro y avisa ([docs/asistente-ia.md](docs/asistente-ia.md), [docs/pagos.md](docs/pagos.md)).
+- **Versión para macOS** (Intel y Apple Silicon), con las mismas pantallas y los 14 idiomas ([docs/macos.md](docs/macos.md)).
+- **Overlay opcional**: viene apagado y se activa en la bienvenida o en Ajustes → En el juego, con diseños listos (Mínimo, Completo y Rendimiento) y No molestar ([docs/overlay.md](docs/overlay.md)).
+- **Clips con más calidad**: la repetición instantánea guarda hasta 30 minutos para todos, con 30, 45, 60, 80 o 120 FPS y 720p, 1080p, 1440p (2K) o 4K; ajustes listos (Liviano, Equilibrado y Máximo), grabación con la placa de video y aviso de espacio en disco ([docs/clips.md](docs/clips.md)).
+- **Más personalización**: tarjeta Estilo en Ajustes → Apariencia (letra, tamaño del texto, tarjetas, esquinas, densidad y menú) y la página en la que abre el launcher.
+- **Administración**: pestaña Equipo para dar y quitar el acceso de administrador (solo el dueño) y el rol de soporte, uso de IA por motor en el Resumen y registro con filtros ([docs/admin.md](docs/admin.md)).
+- **Se retiraron las Comunidades**. Amigos, mensajes, grupos y salas de voz siguen igual ([docs/retirada-funciones.md](docs/retirada-funciones.md)).
+
+La base de datos de producción llega a la migración **0057** (las 0056 y 0057 de esta versión se aplicaron el 10 de noviembre de 2026). Detalle en [docs/supabase.md](docs/supabase.md).
+
 ### Novedades de la 4.6
 
 La **4.6.0** ([`v4.6.0`](https://github.com/rponfee/Venus-Launcher/releases/tag/v4.6.0)) también trae todo lo que se había preparado para la 4.5.0 (herramientas de instancias y datos, paneles del overlay, control LAN y Discord, stickers, traducción, estudio de clips y app para el celular; [estado de integración](docs/estado-4.5.0.md)).
 
-- **Comunidades** reemplazan a los Clanes viejos: categorías, canales de texto, anuncios, foros y voz, roles propios, **permisos por canal**, mensajes de **bienvenida y despedida** con GIFs de KLIPY, GIFs subidos que revisa el equipo de Venus y reacciones ([contrato](docs/implementacion/clanes-comunidades.md)).
+- **Comunidades** (retiradas en la 6.1) reemplazan a los Clanes viejos: categorías, canales de texto, anuncios, foros y voz, roles propios, **permisos por canal**, mensajes de **bienvenida y despedida** con GIFs de KLIPY, GIFs subidos que revisa el equipo de Venus y reacciones ([contrato](docs/implementacion/clanes-comunidades.md)).
 - **Perfil**: el avatar es siempre un círculo, el banner es un color, un GIF de KLIPY o una imagen quieta tuya, y hay **36 marcos nuevos** dibujados con código, más 8 que se ganan en el Pase ([docs/perfiles.md](docs/perfiles.md)).
 - **Música de perfil**: la canción ya no se sube, se elige de música libre (Openverse: Jamendo y Wikimedia Commons) con su licencia y atribución.
 - **Venus Pass** por tiempo jugado: permanente, 380 niveles, una sola pista y sin compra ([docs/venus-pass.md](docs/venus-pass.md)).
@@ -88,7 +115,6 @@ La base de datos de producción llega a la migración **0047** (menos la 0044, q
 - **Multijugador**: destacados, tus servidores (lee y escribe `servers.dat` de cada instancia), amigos jugando y búsqueda por dirección, con MOTD, latencia y jugadores. "Unirme" elige una instancia compatible o la crea, y **Armar instancia desde un servidor** detecta la versión, el loader y los mods.
 - **Servidores locales**: 13 tipos (Vanilla, Paper, Purpur, Folia, Spigot, Fabric, Quilt, Forge, NeoForge, Mohist, Youer, Velocity y Waterfall) con consola, jugadores, propiedades, reglas del juego, mundo y copias, plugins o mods, red (UPnP, túnel para jugar sin abrir puertos), automatización (reinicios y copias programadas) y "Jugar en este servidor".
 - **Voice Chat**: salas con código, contraseña opcional y hasta 8 personas, pulsar para hablar, volumen por persona, pantalla compartida, soundboard, chat de la sala, moderación, **respaldo automático si el servidor de Venus se cae** (salas guardadas y salas de emergencia) y la instalación de **Simple Voice Chat** para voz de proximidad dentro del juego.
-- **Comunidades**: espacios con canales de texto, anuncios, foros y voz, roles y permisos por canal, bienvenida y despedida con GIFs, galería de GIFs revisada por Venus y reacciones.
 - **Mensajes**: amigos por código `VENUS-XXXXXX` o nombre de usuario, presencia y actividad ("Jugando 1.21.1 Fabric · mc.ejemplo.net"), chat 1:1 en tiempo real con respuestas, reacciones, edición, avisos de lectura, y botones para unirte al juego de un amigo o invitarlo a voz.
 
 ### Herramientas
@@ -112,8 +138,8 @@ Bienvenida guiada la primera vez (idioma, cuentas, primera instancia, contenido 
 
 ## Requisitos
 
-- **Para jugar**: Windows 10 u 11 e internet para descargar el juego y el contenido. Java **no** hace falta: el launcher descarga el Java oficial de Mojang que pide cada versión (8, 16, 17, 21 o 25), con Adoptium de respaldo.
-- **Para desarrollar**: Node.js **22.12 o superior** (el proyecto se usa con Node 24) y npm. `package.json` también trae la configuración de electron-builder para Linux (AppImage) y macOS (dmg), que se compilan en esos sistemas.
+- **Para jugar**: Windows 10 u 11, o macOS 12 o más nuevo (Apple Silicon o Intel), e internet para descargar el juego y el contenido. Java **no** hace falta: el launcher descarga el Java oficial de Mojang que pide cada versión (8, 16, 17, 21 o 25), con Adoptium de respaldo. En Apple Silicon, las versiones anteriores a la 1.19 necesitan Rosetta 2.
+- **Para desarrollar**: Node.js **22.12 o superior** (el proyecto se usa con Node 24) y npm. `package.json` también trae la configuración de electron-builder para macOS (DMG y zip universales, `npm run dist:mac`, solo en una Mac; [docs/macos.md](docs/macos.md)) y Linux (AppImage).
 - **Para compilar (el dueño)**: CurseForge en Administración → Integraciones ([configuración y requisitos](docs/admin.md#curseforge-desde-integraciones-450)); `VENUS_CURSEFORGE_API_KEY` de GitHub Actions queda como respaldo opcional de builds anteriores, el proyecto de Supabase en `src/main/core/cloud-defaults.js` y, en `src/main/core/app-config.js`, el cliente propio de Microsoft cuando esté aprobado ([docs/login-microsoft.md](docs/login-microsoft.md)), el Application ID de Discord (Rich Presence) y, si hacen falta, el servidor TURN del Voice Chat y el servidor de túneles bore. Los usuarios no cargan claves.
 
 ## Comandos
@@ -125,6 +151,7 @@ npm run dev          # igual que start (pasa --dev, que hoy no cambia nada)
 npm run check        # sintaxis de todo el proyecto (node scripts/check.js)
 npm run dist         # instalador y versión portable en dist/
 npm run dist:dir     # solo la carpeta sin empaquetar (dist/win-unpacked)
+npm run dist:mac     # en una Mac: VenusLauncher-mac.dmg y .zip universales en dist/ (firma ad hoc)
 ```
 
 `npm run dist` genera en `dist/`:
@@ -155,7 +182,7 @@ Usá siempre una carpeta de datos de prueba (`VENUS_DATA_DIR`), nunca la real. L
 
 ## Dónde se guardan los datos
 
-- Por defecto en `%APPDATA%\.venuslauncher` (instancias, versiones, Java, servidores, ajustes y estado de cada módulo).
+- Por defecto en `%APPDATA%\.venuslauncher` (instancias, versiones, Java, servidores, ajustes y estado de cada módulo). En macOS, en `~/Library/Application Support/.venuslauncher`.
 - Se puede mover desde **Ajustes → Datos** (el launcher se reinicia y recuerda la ubicación).
 - La versión portable usa `VenusData` junto al `.exe`.
 - La variable de entorno `VENUS_DATA_DIR` usa otra carpeta solo para esa ejecución (ideal para probar sin tocar tus datos).
@@ -174,7 +201,7 @@ Español (rioplatense, el idioma base), inglés, portugués (Brasil), francés, 
 
 ## Actualizaciones
 
-El launcher instalado se actualiza solo desde las [releases de GitHub](https://github.com/rponfee/Venus-Launcher/releases) (electron-updater, repositorio en `venusUpdates.githubRepository` de `package.json`). Para publicar una versión: subí la versión en `package.json`, compilá con `npm run dist` y creá la release `v<versión>` con `VenusLauncher-Setup.exe`, `VenusLauncher-Portable.exe`, `VenusLauncher-Setup.exe.blockmap` y `latest.yml`. Los nombres son fijos a propósito: el link `releases/latest/download/VenusLauncher-Setup.exe` baja siempre la última versión. También se puede con `npm run release` o con el workflow `.github/workflows/release.yml` al subir un tag `v*`. La versión portable no se actualiza sola: lee `latest.yml` de la última release y avisa con el link para bajarla (solo si está activada la búsqueda automática o al tocar **Buscar actualizaciones**).
+El launcher instalado se actualiza solo desde las [releases de GitHub](https://github.com/rponfee/Venus-Launcher/releases) (electron-updater, repositorio en `venusUpdates.githubRepository` de `package.json`). Para publicar una versión: subí la versión en `package.json`, compilá con `npm run dist` y creá la release `v<versión>` con `VenusLauncher-Setup.exe`, `VenusLauncher-Portable.exe`, `VenusLauncher-Setup.exe.blockmap` y `latest.yml`. Los nombres son fijos a propósito: el link `releases/latest/download/VenusLauncher-Setup.exe` baja siempre la última versión. También se puede con `npm run release` o con el workflow `.github/workflows/release.yml` al subir un tag `v*`. La versión portable no se actualiza sola: lee `latest.yml` de la última release y avisa con el link para bajarla (solo si está activada la búsqueda automática o al tocar **Buscar actualizaciones**). La de macOS hace lo mismo con `latest-mac.yml` y `VenusLauncher-mac.dmg`, que sube el job `mac` del workflow Build a la misma release.
 
 ## Cómo está armado
 
