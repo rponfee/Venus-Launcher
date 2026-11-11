@@ -46,6 +46,7 @@ on:
       - 'v*'
     paths:
       - package.json
+      - .github/workflows/build.yml
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -214,7 +215,9 @@ jobs:
             if (-not (Test-Path "docs/release-$version.md")) { Write-Output 'El build de main no publica esta versión (falta docs/release-<versión>.md).'; exit 0 }
             $env:TAG = "v$version"
             $tagSha = gh api "repos/$env:REPO/git/ref/tags/$env:TAG" --jq '.object.sha' 2>$null
-            if ($LASTEXITCODE -eq 0 -and $tagSha.Trim() -ne $env:GITHUB_SHA) { throw "El tag $env:TAG ya apunta a otro commit" }
+            # La versión ya se publicó desde otro commit (por ejemplo, un cambio posterior solo del workflow): no se vuelve a
+            # publicar ni se pisa nada de Windows. El job de Mac completa la release si le faltan sus archivos.
+            if ($LASTEXITCODE -eq 0 -and $tagSha.Trim() -ne $env:GITHUB_SHA) { Write-Output "La release $env:TAG ya está publicada desde otro commit: no se vuelve a publicar."; exit 0 }
           }
           if ("v$version" -ne $env:TAG) { throw "El tag $env:TAG no coincide con la versión $version de package.json" }
           $origen = if (Test-Path dist-signed) { 'dist-signed' } else { 'dist' }
@@ -318,6 +321,7 @@ jobs:
 
       # Capturas de la interfaz en macOS (scripts/devshot.js corre sin empaquetar: el paquete no trae scripts/).
       - name: Capturas de la interfaz
+        continue-on-error: true
         env:
           VENUS_DATA_DIR: ${{ runner.temp }}/venus-shots-data
           VENUS_DEVSHOT: ${{ github.workspace }}/mac-shots
@@ -362,7 +366,13 @@ jobs:
           fi
           if [ "$GITHUB_REF_TYPE" = "branch" ]; then
             sha=$(gh api "repos/$REPO/git/ref/tags/$tag" --jq '.object.sha' 2>/dev/null || true)
-            [ "$sha" = "$GITHUB_SHA" ] || { echo "La release $tag no es de este commit: no se sube macOS."; exit 0; }
+            if [ "$sha" != "$GITHUB_SHA" ]; then
+              # Otro commit: solo se completa una release a la que le faltan los archivos de Mac (nunca se pisan)
+              if gh release view "$tag" --repo "$REPO" --json assets --jq '.assets[].name' | grep -qx 'VenusLauncher-mac.dmg'; then
+                echo "La release $tag ya tiene los archivos de Mac y es de otro commit: no se sube nada."; exit 0
+              fi
+              echo "La release $tag no tiene los archivos de Mac: se completan desde este commit."
+            fi
           fi
           [ -f dist/latest-mac.yml ] || printf 'version: %s\n' "$version" > dist/latest-mac.yml
           gh release upload "$tag" dist/VenusLauncher-mac.dmg dist/VenusLauncher-mac.zip dist/latest-mac.yml --repo "$REPO" --clobber
